@@ -668,7 +668,7 @@ export default function CheckoutPage() {
                                 <option value="">MM</option>
                                 {[...Array(12)].map((_, i) => (
                                   <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                                    {String(i + 1).padStart(2, 0)}
+                                    {String(i + 1).padStart(2, '0')}
                                   </option>
                                 ))}
                               </select>

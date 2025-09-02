@@ -33,9 +33,9 @@ export default function KingProductCard({
       const cartItem = {
         id: product.id,
         name: product.name,
-        price: product.price,
-        regular_price: product.regular_price,
-        sale_price: product.sale_price,
+        price: parseFloat(product.price),
+        regular_price: parseFloat(product.regular_price),
+        sale_price: parseFloat(product.sale_price),
         image: imageUrl,
         permalink: `/produkt/${product.slug}`,
       };

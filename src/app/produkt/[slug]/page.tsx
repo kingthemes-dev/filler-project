@@ -9,9 +9,9 @@ import wooCommerceService from '@/services/woocommerce';
 import Link from 'next/link';
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
@@ -28,13 +28,14 @@ export default function ProductPage({ params }: ProductPageProps) {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        console.log('🔍 Fetching product by slug:', params.slug);
+        const resolvedParams = await params;
+        console.log('🔍 Fetching product by slug:', resolvedParams.slug);
         
         // Fetch real product data from WooCommerce
-        const productData = await wooCommerceService.getProductBySlug(params.slug);
+        const productData = await wooCommerceService.getProductBySlug(resolvedParams.slug);
         
         if (!productData) {
-          console.error('❌ Product not found:', params.slug);
+          console.error('❌ Product not found:', resolvedParams.slug);
           setProduct(null);
           return;
         }
@@ -58,7 +59,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           featured: productData.featured || false,
           stock_quantity: productData.stock_quantity || 0,
           stock_status: productData.stock_status || 'instock',
-          permalink: `/produkt/${params.slug}`,
+          permalink: `/produkt/${resolvedParams.slug}`,
           categories: productData.categories || []
         };
         
@@ -77,7 +78,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     };
 
     fetchProduct();
-  }, [params.slug]);
+  }, [params]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -94,7 +95,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         id: selectedVariant.id,
         name: selectedVariant.name,
         value: selectedVariant.value
-      } : null
+      } : undefined
     };
 
     console.log('🛒 Adding to cart:', cartItem);

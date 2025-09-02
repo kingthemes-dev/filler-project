@@ -7,7 +7,7 @@ import Footer from '@/components/ui/footer';
 import CartDrawer from '@/components/ui/cart-drawer';
 import AuthProvider from '@/components/ui/auth/auth-provider';
 import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
-import EmailNotificationCenter from '@/components/ui/email/email-notification-center';
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -87,7 +87,7 @@ export default function RootLayout({
                     <CartDrawer />
                     <AuthProvider />
                     <AuthModalManager />
-                    <EmailNotificationCenter />
+
               </body>
             </html>
           );

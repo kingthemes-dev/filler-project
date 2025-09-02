@@ -48,6 +48,7 @@ export interface WooProduct {
   shipping_taxable: boolean;
   shipping_class: string;
   shipping_class_id: number;
+  categories: WooCategory[];
   reviews_allowed: boolean;
   average_rating: string;
   rating_count: number;
@@ -295,6 +296,15 @@ export interface WooCustomer {
   avatar_url: string;
   meta_data: WooMetaData[];
   _links: WooLinks;
+}
+
+// =========================================
+// Category Types
+// =========================================
+export interface WooCategory {
+  id: number;
+  name: string;
+  slug: string;
 }
 
 // =========================================

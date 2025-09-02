@@ -1,91 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const WC_API_URL = process.env.NEXT_PUBLIC_WC_API_URL || 'https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3';
-const WC_CONSUMER_KEY = process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY;
-const WC_CONSUMER_SECRET = process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET;
+const WC_URL = process.env.WOOCOMMERCE_API_URL!;
+const CK = process.env.WOOCOMMERCE_CONSUMER_KEY!;
+const CS = process.env.WOOCOMMERCE_CONSUMER_SECRET!;
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const endpoint = searchParams.get("endpoint") || "products";
+
+  const url = new URL(`${WC_URL.replace(/\/$/, "")}/${endpoint}`);
+  searchParams.forEach((v, k) => {
+    if (k !== "endpoint") url.searchParams.set(k, v);
+  });
+  url.searchParams.set("consumer_key", CK);
+  url.searchParams.set("consumer_secret", CS);
+
   try {
-    const { searchParams } = new URL(request.url);
-    const endpoint = searchParams.get('endpoint');
-    
-    if (!endpoint) {
-      return NextResponse.json({ error: 'Endpoint parameter is required' }, { status: 400 });
-    }
-    
-    if (!WC_CONSUMER_KEY || !WC_CONSUMER_SECRET) {
-      return NextResponse.json({ error: 'WooCommerce credentials not configured' }, { status: 500 });
-    }
-    
-    // Build URL with authentication
-    const url = new URL(`${WC_API_URL}/${endpoint}`);
-    url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-    url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
-    
-    // Add other query parameters
-    searchParams.forEach((value, key) => {
-      if (key !== 'endpoint') {
-        url.searchParams.append(key, value);
-      }
+    const r = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
     });
-    
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      return NextResponse.json({ error: 'WooCommerce API error' }, { status: response.status });
+
+    const text = await r.text();
+    if (!r.ok) {
+      return new NextResponse(text || r.statusText, {
+        status: r.status,
+        headers: { "content-type": r.headers.get("content-type") || "text/plain" },
+      });
     }
-    
-    const data = await response.json();
-    return NextResponse.json(data);
-    
-  } catch (error) {
-    console.error('WooCommerce API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return new NextResponse(text, {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: "Proxy error", message: e?.message || String(e) },
+      { status: 502 }
+    );
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const endpoint = searchParams.get("endpoint") || "products";
+
+  const url = new URL(`${WC_URL.replace(/\/$/, "")}/${endpoint}`);
+  url.searchParams.set("consumer_key", CK);
+  url.searchParams.set("consumer_secret", CS);
+
   try {
-    const { searchParams } = new URL(request.url);
-    const endpoint = searchParams.get('endpoint');
+    const body = await req.json();
     
-    if (!endpoint) {
-      return NextResponse.json({ error: 'Endpoint parameter is required' }, { status: 400 });
-    }
-    
-    if (!WC_CONSUMER_KEY || !WC_CONSUMER_SECRET) {
-      return NextResponse.json({ error: 'WooCommerce credentials not configured' }, { status: 500 });
-    }
-    
-    const body = await request.json();
-    
-    // Build URL with authentication
-    const url = new URL(`${WC_API_URL}/${endpoint}`);
-    url.searchParams.append('consumer_key', WC_CONSUMER_KEY);
-    url.searchParams.append('consumer_secret', WC_CONSUMER_SECRET);
-    
-    const response = await fetch(url.toString(), {
+    const r = await fetch(url.toString(), {
       method: 'POST',
-      headers: {
+      headers: { 
+        Accept: "application/json",
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      cache: "no-store",
     });
-    
-    if (!response.ok) {
-      return NextResponse.json({ error: 'WooCommerce API error' }, { status: response.status });
+
+    const text = await r.text();
+    if (!r.ok) {
+      return new NextResponse(text || r.statusText, {
+        status: r.status,
+        headers: { "content-type": r.headers.get("content-type") || "text/plain" },
+      });
     }
-    
-    const data = await response.json();
-    return NextResponse.json(data);
-    
-  } catch (error) {
-    console.error('WooCommerce API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return new NextResponse(text, {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: "Proxy error", message: e?.message || String(e) },
+      { status: 502 }
+    );
   }
 }

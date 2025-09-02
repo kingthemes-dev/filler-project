@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Search, Filter, SortAsc, Star, ShoppingCart, Heart } from 'lucide-react';
@@ -9,7 +9,7 @@ import { formatPrice } from '@/utils/format-price';
 import { useCartStore } from '@/stores/cart-store';
 import Link from 'next/link';
 
-export default function SearchResultsPage() {
+function SearchResultsContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   
@@ -92,8 +92,7 @@ export default function SearchResultsPage() {
       name: product.name,
       price: product.sale_price || product.price,
       sale_price: product.sale_price,
-      image: product.image,
-      slug: product.slug
+      image: product.image
     });
   };
 
@@ -429,5 +428,13 @@ export default function SearchResultsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SearchResultsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SearchResultsContent />
+    </Suspense>
   );
 }
