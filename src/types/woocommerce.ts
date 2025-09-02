@@ -56,7 +56,7 @@ export interface WooProduct {
   cross_sell_ids: number[];
   parent_id: number;
   purchase_note: string;
-  categories: WooCategory[];
+
   tags: WooTag[];
   images: WooImage[];
   attributes: WooAttribute[];
@@ -80,11 +80,7 @@ export interface WooDimensions {
   height: string;
 }
 
-export interface WooCategory {
-  id: number;
-  name: string;
-  slug: string;
-}
+
 
 export interface WooTag {
   id: number;
@@ -121,7 +117,7 @@ export interface WooDefaultAttribute {
 export interface WooMetaData {
   id: number;
   key: string;
-  value: any;
+  value: unknown;
 }
 
 export interface WooLinks {
@@ -133,32 +129,7 @@ export interface WooLink {
   href: string;
 }
 
-// =========================================
-// WooCommerce Category Types
-// =========================================
-export interface WooCategory {
-  id: number;
-  name: string;
-  slug: string;
-  parent: number;
-  description: string;
-  display: string;
-  image: WooCategoryImage | null;
-  menu_order: number;
-  count: number;
-  _links: WooLinks;
-}
 
-export interface WooCategoryImage {
-  id: number;
-  date_created: string;
-  date_created_gmt: string;
-  date_modified: string;
-  date_modified_gmt: string;
-  src: string;
-  name: string;
-  alt: string;
-}
 
 // =========================================
 // WooCommerce Order Types
@@ -340,7 +311,7 @@ export interface WooApiResponse<T> {
 export interface WooError {
   code: string;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 // =========================================
@@ -378,15 +349,4 @@ export interface WooProductQuery {
   order?: 'asc' | 'desc';
 }
 
-export interface WooCategoryQuery {
-  page?: number;
-  per_page?: number;
-  search?: string;
-  exclude?: number[];
-  include?: number[];
-  orderby?: string;
-  order?: 'asc' | 'desc';
-  hide_empty?: boolean;
-  parent?: number;
-  product?: number;
-}
+

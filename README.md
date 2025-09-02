@@ -179,6 +179,52 @@ const gridColsClasses = {
 />
 ```
 
+## 🚀 **Dostępne skrypty**
+
+### **Development:**
+- `npm run dev` - Uruchamia serwer deweloperski
+- `npm run dev:debug` - Uruchamia serwer z debuggerem Node.js
+
+### **Build & Production:**
+- `npm run build` - Buduje aplikację produkcyjną
+- `npm run start` - Uruchamia aplikację produkcyjną
+
+### **Code Quality:**
+- `npm run lint` - Sprawdza kod pod kątem błędów
+- `npm run lint:fix` - Automatycznie naprawia błędy ESLint
+- `npm run type-check` - Sprawdza typy TypeScript
+- `npm run format` - Formatuje kod z Prettier
+- `npm run format:check` - Sprawdza formatowanie
+
+### **Testing:**
+- `npm run test` - Uruchamia testy
+- `npm run test:watch` - Uruchamia testy w trybie watch
+- `npm run test:coverage` - Generuje raport pokrycia testami
+
+### **Performance & Analysis:**
+- `npm run analyze` - Analizuje bundle (otwiera przeglądarkę)
+- `npm run analyze:server` - Analizuje bundle i uruchamia serwer
+- `npm run lighthouse` - Generuje raport Lighthouse (wymaga uruchomionego serwera)
+
+## 🛠️ **Narzędzia deweloperskie**
+
+### **Debugging:**
+- **ESLint** - Linting kodu z regułami TypeScript
+- **Prettier** - Automatyczne formatowanie kodu
+- **TypeScript** - Sprawdzanie typów
+- **Jest** - Framework testowy
+- **Testing Library** - Testowanie komponentów React
+
+### **Performance:**
+- **Bundle Analyzer** - Analiza rozmiaru bundle
+- **Lighthouse** - Audyt performance, accessibility, SEO
+- **Next.js Analytics** - Wbudowane metryki Next.js
+
+### **Development Experience:**
+- **Hot Reload** - Automatyczne odświeżanie przy zmianach
+- **Type Checking** - Sprawdzanie typów w czasie rzeczywistym
+- **Error Overlay** - Wyświetlanie błędów w przeglądarce
+
 ## 🔧 Konfiguracja
 
 ### Tailwind CSS

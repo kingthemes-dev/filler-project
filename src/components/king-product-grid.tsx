@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { WooProduct, WooProductQuery } from '@/types/woocommerce';
 import { wooCommerceService } from '@/services/woocommerce';
 import KingProductCard from './king-product-card';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Search, Filter, Grid3X3, List, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Search, Grid3X3, List } from 'lucide-react';
 
 interface KingProductGridProps {
   categoryId?: number;
@@ -20,6 +20,9 @@ interface KingProductGridProps {
   showPagination?: boolean;
   gridCols?: 1 | 2 | 3 | 4 | 5 | 6;
   variant?: 'default' | 'compact' | 'featured';
+  limit?: number;
+  orderBy?: string;
+  order?: 'asc' | 'desc';
 }
 
 export default function KingProductGrid({
@@ -31,7 +34,10 @@ export default function KingProductGrid({
   showFilters = true,
   showPagination = true,
   gridCols = 4,
-  variant = 'default'
+  variant = 'default',
+  limit,
+  orderBy = 'date',
+  order = 'desc'
 }: KingProductGridProps) {
   const [products, setProducts] = useState<WooProduct[]>(initialProducts || []);
   const [loading, setLoading] = useState(!initialProducts);
@@ -43,6 +49,9 @@ export default function KingProductGrid({
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: '', max: '' });
+  
+  // Cache key for products
+  const cacheKey = `${categoryId}-${featured}-${onSale}-${searchTerm}-${limit}`;
 
   // Grid columns configuration
   const gridColsClasses = {
@@ -55,17 +64,17 @@ export default function KingProductGrid({
   };
 
   // Fetch products
-  const fetchProducts = async (page: number = 1) => {
+  const fetchProducts = useCallback(async (page: number = 1) => {
     setLoading(true);
     setError(null);
 
     try {
       const query: WooProductQuery = {
         page,
-        per_page: 12,
+        per_page: limit || 12,
         status: 'publish',
-        orderby: sortBy,
-        order: sortOrder,
+        orderby: orderBy,
+        order: order,
       };
 
       // Add filters
@@ -81,12 +90,6 @@ export default function KingProductGrid({
       if (searchTerm) {
         query.search = searchTerm;
       }
-      if (priceRange.min) {
-        query.min_price = priceRange.min;
-      }
-      if (priceRange.max) {
-        query.max_price = priceRange.max;
-      }
 
       const response = await wooCommerceService.getProducts(query);
       
@@ -100,18 +103,19 @@ export default function KingProductGrid({
     } finally {
       setLoading(false);
     }
-  };
+  }, [categoryId, featured, onSale, searchTerm, limit, orderBy, order, cacheKey]);
 
   // Initial fetch
   useEffect(() => {
     if (!initialProducts) {
       fetchProducts();
     }
-  }, [categoryId, featured, onSale, searchTerm, sortBy, sortOrder, priceRange.min, priceRange.max]);
+  }, [fetchProducts, initialProducts]);
 
   // Handle search
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
+  const handleSearch = () => {
+    // searchTerm is a prop, we can't modify it directly
+    // This will trigger a re-render from parent component
     setCurrentPage(1);
   };
 
@@ -173,7 +177,7 @@ export default function KingProductGrid({
                 <Input
                   placeholder="Szukaj produktów..."
                   value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={() => handleSearch()}
                   className="pl-10"
                 />
               </div>

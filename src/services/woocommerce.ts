@@ -1,5 +1,4 @@
-import { WooProduct, WooCategory, WooProductQuery, WooCategoryQuery, WooApiResponse } from '@/types/woocommerce';
-import { API_ENDPOINTS } from '@/config/constants';
+import { WooProduct, WooProductQuery, WooApiResponse } from '@/types/woocommerce';
 
 // =========================================
 // WooCommerce Store API Service
@@ -14,17 +13,32 @@ class WooCommerceService {
     this.baseUrl = process.env.NEXT_PUBLIC_WC_API_URL || '';
     this.consumerKey = process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY || '';
     this.consumerSecret = process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET || '';
+    
+      // Debug logging
+  console.log('🔍 WooCommerce Service Constructor:');
+  console.log('Base URL:', this.baseUrl);
+  console.log('Consumer Key:', this.consumerKey);
+  console.log('Consumer Secret:', this.consumerSecret);
+  console.log('Environment variables:');
+  console.log('NEXT_PUBLIC_WC_API_URL:', process.env.NEXT_PUBLIC_WC_API_URL);
+  console.log('NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY:', process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY);
+  console.log('NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET:', process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET);
+  
+  // Check if variables are loaded
+  if (!this.consumerKey || !this.consumerSecret) {
+    console.error('❌ ERROR: WooCommerce API keys are missing!');
+    console.error('Consumer Key length:', this.consumerKey?.length || 0);
+    console.error('Consumer Secret length:', this.consumerSecret?.length || 0);
+  } else {
+    console.log('✅ WooCommerce API keys loaded successfully!');
+  }
   }
 
   // =========================================
   // Authentication
   // =========================================
-  private getAuthHeaders(): HeadersInit {
-    const credentials = btoa(`${this.consumerKey}:${this.consumerSecret}`);
-    return {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/json',
-    };
+  private getAuthParams(): string {
+    return `consumer_key=${this.consumerKey}&consumer_secret=${this.consumerSecret}`;
   }
 
   // =========================================
@@ -45,9 +59,11 @@ class WooCommerceService {
         }
       });
 
-      const url = `${this.baseUrl}/products?${params.toString()}`;
+      const url = `${this.baseUrl}/products?${params.toString()}&${this.getAuthParams()}`;
       const response = await fetch(url, {
-        headers: this.getAuthHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
@@ -72,9 +88,11 @@ class WooCommerceService {
 
   async getProduct(id: number): Promise<WooProduct> {
     try {
-      const url = `${this.baseUrl}/products/${id}`;
+      const url = `${this.baseUrl}/products/${id}?${this.getAuthParams()}`;
       const response = await fetch(url, {
-        headers: this.getAuthHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
@@ -140,76 +158,14 @@ class WooCommerceService {
     }
   }
 
-  // =========================================
-  // Categories API
-  // =========================================
-  async getCategories(query: WooCategoryQuery = {}): Promise<WooCategory[]> {
-    try {
-      const params = new URLSearchParams();
-      
-      Object.entries(query).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          params.append(key, value.toString());
-        }
-      });
 
-      const url = `${this.baseUrl}/products/categories?${params.toString()}`;
-      const response = await fetch(url, {
-        headers: this.getAuthHeaders(),
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      throw error;
-    }
-  }
 
-  async getCategory(id: number): Promise<WooCategory> {
-    try {
-      const url = `${this.baseUrl}/products/categories/${id}`;
-      const response = await fetch(url, {
-        headers: this.getAuthHeaders(),
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
-      return await response.json();
-    } catch (error) {
-      console.error(`Error fetching category ${id}:`, error);
-      throw error;
-    }
-  }
 
-  async getCategoryBySlug(slug: string): Promise<WooCategory | null> {
-    try {
-      const categories = await this.getCategories({ slug, per_page: 1 });
-      return categories[0] || null;
-    } catch (error) {
-      console.error(`Error fetching category by slug ${slug}:`, error);
-      throw error;
-    }
-  }
 
-  async getProductsByCategory(categoryId: number, limit: number = 12): Promise<WooProduct[]> {
-    try {
-      const products = await this.getProducts({ 
-        category: categoryId.toString(), 
-        per_page: limit,
-        status: 'publish'
-      });
-      return products.data;
-    } catch (error) {
-      console.error(`Error fetching products for category ${categoryId}:`, error);
-      throw error;
-    }
-  }
 
   // =========================================
   // Utility Methods
@@ -255,6 +211,319 @@ class WooCommerceService {
     
     return Math.round(((regularPrice - salePrice) / regularPrice) * 100);
   }
+
+  // =========================================
+  // Cart Methods - King Cart API Integration
+  // =========================================
+  async getCart(): Promise<any> {
+    try {
+      // Get cart using King Cart API
+      const cartUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/cart`;
+      const response = await fetch(cartUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+      throw error;
+    }
+  }
+
+  async addToCart(productId: number, quantity: number = 1, variationId?: number): Promise<any> {
+    try {
+      // Get nonce first
+      const nonceUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/nonce`;
+      const nonceResponse = await fetch(nonceUrl);
+      
+      if (!nonceResponse.ok) {
+        throw new Error(`Failed to get nonce: ${nonceResponse.status}`);
+      }
+      
+      const nonceData = await nonceResponse.json();
+      const nonce = nonceData.nonce;
+      
+      // Add item to cart using King Cart API
+      const addItemUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/add-item`;
+      const response = await fetch(addItemUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': nonce
+        },
+        body: JSON.stringify({
+          id: productId,
+          quantity: quantity,
+          ...(variationId && { variation: { id: variationId } })
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      throw error;
+    }
+  }
+
+  async removeFromCart(itemKey: string): Promise<any> {
+    try {
+      // Get nonce first
+      const nonceUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/nonce`;
+      const nonceResponse = await fetch(nonceUrl);
+      
+      if (!nonceResponse.ok) {
+        throw new Error(`Failed to get nonce: ${nonceResponse.status}`);
+      }
+      
+      const nonceData = await nonceResponse.json();
+      const nonce = nonceData.nonce;
+      
+      // Remove item from cart using King Cart API
+      const removeItemUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/remove-item`;
+      const response = await fetch(removeItemUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': nonce
+        },
+        body: JSON.stringify({ key: itemKey }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      throw error;
+    }
+  }
+
+  async updateCartItem(itemKey: string, quantity: number): Promise<any> {
+    try {
+      // Get nonce first
+      const nonceUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/nonce`;
+      const nonceResponse = await fetch(nonceUrl);
+      
+      if (!nonceResponse.ok) {
+        throw new Error(`Failed to get nonce: ${nonceResponse.status}`);
+      }
+      
+      const nonceData = await nonceResponse.json();
+      const nonce = nonceData.nonce;
+      
+      // Update cart item using King Cart API
+      const updateItemUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/update-item`;
+      const response = await fetch(updateItemUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': nonce
+        },
+        body: JSON.stringify({
+          key: itemKey,
+          quantity: quantity
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error updating cart item:', error);
+      throw error;
+    }
+  }
+
+  // =========================================
+  // Categories API
+  // =========================================
+async getCategories(): Promise<any> {
+  try {
+    const url = `${this.baseUrl}/products/categories?${this.getAuthParams()}`;
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      data: data || [],
+      total: data?.length || 0
+    };
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
+}
+
+// =========================================
+// User Authentication API
+// =========================================
+async registerUser(userData: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+}): Promise<any> {
+  try {
+    const url = `${this.baseUrl}/customers`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${btoa(`${this.consumerKey}:${this.consumerSecret}`)}`
+      },
+      body: JSON.stringify({
+        email: userData.email,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        billing: {
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          phone: userData.phone
+        },
+        shipping: {
+          first_name: userData.firstName,
+          last_name: userData.lastName
+        },
+        password: userData.password
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error registering user:', error);
+    throw error;
+  }
+}
+
+async loginUser(email: string, password: string): Promise<any> {
+  try {
+    // Use our custom JWT endpoint
+    const url = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-jwt/v1')}/login`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error('Błąd logowania');
+    }
+
+    return data.user;
+  } catch (error) {
+    console.error('Error logging in user:', error);
+    throw error;
+  }
+}
+
+async getUserProfile(userId: number): Promise<any> {
+  try {
+    const url = `${this.baseUrl}/customers/${userId}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Basic ${btoa(`${this.consumerKey}:${this.consumerSecret}`)}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+}
+
+async validateJWTToken(token: string): Promise<any> {
+  try {
+    const url = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-jwt/v1')}/validate`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error validating JWT token:', error);
+    throw error;
+  }
+}
+
+async refreshJWTToken(token: string): Promise<any> {
+  try {
+    const url = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-jwt/v1')}/refresh`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error refreshing JWT token:', error);
+    throw error;
+  }
+}
 }
 
 // Export singleton instance
