@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { WooProduct, WooProductQuery } from '@/types/woocommerce';
-import { wooCommerceService } from '@/services/woocommerce';
+import wooCommerceService from '@/services/woocommerce-optimized';
 import KingProductCard from './king-product-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

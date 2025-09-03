@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Truck, Shield, ArrowLeft } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPrice } from '@/utils/format-price';
-import wooCommerceService from '@/services/woocommerce';
+import wooCommerceService from '@/services/woocommerce-optimized';
 import Link from 'next/link';
 
 interface ProductPageProps {

@@ -81,15 +81,42 @@ class WooCommerceOptimizedService {
   // =========================================
   async getProductBySlug(slug: string): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=product-slug/${slug}`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products&slug=${slug}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      // WooCommerce API zwraca array, więc bierzemy pierwszy element
+      return Array.isArray(data) && data.length > 0 ? data[0] : null;
     } catch (error) {
       console.error('Error fetching product by slug:', error);
+      throw error;
+    }
+  }
+
+  // =========================================
+  // Categories
+  // =========================================
+  async getCategories(): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}?endpoint=products/categories`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        data: Array.isArray(data) ? data : [data],
+        total: Array.isArray(data) ? data.length : 1,
+        totalPages: 1,
+        currentPage: 1,
+        perPage: 100,
+      };
+    } catch (error) {
+      console.error('Error fetching categories:', error);
       throw error;
     }
   }
@@ -266,6 +293,91 @@ class WooCommerceOptimizedService {
       console.error('Error getting cart:', error);
       throw error;
     }
+  }
+
+  // =========================================
+  // Authentication Methods
+  // =========================================
+  async loginUser(email: string, password: string): Promise<any> {
+    try {
+      const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/king-jwt/v1/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error logging in user:', error);
+      throw error;
+    }
+  }
+
+  async registerUser(userData: any): Promise<any> {
+    try {
+      const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/king-jwt/v1/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error registering user:', error);
+      throw error;
+    }
+  }
+
+  // =========================================
+  // Product Helper Methods
+  // =========================================
+  isProductOnSale(product: WooProduct): boolean {
+    return product.on_sale || false;
+  }
+
+  getProductDiscount(product: WooProduct): number {
+    if (!this.isProductOnSale(product)) return 0;
+    
+    const regularPrice = parseFloat(product.regular_price || '0');
+    const salePrice = parseFloat(product.sale_price || product.price || '0');
+    
+    if (regularPrice === 0) return 0;
+    
+    return Math.round(((regularPrice - salePrice) / regularPrice) * 100);
+  }
+
+  getProductImageUrl(product: WooProduct, size: string = 'medium'): string {
+    if (!product.images || product.images.length === 0) {
+      return '/images/placeholder-product.jpg';
+    }
+    
+    const image = product.images[0];
+    // Use type assertion to access dynamic properties
+    return (image as any)[size] || image.src || '/images/placeholder-product.jpg';
+  }
+
+  formatPrice(price: string | number): string {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return new Intl.NumberFormat('pl-PL', {
+      style: 'currency',
+      currency: 'PLN',
+      minimumFractionDigits: 2,
+    }).format(numPrice);
   }
 }
 

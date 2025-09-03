@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { WooProduct } from '@/types/woocommerce';
-import { wooCommerceService } from '@/services/woocommerce';
+import wooCommerceService from '@/services/woocommerce-optimized';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

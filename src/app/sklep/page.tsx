@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
 import KingProductCard from '@/components/king-product-card';
-import wooCommerceService from '@/services/woocommerce';
+import wooCommerceService from '@/services/woocommerce-optimized';
 import { formatPrice } from '@/utils/format-price';
 
 interface FilterState {

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import wooCommerceService from '@/services/woocommerce';
+import wooCommerceService from '@/services/woocommerce-optimized';
 
 // Types
 export interface CartItem {

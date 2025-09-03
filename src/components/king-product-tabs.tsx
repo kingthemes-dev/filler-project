@@ -32,55 +32,73 @@ export default function KingProductTabs() {
       index === tabIndex ? { ...tab, loading: true } : tab
     ));
 
-    try {
-      let products: any[] = [];
+    // Retry logic for frontend
+    let lastError: any;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`🔄 Frontend attempt ${attempt} for ${tabId}`);
+        
+        let products: any[] = [];
 
-      switch (tabId) {
-        case 'nowosci':
-          // New arrivals - ordered by date, limit 4
-          const newProducts = await wooCommerceService.getProducts({
-            orderby: 'date',
-            order: 'desc',
-            per_page: 4
-          });
-          products = newProducts.data || [];
-          break;
+        switch (tabId) {
+          case 'nowosci':
+            // New arrivals - ordered by date, limit 4
+            const newProducts = await wooCommerceService.getProducts({
+              orderby: 'date',
+              order: 'desc',
+              per_page: 4
+            });
+            products = newProducts.data || [];
+            break;
 
-        case 'promocje':
-          // On sale products - limit 4
-          const saleProducts = await wooCommerceService.getProducts({
-            on_sale: true,
-            per_page: 4
-          });
-          products = saleProducts.data || [];
-          break;
+          case 'promocje':
+            // On sale products - limit 4
+            const saleProducts = await wooCommerceService.getProducts({
+              on_sale: true,
+              per_page: 4
+            });
+            products = saleProducts.data || [];
+            break;
 
-        case 'polecane':
-          // Featured products - limit 4
-          const featuredProducts = await wooCommerceService.getProducts({
-            featured: true,
-            per_page: 4
-          });
-          products = featuredProducts.data || [];
-          break;
+          case 'polecane':
+            // Featured products - limit 4
+            const featuredProducts = await wooCommerceService.getProducts({
+              featured: true,
+              per_page: 4
+            });
+            products = featuredProducts.data || [];
+            break;
 
-        default:
-          break;
+          default:
+            break;
+        }
+
+        // Update tab with products
+        setTabs(prev => prev.map((tab, index) => 
+          index === tabIndex ? { ...tab, products, loading: false } : tab
+        ));
+        
+        console.log(`✅ Frontend success on attempt ${attempt} for ${tabId}`);
+        return; // Success, exit retry loop
+
+      } catch (error) {
+        lastError = error;
+        console.log(`❌ Frontend attempt ${attempt} failed for ${tabId}:`, error);
+        
+        if (attempt < 3) {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        }
       }
-
-      // Update tab with products
-      setTabs(prev => prev.map((tab, index) => 
-        index === tabIndex ? { ...tab, products, loading: false } : tab
-      ));
-
-    } catch (error) {
-      console.error(`Error fetching ${tabId} products:`, error);
-      
-      // Set loading to false on error
-      setTabs(prev => prev.map((tab, index) => 
-        index === tabIndex ? { ...tab, loading: false } : tab
-      ));
     }
+    
+    // All attempts failed
+    console.error(`🚨 All frontend attempts failed for ${tabId}:`, lastError);
+    
+    // Set loading to false on error
+    setTabs(prev => prev.map((tab, index) => 
+      index === tabIndex ? { ...tab, loading: false } : tab
+    ));
   }, []);
 
   // Fetch products when tab changes
