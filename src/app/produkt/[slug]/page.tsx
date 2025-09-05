@@ -10,6 +10,7 @@ import { formatPrice } from '@/utils/format-price';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import ReviewsList from '@/components/ui/reviews-list';
 import ReviewForm from '@/components/ui/review-form';
+import SimilarProducts from '@/components/ui/similar-products';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 
@@ -748,6 +749,17 @@ export default function ProductPage({ params }: ProductPageProps) {
           </motion.div>
         </div>
       </div>
+      
+      {/* Similar Products */}
+      {product && product.categories && product.categories.length > 0 && (
+        <SimilarProducts 
+          productId={product.id} 
+          crossSellIds={product.cross_sell_ids || []}
+          relatedIds={product.related_ids || []}
+          categoryId={product.categories[0].id}
+          limit={4}
+        />
+      )}
     </div>
   );
 }
