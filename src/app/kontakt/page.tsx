@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Metadata } from 'next';
 import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
 import { useState } from 'react';
 
@@ -30,8 +31,8 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-gray-50 to-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-gradient-to-br from-gray-50 to-white py-20 mx-6 rounded-3xl">
+        <div className="max-w-[95vw] mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -50,8 +51,8 @@ export default function ContactPage() {
       </section>
 
       {/* Main Content */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-20 mx-6 rounded-3xl">
+        <div className="max-w-[95vw] mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
             
             {/* Left Column - Contact Info */}
@@ -264,7 +265,7 @@ export default function ContactPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="bg-gray-50 py-20">
+      <section className="bg-gray-50 py-20 mx-6 rounded-3xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

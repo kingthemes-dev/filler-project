@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   CreditCard, 
@@ -20,6 +21,7 @@ import { formatPrice } from '@/utils/format-price';
 import Link from 'next/link';
 import mockPaymentService, { PaymentMethod } from '@/services/mock-payment';
 import emailService from '@/services/email-service';
+import wooCommerceService from '@/services/woocommerce-optimized';
 
 interface CheckoutForm {
   // Billing Information
@@ -46,15 +48,19 @@ interface CheckoutForm {
   shippingCountry: string;
   
   // Payment
-  paymentMethod: 'card' | 'transfer' | 'cash';
+  paymentMethod: 'google_pay' | 'apple_pay' | 'card' | 'transfer' | 'cash';
+  
+  // Shipping
+  shippingMethod: string;
   
   // Terms
   acceptTerms: boolean;
   acceptNewsletter: boolean;
 }
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const { items, total, itemCount, clearCart } = useCartStore();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -78,7 +84,8 @@ export default function CheckoutPage() {
     shippingCity: '',
     shippingPostcode: '',
     shippingCountry: 'PL',
-    paymentMethod: 'card',
+    paymentMethod: 'google_pay',
+    shippingMethod: 'free_shipping',
     acceptTerms: false,
     acceptNewsletter: false
   });
@@ -94,10 +101,107 @@ export default function CheckoutPage() {
   });
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [quickPaymentSelected, setQuickPaymentSelected] = useState(false);
+  
+  // Shipping state
+  const [shippingMethods, setShippingMethods] = useState<Array<{
+    id: number;
+    method_id: string;
+    method_title: string;
+    method_description: string;
+    cost: number;
+    free_shipping_threshold: number;
+    zone_id: number;
+    zone_name: string;
+    settings: any;
+  }>>([]);
+  const [shippingCost, setShippingCost] = useState(0);
+  const [isLoadingShipping, setIsLoadingShipping] = useState(false);
 
-  // Load payment methods
+  // Load shipping methods
+  const loadShippingMethods = async () => {
+    console.log('🚚 Loading shipping methods...', { 
+      country: form.shippingCountry, 
+      city: form.shippingCity 
+    });
+    setIsLoadingShipping(true);
+    try {
+      const methods = await wooCommerceService.getShippingMethods(
+        form.shippingCountry,
+        '', // state
+        form.shippingCity,
+        form.shippingPostcode
+      );
+      console.log('🚚 Shipping methods loaded:', methods);
+      setShippingMethods(methods);
+      
+      // Set default shipping method and cost
+      if (methods.length > 0) {
+        const defaultMethod = methods.find((m: any) => m.method_id === form.shippingMethod) || methods[0];
+        console.log('🚚 Default method selected:', defaultMethod);
+        setForm(prev => ({ ...prev, shippingMethod: defaultMethod.method_id }));
+        setShippingCost((defaultMethod.cost || 0) * 100); // Convert PLN to cents
+      }
+    } catch (error) {
+      console.error('Error loading shipping methods:', error);
+    } finally {
+      setIsLoadingShipping(false);
+    }
+  };
+
+  // Load payment methods and handle URL params
   useEffect(() => {
     setPaymentMethods(mockPaymentService.getPaymentMethods());
+    
+    // Handle payment method from URL
+    const paymentMethod = searchParams.get('payment');
+    if (paymentMethod && ['google_pay', 'apple_pay', 'card', 'transfer', 'cash'].includes(paymentMethod)) {
+      setForm(prev => ({ ...prev, paymentMethod: paymentMethod as any }));
+      setQuickPaymentSelected(['google_pay', 'apple_pay'].includes(paymentMethod));
+      
+      // TRUE QUICK PAYMENT - skip to payment step and use defaults
+      if (['google_pay', 'apple_pay'].includes(paymentMethod)) {
+        setCurrentStep(3); // Skip to payment step
+        
+        // Set default values for quick payment
+        setForm(prev => ({
+          ...prev,
+          // Default billing (can be changed later)
+          firstName: prev.firstName || 'Jan',
+          lastName: prev.lastName || 'Kowalski',
+          email: prev.email || 'jan.kowalski@example.com',
+          phone: prev.phone || '+48 123 456 789',
+          billingAddress: prev.billingAddress || 'ul. Przykładowa 1',
+          billingCity: prev.billingCity || 'Warszawa',
+          billingPostcode: prev.billingPostcode || '00-001',
+          billingCountry: 'PL',
+          
+          // Default shipping (same as billing)
+          shippingSameAsBilling: true,
+          shippingFirstName: prev.firstName || 'Jan',
+          shippingLastName: prev.lastName || 'Kowalski',
+          shippingAddress: prev.billingAddress || 'ul. Przykładowa 1',
+          shippingCity: prev.billingCity || 'Warszawa',
+          shippingPostcode: prev.billingPostcode || '00-001',
+          shippingCountry: 'PL',
+          
+          // Accept terms for quick payment
+          acceptTerms: true,
+        }));
+      }
+    }
+  }, [searchParams]);
+
+  // Load shipping methods when address changes
+  useEffect(() => {
+    if (form.shippingCountry && form.shippingCity) {
+      loadShippingMethods();
+    }
+  }, [form.shippingCountry, form.shippingCity, form.shippingPostcode]);
+
+  // Load shipping methods on initial load
+  useEffect(() => {
+    loadShippingMethods();
   }, []);
 
   // Redirect if cart is empty
@@ -156,6 +260,12 @@ export default function CheckoutPage() {
         setPaymentError('Proszę wypełnić wszystkie dane karty.');
         return;
       }
+    }
+
+    // For Google Pay and Apple Pay, show special processing message
+    if (['google_pay', 'apple_pay'].includes(form.paymentMethod)) {
+      setPaymentError(null);
+      setIsProcessingPayment(true);
     }
 
     setLoading(true);
@@ -240,12 +350,26 @@ export default function CheckoutPage() {
     }
   };
 
-  const shippingCost = total >= 20000 ? 0 : 1500; // Free shipping over 200 zł
-  const finalTotal = total + shippingCost;
+  // Calculate shipping cost based on selected method and cart total
+  const calculateShippingCost = () => {
+    const selectedMethod = shippingMethods.find((m: any) => m.method_id === form.shippingMethod);
+    if (!selectedMethod) return 0;
+    
+    // Check for free shipping conditions
+    if (selectedMethod.free_shipping_threshold > 0) {
+      const thresholdInCents = selectedMethod.free_shipping_threshold * 100; // Convert PLN to cents
+      return total >= thresholdInCents ? 0 : selectedMethod.cost * 100; // Convert PLN to cents
+    }
+    
+    return selectedMethod.cost * 100; // Convert PLN to cents
+  };
+  
+  const finalShippingCost = calculateShippingCost();
+  const finalTotal = total + finalShippingCost;
 
   if (orderComplete) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8">
+      <div className="bg-gray-50 flex items-center justify-center py-8">
         <div className="max-w-2xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -288,8 +412,56 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="bg-gray-50">
+      <div className="max-w-[95vw] mx-auto px-6 py-8">
+        
+        {/* Quick Payment Banner */}
+        {quickPaymentSelected && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 flex items-center justify-center">
+                  {form.paymentMethod === 'google_pay' ? (
+                    <svg viewBox="0 0 24 24" className="w-6 h-6">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="w-6 h-6">
+                      <path fill="#000" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                    </svg>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold text-blue-900">
+                  Szybka płatność: {form.paymentMethod === 'google_pay' ? 'Google Pay' : 'Apple Pay'}
+                </h3>
+              </div>
+              <p className="text-sm text-blue-700">
+                Pominięto kroki wypełniania danych! Użyto domyślnych wartości. Możesz je zmienić lub od razu zapłacić.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                >
+                  ✏️ Edytuj dane
+                </button>
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                >
+                  🚚 Zmień dostawę
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -556,6 +728,61 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
+                    {/* Shipping Methods */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Metoda dostawy
+                      </h3>
+                      
+                      {isLoadingShipping ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+                          <span className="ml-3 text-gray-600">Ładowanie metod dostawy...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {shippingMethods.map((method) => (
+                            <label key={method.id} className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                              <input
+                                type="radio"
+                                name="shippingMethod"
+                                value={method.method_id}
+                                checked={form.shippingMethod === method.method_id}
+                                onChange={(e) => {
+                                  setForm(prev => ({ ...prev, shippingMethod: e.target.value }));
+                                  setShippingCost((method.cost || 0) * 100); // Convert PLN to cents
+                                }}
+                                className="mr-3"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium text-gray-900">{method.method_title}</div>
+                                    <div className="text-sm text-gray-500">{method.method_description}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="font-semibold text-gray-900">
+                                      {method.free_shipping_threshold > 0 && total >= (method.free_shipping_threshold * 100)
+                                        ? 'Gratis' 
+                                        : method.cost > 0
+                                          ? formatPrice(method.cost * 100)
+                                          : 'Gratis'
+                                      }
+                                    </div>
+                                    {method.free_shipping_threshold > 0 && total < (method.free_shipping_threshold * 100) && (
+                                      <div className="text-xs text-green-600">
+                                        Darmowa dostawa od {formatPrice(method.free_shipping_threshold * 100)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="pt-4 flex gap-4">
                       <button
                         type="button"
@@ -583,9 +810,17 @@ export default function CheckoutPage() {
                     transition={{ duration: 0.3 }}
                     className="space-y-6"
                   >
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                      Metoda płatności
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Metoda płatności
+                      </h2>
+                      {quickPaymentSelected && (
+                        <div className="flex items-center space-x-2 text-sm text-blue-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Wybrana przez szybką płatność</span>
+                        </div>
+                      )}
+                    </div>
 
                     <div className="space-y-4">
                       {paymentMethods.map((method) => (
@@ -599,7 +834,24 @@ export default function CheckoutPage() {
                             className="mr-3"
                           />
                           <div className="flex items-center">
-                            <span className="text-2xl mr-3">{method.icon}</span>
+                            {method.icon === 'google_pay' ? (
+                              <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                                <svg viewBox="0 0 24 24" className="w-6 h-6">
+                                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                </svg>
+                              </div>
+                            ) : method.icon === 'apple_pay' ? (
+                              <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                                <svg viewBox="0 0 24 24" className="w-6 h-6">
+                                  <path fill="#000" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                                </svg>
+                              </div>
+                            ) : (
+                              <span className="text-2xl mr-3">{method.icon}</span>
+                            )}
                             <div>
                               <div className="font-medium">{method.name}</div>
                               <div className="text-sm text-gray-500">{method.description}</div>
@@ -613,6 +865,94 @@ export default function CheckoutPage() {
                       ))}
 
                     </div>
+
+                    {/* Quick Payment Info - for Google Pay and Apple Pay */}
+                    {['google_pay', 'apple_pay'].includes(form.paymentMethod) && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg"
+                      >
+                        <div className="flex items-center space-x-3 mb-4">
+                          {form.paymentMethod === 'google_pay' ? (
+                            <div className="w-10 h-10 flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" className="w-8 h-8">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                              </svg>
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" className="w-8 h-8">
+                                <path fill="#000" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                              </svg>
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {form.paymentMethod === 'google_pay' ? 'Google Pay' : 'Apple Pay'}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {form.paymentMethod === 'google_pay' 
+                                ? 'Szybka i bezpieczna płatność przez Google' 
+                                : 'Płatność przez Touch ID lub Face ID'
+                              }
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3 text-sm text-gray-700">
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span>Automatyczna autoryzacja biometryczna</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span>Przetwarzanie w czasie rzeczywistym</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span>Najwyższy poziom bezpieczeństwa</span>
+                          </div>
+                        </div>
+
+                        {isProcessingPayment && (
+                          <div className="mt-4 p-4 bg-blue-100 border border-blue-300 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                              <span className="text-blue-800 font-medium">
+                                Przetwarzanie płatności {form.paymentMethod === 'google_pay' ? 'Google Pay' : 'Apple Pay'}...
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Quick Payment Button */}
+                        {quickPaymentSelected && !isProcessingPayment && (
+                          <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                            <div className="text-center">
+                              <h4 className="text-lg font-semibold text-green-900 mb-2">
+                                Gotowy do szybkiej płatności!
+                              </h4>
+                              <p className="text-sm text-green-700 mb-4">
+                                Wszystkie dane są wypełnione. Kliknij poniżej, aby zapłacić jednym kliknięciem.
+                              </p>
+                              <button
+                                onClick={handleSubmit}
+                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center space-x-2"
+                              >
+                                <span>💳</span>
+                                <span>Zapłać {formatPrice(total)} teraz</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
 
                     {/* Card Details Form - only for card payment */}
                     {form.paymentMethod === 'card' && (
@@ -844,11 +1184,11 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Dostawa:</span>
-                  <span>{shippingCost === 0 ? 'Gratis' : formatPrice(shippingCost)}</span>
+                  <span>{finalShippingCost === 0 ? 'Gratis' : formatPrice(finalShippingCost)}</span>
                 </div>
-                {shippingCost > 0 && (
+                {finalShippingCost > 0 && (
                   <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
-                    Darmowa dostawa od 200 zł
+                    Darmowa dostawa od {formatPrice(20000)}
                   </div>
                 )}
                 <div className="border-t border-gray-200 pt-3">
@@ -871,5 +1211,20 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Ładowanie...</p>
+        </div>
+      </div>
+    }>
+      <CheckoutPageContent />
+    </Suspense>
   );
 }

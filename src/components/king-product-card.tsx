@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/cart-store';
+import { useFavoritesStore } from '@/stores/favorites-store';
+import QuickViewModal from '@/components/ui/quick-view-modal';
 
 interface KingProductCardProps {
   product: WooProduct;
@@ -24,21 +26,82 @@ export default function KingProductCard({
   tabType
 }: KingProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const { addItem, openCart } = useCartStore();
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const [showVariants, setShowVariants] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<string>('');
+  const [variationsLoaded, setVariationsLoaded] = useState(false);
+  const [variations, setVariations] = useState<any[]>([]);
+  
+  // Safely access stores with error handling
+  let addItem, openCart, toggleFavorite, isFavorite;
+  try {
+    const cartStore = useCartStore();
+    addItem = cartStore.addItem;
+    openCart = cartStore.openCart;
+  } catch (error) {
+    console.warn('Cart store not available:', error);
+    addItem = () => {};
+    openCart = () => {};
+  }
+  
+  try {
+    const favoritesStore = useFavoritesStore();
+    toggleFavorite = favoritesStore.toggleFavorite;
+    isFavorite = favoritesStore.isFavorite;
+  } catch (error) {
+    console.warn('Favorites store not available:', error);
+    toggleFavorite = () => {};
+    isFavorite = () => false;
+  }
 
   const handleAddToCart = async () => {
     setIsLoading(true);
     try {
-      const cartItem = {
-        id: product.id,
-        name: product.name,
-        price: parseFloat(product.price),
-        regular_price: parseFloat(product.regular_price),
-        sale_price: parseFloat(product.sale_price),
-        image: imageUrl,
-        permalink: `/produkt/${product.slug}`,
-      };
+      let cartItem;
+      
+      if (product.type === 'variable' && selectedVariant) {
+        // For variable products with selected variant, get the specific variation
+        const variations = await wooCommerceService.getProductVariations(product.id);
+        const selectedVariation = variations.find((variation: any) => 
+          variation.attributes.some((attr: any) => 
+            attr.slug === 'pa_pojemnosc' && attr.option === selectedVariant
+          )
+        );
+        
+        if (selectedVariation) {
+          cartItem = {
+            id: selectedVariation.id,
+            name: `${product.name} - ${selectedVariant}`,
+            price: parseFloat(selectedVariation.price),
+            regular_price: parseFloat(selectedVariation.regular_price),
+            sale_price: parseFloat(selectedVariation.sale_price),
+            image: imageUrl,
+            permalink: `/produkt/${product.slug}`,
+          };
+        } else {
+          // Fallback to main product if variation not found
+          cartItem = {
+            id: product.id,
+            name: product.name,
+            price: parseFloat(product.price),
+            regular_price: parseFloat(product.regular_price),
+            sale_price: parseFloat(product.sale_price),
+            image: imageUrl,
+            permalink: `/produkt/${product.slug}`,
+          };
+        }
+      } else {
+        // For simple products or variable products without selected variant
+        cartItem = {
+          id: product.id,
+          name: product.name,
+          price: parseFloat(product.price),
+          regular_price: parseFloat(product.regular_price),
+          sale_price: parseFloat(product.sale_price),
+          image: imageUrl,
+          permalink: `/produkt/${product.slug}`,
+        };
+      }
 
       console.log('🛒 Adding to cart from card:', cartItem);
       addItem(cartItem);
@@ -51,13 +114,56 @@ export default function KingProductCard({
   };
 
   const handleToggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    // TODO: Implement favorites functionality
+    toggleFavorite(product);
   };
 
   const handleQuickView = () => {
-    // TODO: Implement quick view modal
-    console.log('Quick view:', product.id);
+    setIsQuickViewOpen(true);
+  };
+
+  const handleVariantSelect = (variant: string) => {
+    setSelectedVariant(variant);
+    setShowVariants(false);
+  };
+
+  const handleShowVariants = async () => {
+    if (!variationsLoaded) {
+      try {
+        const variations = await wooCommerceService.getProductVariations(product.id);
+        setVariations(variations);
+        setVariationsLoaded(true);
+      } catch (error) {
+        console.error('Error loading variations:', error);
+      }
+    }
+    setShowVariants(true);
+  };
+
+  const handleAddToCartWithVariant = async () => {
+    if (product.type === 'variable' && !selectedVariant) {
+      handleShowVariants();
+      return;
+    }
+    await handleAddToCart();
+  };
+
+  // Get available variants from loaded variations
+  const getAvailableVariants = () => {
+    if (variations.length > 0) {
+      return variations.map((variation: any) => {
+        const capacityAttr = variation.attributes?.find((attr: any) => 
+          attr.slug === 'pa_pojemnosc'
+        );
+        return capacityAttr?.option || variation.name;
+      });
+    }
+    
+    // Fallback to product attributes
+    if (!product.attributes) return [];
+    const capacityAttr = product.attributes.find((attr: any) => 
+      attr.name === 'Pojemność' || attr.slug === 'pa_pojemnosc'
+    );
+    return capacityAttr ? capacityAttr.options : [];
   };
 
   const isOnSale = wooCommerceService.isProductOnSale(product);
@@ -65,6 +171,15 @@ export default function KingProductCard({
   const imageUrl = wooCommerceService.getProductImageUrl(product, 'medium');
   const price = wooCommerceService.formatPrice(product.price);
   const regularPrice = wooCommerceService.formatPrice(product.regular_price);
+
+  // Helper function to get brand from attributes
+  const getBrand = (): string | null => {
+    if (!product.attributes) return null;
+    const brandAttr = product.attributes.find((attr: any) => 
+      attr.name.toLowerCase().includes('marka')
+    );
+    return brandAttr ? brandAttr.options[0] : null;
+  };
 
   const renderPrice = () => {
     if (isOnSale) {
@@ -114,6 +229,8 @@ export default function KingProductCard({
                 src={imageUrl}
                 alt={product.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+                decoding="async"
               />
               {isOnSale && (
                 <Badge variant="destructive" className="absolute top-2 left-2 text-xs">
@@ -122,7 +239,7 @@ export default function KingProductCard({
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-3 pt-2">
+          <CardContent className="px-5 py-2">
             <h3 className="font-medium text-sm text-foreground line-clamp-2 mb-1">
               {product.name}
             </h3>
@@ -144,6 +261,8 @@ export default function KingProductCard({
                 src={imageUrl}
                 alt={product.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+                decoding="async"
               />
               {isOnSale && (
                 <Badge variant="destructive" className="absolute top-3 left-3 text-sm border-2 border-destructive/20 rounded-xl px-3 py-1">
@@ -162,7 +281,7 @@ export default function KingProductCard({
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-4 pt-3">
+          <CardContent className="px-6 py-3">
             <h3 className="font-semibold text-lg text-foreground line-clamp-2 mb-2">
               {product.name}
             </h3>
@@ -175,22 +294,54 @@ export default function KingProductCard({
           </CardContent>
         </Link>
         {showActions && (
-          <CardFooter className="p-4 pt-0">
+          <CardFooter className="px-6 pt-0 pb-4">
             <div className="flex gap-2 w-full">
-              <Button 
-                onClick={handleAddToCart}
-                disabled={isLoading || product.stock_status === 'outofstock'}
-                className="flex-1"
-                size="sm"
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                {isLoading ? 'Dodawanie...' : 'Dodaj do koszyka'}
-              </Button>
+              {product.type === 'variable' && showVariants ? (
+                <div className="flex-1 space-y-2">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Wybierz pojemność:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {getAvailableVariants().map((variant: string) => (
+                      <button
+                        key={variant}
+                        onClick={() => handleVariantSelect(variant)}
+                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                          selectedVariant === variant
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-black'
+                        }`}
+                      >
+                        {variant}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedVariant && (
+                    <Button 
+                      onClick={handleAddToCart}
+                      disabled={isLoading || product.stock_status === 'outofstock'}
+                      className="w-full h-12 py-6 hover:bg-black hover:text-white transition-colors text-base"
+                      size="sm"
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      {isLoading ? 'Dodawanie...' : `Dodaj ${selectedVariant} do koszyka`}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <Button 
+                  onClick={handleAddToCartWithVariant}
+                  disabled={isLoading || product.stock_status === 'outofstock'}
+                  className="flex-1 h-12 py-6 hover:bg-black hover:text-white transition-colors text-base"
+                  size="sm"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  {isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleQuickView}
-                className="px-3"
+                className="px-3 h-10 hover:bg-black hover:text-white transition-colors"
               >
                 <Eye className="w-4 h-4" />
               </Button>
@@ -198,20 +349,27 @@ export default function KingProductCard({
                 variant="outline"
                 size="sm"
                 onClick={handleToggleFavorite}
-                className={`px-3 ${isFavorite ? 'text-destructive' : ''}`}
+                className={`px-3 h-10 hover:bg-black hover:text-white transition-colors ${isFavorite(product.id) ? 'text-destructive' : ''}`}
               >
-                <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
               </Button>
             </div>
           </CardFooter>
         )}
+        
+        {/* Quick View Modal */}
+        <QuickViewModal
+          isOpen={isQuickViewOpen}
+          onClose={() => setIsQuickViewOpen(false)}
+          product={product}
+        />
       </Card>
     );
   }
 
   // Default variant - matching the screenshot design
   return (
-    <Card className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border-gray-200 rounded-xl overflow-hidden p-0">
+    <Card className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border-gray-200 rounded-3xl overflow-hidden p-0">
       <Link href={`/produkt/${product.slug}`} className="flex flex-col flex-grow">
         <CardHeader className="p-0 relative">
           <div className="relative aspect-square overflow-hidden">
@@ -224,19 +382,19 @@ export default function KingProductCard({
             {/* Badge - top left */}
             <div className="absolute top-2 left-2">
               {tabType === 'promocje' || isOnSale ? (
-                <Badge className="bg-black text-white text-xs px-3 py-1 rounded-md border-0">
+                <Badge className="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full border-0">
                   Promocja
                 </Badge>
               ) : tabType === 'nowosci' ? (
-                <Badge className="bg-black text-white text-xs px-3 py-1 rounded-md border-0">
+                <Badge className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full border-0">
                   Nowość
                 </Badge>
               ) : tabType === 'polecane' || product.featured ? (
-                <Badge className="bg-black text-white text-xs px-3 py-1 rounded-md border-0">
+                <Badge className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full border-0">
                   Polecany
                 </Badge>
               ) : (
-                <Badge className="bg-black text-white text-xs px-3 py-1 rounded-md border-0">
+                <Badge className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full border-0">
                   Nowość
                 </Badge>
               )}
@@ -262,18 +420,30 @@ export default function KingProductCard({
                 }}
                 className="w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
               >
-                <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current text-red-500' : 'text-gray-700'}`} />
+                <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current text-red-500' : 'text-gray-700'}`} />
               </button>
             </div>
           </div>
         </CardHeader>
         
         <CardContent className="px-4 py-2 flex-grow">
-          <div className="text-sm text-gray-500 mb-1">
+          <div className="text-sm text-gray-500 mb-2 flex items-center">
             {product.categories && product.categories.length > 0 
-              ? product.categories[0].name 
+              ? (() => {
+                  // Znajdź pierwszą kategorię, która nie jest "Wszystkie kategorie"
+                  const mainCategory = product.categories.find(cat => 
+                    cat.name !== 'Wszystkie kategorie' && cat.name !== 'Wszystkie'
+                  );
+                  return mainCategory ? mainCategory.name : product.categories[0].name;
+                })()
               : 'Bez kategorii'
             }
+            {getBrand() && (
+              <>
+                <div className="w-1 h-1 bg-gray-300 rounded-full mx-2"></div>
+                <span className="text-xs text-gray-400">{getBrand()}</span>
+              </>
+            )}
           </div>
           <h3 className="font-bold text-foreground text-lg mb-2 line-clamp-2">
             {product.name}
@@ -286,21 +456,68 @@ export default function KingProductCard({
       
       {showActions && (
         <CardFooter className="px-4 pb-4 mt-auto">
-          <Button 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleAddToCart();
-            }}
-            disabled={isLoading || product.stock_status === 'outofstock'}
-            className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-3 font-medium"
-            size="lg"
-          >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            {isLoading ? 'Dodawanie...' : 'Dodaj do koszyka'}
-          </Button>
+          {product.type === 'variable' && showVariants ? (
+            <div className="w-full space-y-3">
+              <div className="text-sm font-medium text-gray-700">Wybierz pojemność:</div>
+              <div className="flex flex-wrap gap-2">
+                {getAvailableVariants().map((variant: string) => (
+                  <button
+                    key={variant}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleVariantSelect(variant);
+                    }}
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                      selectedVariant === variant
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-black'
+                    }`}
+                  >
+                    {variant}
+                  </button>
+                ))}
+              </div>
+              {selectedVariant && (
+                <Button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAddToCart();
+                  }}
+                  disabled={isLoading || product.stock_status === 'outofstock'}
+                  className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-6 font-medium text-base"
+                  size="lg"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  {isLoading ? 'Dodawanie...' : `Dodaj ${selectedVariant} do koszyka`}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddToCartWithVariant();
+              }}
+              disabled={isLoading || product.stock_status === 'outofstock'}
+              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-6 font-medium text-base"
+              size="lg"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              {isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}
+            </Button>
+          )}
         </CardFooter>
       )}
+      
+      {/* Quick View Modal */}
+      <QuickViewModal
+        isOpen={isQuickViewOpen}
+        onClose={() => setIsQuickViewOpen(false)}
+        product={product}
+      />
     </Card>
   );
 }

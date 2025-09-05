@@ -2,15 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, MapPin, Edit, Save, X, Shield, CreditCard, Truck } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Edit, Save, X, Shield, CreditCard, Truck, Heart, ShoppingCart, Eye } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
+import { useFavoritesStore } from '@/stores/favorites-store';
+import { useCartStore } from '@/stores/cart-store';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import wooCommerceService from '@/services/woocommerce-optimized';
 
 export default function MyAccountPage() {
   const router = useRouter();
   const { user, isAuthenticated, updateUser, logout } = useAuthStore();
+  const { favorites, removeFromFavorites } = useFavoritesStore();
+  const { addItem, openCart } = useCartStore();
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -80,6 +88,26 @@ export default function MyAccountPage() {
     }
   };
 
+  const handleAddToCart = (product: any) => {
+    const cartItem = {
+      id: product.id,
+      name: product.name,
+      price: parseFloat(product.price),
+      regular_price: parseFloat(product.regular_price),
+      sale_price: parseFloat(product.sale_price),
+      image: wooCommerceService.getProductImageUrl(product, 'medium'),
+      permalink: `/produkt/${product.slug}`,
+    };
+
+    console.log('🛒 Adding to cart from favorites:', cartItem);
+    addItem(cartItem);
+    openCart();
+  };
+
+  const handleRemoveFromFavorites = (productId: number) => {
+    removeFromFavorites(productId);
+  };
+
   const handleCancel = () => {
     // Reset form to original user data
     if (user) {
@@ -114,7 +142,7 @@ export default function MyAccountPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-[95vw] mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -125,11 +153,48 @@ export default function MyAccountPage() {
           </p>
         </div>
 
+        {/* Tabs */}
+        <div className="mb-8">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'profile'
+                    ? 'border-black text-black'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <User className="w-4 h-4 inline mr-2" />
+                Profil
+              </button>
+              <button
+                onClick={() => setActiveTab('favorites')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'favorites'
+                    ? 'border-black text-black'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Heart className="w-4 h-4 inline mr-2" />
+                Ulubione
+                {favorites.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {favorites.length}
+                  </Badge>
+                )}
+              </button>
+            </nav>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
-            <motion.div
+            {activeTab === 'profile' && (
+              <>
+                {/* Personal Information */}
+                <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -407,6 +472,138 @@ export default function MyAccountPage() {
                 </div>
               </div>
             </motion.div>
+              </>
+            )}
+
+            {activeTab === 'favorites' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <Heart className="w-5 h-5 mr-2 text-red-500" />
+                    Moje ulubione produkty
+                  </h2>
+                  <Badge variant="secondary">
+                    {favorites.length} {favorites.length === 1 ? 'produkt' : 'produktów'}
+                  </Badge>
+                </div>
+
+                {favorites.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Brak ulubionych produktów
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                      Dodaj produkty do ulubionych, klikając ikonę serca na kartach produktów
+                    </p>
+                    <Link href="/sklep">
+                      <Button>
+                        Przejdź do sklepu
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {favorites.map((product) => {
+                      const isOnSale = wooCommerceService.isProductOnSale(product);
+                      const discount = wooCommerceService.getProductDiscount(product);
+                      const imageUrl = wooCommerceService.getProductImageUrl(product, 'medium');
+                      const price = wooCommerceService.formatPrice(product.price);
+                      const regularPrice = wooCommerceService.formatPrice(product.regular_price);
+
+                      return (
+                        <div
+                          key={product.id}
+                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                        >
+                          {/* Product Image */}
+                          <div className="relative aspect-square bg-gray-100">
+                            <img
+                              src={imageUrl}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                            {isOnSale && (
+                              <Badge 
+                                variant="destructive" 
+                                className="absolute top-2 left-2"
+                              >
+                                -{discount}%
+                              </Badge>
+                            )}
+                            <button
+                              onClick={() => handleRemoveFromFavorites(product.id)}
+                              className="absolute top-2 right-2 w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
+                            >
+                              <Heart className="w-4 h-4 fill-current text-red-500" />
+                            </button>
+                          </div>
+
+                          {/* Product Info */}
+                          <div className="p-4">
+                            <div className="text-sm text-gray-500 mb-1">
+                              {product.categories && product.categories.length > 0 
+                                ? (() => {
+                                    // Znajdź pierwszą kategorię, która nie jest "Wszystkie kategorie"
+                                    const mainCategory = product.categories.find(cat => 
+                                      cat.name !== 'Wszystkie kategorie' && cat.name !== 'Wszystkie'
+                                    );
+                                    return mainCategory ? mainCategory.name : product.categories[0].name;
+                                  })()
+                                : 'Bez kategorii'
+                              }
+                            </div>
+                            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                              {product.name}
+                            </h3>
+                            
+                            {/* Price */}
+                            <div className="mb-4">
+                              {isOnSale ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg font-bold text-foreground">{price}</span>
+                                  <span className="text-sm text-muted-foreground line-through">{regularPrice}</span>
+                                </div>
+                              ) : (
+                                <span className="text-lg font-bold text-foreground">{price}</span>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                asChild
+                              >
+                                <Link href={`/produkt/${product.slug}`}>
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  Zobacz
+                                </Link>
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleAddToCart(product)}
+                              >
+                                <ShoppingCart className="w-4 h-4 mr-1" />
+                                Do koszyka
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </motion.div>
+            )}
           </div>
 
           {/* Sidebar */}

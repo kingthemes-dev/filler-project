@@ -1,9 +1,11 @@
+'use client';
+
 import { Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-black text-white py-12 mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="bg-black text-white py-12 rounded-t-3xl mx-6">
+      <div className="max-w-[95vw] mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           
           {/* Logo i opis */}

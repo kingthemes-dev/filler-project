@@ -56,11 +56,11 @@ export default function KingProductGrid({
   // Grid columns configuration
   const gridColsClasses = {
     1: 'grid-cols-1',
-    2: 'grid-cols-1 sm:grid-cols-2',
-    3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-    5: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
-    6: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6'
+    2: 'grid-cols-2 lg:grid-cols-2',
+    3: 'grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-2 lg:grid-cols-4',
+    5: 'grid-cols-2 lg:grid-cols-4 xl:grid-cols-5',
+    6: 'grid-cols-2 lg:grid-cols-4 xl:grid-cols-6'
   };
 
   // Fetch products
@@ -249,7 +249,7 @@ export default function KingProductGrid({
       {/* Products Grid */}
       {products.length > 0 ? (
         <>
-          <div className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-1' : gridColsClasses[gridCols]}`}>
+          <div className={`grid gap-4 lg:gap-6 ${viewMode === 'list' ? 'grid-cols-1' : gridColsClasses[gridCols]}`}>
             {products.map((product) => (
               <KingProductCard
                 key={product.id}

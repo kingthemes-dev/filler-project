@@ -101,15 +101,63 @@ export default function KingProductTabs() {
     ));
   }, []);
 
-  // Fetch products when tab changes
+  // Fetch all products on mount for better performance
   useEffect(() => {
-    fetchTabProducts(activeTab);
-  }, [activeTab, fetchTabProducts]);
+    const fetchAllProducts = async () => {
+      try {
+        console.log('🔄 Fetching all products in parallel');
+        
+        // Fetch all product types in parallel
+        const [newProducts, saleProducts, featuredProducts] = await Promise.all([
+          wooCommerceService.getProducts({
+            orderby: 'date',
+            order: 'desc',
+            per_page: 4
+          }),
+          wooCommerceService.getProducts({
+            on_sale: true,
+            per_page: 5
+          }),
+          wooCommerceService.getProducts({
+            featured: true,
+            per_page: 4
+          })
+        ]);
 
-  // Fetch initial tab products
+        // Update all tabs with their respective products
+        setTabs(prev => prev.map(tab => {
+          let products: any[] = [];
+          switch (tab.id) {
+            case 'nowosci':
+              products = newProducts.data || [];
+              break;
+            case 'promocje':
+              products = saleProducts.data || [];
+              break;
+            case 'polecane':
+              products = featuredProducts.data || [];
+              break;
+          }
+          return { ...tab, products, loading: false };
+        }));
+
+        console.log('✅ All products fetched successfully');
+      } catch (error) {
+        console.error('❌ Error fetching products:', error);
+        setTabs(prev => prev.map(tab => ({ ...tab, loading: false })));
+      }
+    };
+
+    fetchAllProducts();
+  }, []);
+
+  // Fetch products when tab changes (only if not already loaded)
   useEffect(() => {
-    fetchTabProducts('nowosci');
-  }, [fetchTabProducts]);
+    const activeTabData = tabs.find(tab => tab.id === activeTab);
+    if (activeTabData && activeTabData.products.length === 0 && !activeTabData.loading) {
+      fetchTabProducts(activeTab);
+    }
+  }, [activeTab, fetchTabProducts, tabs]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -118,12 +166,12 @@ export default function KingProductTabs() {
   const activeTabData = tabs.find(tab => tab.id === activeTab);
 
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
+    <section className="py-16 bg-white mx-6 rounded-3xl">
+      <div className="max-w-[95vw] mx-auto px-6">
         {/* Tabs */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Left side - Tabs */}
-          <div className="flex space-x-8 mb-6 lg:mb-0">
+          <div className="flex space-x-8 mb-4 lg:mb-0">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -162,7 +210,7 @@ export default function KingProductTabs() {
           {/* Right side - View All Products */}
           <Link
             href="/sklep"
-            className="relative text-sm text-black hover:text-black transition-colors group"
+            className="relative text-lg text-black hover:text-black transition-colors group self-start lg:self-auto"
           >
             Wszystkie produkty
             {/* Animated underline */}
@@ -174,10 +222,10 @@ export default function KingProductTabs() {
         <div className="min-h-[400px]">
           {activeTabData?.loading ? (
             // Loading state
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {[...Array(4)].map((_, index) => (
                 <div key={index} className="animate-pulse">
-                  <div className="bg-gray-200 aspect-square rounded-lg mb-4"></div>
+                  <div className="bg-gray-200 aspect-square rounded-3xl mb-4"></div>
                   <div className="space-y-2">
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                     <div className="h-4 bg-gray-200 rounded w-1/2"></div>
@@ -187,7 +235,7 @@ export default function KingProductTabs() {
             </div>
           ) : activeTabData?.products && activeTabData.products.length > 0 ? (
             // Products grid
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {activeTabData.products.map((product) => (
                 <KingProductCard 
                   key={product.id} 

@@ -52,40 +52,10 @@ export const useCartStore = create<CartStore>()(
       // Actions
       addItem: async (item) => {
         try {
-          // Add to WooCommerce cart via Store API
-          const response = await wooCommerceService.addToCart(
-            item.id, 
-            1, 
-            item.variant?.id
-          );
-
-          if (response.success) {
-            // Update local state
-            const { items } = get();
-            const existingItemIndex = items.findIndex(
-              (existingItem) => 
-                existingItem.id === item.id && 
-                existingItem.variant?.id === item.variant?.id
-            );
-
-            if (existingItemIndex > -1) {
-              // Update existing item quantity
-              const updatedItems = [...items];
-              updatedItems[existingItemIndex].quantity += 1;
-              
-              set({ items: updatedItems });
-            } else {
-              // Add new item
-              const newItem: CartItem = { ...item, quantity: 1 };
-              set({ items: [...items, newItem] });
-            }
-
-            // Recalculate totals
-            get().calculateTotal();
-          }
-        } catch (error) {
-          console.error('Error adding item to cart:', error);
-          // Fallback to local state only
+          // For headless setup, use local state only
+          // WooCommerce API sync can be added later if needed
+          
+          // Update local state
           const { items } = get();
           const existingItemIndex = items.findIndex(
             (existingItem) => 
@@ -94,14 +64,42 @@ export const useCartStore = create<CartStore>()(
           );
 
           if (existingItemIndex > -1) {
+            // Update existing item quantity
             const updatedItems = [...items];
             updatedItems[existingItemIndex].quantity += 1;
+            
             set({ items: updatedItems });
           } else {
+            // Add new item
             const newItem: CartItem = { ...item, quantity: 1 };
             set({ items: [...items, newItem] });
           }
+
+          // Recalculate totals
           get().calculateTotal();
+          
+          console.log('✅ Item added to local cart:', item);
+          
+          // Optional: Try to sync with WooCommerce API (non-blocking)
+          try {
+            const apiResponse = await wooCommerceService.addToCart(
+              item.id, 
+              1, 
+              item.variant?.id
+            );
+            
+            if (apiResponse.success) {
+              console.log('✅ WooCommerce API sync successful');
+            } else {
+              console.log('ℹ️ WooCommerce API sync skipped (headless mode)');
+            }
+          } catch (apiError) {
+            // This should not happen anymore, but just in case
+            console.log('ℹ️ WooCommerce API sync skipped (headless mode)');
+          }
+        } catch (error) {
+          console.error('❌ Error adding item to cart:', error);
+          throw error;
         }
       },
 

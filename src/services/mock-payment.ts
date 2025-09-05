@@ -31,6 +31,22 @@ export interface PaymentResponse {
 export class MockPaymentService {
   private paymentMethods: PaymentMethod[] = [
     {
+      id: 'google_pay',
+      name: 'Google Pay',
+      description: 'Szybka i bezpieczna płatność',
+      icon: 'google_pay',
+      processingTime: 1500,
+      successRate: 0.98
+    },
+    {
+      id: 'apple_pay',
+      name: 'Apple Pay',
+      description: 'Płatność przez Touch ID lub Face ID',
+      icon: 'apple_pay',
+      processingTime: 1500,
+      successRate: 0.98
+    },
+    {
       id: 'card',
       name: 'Karta kredytowa/debetowa',
       description: 'Visa, Mastercard, American Express',
@@ -64,6 +80,62 @@ export class MockPaymentService {
   }
 
   /**
+   * Sprawdź czy Google Pay jest dostępne
+   */
+  async isGooglePayAvailable(): Promise<boolean> {
+    // W prawdziwej implementacji sprawdzamy czy Google Pay API jest dostępne
+    return typeof window !== 'undefined' && 'PaymentRequest' in window;
+  }
+
+  /**
+   * Sprawdź czy Apple Pay jest dostępne
+   */
+  async isApplePayAvailable(): Promise<boolean> {
+    // W prawdziwej implementacji sprawdzamy czy Apple Pay jest dostępne
+    return typeof window !== 'undefined' && 
+           'ApplePaySession' in window && 
+           (window as any).ApplePaySession.canMakePayments();
+  }
+
+  /**
+   * Inicjalizuj Google Pay
+   */
+  async initializeGooglePay(): Promise<any> {
+    if (typeof window === 'undefined') return null;
+    
+    // W prawdziwej implementacji inicjalizujemy Google Pay API
+    return {
+      isReadyToPay: true,
+      paymentDataRequest: {
+        apiVersion: 2,
+        apiVersionMinor: 0,
+        allowedPaymentMethods: [{
+          type: 'CARD',
+          parameters: {
+            allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+            allowedCardNetworks: ['AMEX', 'DISCOVER', 'JCB', 'MASTERCARD', 'VISA']
+          }
+        }]
+      }
+    };
+  }
+
+  /**
+   * Inicjalizuj Apple Pay
+   */
+  async initializeApplePay(): Promise<any> {
+    if (typeof window === 'undefined') return null;
+    
+    // W prawdziwej implementacji inicjalizujemy Apple Pay
+    return {
+      isReadyToPay: true,
+      supportedNetworks: ['visa', 'masterCard', 'amex'],
+      countryCode: 'PL',
+      currencyCode: 'PLN'
+    };
+  }
+
+  /**
    * Symuluj proces płatności
    */
   async processPayment(request: PaymentRequest): Promise<PaymentResponse> {
@@ -73,7 +145,16 @@ export class MockPaymentService {
       throw new Error('Nieznana metoda płatności');
     }
 
-    // Symuluj czas przetwarzania
+    // Specjalne obsługi dla Google Pay i Apple Pay
+    if (request.method === 'google_pay') {
+      return await this.processGooglePay(request);
+    }
+    
+    if (request.method === 'apple_pay') {
+      return await this.processApplePay(request);
+    }
+
+    // Standardowe metody płatności
     await this.delay(method.processingTime);
 
     // Symuluj sukces/błąd na podstawie success rate
@@ -96,6 +177,50 @@ export class MockPaymentService {
         processingTime: method.processingTime
       };
     }
+  }
+
+  /**
+   * Przetwórz płatność Google Pay
+   */
+  async processGooglePay(request: PaymentRequest): Promise<PaymentResponse> {
+    // Symuluj inicjalizację Google Pay
+    await this.delay(500);
+    
+    // Symuluj autoryzację biometryczną
+    await this.delay(800);
+    
+    // Symuluj przetwarzanie płatności
+    await this.delay(200);
+    
+    return {
+      success: true,
+      transactionId: this.generateTransactionId(),
+      status: 'completed',
+      message: 'Płatność Google Pay zrealizowana pomyślnie',
+      processingTime: 1500
+    };
+  }
+
+  /**
+   * Przetwórz płatność Apple Pay
+   */
+  async processApplePay(request: PaymentRequest): Promise<PaymentResponse> {
+    // Symuluj inicjalizację Apple Pay
+    await this.delay(500);
+    
+    // Symuluj Touch ID/Face ID
+    await this.delay(800);
+    
+    // Symuluj przetwarzanie płatności
+    await this.delay(200);
+    
+    return {
+      success: true,
+      transactionId: this.generateTransactionId(),
+      status: 'completed',
+      message: 'Płatność Apple Pay zrealizowana pomyślnie',
+      processingTime: 1500
+    };
   }
 
   /**

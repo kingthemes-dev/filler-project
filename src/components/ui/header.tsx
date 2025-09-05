@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
+import { useFavoritesStore } from '@/stores/favorites-store';
 import Link from 'next/link';
 import EmailNotificationCenter from './email/email-notification-center';
 import SearchBar from './search/search-bar';
+import FavoritesModal from './favorites-modal';
 
 
 
@@ -15,16 +17,60 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEmailCenterOpen, setIsEmailCenterOpen] = useState(false);
-  const { itemCount, openCart } = useCartStore();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Safely access stores with error handling
+  let itemCount = 0, openCart = () => {}, user = null, isAuthenticated = false, logout = () => {};
+  let openFavoritesModal = () => {}, getFavoritesCount = () => 0, favorites = [];
+  
+  try {
+    const cartStore = useCartStore();
+    itemCount = cartStore.itemCount;
+    openCart = cartStore.openCart;
+  } catch (error) {
+    console.warn('Cart store not available:', error);
+  }
+  
+  try {
+    const authStore = useAuthStore();
+    user = authStore.user;
+    isAuthenticated = authStore.isAuthenticated;
+    logout = authStore.logout;
+  } catch (error) {
+    console.warn('Auth store not available:', error);
+  }
+  
+  try {
+    const favoritesStore = useFavoritesStore();
+    openFavoritesModal = favoritesStore.openFavoritesModal;
+    getFavoritesCount = favoritesStore.getFavoritesCount;
+    favorites = favoritesStore.favorites;
+  } catch (error) {
+    console.warn('Favorites store not available:', error);
+  }
+
+  // Fix hydration issue by syncing favorites count after mount
+  useEffect(() => {
+    setIsMounted(true);
+    setFavoritesCount(getFavoritesCount());
+  }, [getFavoritesCount]);
+
+  // Update favorites count when favorites array changes
+  useEffect(() => {
+    if (isMounted) {
+      setFavoritesCount(favorites.length);
+    }
+  }, [favorites.length, isMounted]);
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
+      <header className="bg-white sticky top-0 z-50">
+      <div className="max-w-[95vw] mx-auto px-6">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center ml-1">
             <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center mr-3">
               <span className="text-white text-xl font-bold">F</span>
             </div>
@@ -52,11 +98,21 @@ export default function Header() {
 
                                 {/* Right side icons */}
                       <div className="flex items-center space-x-4 lg:space-x-6">
-                        {/* Search - visible on all screens */}
-                        <SearchBar 
-                          placeholder="Szukaj produktów..."
-                          className="w-64"
-                        />
+                        {/* Search - desktop full bar, mobile icon */}
+                        <div className="hidden md:block">
+                          <SearchBar 
+                            placeholder="Szukaj produktów..."
+                            className="w-64"
+                          />
+                        </div>
+                        
+                        {/* Mobile search icon */}
+                        <button 
+                          className="md:hidden text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
+                          onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+                        >
+                          <Search className="w-6 h-6" />
+                        </button>
                         
                         {/* Email Notification Center - Admin Only */}
                         {isAuthenticated && user?.role === 'admin' && (
@@ -108,8 +164,16 @@ export default function Header() {
                             </button>
                           )}
                           
-                          <button className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded">
+                          <button 
+                            className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative"
+                            onClick={openFavoritesModal}
+                          >
                             <Heart className="w-6 h-6" />
+                            {isMounted && favoritesCount > 0 && (
+                              <span className="pointer-events-none absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white">
+                                {favoritesCount}
+                              </span>
+                            )}
                           </button>
                         </div>
                         
@@ -144,6 +208,26 @@ export default function Header() {
                   </div>
         </div>
         
+        {/* Mobile Search Bar */}
+        <AnimatePresence>
+          {isMobileSearchOpen && (
+            <motion.div
+              className="md:hidden bg-white border-t border-gray-200 shadow-lg"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <div className="px-4 py-4">
+                <SearchBar 
+                  placeholder="Szukaj produktów..."
+                  className="w-full"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
         {/* Mobile Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
@@ -160,28 +244,40 @@ export default function Header() {
                   <a 
                     href="/" 
                     className="block text-lg font-medium text-gray-700 hover:text-black transition-colors py-3 border-b border-gray-100"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsMobileSearchOpen(false);
+                    }}
                   >
                     Strona główna
                   </a>
                   <a 
                     href="/sklep" 
                     className="block text-lg font-medium text-gray-700 hover:text-black transition-colors py-3 border-b border-gray-100"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsMobileSearchOpen(false);
+                    }}
                   >
                     Sklep
                   </a>
                   <a 
                     href="/o-nas" 
                     className="block text-lg font-medium text-gray-700 hover:text-black transition-colors py-3 border-b border-gray-100"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsMobileSearchOpen(false);
+                    }}
                   >
                     O nas
                   </a>
                   <a 
                     href="/kontakt" 
                     className="block text-lg font-medium text-gray-700 hover:text-black transition-colors py-3 border-b border-gray-100"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsMobileSearchOpen(false);
+                    }}
                   >
                     Kontakt
                   </a>
@@ -247,6 +343,9 @@ export default function Header() {
         isOpen={isEmailCenterOpen}
         onClose={() => setIsEmailCenterOpen(false)}
       />
+      
+      {/* Favorites Modal */}
+      <FavoritesModal />
     </>
   );
 }

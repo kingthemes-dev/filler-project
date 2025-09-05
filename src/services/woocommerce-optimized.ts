@@ -76,12 +76,28 @@ class WooCommerceOptimizedService {
     }
   }
 
+  async getProductById(productId: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}&cache=off`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching product by ID:', error);
+      throw error;
+    }
+  }
+
   // =========================================
   // Product by Slug
   // =========================================
   async getProductBySlug(slug: string): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products&slug=${slug}`);
+      // Use cache=off to ensure fresh data for product pages
+      const response = await fetch(`${this.baseUrl}?endpoint=products&slug=${slug}&cache=off`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -136,6 +152,11 @@ class WooCommerceOptimizedService {
       if (query.order) params.append('order', query.order);
       if (query.featured) params.append('featured', query.featured.toString());
       if (query.on_sale) params.append('on_sale', query.on_sale.toString());
+      if (query.attribute) params.append('attribute', query.attribute);
+      if (query.attribute_term) params.append('attribute_term', query.attribute_term);
+      if (query.min_price) params.append('min_price', query.min_price);
+      if (query.max_price) params.append('max_price', query.max_price);
+      if (query.stock_status) params.append('stock_status', query.stock_status);
       
       const response = await fetch(`${this.baseUrl}?endpoint=products&${params}`);
       
@@ -211,13 +232,16 @@ class WooCommerceOptimizedService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // In headless mode, don't throw errors for cart operations
+        console.log(`ℹ️ WooCommerce cart API unavailable (${response.status}), using local cart only`);
+        return { success: false, error: `HTTP ${response.status}` };
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error adding to cart:', error);
-      throw error;
+      // In headless mode, don't throw errors for cart operations
+      console.log('ℹ️ WooCommerce cart API unavailable, using local cart only');
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -291,6 +315,51 @@ class WooCommerceOptimizedService {
       return await response.json();
     } catch (error) {
       console.error('Error getting cart:', error);
+      throw error;
+    }
+  }
+
+  // =========================================
+  // Product Reviews
+  // =========================================
+  async getProductReviews(productId: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}?endpoint=reviews&product_id=${productId}&cache=off`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching product reviews:', error);
+      throw error;
+    }
+  }
+
+  async createProductReview(reviewData: {
+    product_id: number;
+    review: string;
+    reviewer: string;
+    reviewer_email: string;
+    rating: number;
+  }): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}?endpoint=reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating product review:', error);
       throw error;
     }
   }
@@ -378,6 +447,162 @@ class WooCommerceOptimizedService {
       currency: 'PLN',
       minimumFractionDigits: 2,
     }).format(numPrice);
+  }
+
+  /**
+   * Get shipping methods for a location
+   */
+  async getShippingMethods(country: string = 'PL', state: string = '', city: string = '', postcode: string = ''): Promise<any> {
+    try {
+      const params = new URLSearchParams({
+        endpoint: 'shipping_methods',
+        country,
+        state,
+        city,
+        postcode
+      });
+
+      const response = await fetch(`/api/woocommerce?${params.toString()}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch shipping methods');
+      }
+
+      const data = await response.json();
+      const methods = data.shipping_methods || [];
+      
+      // Process and normalize shipping methods
+      return methods.map((method: any) => {
+        let cost = 0;
+        let freeShippingThreshold = 0;
+        
+        // Handle Flexible Shipping methods
+        if (method.method_id === 'flexible_shipping_single') {
+          const settings = method.settings;
+          
+          // Get free shipping threshold
+          if (settings.method_free_shipping && settings.method_free_shipping.value) {
+            freeShippingThreshold = parseFloat(settings.method_free_shipping.value); // Keep as PLN, not cents
+          }
+          
+          // Get cost from rules
+          if (settings.method_rules && settings.method_rules.value && settings.method_rules.value.length > 0) {
+            const rules = settings.method_rules.value;
+            // Find the rule that applies (usually the first one)
+            if (rules[0] && rules[0].cost_per_order) {
+              cost = parseFloat(rules[0].cost_per_order); // Keep as PLN, not cents
+            }
+          }
+        }
+        // Handle Flat Rate methods
+        else if (method.method_id === 'flat_rate') {
+          const settings = method.settings;
+          if (settings.cost && settings.cost.value) {
+            cost = parseFloat(settings.cost.value); // Keep as PLN, not cents
+          }
+        }
+        
+        // Clean HTML from description
+        const cleanDescription = (desc: string) => {
+          if (!desc) return '';
+          // Remove HTML tags and decode entities
+          return desc
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/&rarr;/g, '→') // Decode arrow
+            .replace(/&nbsp;/g, ' ') // Decode non-breaking space
+            .replace(/&amp;/g, '&') // Decode ampersand
+            .replace(/&lt;/g, '<') // Decode less than
+            .replace(/&gt;/g, '>') // Decode greater than
+            .replace(/&quot;/g, '"') // Decode quote
+            .trim();
+        };
+
+        return {
+          id: method.id,
+          method_id: method.method_id,
+          method_title: method.settings.method_title?.value || method.method_title,
+          method_description: cleanDescription(method.settings.method_description?.value || method.method_description),
+          cost: cost,
+          free_shipping_threshold: freeShippingThreshold,
+          zone_id: method.zone_id,
+          zone_name: method.zone_name,
+          settings: method.settings
+        };
+      });
+      
+    } catch (error: any) {
+      console.error('Error fetching shipping methods:', error);
+      // Return fallback shipping methods if API fails
+      return [
+        {
+          id: 1,
+          method_id: 'free_shipping',
+          method_title: 'Darmowa wysyłka',
+          method_description: 'Darmowa dostawa od 200 zł',
+          cost: 0,
+          free_shipping_threshold: 20000,
+          zone_id: 1,
+          zone_name: 'Polska'
+        },
+        {
+          id: 2,
+          method_id: 'flat_rate',
+          method_title: 'Kurier DPD',
+          method_description: 'Dostawa w 1-2 dni robocze',
+          cost: 1500,
+          free_shipping_threshold: 0,
+          zone_id: 1,
+          zone_name: 'Polska'
+        },
+        {
+          id: 3,
+          method_id: 'local_pickup',
+          method_title: 'Odbiór osobisty',
+          method_description: 'Gdańsk, ul. Partyzantów 8/101',
+          cost: 0,
+          free_shipping_threshold: 0,
+          zone_id: 1,
+          zone_name: 'Polska'
+        }
+      ];
+    }
+  }
+
+  // =========================================
+  // Attribute Terms - Get attribute values
+  // =========================================
+  async getAttributeTerms(attributeId: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes/${attributeId}/terms`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Error fetching attribute terms for attribute ${attributeId}:`, error);
+      throw error;
+    }
+  }
+
+  // =========================================
+  // Product Variations - Get product variants
+  // =========================================
+  async getProductVariations(productId: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}/variations`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Error fetching product variations for product ${productId}:`, error);
+      throw error;
+    }
   }
 }
 

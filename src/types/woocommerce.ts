@@ -262,6 +262,36 @@ export interface WooFeeLine {
   meta_data: WooMetaData[];
 }
 
+export interface WooShippingMethod {
+  id: number;
+  method_id: string;
+  method_title: string;
+  method_description: string;
+  settings: {
+    title?: string;
+    cost?: string;
+    free_shipping_requires?: string;
+    free_shipping_minimum_amount?: string;
+    [key: string]: any;
+  };
+  zone_id: number;
+  zone_name: string;
+  zone_locations: Array<{
+    code: string;
+    type: string;
+  }>;
+}
+
+export interface WooShippingZone {
+  id: number;
+  name: string;
+  order: number;
+  locations: Array<{
+    code: string;
+    type: string;
+  }>;
+}
+
 export interface WooCouponLine {
   id: number;
   code: string;

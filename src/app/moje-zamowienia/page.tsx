@@ -222,7 +222,7 @@ export default function MyOrdersPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
+        <div className="max-w-[95vw] mx-auto px-6 py-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
             <p className="text-gray-600">Ładowanie zamówień...</p>

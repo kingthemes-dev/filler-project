@@ -1,14 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Metadata } from 'next';
 import { Shield, Award, Users, Heart, Star, CheckCircle } from 'lucide-react';
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-gray-50 to-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-gradient-to-br from-gray-50 to-white py-20 mx-6 rounded-3xl">
+        <div className="max-w-[95vw] mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -27,8 +28,8 @@ export default function AboutPage() {
       </section>
 
       {/* Main Content */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-20 mx-6 rounded-3xl">
+        <div className="max-w-[95vw] mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             
             {/* Left Column - Text Content */}
@@ -91,8 +92,8 @@ export default function AboutPage() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-gray-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-gray-50 py-20 mx-6 rounded-3xl">
+        <div className="max-w-[95vw] mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
