@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Metadata } from 'next';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Truck, Shield, ArrowLeft, Droplets } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
@@ -10,8 +9,6 @@ import { formatPrice } from '@/utils/format-price';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import ReviewsList from '@/components/ui/reviews-list';
 import ReviewForm from '@/components/ui/review-form';
-import SimilarProducts from '@/components/ui/similar-products';
-import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 
 interface ProductPageProps {
@@ -173,7 +170,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       image: product.images[0]?.src,
       permalink: product.permalink,
       variant: selectedCapacity ? {
-        id: variationId, // Use variation ID as variant ID
+        id: 0, // Default ID for capacity variant
         name: 'Pojemność',
         value: selectedCapacity
       } : undefined
@@ -195,43 +192,10 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Image skeleton */}
-            <div className="space-y-4">
-              <Skeleton className="aspect-square w-full rounded-lg" />
-              <div className="flex gap-2">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="w-20 h-20 rounded-lg" />
-                ))}
-              </div>
-            </div>
-            
-            {/* Content skeleton */}
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-6 w-1/2" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-              
-              <div className="space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <div className="flex gap-4">
-                  <Skeleton className="h-12 w-32" />
-                  <Skeleton className="h-12 w-12" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-1/3" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </div>
-            </div>
-          </div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-gray-600">Ładowanie produktu...</p>
         </div>
       </div>
     );
@@ -256,7 +220,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     : 0;
 
   return (
-    <div className="min-h-screen bg-white py-8 mx-6 rounded-3xl">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-[95vw] mx-auto px-6">
         {/* Breadcrumb */}
         <div className="mb-8">
@@ -304,8 +268,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                       src={image.src}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-cover"
-                      loading="lazy"
-                      decoding="async"
                     />
                   </button>
                 ))}
@@ -317,9 +279,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                   src={product.images[activeImageIndex]?.src}
                   alt={product.name}
                   className="w-full h-full object-cover"
-                  loading="eager"
-                  decoding="async"
-                  priority
                 />
                 
                 {/* Brand Overlay */}
@@ -749,17 +708,6 @@ export default function ProductPage({ params }: ProductPageProps) {
           </motion.div>
         </div>
       </div>
-      
-      {/* Similar Products */}
-      {product && product.categories && product.categories.length > 0 && (
-        <SimilarProducts 
-          productId={product.id} 
-          crossSellIds={product.cross_sell_ids || []}
-          relatedIds={product.related_ids || []}
-          categoryId={product.categories[0].id}
-          limit={4}
-        />
-      )}
     </div>
   );
 }

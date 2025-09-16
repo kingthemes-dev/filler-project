@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 
+// Redis is optional - will be undefined if not available
+let redis: any = undefined;
+
 const WC_URL = process.env.WOOCOMMERCE_API_URL;
 const CK = process.env.WOOCOMMERCE_CONSUMER_KEY;
 const CS = process.env.WOOCOMMERCE_CONSUMER_SECRET;
@@ -174,8 +177,8 @@ export async function GET(req: NextRequest) {
   searchParams.forEach((v, k) => {
     if (k !== "endpoint" && k !== "cache") url.searchParams.set(k, v);
   });
-  url.searchParams.set("consumer_key", CK);
-  url.searchParams.set("consumer_secret", CS);
+  url.searchParams.set("consumer_key", CK || '');
+  url.searchParams.set("consumer_secret", CS || '');
 
   console.log('🔍 API Route Debug:');
   console.log('WC_URL:', WC_URL);
@@ -183,6 +186,7 @@ export async function GET(req: NextRequest) {
   console.log('CS:', CS ? 'SET' : 'NOT SET');
   console.log('Final URL:', url.toString());
   console.log('Bypass cache:', bypassCache);
+  console.log('Search params:', Object.fromEntries(searchParams.entries()));
 
   try {
     // Cache lookup (skip if bypass)
@@ -229,6 +233,66 @@ export async function GET(req: NextRequest) {
           return new NextResponse(text || r.statusText, {
             status: r.status,
             headers: { "content-type": r.headers.get("content-type") || "text/plain" },
+          });
+        }
+
+        // Check if response is HTML instead of JSON (WordPress error page)
+        if (text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html')) {
+          console.log(`❌ WordPress returned HTML instead of JSON: ${text.substring(0, 100)}...`);
+          
+          // Try to get cached data first
+          if (!bypassCache && typeof redis !== 'undefined') {
+            try {
+              const cachedData = await redis.get(cacheKey);
+              if (cachedData) {
+                console.log('✅ Using cached data as fallback');
+                return new NextResponse(cachedData, {
+                  status: 200,
+                  headers: { 'content-type': 'application/json' }
+                });
+              }
+            } catch (redisError) {
+              console.log('⚠️ Redis not available, skipping cache fallback');
+            }
+          }
+          
+          // Retry the request once more
+          console.log('🔄 Retrying request...');
+          const retryResponse = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: "application/json",
+              'User-Agent': 'Filler-Store/1.0'
+            },
+            cache: "no-store",
+          });
+          
+          if (retryResponse.ok) {
+            const retryText = await retryResponse.text();
+            if (!retryText.trim().startsWith('<!DOCTYPE html>') && !retryText.trim().startsWith('<html')) {
+              console.log('✅ Retry successful, returning data');
+              return new NextResponse(retryText, {
+                status: 200,
+                headers: { 'content-type': 'application/json' }
+              });
+            }
+          }
+          
+          // Return empty data instead of error to prevent app crashes
+          console.log('⚠️ Returning empty data as fallback');
+          const emptyResponse = {
+            data: [],
+            total: 0,
+            totalPages: 0,
+            currentPage: 1,
+            perPage: 10,
+            error: 'API temporarily unavailable'
+          };
+          
+          return new NextResponse(JSON.stringify(emptyResponse), {
+            status: 200,
+            headers: { 'content-type': 'application/json' }
           });
         }
         
@@ -281,16 +345,9 @@ export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const endpoint = searchParams.get("endpoint") || "products";
 
-  if (!WC_URL || !CK || !CS) {
-    return NextResponse.json(
-      { error: 'Server misconfiguration', details: 'WooCommerce env vars are missing' },
-      { status: 500 }
-    );
-  }
-
-  const url = new URL(`${WC_URL.replace(/\/$/, "")}/${endpoint}`);
-  url.searchParams.set("consumer_key", CK);
-  url.searchParams.set("consumer_secret", CS);
+  const url = new URL(`${WC_URL?.replace(/\/$/, "") || 'https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3'}/${endpoint}`);
+  url.searchParams.set("consumer_key", CK || '');
+  url.searchParams.set("consumer_secret", CS || '');
 
   try {
     const body = await req.json();

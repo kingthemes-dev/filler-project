@@ -1,14 +1,31 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Clock, TrendingUp } from 'lucide-react';
-import wooSearchService from '@/services/woocommerce-search';
+import { Search, X, TrendingUp, Clock, Star } from 'lucide-react';
+import { WooCommerceService } from '@/services/woocommerce-optimized';
+import Link from 'next/link';
+import { formatPrice } from '@/utils/format-price';
 
 interface SearchBarProps {
   placeholder?: string;
   className?: string;
   onSearch?: (query: string) => void;
+}
+
+interface WooProduct {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  sale_price: string;
+  images: Array<{ src: string; alt: string }>;
+  categories: Array<{ name: string; slug: string }>;
+  tags: Array<{ name: string; slug: string }>;
+  stock_status: string;
+  average_rating: string;
+  rating_count: number;
+  slug: string;
 }
 
 export default function SearchBar({ 
@@ -18,15 +35,29 @@ export default function SearchBar({
 }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  // Removed mock suggestions/popular searches for ultra-fast real search
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [popularSearches, setPopularSearches] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [searchResults, setSearchResults] = useState<WooProduct[]>([]);
+  const [wooService, setWooService] = useState<WooCommerceService | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [hasResults, setHasResults] = useState(false);
+  
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const cacheRef = useRef<Map<string, WooProduct[]>>(new Map());
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load recent searches from localStorage
+  // Mount
   useEffect(() => {
     loadRecentSearches();
+    // Initialize WooCommerce service after mount
+    try {
+      setWooService(new WooCommerceService());
+    } catch (error) {
+      console.error('Error initializing WooCommerceService:', error);
+    }
   }, []);
 
   // Close search on outside click
@@ -40,6 +71,8 @@ export default function SearchBar({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Popular searches disabled (no mockups)
 
   // Load recent searches from localStorage
   const loadRecentSearches = () => {
@@ -65,8 +98,8 @@ export default function SearchBar({
       // Add to beginning
       searches.unshift(searchQuery);
       
-      // Keep only last 5
-      searches = searches.slice(0, 5);
+      // Keep only last 10
+      searches = searches.slice(0, 10);
       
       localStorage.setItem('filler_recent_searches', JSON.stringify(searches));
       setRecentSearches(searches);
@@ -75,32 +108,54 @@ export default function SearchBar({
     }
   };
 
-  // Handle search input change with suggestions
-  const handleInputChange = useCallback(async (value: string) => {
+  // Handle search input change (debounced + cached, no mock suggestions)
+  const handleInputChange = useCallback((value: string) => {
     setQuery(value);
-    
-    if (value.length >= 3) {
-      setIsLoading(true);
+    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+
+    if (value.length < 2) {
+      setSuggestions([]);
+      setSearchResults([]);
+      setHasResults(false);
+      setIsOpen(false);
+      return;
+    }
+
+    debounceTimeoutRef.current = setTimeout(async () => {
+      if (!wooService) {
+        setSearchResults([]);
+        setHasResults(false);
+        setIsOpen(false);
+        return;
+      }
+
       try {
-        // Get search suggestions
-        const suggestions = await wooSearchService.getSearchSuggestions(value, 5);
-        setSuggestions(suggestions);
+        setIsLoading(true);
         setIsOpen(true);
+
+        // Serve from cache if available
+        if (cacheRef.current.has(value)) {
+          const cached = cacheRef.current.get(value) || [];
+          setSearchResults(cached);
+          setHasResults(cached.length > 0);
+          setIsLoading(false);
+          return;
+        }
+
+        const results = await wooService.getProducts({ search: value, per_page: 8 });
+        const items = results.data || [];
+        cacheRef.current.set(value, items);
+        setSearchResults(items);
+        setHasResults(items.length > 0);
       } catch (error) {
-        console.error('Search suggestions error:', error);
-        setSuggestions([]);
+        console.error('Search error:', error);
+        setSearchResults([]);
+        setHasResults(false);
       } finally {
         setIsLoading(false);
       }
-    } else if (value.length === 0) {
-      // Show recent searches when input is empty
-      setSuggestions([]);
-      setIsOpen(recentSearches.length > 0);
-    } else {
-      setSuggestions([]);
-      setIsOpen(false);
-    }
-  }, [recentSearches.length]);
+    }, 200);
+  }, [wooService]);
 
   // Handle search submit
   const handleSearch = (searchQuery: string) => {
@@ -112,8 +167,8 @@ export default function SearchBar({
       if (onSearch) {
         onSearch(searchQuery.trim());
       } else {
-        // Default behavior - navigate to shop page with search
-        window.location.href = `/sklep?search=${encodeURIComponent(searchQuery.trim())}`;
+        // Default behavior - navigate to search page
+        window.location.href = `/wyszukiwanie?q=${encodeURIComponent(searchQuery.trim())}`;
       }
     }
   };
@@ -123,10 +178,21 @@ export default function SearchBar({
     handleSearch(suggestion);
   };
 
+  // Handle result click
+  const handleResultClick = (product: WooProduct) => {
+    saveRecentSearch(query);
+    setIsOpen(false);
+    setQuery('');
+    // Navigate to product page
+    window.location.href = `/produkt/${product.slug}`;
+  };
+
   // Clear search
   const clearSearch = () => {
     setQuery('');
     setSuggestions([]);
+    setSearchResults([]);
+    setHasResults(false);
     setIsOpen(false);
     inputRef.current?.focus();
   };
@@ -155,7 +221,7 @@ export default function SearchBar({
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyPress}
           onFocus={() => {
-            if (query.length >= 3 || recentSearches.length > 0) {
+            if (query.length >= 2 || suggestions.length > 0 || popularSearches.length > 0) {
               setIsOpen(true);
             }
           }}
@@ -191,59 +257,81 @@ export default function SearchBar({
               </div>
             )}
 
-            {/* Search Suggestions */}
-            {!isLoading && suggestions.length > 0 && (
-              <div>
+            {/* Search Results */}
+            {!isLoading && hasResults && searchResults.length > 0 && (
+              <div className="border-b border-gray-100">
                 <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide">
-                  Sugestie
+                  Produkty ({searchResults.length})
                 </div>
-                <div className="max-h-32 overflow-y-auto">
-                  {suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center"
+                <div className="max-h-64 overflow-y-auto">
+                  {searchResults.map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => handleResultClick(product)}
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors"
                     >
-                      <Search className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-700">{suggestion}</span>
-                    </button>
+                      <div className="flex-shrink-0 w-12 h-12 bg-gray-200 rounded-lg mr-3">
+                        {product.images && product.images.length > 0 ? (
+                          <img 
+                            src={product.images[0].src} 
+                            alt={product.images[0].alt || product.name}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-300 rounded-lg"></div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {product.name}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {product.categories && product.categories.length > 0 ? product.categories[0].name : 'Produkt'}
+                        </p>
+                        <div className="flex items-center mt-1">
+                          <div className="flex items-center">
+                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                            <span className="text-xs text-gray-600 ml-1">
+                              {parseFloat(product.average_rating) || 0}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-400 mx-2">•</span>
+                          <span className="text-xs text-gray-600">
+                            {product.rating_count} opinii
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex-shrink-0 ml-3 text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatPrice(product.sale_price || product.price)}
+                        </p>
+                        {product.sale_price && (
+                          <p className="text-xs text-gray-500 line-through">
+                            {formatPrice(product.price)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Recent Searches */}
-            {!isLoading && query.length === 0 && recentSearches.length > 0 && (
-              <div>
-                <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide">
-                  Ostatnie wyszukiwania
-                </div>
-                <div className="max-h-32 overflow-y-auto">
-                  {recentSearches.map((search, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(search)}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center"
-                    >
-                      <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-700">{search}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* No suggestions / popular sections (removed mockups) */}
 
             {/* No Results */}
-            {!isLoading && query.length >= 3 && suggestions.length === 0 && (
+            {!isLoading && query.length >= 2 && !hasResults && suggestions.length === 0 && (
               <div className="p-4 text-center text-gray-500">
                 <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p>Nie znaleziono sugestii dla "{query}"</p>
+                <p>Nie znaleziono produktów dla "{query}"</p>
                 <p className="text-sm mt-1">Spróbuj inne słowa kluczowe</p>
               </div>
             )}
 
             {/* Empty State */}
-            {!isLoading && query.length === 0 && recentSearches.length === 0 && (
+            {!isLoading && query.length === 0 && suggestions.length === 0 && searchResults.length === 0 && (
               <div className="p-4 text-center text-gray-500">
                 <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                 <p>Wpisz nazwę produktu, aby rozpocząć wyszukiwanie</p>

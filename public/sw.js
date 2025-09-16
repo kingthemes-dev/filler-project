@@ -105,10 +105,13 @@ async function cacheFirstStrategy(request, cacheName) {
 async function networkFirstStrategy(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, networkResponse.clone());
-      console.log('SW: Network first - cached:', request.url);
+    if (networkResponse.ok && networkResponse.status !== 206) {
+      // Don't cache partial responses (206) or video files
+      if (!request.url.includes('.webm') && !request.url.includes('.mp4')) {
+        const cache = await caches.open(cacheName);
+        cache.put(request, networkResponse.clone());
+        console.log('SW: Network first - cached:', request.url);
+      }
     }
     return networkResponse;
   } catch (error) {

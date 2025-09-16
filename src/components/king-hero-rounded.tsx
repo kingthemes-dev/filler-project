@@ -31,7 +31,7 @@ export default function KingHeroRounded() {
   const [isLoading, setIsLoading] = useState(true);
   
   // Safely access store with error handling
-  let addToFavorites: (product: any) => void, favorites: any[];
+  let addToFavorites: (p: any) => void, favorites: any[];
   try {
     const store = useFavoritesStore();
     addToFavorites = store.addToFavorites;
@@ -102,7 +102,7 @@ export default function KingHeroRounded() {
 
 
   return (
-    <section className="relative h-[68vh] min-h-[510px] py-8 mx-6 rounded-t-3xl">
+    <section className="relative h-[68vh] min-h-[510px] py-4 mt-6 mb-8">
       <div className="max-w-[95vw] mx-auto px-6 h-full">
         <div className="relative h-full rounded-3xl overflow-hidden">
           {/* Background Video */}
@@ -122,9 +122,9 @@ export default function KingHeroRounded() {
           </div>
           
           {/* Content */}
-          <div className="relative z-20 h-full flex flex-col pl-8 md:pl-16 pt-16 md:pt-24 pr-8 md:pr-12 pb-8 md:pb-12">
+          <div className="relative z-20 h-full pl-8 md:pl-16 pt-16 md:pt-24 pr-8 md:pr-12 pb-8 md:pb-12">
             {/* Top Section - Text Content */}
-            <div className="text-white space-y-4 md:space-y-6 flex-1">
+            <div className="text-white space-y-4 md:space-y-6">
               <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold leading-tight">
                 Hurtownia produktów<br />
                 medycyny estetycznej
@@ -144,39 +144,35 @@ export default function KingHeroRounded() {
               </div>
             </div>
 
-            {/* Product Card - Fixed positioning */}
-            <div className="hidden md:block absolute bottom-8 right-8 lg:bottom-12 lg:right-12">
+            {/* Bottom Section - Product Card */}
+            <div className="hidden md:flex justify-center lg:justify-end absolute bottom-8 right-8 lg:bottom-12 lg:right-12">
               {isLoading ? (
-                <div className="w-56 md:w-64 h-72 md:h-80 bg-white/10 rounded-2xl animate-pulse" />
+                <div className="w-45 md:w-51 h-58 md:h-64 bg-white/10 rounded-2xl animate-pulse" />
               ) : featuredProduct ? (
-                <Link href={`/produkt/${featuredProduct.slug}`}>
-                  <Card className="w-56 md:w-64 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden hover:shadow-3xl transition-all duration-300 cursor-pointer">
-                    <CardContent className="px-4 md:px-6 pt-1 pb-1">
-                      {/* Product Name */}
-                      <h3 className="text-lg md:text-xl font-semibold text-gray-900 line-clamp-2 leading-tight mb-3 md:mb-4 hover:text-black transition-colors">
-                        {featuredProduct?.name || 'Produkt'}
-                      </h3>
+                <Link href={`/produkt/${featuredProduct.slug}`} className="group block">
+                <Card className="w-45 md:w-51 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 group-hover:-translate-y-0.5">
+                  <CardContent className="px-4 md:px-6 pt-1 pb-1">
+                    {/* Product Name */}
+                    <h3 className="text-xs md:text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-3 md:mb-4">
+                      {featuredProduct?.name || 'Produkt'}
+                    </h3>
 
-                      {/* Product Image */}
-                      <div className="relative mb-3 md:mb-4">
-                        <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden">
-                          <Image
-                            src={featuredProduct?.images?.[0]?.src || '/placeholder-product.jpg'}
-                            alt={featuredProduct?.name || 'Produkt'}
-                            width={300}
-                            height={300}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
+                    {/* Product Image */}
+                    <div className="relative mb-3 md:mb-4">
+                      <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden">
+                        <Image
+                          src={featuredProduct?.images?.[0]?.src || '/placeholder-product.jpg'}
+                          alt={featuredProduct?.name || 'Produkt'}
+                          width={300}
+                          height={300}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
 
                       {/* Favorite Button */}
                       <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          featuredProduct && handleAddToFavorites(featuredProduct);
-                        }}
-                        className="absolute top-2 md:top-3 right-2 md:right-3 p-1.5 md:p-2 bg-white/90 rounded-full shadow-md hover:bg-white transition-colors z-10"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); featuredProduct && handleAddToFavorites(featuredProduct); }}
+                        className="absolute top-2 md:top-3 right-2 md:right-3 p-1.5 md:p-2 bg-white/90 rounded-full shadow-md hover:bg-white transition-colors"
                       >
                         <Heart
                           className={`w-3.5 md:w-4 h-3.5 md:h-4 ${
@@ -190,11 +186,11 @@ export default function KingHeroRounded() {
 
                     {/* Price */}
                     <div className="flex items-center gap-2 mb-0">
-                      <span className="text-lg md:text-xl font-bold text-gray-900">
+                      <span className="text-xs md:text-sm font-bold text-gray-900">
                         {featuredProduct && formatPrice(featuredProduct.sale_price || featuredProduct.price)}
                       </span>
                       {featuredProduct?.regular_price && featuredProduct?.sale_price && (
-                        <span className="text-base md:text-lg text-gray-500 line-through">
+                        <span className="text-xs text-gray-500 line-through">
                           {formatPrice(featuredProduct.regular_price)}
                         </span>
                       )}
@@ -203,8 +199,8 @@ export default function KingHeroRounded() {
                 </Card>
                 </Link>
               ) : (
-                <div className="w-56 md:w-64 h-72 md:h-80 bg-white/10 rounded-2xl flex items-center justify-center">
-                  <p className="text-white/70 text-sm">Brak produktów</p>
+                <div className="w-80 h-96 bg-white/10 rounded-2xl flex items-center justify-center">
+                  <p className="text-white/70">Brak produktów</p>
                 </div>
               )}
             </div>

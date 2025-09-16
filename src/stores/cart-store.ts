@@ -66,12 +66,12 @@ export const useCartStore = create<CartStore>()(
           if (existingItemIndex > -1) {
             // Update existing item quantity
             const updatedItems = [...items];
-            updatedItems[existingItemIndex].quantity += 1;
+            updatedItems[existingItemIndex].quantity += (item.quantity || 1);
             
             set({ items: updatedItems });
           } else {
             // Add new item
-            const newItem: CartItem = { ...item, quantity: 1 };
+            const newItem: CartItem = { ...item, quantity: item.quantity || 1 };
             set({ items: [...items, newItem] });
           }
 
@@ -84,7 +84,7 @@ export const useCartStore = create<CartStore>()(
           try {
             const apiResponse = await wooCommerceService.addToCart(
               item.id, 
-              1, 
+              item.quantity || 1, 
               item.variant?.id
             );
             

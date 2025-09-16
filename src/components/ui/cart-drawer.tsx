@@ -31,9 +31,9 @@ export default function CartDrawer() {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - tylko na mobile */}
           <motion.div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -45,13 +45,12 @@ export default function CartDrawer() {
             className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
                      w-full max-w-sm lg:max-w-md xl:max-w-lg
                      lg:border-l lg:border-gray-200 flex flex-col
-                     rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl
-                     pointer-events-auto"
+                     rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={closeCart}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>

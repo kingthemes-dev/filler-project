@@ -6,11 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Star, TrendingUp, Zap } from 'lucide-react';
 import Link from 'next/link';
-import { ProductGridSkeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
   return (
-    <div className="bg-white">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <KingHeroRounded />
 
@@ -19,7 +18,33 @@ export default function HomePage() {
       {/* Product Tabs */}
       <section className="py-16">
         <div className="max-w-[95vw] mx-auto px-6">
-          <Suspense fallback={<ProductGridSkeleton count={8} />}>
+          <Suspense fallback={
+            <div className="space-y-8">
+              {/* Tabs skeleton */}
+              <div className="flex items-center justify-between">
+                <div className="flex gap-8">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-8 w-20 bg-muted rounded animate-pulse" />
+                  ))}
+                </div>
+                <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+              </div>
+              {/* Products skeleton */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(8)].map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader className="pb-0">
+                      <div className="aspect-square bg-muted rounded-lg" />
+                    </CardHeader>
+                    <CardContent className="pt-3">
+                      <div className="h-4 bg-muted rounded mb-2" />
+                      <div className="h-3 bg-muted rounded w-2/3" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          }>
             <KingProductTabs />
           </Suspense>
         </div>
@@ -28,7 +53,7 @@ export default function HomePage() {
 
 
       {/* Newsletter Section */}
-      <section className="py-16 mx-6">
+      <section className="py-16">
         <div className="max-w-[95vw] mx-auto px-6">
           <div className="relative overflow-hidden rounded-3xl">
             {/* Background Image */}
@@ -39,6 +64,7 @@ export default function HomePage() {
                 fill
                 className="object-cover object-center"
                 sizes="100vw"
+                priority
               />
               {/* Overlay */}
               <div className="absolute inset-0 bg-black/50" />

@@ -19,7 +19,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="bg-gray-50 py-12">
+      <div className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-[95vw] mx-auto px-6">
           <div className="max-w-2xl mx-auto text-center">
             <motion.div
@@ -57,7 +57,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="max-w-6xl mx-auto">

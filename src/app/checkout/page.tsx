@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
@@ -58,7 +58,7 @@ interface CheckoutForm {
   acceptNewsletter: boolean;
 }
 
-function CheckoutPageContent() {
+export default function CheckoutPage() {
   const { items, total, itemCount, clearCart } = useCartStore();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
@@ -104,17 +104,7 @@ function CheckoutPageContent() {
   const [quickPaymentSelected, setQuickPaymentSelected] = useState(false);
   
   // Shipping state
-  const [shippingMethods, setShippingMethods] = useState<Array<{
-    id: number;
-    method_id: string;
-    method_title: string;
-    method_description: string;
-    cost: number;
-    free_shipping_threshold: number;
-    zone_id: number;
-    zone_name: string;
-    settings: any;
-  }>>([]);
+  const [shippingMethods, setShippingMethods] = useState<any[]>([]);
   const [shippingCost, setShippingCost] = useState(0);
   const [isLoadingShipping, setIsLoadingShipping] = useState(false);
 
@@ -352,7 +342,7 @@ function CheckoutPageContent() {
 
   // Calculate shipping cost based on selected method and cart total
   const calculateShippingCost = () => {
-    const selectedMethod = shippingMethods.find((m: any) => m.method_id === form.shippingMethod);
+    const selectedMethod = shippingMethods.find(m => m.method_id === form.shippingMethod);
     if (!selectedMethod) return 0;
     
     // Check for free shipping conditions
@@ -369,7 +359,7 @@ function CheckoutPageContent() {
 
   if (orderComplete) {
     return (
-      <div className="bg-gray-50 flex items-center justify-center py-8">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8">
         <div className="max-w-2xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -412,7 +402,7 @@ function CheckoutPageContent() {
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-[95vw] mx-auto px-6 py-8">
         
         {/* Quick Payment Banner */}
@@ -1211,20 +1201,5 @@ function CheckoutPageContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function CheckoutPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Ładowanie...</p>
-        </div>
-      </div>
-    }>
-      <CheckoutPageContent />
-    </Suspense>
   );
 }

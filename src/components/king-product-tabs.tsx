@@ -24,6 +24,14 @@ export default function KingProductTabs() {
 
   // Fetch products for each tab
   const fetchTabProducts = useCallback(async (tabId: string) => {
+    console.log('🔄 fetchTabProducts called for:', tabId);
+    console.log('🔄 wooCommerceService:', !!wooCommerceService, typeof wooCommerceService);
+    
+    if (!wooCommerceService) {
+      console.error('❌ wooCommerceService is not available');
+      return;
+    }
+    
     const tabIndex = tabs.findIndex(tab => tab.id === tabId);
     if (tabIndex === -1) return;
 
@@ -101,63 +109,19 @@ export default function KingProductTabs() {
     ));
   }, []);
 
-  // Fetch all products on mount for better performance
+  // Fetch products when tab changes
   useEffect(() => {
-    const fetchAllProducts = async () => {
-      try {
-        console.log('🔄 Fetching all products in parallel');
-        
-        // Fetch all product types in parallel
-        const [newProducts, saleProducts, featuredProducts] = await Promise.all([
-          wooCommerceService.getProducts({
-            orderby: 'date',
-            order: 'desc',
-            per_page: 4
-          }),
-          wooCommerceService.getProducts({
-            on_sale: true,
-            per_page: 5
-          }),
-          wooCommerceService.getProducts({
-            featured: true,
-            per_page: 4
-          })
-        ]);
-
-        // Update all tabs with their respective products
-        setTabs(prev => prev.map(tab => {
-          let products: any[] = [];
-          switch (tab.id) {
-            case 'nowosci':
-              products = newProducts.data || [];
-              break;
-            case 'promocje':
-              products = saleProducts.data || [];
-              break;
-            case 'polecane':
-              products = featuredProducts.data || [];
-              break;
-          }
-          return { ...tab, products, loading: false };
-        }));
-
-        console.log('✅ All products fetched successfully');
-      } catch (error) {
-        console.error('❌ Error fetching products:', error);
-        setTabs(prev => prev.map(tab => ({ ...tab, loading: false })));
-      }
-    };
-
-    fetchAllProducts();
-  }, []);
-
-  // Fetch products when tab changes (only if not already loaded)
-  useEffect(() => {
-    const activeTabData = tabs.find(tab => tab.id === activeTab);
-    if (activeTabData && activeTabData.products.length === 0 && !activeTabData.loading) {
+    if (typeof window !== 'undefined') {
       fetchTabProducts(activeTab);
     }
-  }, [activeTab, fetchTabProducts, tabs]);
+  }, [activeTab, fetchTabProducts]);
+
+  // Fetch initial tab products
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      fetchTabProducts('nowosci');
+    }
+  }, [fetchTabProducts]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -166,7 +130,7 @@ export default function KingProductTabs() {
   const activeTabData = tabs.find(tab => tab.id === activeTab);
 
   return (
-    <section className="py-16 bg-white mx-6 rounded-3xl">
+    <section className="py-16 bg-white">
       <div className="max-w-[95vw] mx-auto px-6">
         {/* Tabs */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
@@ -224,7 +188,7 @@ export default function KingProductTabs() {
             // Loading state
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {[...Array(4)].map((_, index) => (
-                <div key={index} className="animate-pulse">
+                <div key={`skeleton-${index}`} className="animate-pulse">
                   <div className="bg-gray-200 aspect-square rounded-3xl mb-4"></div>
                   <div className="space-y-2">
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -236,9 +200,9 @@ export default function KingProductTabs() {
           ) : activeTabData?.products && activeTabData.products.length > 0 ? (
             // Products grid
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-              {activeTabData.products.map((product) => (
+              {activeTabData.products.map((product, index) => (
                 <KingProductCard 
-                  key={product.id} 
+                  key={product?.id || `product-${index}`} 
                   product={product} 
                   tabType={activeTab}
                 />

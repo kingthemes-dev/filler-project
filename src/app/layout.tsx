@@ -6,8 +6,6 @@ import Header from '@/components/ui/header';
 import Footer from '@/components/ui/footer';
 import CartDrawer from '@/components/ui/cart-drawer';
 import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
-import { registerServiceWorker } from '@/lib/sw-register';
-import { criticalCSS } from '@/lib/critical-css';
 
 
 const geistSans = Geist({
@@ -75,37 +73,18 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="preconnect" href="https://qvwltjhdjw.cfolks.pl" />
-        <link rel="dns-prefetch" href="https://qvwltjhdjw.cfolks.pl" />
-        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
-        <link rel="modulepreload" href="/_next/static/chunks/app/layout.js" />
-        <link rel="modulepreload" href="/_next/static/chunks/app/page.js" />
-        <style dangerouslySetInnerHTML={{ __html: criticalCSS }} />
       </head>
                         <body
-                    className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground flex flex-col min-h-screen`}
+                    className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
                   >
                         <TopBar />
                         <Header />
-                        <main className="flex-1 pb-20">
+                        <main>
                           {children}
                         </main>
+                        <AuthModalManager />
                         <Footer />
                         <CartDrawer />
-                        <AuthModalManager />
-                                <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(registration => console.log('SW registered'))
-                    .catch(error => console.log('SW registration failed'));
-                });
-              }
-            `,
-          }}
-        />
 
               </body>
             </html>

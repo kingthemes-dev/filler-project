@@ -15,7 +15,7 @@ import QuickViewModal from '@/components/ui/quick-view-modal';
 interface KingProductCardProps {
   product: WooProduct;
   showActions?: boolean;
-  variant?: 'default' | 'compact' | 'featured';
+  variant?: 'default' | 'compact' | 'featured' | 'list';
   tabType?: string;
 }
 
@@ -31,6 +31,7 @@ export default function KingProductCard({
   const [selectedVariant, setSelectedVariant] = useState<string>('');
   const [variationsLoaded, setVariationsLoaded] = useState(false);
   const [variations, setVariations] = useState<any[]>([]);
+  const [isHovered, setIsHovered] = useState(false);
   
   // Safely access stores with error handling
   let addItem, openCart, toggleFavorite, isFavorite;
@@ -129,7 +130,9 @@ export default function KingProductCard({
   const handleShowVariants = async () => {
     if (!variationsLoaded) {
       try {
-        const variations = await wooCommerceService.getProductVariations(product.id);
+        const response = await wooCommerceService.getProductVariations(product.id);
+        console.log('🔄 Variations response:', response);
+        const variations = response.data || response || [];
         setVariations(variations);
         setVariationsLoaded(true);
       } catch (error) {
@@ -145,6 +148,29 @@ export default function KingProductCard({
       return;
     }
     await handleAddToCart();
+  };
+
+  const handleAddToCartWithVariation = async (variation: any) => {
+    setIsLoading(true);
+    try {
+      const cartItem = {
+        id: variation.id,
+        name: `${product.name} - ${selectedVariant}`,
+        price: parseFloat(variation.price),
+        regular_price: parseFloat(variation.regular_price),
+        sale_price: parseFloat(variation.sale_price),
+        image: imageUrl,
+        permalink: `/produkt/${product.slug}`,
+      };
+
+      console.log('🛒 Adding variation to cart:', cartItem);
+      addItem(cartItem);
+      openCart();
+    } catch (error) {
+      console.error('Error adding variation to cart:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Get available variants from loaded variations
@@ -367,9 +393,139 @@ export default function KingProductCard({
     );
   }
 
+  // List variant - horizontal layout
+  if (variant === 'list') {
+    return (
+      <Card className="group hover:shadow-lg transition-all duration-300 border-gray-200 rounded-xl overflow-hidden">
+        <Link href={`/produkt/${product.slug}`} className="flex">
+          <div className="w-32 h-32 flex-shrink-0 relative">
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            
+            {/* Badge */}
+            <div className="absolute top-2 left-2">
+              {isOnSale ? (
+                <Badge className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full border-0">
+                  Promocja
+                </Badge>
+              ) : product.featured ? (
+                <Badge className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full border-0">
+                  Polecany
+                </Badge>
+              ) : null}
+            </div>
+          </div>
+          
+          <div className="flex-1 px-4 py-3 flex flex-col justify-between">
+            <div>
+              <h3 className="font-semibold text-lg text-gray-900 group-hover:text-black transition-colors line-clamp-2">
+                {product.name}
+              </h3>
+              
+              {getBrand() && (
+                <p className="text-sm text-gray-600 mt-1">{getBrand()}</p>
+              )}
+              
+              <div className="mt-1">
+                {renderPrice()}
+              </div>
+              
+              <div className="mt-1">
+                {renderRating()}
+              </div>
+              
+              <div className="mt-1">
+                {renderStockStatus()}
+              </div>
+            </div>
+            
+            {showActions && (
+              <div className="flex items-center gap-3 mt-3">
+                {product.type === 'variable' ? (
+                  <Button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleShowVariants();
+                    }}
+                    size="sm"
+                    className="bg-black hover:bg-gray-800 text-white px-6 py-2 text-sm"
+                  >
+                    Wybierz wariant
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAddToCart();
+                    }}
+                    disabled={product.stock_status === 'outofstock' || isLoading}
+                    size="sm"
+                    className="bg-black hover:bg-gray-800 text-white px-6 py-2 text-sm"
+                  >
+                    {isLoading ? 'Dodawanie...' : 'Dodaj do koszyka'}
+                  </Button>
+                )}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleQuickView();
+                  }}
+                  className="px-3 py-2 h-8 w-8"
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleToggleFavorite();
+                  }}
+                  className={`px-3 py-2 h-8 w-8 ${isFavorite(product.id) ? 'text-red-500 border-red-200' : ''}`}
+                >
+                  <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
+                </Button>
+              </div>
+            )}
+          </div>
+        </Link>
+        
+        {/* Quick View Modal */}
+        <QuickViewModal
+          isOpen={isQuickViewOpen}
+          onClose={() => setIsQuickViewOpen(false)}
+          product={product}
+        />
+      </Card>
+    );
+  }
+
   // Default variant - matching the screenshot design
   return (
-    <Card className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border-gray-200 rounded-3xl overflow-hidden p-0">
+    <Card 
+      className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border-gray-200 rounded-3xl overflow-hidden p-0"
+      onMouseEnter={() => {
+        setIsHovered(true);
+        if (product.type === 'variable' && !variationsLoaded) {
+          handleShowVariants();
+        }
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setShowVariants(false);
+      }}
+    >
       <Link href={`/produkt/${product.slug}`} className="flex flex-col flex-grow">
         <CardHeader className="p-0 relative">
           <div className="relative aspect-square overflow-hidden">
@@ -423,6 +579,51 @@ export default function KingProductCard({
                 <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current text-red-500' : 'text-gray-700'}`} />
               </button>
             </div>
+
+            {/* Variants overlay - bottom of image */}
+            {product.type === 'variable' && (showVariants || isHovered) && variations.length > 0 && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/80 to-transparent p-4 rounded-b-3xl">
+                <div className="text-sm font-semibold text-white mb-3 text-center">Wybierz pojemność</div>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {getAvailableVariants().map((variant: string) => {
+                    const variation = variations.find((v: any) => {
+                      const capacityAttr = v.attributes?.find((attr: any) => 
+                        attr.slug === 'pa_pojemnosc'
+                      );
+                      return capacityAttr?.option === variant;
+                    });
+                    
+                    return (
+                      <button
+                        key={variant}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedVariant(variant);
+                          if (variation) {
+                            handleAddToCartWithVariation(variation);
+                          }
+                        }}
+                        className={`px-4 py-2 text-sm font-medium rounded-full border-2 transition-all duration-200 transform hover:scale-105 ${
+                          selectedVariant === variant
+                            ? 'bg-white text-black border-white shadow-lg'
+                            : 'bg-transparent text-white border-white/50 hover:border-white hover:bg-white/20'
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className="font-bold">{variant}</div>
+                          {variation && (
+                            <div className="text-xs opacity-90 mt-1">
+                              {wooCommerceService.formatPrice(variation.price)}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </CardHeader>
         
@@ -456,59 +657,23 @@ export default function KingProductCard({
       
       {showActions && (
         <CardFooter className="px-4 pb-4 mt-auto">
-          {product.type === 'variable' && showVariants ? (
-            <div className="w-full space-y-3">
-              <div className="text-sm font-medium text-gray-700">Wybierz pojemność:</div>
-              <div className="flex flex-wrap gap-2">
-                {getAvailableVariants().map((variant: string) => (
-                  <button
-                    key={variant}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleVariantSelect(variant);
-                    }}
-                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                      selectedVariant === variant
-                        ? 'bg-black text-white border-black'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-black'
-                    }`}
-                  >
-                    {variant}
-                  </button>
-                ))}
-              </div>
-              {selectedVariant && (
-                <Button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleAddToCart();
-                  }}
-                  disabled={isLoading || product.stock_status === 'outofstock'}
-                  className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-6 font-medium text-base"
-                  size="lg"
-                >
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  {isLoading ? 'Dodawanie...' : `Dodaj ${selectedVariant} do koszyka`}
-                </Button>
-              )}
-            </div>
-          ) : (
-            <Button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleAddToCartWithVariant();
-              }}
-              disabled={isLoading || product.stock_status === 'outofstock'}
-              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-6 font-medium text-base"
-              size="lg"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              {isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}
-            </Button>
-          )}
+          <Button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (product.type === 'variable') {
+                handleShowVariants();
+              } else {
+                handleAddToCart();
+              }
+            }}
+            disabled={isLoading || product.stock_status === 'outofstock'}
+            className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-6 font-medium text-base"
+            size="lg"
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            {isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}
+          </Button>
         </CardFooter>
       )}
       

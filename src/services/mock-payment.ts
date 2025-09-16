@@ -94,7 +94,7 @@ export class MockPaymentService {
     // W prawdziwej implementacji sprawdzamy czy Apple Pay jest dostępne
     return typeof window !== 'undefined' && 
            'ApplePaySession' in window && 
-           (window as any).ApplePaySession.canMakePayments();
+           ApplePaySession.canMakePayments();
   }
 
   /**

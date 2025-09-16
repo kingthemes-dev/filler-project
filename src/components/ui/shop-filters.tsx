@@ -26,7 +26,7 @@ interface ShopFiltersProps {
     onSale: boolean;
     featured: boolean;
   };
-  onFilterChange: (filterType: string, value: any) => void;
+  onFilterChange: (key: keyof ShopFiltersProps['filters'], value: any) => void;
   onClearFilters: () => void;
   showFilters: boolean;
   onToggleFilters: () => void;
@@ -62,11 +62,12 @@ export default function ShopFilters({
   };
 
 
+  // Price ranges use PLN directly (not grosze)
   const priceRanges = [
-    { label: '0 - 50 zł', min: 0, max: 5000 },
-    { label: '50 - 100 zł', min: 5000, max: 10000 },
-    { label: '100 - 200 zł', min: 10000, max: 20000 },
-    { label: '200+ zł', min: 20000, max: 999999 }
+    { label: '0 - 50 zł', min: 0, max: 50 },
+    { label: '50 - 100 zł', min: 50, max: 100 },
+    { label: '100 - 200 zł', min: 100, max: 200 },
+    { label: '200+ zł', min: 200, max: 999999 }
   ];
 
   return (
@@ -205,20 +206,20 @@ export default function ShopFilters({
                         capacities
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((capacity) => {
-                            const isSelected = filters.capacities && filters.capacities.includes(capacity.id.toString());
+                            const isSelected = filters.capacities && filters.capacities.includes(String(capacity.id));
                             
                             return (
                               <label key={capacity.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
                                 <input
                                   type="checkbox"
                                   name="capacities"
-                                  value={capacity.id.toString()}
+                                  value={String(capacity.id)}
                                   checked={isSelected}
-                                  onChange={() => onFilterChange('capacities', capacity.id.toString())}
+                                  onChange={() => onFilterChange('capacities', String(capacity.id))}
                                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                                 />
                                 <span className="ml-3 text-sm font-medium text-gray-700">{capacity.name}</span>
-                                <span className="ml-auto text-xs text-gray-500">({capacity.count})</span>
+                                <span className="ml-auto text-xs text-gray-500">({capacity.count || 0})</span>
                               </label>
                             );
                           })
@@ -267,20 +268,20 @@ export default function ShopFilters({
                         brands
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((brand) => {
-                            const isSelected = filters.brands && filters.brands.includes(brand.id.toString());
+                            const isSelected = filters.brands && filters.brands.includes(String(brand.id));
                             
                             return (
                               <label key={brand.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
                                 <input
                                   type="checkbox"
                                   name="brands"
-                                  value={brand.id.toString()}
+                                  value={String(brand.id)}
                                   checked={isSelected}
-                                  onChange={() => onFilterChange('brands', brand.id.toString())}
+                                  onChange={() => onFilterChange('brands', String(brand.id))}
                                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                                 />
                                 <span className="ml-3 text-sm font-medium text-gray-700">{brand.name}</span>
-                                <span className="ml-auto text-xs text-gray-500">({brand.count})</span>
+                                <span className="ml-auto text-xs text-gray-500">({brand.count || 0})</span>
                               </label>
                             );
                           })
@@ -345,8 +346,8 @@ export default function ShopFilters({
                             <input
                               type="number"
                               placeholder="0"
-                              value={filters.minPrice ? filters.minPrice / 100 : ''}
-                              onChange={(e) => onFilterChange('minPrice', (Number(e.target.value) || 0) * 100)}
+                              value={filters.minPrice ? filters.minPrice : ''}
+                              onChange={(e) => onFilterChange('minPrice', (Number(e.target.value) || 0))}
                               className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
@@ -357,8 +358,8 @@ export default function ShopFilters({
                             <input
                               type="number"
                               placeholder="9999"
-                              value={filters.maxPrice ? filters.maxPrice / 100 : ''}
-                              onChange={(e) => onFilterChange('maxPrice', (Number(e.target.value) || 999999) * 100)}
+                              value={filters.maxPrice ? filters.maxPrice : ''}
+                              onChange={(e) => onFilterChange('maxPrice', (Number(e.target.value) || 999999))}
                               className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
@@ -369,13 +370,13 @@ export default function ShopFilters({
                 </AnimatePresence>
               </div>
 
-              {/* Availability Filters */}
+              {/* Special Offers */}
               <div className="mb-6">
                 <button
                   onClick={() => toggleSection('availability')}
                   className="flex items-center justify-between w-full mb-4"
                 >
-                  <h4 className="font-semibold text-gray-900">Dostępność</h4>
+                  <h4 className="font-semibold text-gray-900">Oferty specjalne</h4>
                   {expandedSections.availability ? (
                     <ChevronUp className="w-4 h-4 text-gray-500" />
                   ) : (
@@ -392,34 +393,40 @@ export default function ShopFilters({
                       transition={{ duration: 0.2 }}
                       className="space-y-3"
                     >
-                      <label className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={filters.inStock}
-                          onChange={(e) => onFilterChange('inStock', e.target.checked)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="ml-3 text-sm font-medium text-gray-700">W magazynie</span>
+                      <label className="flex items-center p-4 rounded-xl hover:bg-red-50 cursor-pointer transition-colors border border-transparent hover:border-red-100">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={filters.onSale}
+                            onChange={(e) => onFilterChange('onSale', e.target.checked)}
+                            className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                          />
+                          {filters.onSale && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                          )}
+                        </div>
+                        <div className="ml-3 flex items-center">
+                          <span className="text-sm font-semibold text-red-700">🔥 Promocje</span>
+                          <span className="ml-2 text-xs text-red-500 bg-red-100 px-2 py-1 rounded-full">-20%</span>
+                        </div>
                       </label>
                       
-                      <label className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={filters.onSale}
-                          onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="ml-3 text-sm font-medium text-gray-700">Promocje</span>
-                      </label>
-                      
-                      <label className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={filters.featured}
-                          onChange={(e) => onFilterChange('featured', e.target.checked)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="ml-3 text-sm font-medium text-gray-700">Polecane</span>
+                      <label className="flex items-center p-4 rounded-xl hover:bg-yellow-50 cursor-pointer transition-colors border border-transparent hover:border-yellow-100">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={filters.featured}
+                            onChange={(e) => onFilterChange('featured', e.target.checked)}
+                            className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                          />
+                          {filters.featured && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full"></div>
+                          )}
+                        </div>
+                        <div className="ml-3 flex items-center">
+                          <span className="text-sm font-semibold text-yellow-700">⭐ Polecane</span>
+                          <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">TOP</span>
+                        </div>
                       </label>
                     </motion.div>
                   )}

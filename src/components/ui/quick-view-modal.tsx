@@ -149,6 +149,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
         name: finalName,
         price: finalPrice,
         image: product.images[0]?.src || '',
+        quantity,
+        attributes: selectedAttributes,
         variant: variations.length > 0 && selectedCapacity ? {
           id: finalId,
           name: 'Pojemność',
@@ -406,7 +408,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                                               <div className={`text-xs mt-1 ${
                                                 isSelected ? 'text-gray-200' : 'text-gray-500'
                                               }`}>
-                                                {formatPrice(variantPrice)}
+                                                {formatPrice(variantPrice.toString())}
                                               </div>
                                             </div>
                                           </button>

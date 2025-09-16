@@ -67,12 +67,9 @@ export default function FavoritesModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div 
-              className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col pointer-events-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
@@ -121,10 +118,7 @@ export default function FavoritesModal() {
                     <p className="text-gray-600 mb-6">
                       Dodaj produkty do ulubionych, klikając ikonę serca
                     </p>
-                    <Button 
-                      variant="outline"
-                      onClick={closeFavoritesModal}
-                    >
+                    <Button onClick={closeFavoritesModal}>
                       Kontynuuj zakupy
                     </Button>
                   </div>
@@ -142,11 +136,7 @@ export default function FavoritesModal() {
                           key={product.id}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                          onClick={() => {
-                            closeFavoritesModal();
-                            window.location.href = `/produkt/${product.slug}`;
-                          }}
+                          className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                         >
                           {/* Product Image */}
                           <div className="relative aspect-square bg-gray-100">
@@ -164,10 +154,7 @@ export default function FavoritesModal() {
                               </Badge>
                             )}
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveFromFavorites(product.id);
-                              }}
+                              onClick={() => handleRemoveFromFavorites(product.id)}
                               className="absolute top-2 right-2 w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
                             >
                               <Heart className="w-4 h-4 fill-current text-red-500" />
@@ -178,13 +165,7 @@ export default function FavoritesModal() {
                           <div className="p-4">
                             <div className="text-sm text-gray-500 mb-1">
                               {product.categories && product.categories.length > 0 
-                                ? (() => {
-                                    // Znajdź pierwszą kategorię, która nie jest "Wszystkie kategorie"
-                                    const mainCategory = product.categories.find(cat => 
-                                      cat.name !== 'Wszystkie kategorie' && cat.name !== 'Wszystkie'
-                                    );
-                                    return mainCategory ? mainCategory.name : product.categories[0].name;
-                                  })()
+                                ? product.categories[0].name 
                                 : 'Bez kategorii'
                               }
                             </div>
@@ -211,10 +192,6 @@ export default function FavoritesModal() {
                                 size="sm"
                                 className="flex-1"
                                 asChild
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  closeFavoritesModal();
-                                }}
                               >
                                 <Link href={`/produkt/${product.slug}`}>
                                   <Eye className="w-4 h-4 mr-1" />
@@ -223,13 +200,8 @@ export default function FavoritesModal() {
                               </Button>
                               <Button
                                 size="sm"
-                                variant="outline"
                                 className="flex-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAddToCart(product);
-                                  closeFavoritesModal();
-                                }}
+                                onClick={() => handleAddToCart(product)}
                               >
                                 <ShoppingCart className="w-4 h-4 mr-1" />
                                 Do koszyka
@@ -250,10 +222,7 @@ export default function FavoritesModal() {
                     <div className="text-sm text-gray-600">
                       {favorites.length} {favorites.length === 1 ? 'produkt' : 'produktów'} w ulubionych
                     </div>
-                    <Button 
-                      variant="outline"
-                      onClick={closeFavoritesModal}
-                    >
+                    <Button onClick={closeFavoritesModal}>
                       Zamknij
                     </Button>
                   </div>

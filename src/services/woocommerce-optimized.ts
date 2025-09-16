@@ -4,7 +4,7 @@ import { WooProduct, WooProductQuery, WooApiResponse } from '@/types/woocommerce
 // Optimized WooCommerce Service
 // =========================================
 
-class WooCommerceOptimizedService {
+class WooCommerceService {
   private baseUrl: string;
 
   constructor() {
@@ -133,8 +133,92 @@ class WooCommerceOptimizedService {
       };
     } catch (error) {
       console.error('Error fetching categories:', error);
-      throw error;
+      // Return mock data when API is not available
+      return this.getMockCategories();
     }
+  }
+
+  // =========================================
+  // Mock Data Fallbacks
+  // =========================================
+  private getMockCategories(): any {
+    return {
+      data: [
+        { id: 1, name: 'Kremy', slug: 'kremy', count: 15 },
+        { id: 2, name: 'Serum', slug: 'serum', count: 8 },
+        { id: 3, name: 'Tonery', slug: 'tonery', count: 12 },
+        { id: 4, name: 'Maseczki', slug: 'maseczki', count: 6 },
+        { id: 5, name: 'Peelingi', slug: 'peelingi', count: 4 }
+      ],
+      total: 5,
+      totalPages: 1,
+      currentPage: 1,
+      perPage: 100,
+    };
+  }
+
+  private getMockProducts(query: WooProductQuery = {}): WooApiResponse<WooProduct> {
+    const mockProducts: WooProduct[] = [
+      {
+        id: 1,
+        name: 'Krem nawilżający z kwasem hialuronowym',
+        slug: 'krem-nawilzajacy-kwas-hialuronowy',
+        price: '89.99',
+        regular_price: '119.99',
+        sale_price: '89.99',
+        on_sale: true,
+        featured: true,
+        images: [{ src: '/placeholder-product.jpg', alt: 'Krem nawilżający' }],
+        categories: [{ id: 1, name: 'Kremy', slug: 'kremy' }],
+        attributes: [],
+        stock_status: 'instock',
+        short_description: 'Intensywnie nawilżający krem z kwasem hialuronowym',
+        description: 'Profesjonalny krem nawilżający z kwasem hialuronowym dla skóry twarzy.',
+        sku: 'KREM-001'
+      },
+      {
+        id: 2,
+        name: 'Serum witaminowe C + E',
+        slug: 'serum-witaminowe-c-e',
+        price: '149.99',
+        regular_price: '149.99',
+        sale_price: '',
+        on_sale: false,
+        featured: true,
+        images: [{ src: '/placeholder-product.jpg', alt: 'Serum witaminowe' }],
+        categories: [{ id: 2, name: 'Serum', slug: 'serum' }],
+        attributes: [],
+        stock_status: 'instock',
+        short_description: 'Silne serum z witaminami C i E',
+        description: 'Mocne serum antyoksydacyjne z witaminami C i E.',
+        sku: 'SERUM-001'
+      },
+      {
+        id: 3,
+        name: 'Toner oczyszczający z kwasem salicylowym',
+        slug: 'toner-oczyszczajacy-kwas-salicylowy',
+        price: '69.99',
+        regular_price: '89.99',
+        sale_price: '69.99',
+        on_sale: true,
+        featured: false,
+        images: [{ src: '/placeholder-product.jpg', alt: 'Toner oczyszczający' }],
+        categories: [{ id: 3, name: 'Tonery', slug: 'tonery' }],
+        attributes: [],
+        stock_status: 'instock',
+        short_description: 'Delikatny toner z kwasem salicylowym',
+        description: 'Oczyszczający toner z kwasem salicylowym dla skóry problematycznej.',
+        sku: 'TONER-001'
+      }
+    ];
+
+    return {
+      data: mockProducts,
+      total: mockProducts.length,
+      totalPages: 1,
+      currentPage: 1,
+      perPage: query.per_page || 10,
+    };
   }
 
   // =========================================
@@ -152,11 +236,31 @@ class WooCommerceOptimizedService {
       if (query.order) params.append('order', query.order);
       if (query.featured) params.append('featured', query.featured.toString());
       if (query.on_sale) params.append('on_sale', query.on_sale.toString());
-      if (query.attribute) params.append('attribute', query.attribute);
-      if (query.attribute_term) params.append('attribute_term', query.attribute_term);
+      if (query.stock_status) params.append('stock_status', query.stock_status);
       if (query.min_price) params.append('min_price', query.min_price);
       if (query.max_price) params.append('max_price', query.max_price);
-      if (query.stock_status) params.append('stock_status', query.stock_status);
+      
+      // Handle attribute filters (support multiple pairs)
+      const attr: any = (query as any).attribute;
+      const attrTerm: any = (query as any).attribute_term;
+      if (Array.isArray(attr) && Array.isArray(attrTerm)) {
+        for (let i = 0; i < Math.min(attr.length, attrTerm.length); i += 1) {
+          params.append('attribute', String(attr[i]));
+          params.append('attribute_term', String(attrTerm[i]));
+        }
+      } else {
+        if (attr) params.append('attribute', String(attr));
+        if (attrTerm) params.append('attribute_term', String(attrTerm));
+      }
+
+      // If any dynamic filters are present, bypass caches explicitly
+      const hasDynamicFilters = Boolean(
+        query.search || query.category || query.min_price || query.max_price || attr || attrTerm
+      );
+      if (hasDynamicFilters) {
+        params.append('cache', 'off');
+        params.append('_', String(Date.now()));
+      }
       
       const response = await fetch(`${this.baseUrl}?endpoint=products&${params}`);
       
@@ -174,7 +278,8 @@ class WooCommerceOptimizedService {
       };
     } catch (error) {
       console.error('Error fetching products:', error);
-      throw error;
+      // Return mock data when API is not available
+      return this.getMockProducts(query);
     }
   }
 
@@ -189,7 +294,65 @@ class WooCommerceOptimizedService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching product:', error);
-      throw error;
+      // Return empty product instead of throwing error
+      return {
+        id: 0,
+        name: 'Produkt niedostępny',
+        slug: 'produkt-niedostepny',
+        price: '0',
+        regular_price: '0',
+        sale_price: '',
+        on_sale: false,
+        featured: false,
+        status: 'private',
+        images: [],
+        categories: [],
+        attributes: [],
+        description: '',
+        short_description: '',
+        stock_status: 'outofstock',
+        stock_quantity: 0,
+        manage_stock: false,
+        backorders: 'no',
+        sold_individually: false,
+        weight: '',
+        dimensions: { length: '', width: '', height: '' },
+        shipping_class: '',
+        shipping_class_id: 0,
+        reviews_allowed: false,
+        average_rating: '0',
+        rating_count: 0,
+        related_ids: [],
+        upsell_ids: [],
+        cross_sell_ids: [],
+        parent_id: 0,
+        purchase_note: '',
+        menu_order: 0,
+        meta_data: [],
+        variations: [],
+        grouped_products: [],
+        permalink: '',
+        date_created: '',
+        date_modified: '',
+        date_on_sale_from: '',
+        date_on_sale_to: '',
+        virtual: false,
+        downloadable: false,
+        downloads: [],
+        download_limit: -1,
+        download_expiry: -1,
+        external_url: '',
+        button_text: '',
+        tax_status: 'taxable',
+        tax_class: '',
+        total_sales: 0,
+        has_options: false,
+        post_password: '',
+        catalog_visibility: 'visible',
+        featured_media: 0,
+        type: 'simple',
+        _links: {}
+      };
     }
   }
 
@@ -241,7 +404,7 @@ class WooCommerceOptimizedService {
     } catch (error) {
       // In headless mode, don't throw errors for cart operations
       console.log('ℹ️ WooCommerce cart API unavailable, using local cart only');
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      return { success: false, error: error.message };
     }
   }
 
@@ -569,43 +732,36 @@ class WooCommerceOptimizedService {
     }
   }
 
-  // =========================================
-  // Attribute Terms - Get attribute values
-  // =========================================
-  async getAttributeTerms(attributeId: number): Promise<any> {
+  // Get product variations
+  async getProductVariations(productId: number): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes/${attributeId}/terms`);
-      
+      const response = await fetch(`/api/woocommerce?endpoint=products/${productId}/variations`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
       return await response.json();
     } catch (error) {
-      console.error(`Error fetching attribute terms for attribute ${attributeId}:`, error);
-      throw error;
+      console.error('Error fetching product variations:', error);
+      return { data: [] };
     }
   }
 
-  // =========================================
-  // Product Variations - Get product variants
-  // =========================================
-  async getProductVariations(productId: number): Promise<any> {
+  // Get product attributes
+  async getProductAttributes(): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}/variations`);
-      
+      const response = await fetch(`/api/woocommerce?endpoint=products/attributes`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
       return await response.json();
     } catch (error) {
-      console.error(`Error fetching product variations for product ${productId}:`, error);
-      throw error;
+      console.error('Error fetching product attributes:', error);
+      return { data: [] };
     }
   }
 }
 
-// Export singleton instance
-export const wooCommerceOptimized = new WooCommerceOptimizedService();
+// Export class and singleton instance
+export { WooCommerceService };
+export const wooCommerceOptimized = new WooCommerceService();
 export default wooCommerceOptimized;

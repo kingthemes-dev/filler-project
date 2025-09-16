@@ -50,7 +50,7 @@ export default function CategoryTabs({ onCategoryChange, selectedCategories }: C
       }));
       
       // Sortuj kategorie - "Wszystkie kategorie" na początku
-      const sortedCategories = allCategories.sort((a, b) => {
+      const sortedCategories = allCategories.sort((a: any, b: any) => {
         if (a.name === 'Wszystkie kategorie') return -1;
         if (b.name === 'Wszystkie kategorie') return 1;
         return a.name.localeCompare(b.name);
@@ -85,7 +85,7 @@ export default function CategoryTabs({ onCategoryChange, selectedCategories }: C
   }
 
   return (
-    <div className="bg-gray-50 py-8 mx-6 rounded-3xl">
+    <div className="bg-gray-50 py-8 rounded-3xl">
       <div className="max-w-[95vw] mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-8">

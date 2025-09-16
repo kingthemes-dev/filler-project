@@ -548,13 +548,7 @@ export default function MyAccountPage() {
                           <div className="p-4">
                             <div className="text-sm text-gray-500 mb-1">
                               {product.categories && product.categories.length > 0 
-                                ? (() => {
-                                    // Znajdź pierwszą kategorię, która nie jest "Wszystkie kategorie"
-                                    const mainCategory = product.categories.find(cat => 
-                                      cat.name !== 'Wszystkie kategorie' && cat.name !== 'Wszystkie'
-                                    );
-                                    return mainCategory ? mainCategory.name : product.categories[0].name;
-                                  })()
+                                ? product.categories[0].name 
                                 : 'Bez kategorii'
                               }
                             </div>
