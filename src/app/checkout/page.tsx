@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
@@ -58,7 +58,7 @@ interface CheckoutForm {
   acceptNewsletter: boolean;
 }
 
-export default function CheckoutPage() {
+function CheckoutPageInner() {
   const { items, total, itemCount, clearCart } = useCartStore();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
@@ -1201,5 +1201,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutPageInner />
+    </Suspense>
   );
 }
