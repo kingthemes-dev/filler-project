@@ -409,10 +409,11 @@ class WooCommerceService {
       }
 
       return await response.json();
-    } catch (error) {
+    } catch (error: any) {
       // In headless mode, don't throw errors for cart operations
       console.log('ℹ️ WooCommerce cart API unavailable, using local cart only');
-      return { success: false, error: error.message };
+      const errMsg = typeof error === 'object' && error && 'message' in error ? (error as any).message : 'unknown error';
+      return { success: false, error: errMsg };
     }
   }
 
