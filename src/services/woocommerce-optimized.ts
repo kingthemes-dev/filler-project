@@ -351,7 +351,7 @@ class WooCommerceService {
         catalog_visibility: 'visible',
         featured_media: 0,
         type: 'simple',
-        _links: {}
+        _links: { self: [], collection: [] }
       };
     }
   }
