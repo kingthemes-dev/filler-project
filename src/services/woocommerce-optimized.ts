@@ -345,7 +345,6 @@ class WooCommerceService {
         tax_status: 'taxable',
         tax_class: '',
         total_sales: 0,
-        post_password: '',
         catalog_visibility: 'visible',
         featured_media: 0,
         type: 'simple',
