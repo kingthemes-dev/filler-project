@@ -341,7 +341,7 @@ class WooCommerceService {
         downloads: [],
         download_limit: -1,
         download_expiry: -1,
-        external_url: '',
+        // remove external_url to match WooProduct type
         button_text: '',
         tax_status: 'taxable',
         tax_class: '',
