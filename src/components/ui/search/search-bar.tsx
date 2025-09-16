@@ -305,11 +305,11 @@ export default function SearchBar({
                       
                       <div className="flex-shrink-0 ml-3 text-right">
                         <p className="text-sm font-medium text-gray-900">
-                          {formatPrice(product.sale_price || product.price)}
+                          {formatPrice(parseFloat(product.sale_price || product.price || '0'))}
                         </p>
                         {product.sale_price && (
                           <p className="text-xs text-gray-500 line-through">
-                            {formatPrice(product.price)}
+                            {formatPrice(parseFloat(product.price || '0'))}
                           </p>
                         )}
                       </div>
