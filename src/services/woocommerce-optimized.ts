@@ -158,7 +158,7 @@ class WooCommerceService {
   }
 
   private getMockProducts(query: WooProductQuery = {}): WooApiResponse<WooProduct> {
-    const mockProducts: WooProduct[] = [
+    const mockProducts: any[] = [
       {
         id: 1,
         name: 'Krem nawilżający z kwasem hialuronowym',
