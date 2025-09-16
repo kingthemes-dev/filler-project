@@ -346,7 +346,6 @@ class WooCommerceService {
         tax_class: '',
         total_sales: 0,
         catalog_visibility: 'visible',
-        featured_media: 0,
         type: 'simple',
         _links: { self: [], collection: [] }
       };
