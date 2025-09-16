@@ -399,7 +399,7 @@ export default function ShopPage() {
             <div className="mb-6">
               <p className="text-gray-600">
                 Znaleziono <span className="font-semibold">{totalProducts}</span> produktów
-                {filters.category && ` w kategorii "${categories.find(c => c.slug === filters.category)?.name}"`}
+                {filters.categories.length > 0 && ` w kategorii "${categories.find(c => c.slug === filters.categories[0])?.name}"`}
               </p>
             </div>
 
