@@ -92,9 +92,9 @@ export class MockPaymentService {
    */
   async isApplePayAvailable(): Promise<boolean> {
     // W prawdziwej implementacji sprawdzamy czy Apple Pay jest dostępne
-    return typeof window !== 'undefined' && 
-           'ApplePaySession' in window && 
-           ApplePaySession.canMakePayments();
+    if (typeof window === 'undefined') return false;
+    const ApplePay = (window as any).ApplePaySession;
+    return !!(ApplePay && typeof ApplePay.canMakePayments === 'function' && ApplePay.canMakePayments());
   }
 
   /**
