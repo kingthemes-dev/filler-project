@@ -408,7 +408,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                                               <div className={`text-xs mt-1 ${
                                                 isSelected ? 'text-gray-200' : 'text-gray-500'
                                               }`}>
-                                                {formatPrice(variantPrice.toString())}
+                                                {formatPrice(variantPrice)}
                                               </div>
                                             </div>
                                           </button>
