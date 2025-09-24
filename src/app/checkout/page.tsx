@@ -501,7 +501,7 @@ function CheckoutPageInner() {
               order_id: orderId,
               customer_email: form.email,
               customer_name: `${form.firstName} ${form.lastName}`,
-              order_number: String(orderData.number || orderData.order?.number || orderId),
+              order_number: String(orderId),
               total: finalTotal,
               items: items.map(item => ({
                 name: item.name,
