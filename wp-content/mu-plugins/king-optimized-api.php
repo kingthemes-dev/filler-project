@@ -390,9 +390,9 @@ class KingOptimizedAPI {
         $cache_key = 'product_optimized_' . $slug;
         
         // Try cache first
-        $cached_data = $this->get_cache($cache_key);
+        $cached_data = $this->get_from_cache($cache_key);
         if ($cached_data) {
-            $this->set_cache_headers(true);
+            $this->add_cache_headers(true);
             return rest_ensure_response($cached_data);
         }
         
@@ -536,8 +536,8 @@ class KingOptimizedAPI {
         );
         
         // Cache for 1 hour
-        $this->set_cache($cache_key, $response, 3600);
-        $this->set_cache_headers(false);
+        $this->set_cache($cache_key, $response);
+        $this->add_cache_headers(false);
         
         return rest_ensure_response($response);
     }
