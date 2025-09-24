@@ -387,14 +387,6 @@ class KingOptimizedAPI {
      */
     public function get_product_optimized($request) {
         $slug = $request->get_param('slug');
-        $cache_key = 'product_optimized_' . $slug;
-        
-        // Try cache first
-        $cached_data = $this->get_from_cache($cache_key);
-        if ($cached_data) {
-            $this->add_cache_headers(true);
-            return rest_ensure_response($cached_data);
-        }
         
         global $wpdb;
         
@@ -535,10 +527,7 @@ class KingOptimizedAPI {
             'rating_count' => get_post_meta($product_id, '_wc_review_count', true)
         );
         
-        // Cache for 1 hour
-        $this->set_cache($cache_key, $response);
-        $this->add_cache_headers(false);
-        
+        // Return response without cache for now
         return rest_ensure_response($response);
     }
     
