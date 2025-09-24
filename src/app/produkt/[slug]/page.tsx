@@ -83,8 +83,9 @@ export default function ProductPage({ params }: ProductPageProps) {
         setLoading(true);
         console.log('🔍 Fetching product by slug:', slug);
         
-        // Fetch real product data from WooCommerce
-        const productData = await wooCommerceService.getProductBySlug(slug);
+        // Fetch optimized product data from custom endpoint
+        const response = await fetch(`/api/woocommerce?endpoint=king-optimized/product/${slug}&cache=off`);
+        const productData = await response.json();
         
         if (!productData) {
           console.error('❌ Product not found:', slug);

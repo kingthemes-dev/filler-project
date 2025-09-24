@@ -918,6 +918,28 @@ export async function GET(req: NextRequest) {
   const endpoint = searchParams.get("endpoint") || "products";
   const bypassCache = searchParams.get("cache") === "off";
   
+  // Optimized product endpoint
+  if (endpoint.startsWith('king-optimized/product/')) {
+    const slug = endpoint.replace('king-optimized/product/', '');
+    const url = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-optimized/v1/product/${slug}`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/json' },
+        cache: bypassCache ? 'no-store' : 'default'
+      });
+      
+      if (!response.ok) {
+        return NextResponse.json({ success: false, error: 'Product not found' }, { status: response.status });
+      }
+      
+      const data = await response.json();
+      return NextResponse.json(data);
+    } catch (error: any) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+  }
+  
   // Payment gateways
   if (endpoint === 'payment_gateways') {
     if (!WC_URL || !CK || !CS) {

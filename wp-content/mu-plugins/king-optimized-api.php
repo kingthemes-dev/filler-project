@@ -36,6 +36,20 @@ class KingOptimizedAPI {
             'permission_callback' => '__return_true'
         ));
         
+        // Single product with related data - SUPER OPTIMIZED
+        register_rest_route('king-optimized/v1', '/product/(?P<slug>[a-zA-Z0-9-]+)', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_product_optimized'),
+            'permission_callback' => '__return_true',
+            'args' => array(
+                'slug' => array(
+                    'required' => true,
+                    'type' => 'string',
+                    'description' => 'Product slug'
+                ),
+            )
+        ));
+        
         // Shop data - optimized product list
         register_rest_route('king-optimized/v1', '/shop', array(
             'methods' => 'GET',
@@ -366,6 +380,166 @@ class KingOptimizedAPI {
         header('Cache-Control: public, s-maxage=300, stale-while-revalidate=86400');
         header('X-Cache-Status: ' . ($is_hit ? 'HIT' : 'MISS'));
         header('X-Redis-Available: ' . ($this->redis_available ? 'true' : 'false'));
+    }
+    
+    /**
+     * Get single product with all related data in ONE optimized request
+     */
+    public function get_product_optimized($request) {
+        $slug = $request->get_param('slug');
+        $cache_key = 'product_optimized_' . $slug;
+        
+        // Try cache first
+        $cached_data = $this->get_cache($cache_key);
+        if ($cached_data) {
+            $this->set_cache_headers(true);
+            return rest_ensure_response($cached_data);
+        }
+        
+        global $wpdb;
+        
+        // Get product by slug with single query
+        $product = $wpdb->get_row($wpdb->prepare("
+            SELECT p.*, pm.meta_value as product_meta
+            FROM {$wpdb->posts} p
+            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_product_data'
+            WHERE p.post_name = %s 
+            AND p.post_type = 'product' 
+            AND p.post_status = 'publish'
+        ", $slug));
+        
+        if (!$product) {
+            return new WP_Error('product_not_found', 'Product not found', array('status' => 404));
+        }
+        
+        $product_id = $product->ID;
+        
+        // Get all product data in parallel queries
+        $product_data = array();
+        $product_meta = get_post_meta($product_id);
+        $product_images = wp_get_attachment_image_src(get_post_thumbnail_id($product_id), 'full');
+        $gallery_images = get_post_meta($product_id, '_product_image_gallery', true);
+        
+        // Get categories
+        $categories = wp_get_post_terms($product_id, 'product_cat', array('fields' => 'all'));
+        $category_data = array();
+        foreach ($categories as $cat) {
+            $category_data[] = array(
+                'id' => $cat->term_id,
+                'name' => $cat->name,
+                'slug' => $cat->slug
+            );
+        }
+        
+        // Get attributes
+        $attributes = wc_get_product_attributes($product_id);
+        $attribute_data = array();
+        foreach ($attributes as $attribute) {
+            $attribute_data[] = array(
+                'name' => $attribute->get_name(),
+                'options' => $attribute->get_options(),
+                'visible' => $attribute->get_visible(),
+                'variation' => $attribute->get_variation()
+            );
+        }
+        
+        // Get variations if variable product
+        $variations = array();
+        if (get_post_meta($product_id, '_product_type', true) === 'variable') {
+            $variation_ids = $wpdb->get_col($wpdb->prepare("
+                SELECT ID FROM {$wpdb->posts} 
+                WHERE post_parent = %d AND post_type = 'product_variation' 
+                AND post_status = 'publish'
+            ", $product_id));
+            
+            foreach ($variation_ids as $variation_id) {
+                $variation = wc_get_product($variation_id);
+                if ($variation) {
+                    $variations[] = array(
+                        'id' => $variation_id,
+                        'price' => $variation->get_price(),
+                        'regular_price' => $variation->get_regular_price(),
+                        'sale_price' => $variation->get_sale_price(),
+                        'attributes' => $variation->get_attributes(),
+                        'stock_status' => $variation->get_stock_status(),
+                        'manage_stock' => $variation->get_manage_stock(),
+                        'stock_quantity' => $variation->get_stock_quantity()
+                    );
+                }
+            }
+        }
+        
+        // Get related products (same category, limit 4)
+        $related_products = array();
+        if (!empty($categories)) {
+            $related_ids = $wpdb->get_col($wpdb->prepare("
+                SELECT DISTINCT p.ID FROM {$wpdb->posts} p
+                INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+                INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+                WHERE tt.term_id IN (" . implode(',', array_map('intval', wp_list_pluck($categories, 'term_id'))) . ")
+                AND p.ID != %d
+                AND p.post_type = 'product'
+                AND p.post_status = 'publish'
+                LIMIT 4
+            ", $product_id));
+            
+            foreach ($related_ids as $related_id) {
+                $related_product = wc_get_product($related_id);
+                if ($related_product) {
+                    $related_products[] = array(
+                        'id' => $related_id,
+                        'name' => $related_product->get_name(),
+                        'slug' => $related_product->get_slug(),
+                        'price' => $related_product->get_price(),
+                        'regular_price' => $related_product->get_regular_price(),
+                        'sale_price' => $related_product->get_sale_price(),
+                        'image' => wp_get_attachment_image_src(get_post_thumbnail_id($related_id), 'medium')[0],
+                        'stock_status' => $related_product->get_stock_status()
+                    );
+                }
+            }
+        }
+        
+        // Build optimized response
+        $response = array(
+            'id' => $product_id,
+            'name' => $product->post_title,
+            'slug' => $product->post_name,
+            'description' => $product->post_content,
+            'short_description' => $product->post_excerpt,
+            'price' => get_post_meta($product_id, '_price', true),
+            'regular_price' => get_post_meta($product_id, '_regular_price', true),
+            'sale_price' => get_post_meta($product_id, '_sale_price', true),
+            'on_sale' => get_post_meta($product_id, '_sale_price', true) ? true : false,
+            'stock_status' => get_post_meta($product_id, '_stock_status', true),
+            'manage_stock' => get_post_meta($product_id, '_manage_stock', true),
+            'stock_quantity' => get_post_meta($product_id, '_stock_quantity', true),
+            'weight' => get_post_meta($product_id, '_weight', true),
+            'dimensions' => array(
+                'length' => get_post_meta($product_id, '_length', true),
+                'width' => get_post_meta($product_id, '_width', true),
+                'height' => get_post_meta($product_id, '_height', true)
+            ),
+            'image' => $product_images ? $product_images[0] : '',
+            'images' => array_merge(
+                $product_images ? array($product_images[0]) : array(),
+                $gallery_images ? array_map('wp_get_attachment_url', explode(',', $gallery_images)) : array()
+            ),
+            'categories' => $category_data,
+            'attributes' => $attribute_data,
+            'variations' => $variations,
+            'related_products' => $related_products,
+            'type' => get_post_meta($product_id, '_product_type', true),
+            'featured' => get_post_meta($product_id, '_featured', true) === 'yes',
+            'average_rating' => get_post_meta($product_id, '_wc_average_rating', true),
+            'rating_count' => get_post_meta($product_id, '_wc_review_count', true)
+        );
+        
+        // Cache for 1 hour
+        $this->set_cache($cache_key, $response, 3600);
+        $this->set_cache_headers(false);
+        
+        return rest_ensure_response($response);
     }
     
     /**
