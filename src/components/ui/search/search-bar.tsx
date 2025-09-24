@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, TrendingUp, Clock, Star } from 'lucide-react';
+import { Search, X, Star } from 'lucide-react';
 import { WooCommerceService } from '@/services/woocommerce-optimized';
-import Link from 'next/link';
 import { formatPrice } from '@/utils/format-price';
+import Image from 'next/image';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -37,7 +37,7 @@ export default function SearchBar({
   const [isOpen, setIsOpen] = useState(false);
   // Removed mock suggestions/popular searches for ultra-fast real search
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [popularSearches, setPopularSearches] = useState<string[]>([]);
+  const [popularSearches] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<WooProduct[]>([]);
   const [wooService, setWooService] = useState<WooCommerceService | null>(null);
@@ -174,9 +174,9 @@ export default function SearchBar({
   };
 
   // Handle suggestion click
-  const handleSuggestionClick = (suggestion: string) => {
-    handleSearch(suggestion);
-  };
+  // const handleSuggestionClick = (suggestion: string) => {
+  //   handleSearch(suggestion);
+  // };
 
   // Handle result click
   const handleResultClick = (product: WooProduct) => {
@@ -272,9 +272,11 @@ export default function SearchBar({
                     >
                       <div className="flex-shrink-0 w-12 h-12 bg-gray-200 rounded-lg mr-3">
                         {product.images && product.images.length > 0 ? (
-                          <img 
+                          <Image 
                             src={product.images[0].src} 
                             alt={product.images[0].alt || product.name}
+                            width={48}
+                            height={48}
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (
@@ -325,7 +327,7 @@ export default function SearchBar({
             {!isLoading && query.length >= 2 && !hasResults && suggestions.length === 0 && (
               <div className="p-4 text-center text-gray-500">
                 <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p>Nie znaleziono produktów dla "{query}"</p>
+                <p>Nie znaleziono produktów dla &quot;{query}&quot;</p>
                 <p className="text-sm mt-1">Spróbuj inne słowa kluczowe</p>
               </div>
             )}

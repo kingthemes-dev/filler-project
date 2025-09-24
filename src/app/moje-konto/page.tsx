@@ -2,28 +2,51 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, MapPin, Edit, Save, X, Shield, CreditCard, Truck, Heart, ShoppingCart, Eye } from 'lucide-react';
+import { User, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, Heart, ShoppingCart, Eye, FileText, Package, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import { useCartStore } from '@/stores/cart-store';
+import { WooProduct } from '@/types/woocommerce';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import { 
+  validateNIP, 
+  validatePhone, 
+  validateEmail, 
+  validateName, 
+  validateCompanyName, 
+  validateAddress, 
+  validatePostalCode,
+  formatNIP,
+  formatPhone 
+} from '@/utils/validation';
 
 export default function MyAccountPage() {
   const router = useRouter();
-  const { user, isAuthenticated, updateUser, logout } = useAuthStore();
+  const { user, isAuthenticated, updateUser, updateProfile, changePassword, logout } = useAuthStore();
   const { favorites, removeFromFavorites } = useFavoritesStore();
   const { addItem, openCart } = useCartStore();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
+    company: '',
+    nip: '',
+    invoiceRequest: false,
     billingAddress: '',
     billingCity: '',
     billingPostcode: '',
@@ -33,62 +56,207 @@ export default function MyAccountPage() {
     shippingPostcode: '',
     shippingCountry: 'PL'
   });
+  const [sameAsBilling, setSameAsBilling] = useState(true);
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (but wait for auth store to load)
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/');
-    }
+    // Add a small delay to let Zustand persist middleware load from localStorage
+    const timer = setTimeout(() => {
+      if (!isAuthenticated) {
+        router.push('/');
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
   // Load user data into form
   useEffect(() => {
     if (user) {
+      const meta = (user as any)?.meta_data as Array<{ key: string; value: any }> | undefined;
+      const getMeta = (k: string) => meta?.find((m) => m.key === k)?.value;
+      const billing = (user as any)?.billing || {};
+      const shipping = (user as any)?.shipping || {};
+      const resolvedBillingAddress = billing.address || billing.address_1 || '';
+      const resolvedShippingAddress = shipping.address || shipping.address_1 || '';
+      const resolvedNip = billing.nip || getMeta?.('_billing_nip') || '';
+      const resolvedInvoiceReqRaw = (billing.invoiceRequest !== undefined ? billing.invoiceRequest : getMeta?.('_invoice_request'));
+      const resolvedInvoiceReq = resolvedInvoiceReqRaw === true || resolvedInvoiceReqRaw === 'yes' || resolvedInvoiceReqRaw === '1';
+
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        phone: user.billing?.phone || '',
-        billingAddress: user.billing?.address || '',
-        billingCity: user.billing?.city || '',
-        billingPostcode: user.billing?.postcode || '',
-        billingCountry: user.billing?.country || 'PL',
-        shippingAddress: user.shipping?.address || '',
-        shippingCity: user.shipping?.city || '',
-        shippingPostcode: user.shipping?.postcode || '',
-        shippingCountry: user.shipping?.country || 'PL'
+        phone: billing.phone || '',
+        company: billing.company || '',
+        nip: String(resolvedNip || ''),
+        invoiceRequest: resolvedInvoiceReq,
+        billingAddress: resolvedBillingAddress,
+        billingCity: billing.city || '',
+        billingPostcode: billing.postcode || '',
+        billingCountry: billing.country || 'PL',
+        shippingAddress: resolvedShippingAddress,
+        shippingCity: shipping.city || '',
+        shippingPostcode: shipping.postcode || '',
+        shippingCountry: shipping.country || 'PL'
       });
+      setSameAsBilling(
+        !resolvedShippingAddress && !shipping.city && !shipping.postcode
+      );
     }
   }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = () => {
-    if (user) {
-      updateUser({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        billing: {
-          address: formData.billingAddress,
-          city: formData.billingCity,
-          postcode: formData.billingPostcode,
-          country: formData.billingCountry,
-          phone: formData.phone
-        },
-        shipping: {
-          address: formData.shippingAddress,
-          city: formData.shippingCity,
-          postcode: formData.shippingPostcode,
-          country: formData.shippingCountry
-        }
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
       });
-      setIsEditing(false);
     }
   };
 
-  const handleAddToCart = (product: any) => {
+  // Format input values
+  const handleNIPChange = (value: string) => {
+    const formatted = formatNIP(value);
+    handleInputChange('nip', formatted);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhone(value);
+    handleInputChange('phone', formatted);
+  };
+
+  // Validation function
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+
+    // Validate required fields
+    const firstNameValidation = validateName(formData.firstName, 'Imię');
+    if (!firstNameValidation.isValid) {
+      errors.firstName = firstNameValidation.message!;
+    }
+
+    const lastNameValidation = validateName(formData.lastName, 'Nazwisko');
+    if (!lastNameValidation.isValid) {
+      errors.lastName = lastNameValidation.message!;
+    }
+
+    // Validate optional fields
+    const nipValidation = validateNIP(formData.nip);
+    if (!nipValidation.isValid) {
+      errors.nip = nipValidation.message!;
+    }
+
+    const phoneValidation = validatePhone(formData.phone);
+    if (!phoneValidation.isValid) {
+      errors.phone = phoneValidation.message!;
+    }
+
+    const companyValidation = validateCompanyName(formData.company);
+    if (!companyValidation.isValid) {
+      errors.company = companyValidation.message!;
+    }
+
+    const billingAddressValidation = validateAddress(formData.billingAddress, 'Adres rozliczeniowy');
+    if (!billingAddressValidation.isValid) {
+      errors.billingAddress = billingAddressValidation.message!;
+    }
+
+    const billingPostcodeValidation = validatePostalCode(formData.billingPostcode);
+    if (!billingPostcodeValidation.isValid) {
+      errors.billingPostcode = billingPostcodeValidation.message!;
+    }
+
+    const shippingAddressValidation = validateAddress(formData.shippingAddress, 'Adres dostawy');
+    if (!shippingAddressValidation.isValid) {
+      errors.shippingAddress = shippingAddressValidation.message!;
+    }
+
+    const shippingPostcodeValidation = validatePostalCode(formData.shippingPostcode);
+    if (!shippingPostcodeValidation.isValid) {
+      errors.shippingPostcode = shippingPostcodeValidation.message!;
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSave = async () => {
+    // Validate form before saving
+    if (!validateForm()) {
+      alert('Proszę poprawić błędy w formularzu');
+      return;
+    }
+
+    try {
+      const profileData = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        billing: {
+          company: formData.company.trim(),
+          nip: formData.nip.trim(),
+          invoiceRequest: formData.invoiceRequest ? 'yes' : 'no',
+          address: formData.billingAddress.trim(),
+          city: formData.billingCity.trim(),
+          postcode: formData.billingPostcode.trim(),
+          country: formData.billingCountry,
+          phone: formData.phone.trim()
+        },
+        shipping: {
+          address: formData.shippingAddress.trim(),
+          city: formData.shippingCity.trim(),
+          postcode: formData.shippingPostcode.trim(),
+          country: formData.shippingCountry
+        }
+      };
+
+      const result = await updateProfile(profileData);
+      
+      if (result.success) {
+        setIsEditing(false);
+        setValidationErrors({});
+        alert('Profil został zaktualizowany!');
+      } else {
+        alert(`Błąd: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Wystąpił błąd podczas aktualizacji profilu');
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('Nowe hasła nie są identyczne');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      alert('Nowe hasło musi mieć co najmniej 8 znaków');
+      return;
+    }
+
+    try {
+      const result = await changePassword(passwordData.currentPassword, passwordData.newPassword);
+      
+      if (result.success) {
+        setShowPasswordModal(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        alert('Hasło zostało zmienione!');
+      } else {
+        alert(`Błąd: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      alert('Wystąpił błąd podczas zmiany hasła');
+    }
+  };
+
+  const handleAddToCart = (product: WooProduct) => {
     const cartItem = {
       id: product.id,
       name: product.name,
@@ -111,19 +279,32 @@ export default function MyAccountPage() {
   const handleCancel = () => {
     // Reset form to original user data
     if (user) {
+      const meta = (user as any)?.meta_data as Array<{ key: string; value: any }> | undefined;
+      const getMeta = (k: string) => meta?.find((m) => m.key === k)?.value;
+      const billing = (user as any)?.billing || {};
+      const shipping = (user as any)?.shipping || {};
+      const resolvedBillingAddress = billing.address || billing.address_1 || '';
+      const resolvedShippingAddress = shipping.address || shipping.address_1 || '';
+      const resolvedNip = billing.nip || getMeta?.('_billing_nip') || '';
+      const resolvedInvoiceReqRaw = (billing.invoiceRequest !== undefined ? billing.invoiceRequest : getMeta?.('_invoice_request'));
+      const resolvedInvoiceReq = resolvedInvoiceReqRaw === true || resolvedInvoiceReqRaw === 'yes' || resolvedInvoiceReqRaw === '1';
+
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        phone: user.billing?.phone || '',
-        billingAddress: user.billing?.address || '',
-        billingCity: user.billing?.city || '',
-        billingPostcode: user.billing?.postcode || '',
-        billingCountry: user.billing?.country || 'PL',
-        shippingAddress: user.shipping?.address || '',
-        shippingCity: user.shipping?.city || '',
-        shippingPostcode: user.shipping?.postcode || '',
-        shippingCountry: user.shipping?.country || 'PL'
+        phone: billing.phone || '',
+        company: billing.company || '',
+        nip: String(resolvedNip || ''),
+        invoiceRequest: resolvedInvoiceReq,
+        billingAddress: resolvedBillingAddress,
+        billingCity: billing.city || '',
+        billingPostcode: billing.postcode || '',
+        billingCountry: billing.country || 'PL',
+        shippingAddress: resolvedShippingAddress,
+        shippingCity: shipping.city || '',
+        shippingPostcode: shipping.postcode || '',
+        shippingCountry: shipping.country || 'PL'
       });
     }
     setIsEditing(false);
@@ -184,6 +365,13 @@ export default function MyAccountPage() {
                   </Badge>
                 )}
               </button>
+              <button
+                onClick={() => router.push('/moje-faktury')}
+                className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm"
+              >
+                <FileText className="w-4 h-4 inline mr-2" />
+                Faktury
+              </button>
             </nav>
           </div>
         </div>
@@ -217,9 +405,74 @@ export default function MyAccountPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Company */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Imię
+                    Nazwa firmy
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => handleInputChange('company', e.target.value)}
+                    disabled={!isEditing}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                      isEditing 
+                        ? validationErrors.company 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
+                        : 'border-gray-200 bg-gray-50 text-gray-600'
+                    }`}
+                    placeholder="np. King Brand Sp. z o.o."
+                  />
+                  {validationErrors.company && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.company}
+                    </div>
+                  )}
+                </div>
+                {/* NIP */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    NIP
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nip}
+                    onChange={(e) => handleNIPChange(e.target.value)}
+                    disabled={!isEditing}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                      isEditing 
+                        ? validationErrors.nip 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
+                        : 'border-gray-200 bg-gray-50 text-gray-600'
+                    }`}
+                    placeholder="123-456-78-90"
+                  />
+                  {validationErrors.nip && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.nip}
+                    </div>
+                  )}
+                </div>
+                {/* Invoice Request */}
+                <div className="sm:col-span-2">
+                  <label className="flex items-center space-x-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={formData.invoiceRequest}
+                      onChange={(e) => setFormData(prev => ({ ...prev, invoiceRequest: e.target.checked }))}
+                      disabled={!isEditing}
+                      className="w-4 h-4"
+                    />
+                    <span>Chcę faktury (na firmę)</span>
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Imię <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -228,14 +481,23 @@ export default function MyAccountPage() {
                     disabled={!isEditing}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
-                        ? 'border-gray-300' 
+                        ? validationErrors.firstName 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
                         : 'border-gray-200 bg-gray-50 text-gray-600'
                     }`}
+                    placeholder="np. Jan"
                   />
+                  {validationErrors.firstName && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.firstName}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nazwisko
+                    Nazwisko <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -244,10 +506,19 @@ export default function MyAccountPage() {
                     disabled={!isEditing}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
-                        ? 'border-gray-300' 
+                        ? validationErrors.lastName 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
                         : 'border-gray-200 bg-gray-50 text-gray-600'
                     }`}
+                    placeholder="np. Kowalski"
                   />
+                  {validationErrors.lastName && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.lastName}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -270,14 +541,23 @@ export default function MyAccountPage() {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
                     disabled={!isEditing}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
-                        ? 'border-gray-300' 
+                        ? validationErrors.phone 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
                         : 'border-gray-200 bg-gray-50 text-gray-600'
                     }`}
+                    placeholder="+48 123 456 789"
                   />
+                  {validationErrors.phone && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.phone}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -399,6 +679,29 @@ export default function MyAccountPage() {
                   <Truck className="w-5 h-5 mr-2" />
                   Adres dostawy
                 </h2>
+                {isEditing && (
+                  <label className="flex items-center space-x-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={sameAsBilling}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSameAsBilling(checked);
+                        if (checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            shippingAddress: prev.billingAddress,
+                            shippingCity: prev.billingCity,
+                            shippingPostcode: prev.billingPostcode,
+                            shippingCountry: prev.billingCountry
+                          }));
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span>Adres dostawy taki sam jak rozliczeniowy</span>
+                  </label>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -410,7 +713,7 @@ export default function MyAccountPage() {
                     type="text"
                     value={formData.shippingAddress}
                     onChange={(e) => handleInputChange('shippingAddress', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || sameAsBilling}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
                         ? 'border-gray-300' 
@@ -426,7 +729,7 @@ export default function MyAccountPage() {
                     type="text"
                     value={formData.shippingCity}
                     onChange={(e) => handleInputChange('shippingCity', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || sameAsBilling}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
                         ? 'border-gray-300' 
@@ -442,7 +745,7 @@ export default function MyAccountPage() {
                     type="text"
                     value={formData.shippingPostcode}
                     onChange={(e) => handleInputChange('shippingPostcode', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || sameAsBilling}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
                         ? 'border-gray-300' 
@@ -457,7 +760,7 @@ export default function MyAccountPage() {
                   <select
                     value={formData.shippingCountry}
                     onChange={(e) => handleInputChange('shippingCountry', e.target.value)}
-                    disabled={!isEditing}
+                    disabled={!isEditing || sameAsBilling}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
                         ? 'border-gray-300' 
@@ -523,9 +826,11 @@ export default function MyAccountPage() {
                         >
                           {/* Product Image */}
                           <div className="relative aspect-square bg-gray-100">
-                            <img
+                            <Image
                               src={imageUrl}
                               alt={product.name}
+                              width={200}
+                              height={200}
                               className="w-full h-full object-cover"
                             />
                             {isOnSale && (
@@ -644,21 +949,31 @@ export default function MyAccountPage() {
                 <div className="space-y-3">
                   <Link
                     href="/moje-zamowienia"
-                    className="block w-full text-left px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 w-full text-left px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    Moje zamówienia
+                    <Package className="w-4 h-4" />
+                    <span>Moje zamówienia</span>
                   </Link>
                   <Link
                     href="/koszyk"
-                    className="block w-full text-left px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 w-full text-left px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    Koszyk
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>Koszyk</span>
+                  </Link>
+                  <Link
+                    href="/moje-faktury"
+                    className="flex items-center gap-2 w-full text-left px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Moje faktury</span>
                   </Link>
                   <button
                     onClick={logout}
-                    className="w-full text-left px-4 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                    className="flex items-center gap-2 w-full text-left px-4 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                   >
-                    Wyloguj się
+                    <X className="w-4 h-4" />
+                    <span>Wyloguj się</span>
                   </button>
                 </div>
               </motion.div>
@@ -679,7 +994,10 @@ export default function MyAccountPage() {
                 <p className="text-sm text-gray-600 mb-3">
                   Twoje dane są bezpieczne i szyfrowane.
                 </p>
-                <button className="text-sm text-black font-medium hover:underline transition-colors">
+                <button 
+                  onClick={() => setShowPasswordModal(true)}
+                  className="text-sm text-black font-medium hover:underline transition-colors"
+                >
                   Zmień hasło
                 </button>
               </motion.div>
@@ -687,6 +1005,105 @@ export default function MyAccountPage() {
           </div>
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowPasswordModal(false)}
+          />
+
+          {/* Modal */}
+          <motion.div
+            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Zmień hasło</h2>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Current Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Aktualne hasło
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nowe hasło
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Potwierdź nowe hasło
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={handlePasswordChange}
+                  className="flex-1 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Zmień hasło
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

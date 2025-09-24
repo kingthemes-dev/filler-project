@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import KingProductCard from '@/components/king-product-card';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import { WooProduct } from '@/types/woocommerce';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface SimilarProductsProps {
@@ -16,7 +17,7 @@ interface SimilarProductsProps {
 }
 
 export default function SimilarProducts({ productId, crossSellIds = [], relatedIds = [], categoryId, limit = 4 }: SimilarProductsProps) {
-  const [similarProducts, setSimilarProducts] = useState<any[]>([]);
+  const [similarProducts, setSimilarProducts] = useState<WooProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -24,40 +25,51 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
     const fetchSimilarProducts = async () => {
       try {
         setLoading(true);
-        let products: any[] = [];
+        let products: WooProduct[] = [];
+        const isValid = (p: any) => (
+          p && p.price && String(p.price).trim() !== '' &&
+          p.name && p.name !== 'Produkt' &&
+          Array.isArray(p.images) && p.images.length > 0
+        );
 
-        // Priority 1: Cross-sell products (często kupowane razem)
-        if (crossSellIds && crossSellIds.length > 0) {
-          console.log('🛒 Fetching cross-sell products:', crossSellIds);
-          const crossSellProducts = await Promise.all(
-            crossSellIds.slice(0, limit).map(async (id) => {
-              try {
-                const product = await wooCommerceService.getProduct(id);
-                return product;
-              } catch (error) {
-                console.error(`Error fetching cross-sell product ${id}:`, error);
-                return null;
-              }
-            })
-          );
-          products = crossSellProducts.filter(Boolean);
-        }
+        // PERFORMANCE FIX: Batch fetch multiple products in single API call
+        // Remove duplicates by using Set and convert back to array
+        const allIds = Array.from(new Set([
+          ...(crossSellIds || []).slice(0, limit),
+          ...(relatedIds || []).slice(0, limit)
+        ])).slice(0, limit);
 
-        // Priority 2: Related products (produkty powiązane)
-        if (products.length < limit && relatedIds && relatedIds.length > 0) {
-          console.log('🔗 Fetching related products:', relatedIds);
-          const relatedProducts = await Promise.all(
-            relatedIds.slice(0, limit - products.length).map(async (id) => {
-              try {
-                const product = await wooCommerceService.getProduct(id);
-                return product;
-              } catch (error) {
-                console.error(`Error fetching related product ${id}:`, error);
-                return null;
+        if (allIds.length > 0) {
+          console.log('🚀 Batch fetching similar products:', allIds);
+          try {
+            // Use batch endpoint if available, otherwise fall back to individual calls
+            const batchResponse = await fetch(`/api/woocommerce?endpoint=products&include=${allIds.join(',')}&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count`);
+            
+            if (batchResponse.ok) {
+              const batchData = await batchResponse.json();
+              if (Array.isArray(batchData)) {
+                products = batchData.filter(isValid);
+                console.log('✅ Batch fetch successful:', products.length, 'products');
               }
-            })
-          );
-          products = [...products, ...relatedProducts.filter(Boolean)];
+            } else {
+              throw new Error('Batch fetch failed, falling back to individual calls');
+            }
+          } catch (error) {
+            console.log('⚠️ Batch fetch failed, using individual calls:', error);
+            // Fallback to individual calls
+            const individualProducts = await Promise.all(
+              allIds.map(async (id) => {
+                try {
+                  const product = await wooCommerceService.getProduct(id);
+                  return product && isValid(product) ? product : null;
+                } catch (error) {
+                  console.error(`Error fetching product ${id}:`, error);
+                  return null;
+                }
+              })
+            );
+            products = individualProducts.filter(Boolean) as WooProduct[];
+          }
         }
 
         // Priority 3: Fallback to category products
@@ -72,13 +84,33 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
 
           if (categoryProducts && categoryProducts.data) {
             const filtered = categoryProducts.data
-              .filter((product: any) => product.id !== productId)
+              .filter((product: WooProduct) => product.id !== productId && isValid(product))
               .slice(0, limit - products.length);
             products = [...products, ...filtered];
           }
         }
 
-        setSimilarProducts(products.slice(0, limit));
+        // Priority 4: Final fallback to latest store products
+        if (products.length < limit) {
+          console.log('🧯 Fetching latest products as final fallback');
+          const latest = await wooCommerceService.getProducts({
+            per_page: limit - products.length + 2,
+            orderby: 'date',
+            order: 'desc'
+          });
+          if (latest && latest.data) {
+            const filtered = latest.data
+              .filter((p: WooProduct) => p.id !== productId && isValid(p))
+              .slice(0, limit - products.length);
+            products = [...products, ...filtered];
+          }
+        }
+
+        // Remove duplicates by id and slice to limit
+        const uniqueProducts = products.filter((product, index, self) => 
+          index === self.findIndex(p => p.id === product.id)
+        );
+        setSimilarProducts(uniqueProducts.slice(0, limit));
       } catch (error) {
         console.error('Error fetching similar products:', error);
         setSimilarProducts([]);
@@ -163,7 +195,12 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <KingProductCard product={product} />
+                <KingProductCard 
+                  key={`similar-${product.id}`}
+                  product={product} 
+                  showActions={true}
+                  variant="default"
+                />
               </motion.div>
             ))}
           </div>
@@ -177,9 +214,14 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
                   transform: `translateX(-${currentIndex * 100}%)`,
                 }}
               >
-                {similarProducts.map((product, index) => (
+                {similarProducts.map((product) => (
                   <div key={product.id} className="w-full flex-shrink-0 px-2">
-                    <KingProductCard product={product} />
+                    <KingProductCard 
+                      key={`similar-mobile-${product.id}`}
+                      product={product} 
+                      showActions={true}
+                      variant="default"
+                    />
                   </div>
                 ))}
               </motion.div>

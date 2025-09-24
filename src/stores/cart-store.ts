@@ -86,7 +86,7 @@ export const useCartStore = create<CartStore>()(
             const apiResponse = await wooCommerceService.addToCart(
               item.id, 
               item.quantity || 1, 
-              item.variant?.id
+              item.variant ? { id: item.variant.id, attributes: item.attributes || {} } : undefined
             );
             
             if (apiResponse.success) {

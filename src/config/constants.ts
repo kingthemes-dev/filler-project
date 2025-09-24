@@ -4,10 +4,11 @@
 export const ENV = {
   WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL || '',
   GRAPHQL_URL: process.env.NEXT_PUBLIC_GRAPHQL_URL || '',
-  WC_API_URL: process.env.NEXT_PUBLIC_WC_API_URL || '',
+  WC_API_URL: process.env.WOOCOMMERCE_API_URL || '', // SECURITY FIX: Use server-side env var
   WOO_BASE_URL: process.env.WOO_BASE_URL || '',
-  WC_CONSUMER_KEY: process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY || '',
-  WC_CONSUMER_SECRET: process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET || '',
+  // SECURITY FIX: Remove NEXT_PUBLIC_ prefixes for secrets - these should only be used server-side
+  WC_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY || '',
+  WC_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET || '',
   CDN_URL: process.env.NEXT_PUBLIC_CDN_URL || '',
   APP_ENV: process.env.NEXT_PUBLIC_APP_ENV || 'development',
   ENABLE_PWA: process.env.NEXT_PUBLIC_ENABLE_PWA === 'true',

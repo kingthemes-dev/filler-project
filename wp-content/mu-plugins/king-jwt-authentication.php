@@ -267,13 +267,20 @@ class KingJWTAuthentication {
     private function get_customer_data($user_id) {
         $customer = new WC_Customer($user_id);
         
+        // Get custom meta data (NIP, invoice request)
+        $nip = $customer->get_meta('_billing_nip');
+        $invoice_request = $customer->get_meta('_invoice_request');
+        
         return array(
             'billing' => array(
                 'address' => $customer->get_billing_address_1(),
                 'city' => $customer->get_billing_city(),
                 'postcode' => $customer->get_billing_postcode(),
                 'country' => $customer->get_billing_country(),
-                'phone' => $customer->get_billing_phone()
+                'phone' => $customer->get_billing_phone(),
+                'company' => $customer->get_billing_company(),
+                'nip' => $nip,
+                'invoice_request' => $invoice_request === 'yes'
             ),
             'shipping' => array(
                 'address' => $customer->get_shipping_address_1(),

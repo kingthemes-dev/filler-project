@@ -14,8 +14,8 @@ interface Category {
 
 interface ShopFiltersProps {
   categories: Category[];
-  capacities: any[];
-  brands: any[];
+  capacities: Array<{ id: string; name: string; slug: string }>;
+  brands: Array<{ id: string; name: string; slug: string }>;
   filters: {
     categories: string[];
     capacities: string[];
@@ -24,9 +24,8 @@ interface ShopFiltersProps {
     maxPrice: number;
     inStock: boolean;
     onSale: boolean;
-    featured: boolean;
   };
-  onFilterChange: (key: keyof ShopFiltersProps['filters'], value: any) => void;
+  onFilterChange: (key: keyof ShopFiltersProps['filters'], value: string | number | boolean) => void;
   onClearFilters: () => void;
   showFilters: boolean;
   onToggleFilters: () => void;
@@ -63,12 +62,6 @@ export default function ShopFilters({
 
 
   // Price ranges use PLN directly (not grosze)
-  const priceRanges = [
-    { label: '0 - 50 zł', min: 0, max: 50 },
-    { label: '50 - 100 zł', min: 50, max: 100 },
-    { label: '100 - 200 zł', min: 100, max: 200 },
-    { label: '200+ zł', min: 200, max: 999999 }
-  ];
 
   return (
     <>
@@ -146,7 +139,7 @@ export default function ShopFilters({
                           return a.name.localeCompare(b.name);
                         })
                         .map((category) => {
-                          const categoryId = category.name === 'Wszystkie kategorie' ? '' : category.id.toString();
+                          const categoryId = category.name === 'Wszystkie kategorie' ? '' : category.slug;
                           const isSelected = filters.categories && filters.categories.includes(categoryId);
                           
                           return (
@@ -206,20 +199,20 @@ export default function ShopFilters({
                         capacities
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((capacity) => {
-                            const isSelected = filters.capacities && filters.capacities.includes(String(capacity.id));
+                            const isSelected = filters.capacities && filters.capacities.includes(String(capacity.slug));
                             
                             return (
                               <label key={capacity.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
                                 <input
                                   type="checkbox"
-                                  name="capacities"
-                                  value={String(capacity.id)}
-                                  checked={isSelected}
-                                  onChange={() => onFilterChange('capacities', String(capacity.id))}
+                                name="capacities"
+                                value={String(capacity.slug)}
+                                checked={isSelected}
+                                onChange={() => onFilterChange('capacities', String(capacity.slug))}
                                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                                 />
                                 <span className="ml-3 text-sm font-medium text-gray-700">{capacity.name}</span>
-                                <span className="ml-auto text-xs text-gray-500">({capacity.count || 0})</span>
+                                <span className="ml-auto text-xs text-gray-500">({(capacity as { count?: number }).count || 0})</span>
                               </label>
                             );
                           })
@@ -268,20 +261,20 @@ export default function ShopFilters({
                         brands
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((brand) => {
-                            const isSelected = filters.brands && filters.brands.includes(String(brand.id));
+                            const isSelected = filters.brands && filters.brands.includes(String(brand.slug));
                             
                             return (
                               <label key={brand.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
                                 <input
                                   type="checkbox"
-                                  name="brands"
-                                  value={String(brand.id)}
-                                  checked={isSelected}
-                                  onChange={() => onFilterChange('brands', String(brand.id))}
+                                name="brands"
+                                value={String(brand.slug)}
+                                checked={isSelected}
+                                onChange={() => onFilterChange('brands', String(brand.slug))}
                                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                                 />
                                 <span className="ml-3 text-sm font-medium text-gray-700">{brand.name}</span>
-                                <span className="ml-auto text-xs text-gray-500">({brand.count || 0})</span>
+                                <span className="ml-auto text-xs text-gray-500">({(brand as { count?: number }).count || 0})</span>
                               </label>
                             );
                           })
@@ -316,26 +309,6 @@ export default function ShopFilters({
                       transition={{ duration: 0.2 }}
                       className="space-y-4"
                     >
-                      {/* Quick Price Ranges */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {priceRanges.map((range) => (
-                          <button
-                            key={range.label}
-                            onClick={() => {
-                              onFilterChange('minPrice', range.min);
-                              onFilterChange('maxPrice', range.max);
-                            }}
-                            className={`p-3 text-sm rounded-xl border transition-colors ${
-                              filters.minPrice === range.min && filters.maxPrice === range.max
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                            }`}
-                          >
-                            {range.label}
-                          </button>
-                        ))}
-                      </div>
-                      
                       {/* Custom Price Inputs */}
                       <div className="space-y-3">
                         <div className="flex gap-3">
@@ -393,41 +366,41 @@ export default function ShopFilters({
                       transition={{ duration: 0.2 }}
                       className="space-y-3"
                     >
-                      <label className="flex items-center p-4 rounded-xl hover:bg-red-50 cursor-pointer transition-colors border border-transparent hover:border-red-100">
+                      <label className={`flex items-center p-4 rounded-xl cursor-pointer transition-all duration-200 border-2 ${
+                        filters.onSale 
+                          ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200 shadow-sm' 
+                          : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent hover:border-gray-200'
+                      }`}>
                         <div className="relative">
                           <input
                             type="checkbox"
                             checked={filters.onSale}
                             onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                            className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                            className="w-5 h-5 text-red-600 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200"
                           />
                           {filters.onSale && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
                           )}
                         </div>
-                        <div className="ml-3 flex items-center">
-                          <span className="text-sm font-semibold text-red-700">🔥 Promocje</span>
-                          <span className="ml-2 text-xs text-red-500 bg-red-100 px-2 py-1 rounded-full">-20%</span>
+                        <div className="ml-4 flex items-center space-x-3">
+                          <div className={`p-2 rounded-lg ${filters.onSale ? 'bg-red-100' : 'bg-gray-100'}`}>
+                            <svg className={`w-5 h-5 ${filters.onSale ? 'text-red-600' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <span className={`text-sm font-semibold ${filters.onSale ? 'text-red-700' : 'text-gray-700'}`}>
+                              Promocje
+                            </span>
+                            <p className="text-xs text-gray-500 mt-0.5">Produkty w promocji</p>
+                          </div>
                         </div>
                       </label>
                       
-                      <label className="flex items-center p-4 rounded-xl hover:bg-yellow-50 cursor-pointer transition-colors border border-transparent hover:border-yellow-100">
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={filters.featured}
-                            onChange={(e) => onFilterChange('featured', e.target.checked)}
-                            className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                          />
-                          {filters.featured && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          )}
-                        </div>
-                        <div className="ml-3 flex items-center">
-                          <span className="text-sm font-semibold text-yellow-700">⭐ Polecane</span>
-                          <span className="ml-2 text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">TOP</span>
-                        </div>
-                      </label>
                     </motion.div>
                   )}
                 </AnimatePresence>

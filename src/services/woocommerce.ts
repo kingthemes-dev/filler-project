@@ -1,4 +1,5 @@
 import { WooProduct, WooProductQuery, WooApiResponse } from '@/types/woocommerce';
+import { CartItem } from '@/stores/cart-store';
 
 // =========================================
 // WooCommerce Store API Service
@@ -10,19 +11,19 @@ class WooCommerceService {
   private consumerSecret: string;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_WC_API_URL || '';
-    this.consumerKey = process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY || '';
-    this.consumerSecret = process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET || '';
+    // SECURITY FIX: Remove NEXT_PUBLIC_ prefixes for secrets
+    // These should only be used server-side via API routes
+    this.baseUrl = process.env.WOOCOMMERCE_API_URL || '';
+    this.consumerKey = process.env.WOOCOMMERCE_CONSUMER_KEY || '';
+    this.consumerSecret = process.env.WOOCOMMERCE_CONSUMER_SECRET || '';
     
-      // Debug logging
-  console.log('🔍 WooCommerce Service Constructor:');
-  console.log('Base URL:', this.baseUrl);
-  console.log('Consumer Key:', this.consumerKey);
-  console.log('Consumer Secret:', this.consumerSecret);
-  console.log('Environment variables:');
-  console.log('NEXT_PUBLIC_WC_API_URL:', process.env.NEXT_PUBLIC_WC_API_URL);
-  console.log('NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY:', process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY);
-  console.log('NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET:', process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET);
+    // Debug logging (server-side only)
+    if (typeof window === 'undefined') {
+      console.log('🔍 WooCommerce Service Constructor (Server-side):');
+      console.log('Base URL:', this.baseUrl);
+      console.log('Consumer Key:', this.consumerKey ? 'SET' : 'NOT SET');
+      console.log('Consumer Secret:', this.consumerSecret ? 'SET' : 'NOT SET');
+    }
   
   // Check if variables are loaded
   if (!this.consumerKey || !this.consumerSecret) {
@@ -215,7 +216,7 @@ class WooCommerceService {
   // =========================================
   // Cart Methods - King Cart API Integration
   // =========================================
-  async getCart(): Promise<any> {
+  async getCart(): Promise<{ success: boolean; cart?: { items: CartItem[]; total: number }; error?: string }> {
     try {
       // Get cart using King Cart API
       const cartUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/cart`;
@@ -233,7 +234,7 @@ class WooCommerceService {
     }
   }
 
-  async addToCart(productId: number, quantity: number = 1, variationId?: number): Promise<any> {
+  async addToCart(productId: number, quantity: number = 1, variationId?: number): Promise<{ success: boolean; message?: string; cart?: { items: CartItem[]; total: number }; error?: string }> {
     try {
       // Get nonce first
       const nonceUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/nonce`;
@@ -273,7 +274,7 @@ class WooCommerceService {
     }
   }
 
-  async removeFromCart(itemKey: string): Promise<any> {
+  async removeFromCart(itemKey: string): Promise<{ success: boolean; message?: string; cart?: { items: CartItem[]; total: number }; error?: string }> {
     try {
       // Get nonce first
       const nonceUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/nonce`;
@@ -309,7 +310,7 @@ class WooCommerceService {
     }
   }
 
-  async updateCartItem(itemKey: string, quantity: number): Promise<any> {
+  async updateCartItem(itemKey: string, quantity: number): Promise<{ success: boolean; message?: string; cart?: { items: CartItem[]; total: number }; error?: string }> {
     try {
       // Get nonce first
       const nonceUrl = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-cart/v1')}/nonce`;
@@ -351,7 +352,7 @@ class WooCommerceService {
   // =========================================
   // Categories API
   // =========================================
-async getCategories(): Promise<any> {
+async getCategories(): Promise<{ success: boolean; categories?: Array<{ id: number; name: string; slug: string; count: number }>; error?: string }> {
   try {
     const url = `${this.baseUrl}/products/categories?${this.getAuthParams()}`;
     const response = await fetch(url, {
@@ -366,8 +367,9 @@ async getCategories(): Promise<any> {
 
     const data = await response.json();
     return {
-      data: data || [],
-      total: data?.length || 0
+      success: true,
+      categories: data || [],
+      error: undefined
     };
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -384,7 +386,7 @@ async registerUser(userData: {
   email: string;
   phone: string;
   password: string;
-}): Promise<any> {
+}): Promise<{ success: boolean; user?: { id: number; email: string; first_name: string; last_name: string; username: string }; error?: string }> {
   try {
     const url = `${this.baseUrl}/customers`;
     const response = await fetch(url, {
@@ -423,7 +425,7 @@ async registerUser(userData: {
   }
 }
 
-async loginUser(email: string, password: string): Promise<any> {
+async loginUser(email: string, password: string): Promise<{ success: boolean; user?: { id: number; email: string; name: string; token: string }; error?: string }> {
   try {
     // Use our custom JWT endpoint
     const url = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-jwt/v1')}/login`;
@@ -456,7 +458,7 @@ async loginUser(email: string, password: string): Promise<any> {
   }
 }
 
-async getUserProfile(userId: number): Promise<any> {
+async getUserProfile(userId: number): Promise<{ success: boolean; user?: { id: number; email: string; first_name: string; last_name: string; username: string }; error?: string }> {
   try {
     const url = `${this.baseUrl}/customers/${userId}`;
     const response = await fetch(url, {
@@ -477,7 +479,7 @@ async getUserProfile(userId: number): Promise<any> {
   }
 }
 
-async validateJWTToken(token: string): Promise<any> {
+async validateJWTToken(token: string): Promise<{ success: boolean; valid?: boolean; user?: { id: number; email: string; name: string }; error?: string }> {
   try {
     const url = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-jwt/v1')}/validate`;
     const response = await fetch(url, {
@@ -501,7 +503,7 @@ async validateJWTToken(token: string): Promise<any> {
   }
 }
 
-async refreshJWTToken(token: string): Promise<any> {
+async refreshJWTToken(token: string): Promise<{ success: boolean; token?: string; user?: { id: number; email: string; name: string }; error?: string }> {
   try {
     const url = `${this.baseUrl.replace('/wp-json/wc/v3', '/wp-json/king-jwt/v1')}/refresh`;
     const response = await fetch(url, {

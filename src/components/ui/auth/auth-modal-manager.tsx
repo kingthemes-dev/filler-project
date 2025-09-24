@@ -27,28 +27,28 @@ export default function AuthModalManager() {
     window.addEventListener('openRegister', handleOpenRegister);
     // Document listeners (fallback)
     if (typeof document !== 'undefined') {
-      document.addEventListener('openLogin' as any, handleOpenLogin as any);
-      document.addEventListener('openRegister' as any, handleOpenRegister as any);
+      document.addEventListener('openLogin' as keyof DocumentEventMap, handleOpenLogin as EventListener);
+      document.addEventListener('openRegister' as keyof DocumentEventMap, handleOpenRegister as EventListener);
       // Alternate event names fallback
-      document.addEventListener('open-login' as any, handleOpenLogin as any);
-      document.addEventListener('open-register' as any, handleOpenRegister as any);
+      document.addEventListener('open-login' as keyof DocumentEventMap, handleOpenLogin as EventListener);
+      document.addEventListener('open-register' as keyof DocumentEventMap, handleOpenRegister as EventListener);
     }
 
     // Expose imperative helpers (last-resort fallback)
-    (window as any).openLogin = handleOpenLogin;
-    (window as any).openRegister = handleOpenRegister;
+    (window as unknown as { openLogin: () => void; openRegister: () => void }).openLogin = handleOpenLogin;
+    (window as unknown as { openLogin: () => void; openRegister: () => void }).openRegister = handleOpenRegister;
 
     return () => {
       window.removeEventListener('openLogin', handleOpenLogin);
       window.removeEventListener('openRegister', handleOpenRegister);
       if (typeof document !== 'undefined') {
-        document.removeEventListener('openLogin' as any, handleOpenLogin as any);
-        document.removeEventListener('openRegister' as any, handleOpenRegister as any);
-        document.removeEventListener('open-login' as any, handleOpenLogin as any);
-        document.removeEventListener('open-register' as any, handleOpenRegister as any);
+        document.removeEventListener('openLogin' as keyof DocumentEventMap, handleOpenLogin as EventListener);
+        document.removeEventListener('openRegister' as keyof DocumentEventMap, handleOpenRegister as EventListener);
+        document.removeEventListener('open-login' as keyof DocumentEventMap, handleOpenLogin as EventListener);
+        document.removeEventListener('open-register' as keyof DocumentEventMap, handleOpenRegister as EventListener);
       }
-      delete (window as any).openLogin;
-      delete (window as any).openRegister;
+      delete (window as unknown as { openLogin?: () => void; openRegister?: () => void }).openLogin;
+      delete (window as unknown as { openLogin?: () => void; openRegister?: () => void }).openRegister;
     };
   }, []);
 

@@ -1,12 +1,14 @@
-# 🚀 **FILLER - Headless WooCommerce Starter - ROADMAP**
+# 🚀 **FILLER - Headless WooCommerce – Zjednoczony ROADMAP / TODO**
 
-## 🎯 **PROJEKT ZASADY:**
+## 🎯 **ZASADY PROJEKTU (połączone)**
 - **Store API** - używamy WooCommerce Store API dla wszystkich funkcjonalności
 - **Headless WooCommerce** - frontend w Next.js, backend w WordPress
 - **`king-` mu-plugins** - tworzymy wtyczki z prefiksem "king-" dla brakujących endpointów
 - **Mobile-first** - projektujemy od mobile (375px) → tablet (768px) → desktop (1024px+)
 - **Monochromatyczny design** - czarno-biały, elegancki, minimalistyczny
 - **Lokalizacja** - polski język, ceny w PLN (zł)
+ - **Żadnych mocków danych** w docelowym wdrożeniu – realne API (mock tylko w dev, gdy potrzebne)
+ - **Kolejność prac**: Fundamenty → Core → Enhancements → Polish (Mobile-first)
 
 ---
 
@@ -83,7 +85,7 @@
 
 ---
 
-## 🎯 **OPTIMIZED IMPLEMENTATION ROADMAP:**
+## 🎯 **OPTIMIZED IMPLEMENTATION ROADMAP (połączone z TODO_OPTIMIZED)**
 
 ### **FAZA 6: Core WooCommerce Extensions (Priorytet WYSOKI)**
 - [ ] **Order Management API** - `king-orders-api.php`
@@ -92,6 +94,8 @@
   - [ ] Stock checking, updates, low stock alerts
 - [ ] **Shipping & Taxes API** - `king-shipping-api.php`
   - [ ] Shipping zones, methods, tax calculations
+
+> Uwaga: zgodnie z zasadami optymalizacji – jeśli czegoś nie dostarcza REST API, dostarczamy przez `king-` endpointy.
 
 ### **FAZA 7: UX Enhancements (Priorytet WYSOKI)**
 - [ ] **Quick View** - szybki podgląd produktów
@@ -122,6 +126,8 @@
 - [ ] **Multi-language** - i18n support
 - [ ] **Multi-currency** - dynamic pricing
 - [ ] **Advanced Analytics** - customer behavior, conversion funnels
+ - [ ] **API Gateway / Rate limiting / Request caching** (jeśli skala wymaga)
+ - [ ] **Redis/Session caches** – cache produktów i sesji
 
 ---
 
@@ -132,6 +138,7 @@
 - [ ] **Bundle optimization** - code splitting
 - [ ] **SEO optimization** - meta tags, structured data
 - [ ] **PWA features** - service worker, offline support
+ - [ ] **Code splitting / Tree shaking / Bundle analysis**
 
 ---
 
@@ -159,6 +166,7 @@
 - [ ] **Error tracking** - Sentry integration
 - [ ] **A/B testing** - conversion optimization
 - [ ] **Heatmaps** - user interaction analysis
+ - [ ] **Conversion tracking** (GTM/GA4, zdarzenia e‑commerce)
 
 ---
 
@@ -168,6 +176,7 @@
 - [ ] **Data encryption** - sensitive data protection
 - [ ] **Regular security audits** - vulnerability scanning
 - [ ] **Backup strategy** - data recovery plan
+ - [ ] **Input validation / CSRF / Rate limiting**
 
 ---
 
@@ -177,6 +186,7 @@
 - [ ] **Monitoring & alerting** - uptime, performance
 - [ ] **Backup & recovery** - disaster recovery plan
 - [ ] **Documentation** - API docs, deployment guides
+ - [ ] **Revalidate/ISR** – webhook z Woo do odświeżania cache’u
 
 ---
 
@@ -227,3 +237,70 @@
 **Jutro kończymy MVP i zaczynamy planować produkcję!** 🚀✨
 
 **Kolejność wdrażania zoptymalizowana według priorytetów biznesowych!** 🎯
+
+---
+
+## ✅ GO‑LIVE CHECKLIST (dopisana)
+
+- [ ] Konfiguracja środowiska (ENV)
+  - [ ] `WOOCOMMERCE_API_URL`, CK/CS (Production + Preview)
+  - [ ] `NEXT_PUBLIC_WORDPRESS_URL`, `NEXT_PUBLIC_WC_API_URL`
+  - [ ] Email (SMTP/API) dla potwierdzeń zamówień
+  - [ ] `ADMIN_CACHE_TOKEN` (jeśli purge)
+
+- [ ] Vercel i domeny
+  - [ ] Podpięcie domeny, HTTPS, www → non‑www
+  - [ ] Password/Preview protection wg polityki
+  - [ ] Zmienne ENV zsynchronizowane dla Production/Preview
+
+- [ ] SEO / Performance
+  - [ ] `sitemap.xml`, `robots.txt` (reguły indeksacji)
+  - [ ] Meta/OG: produkt, kategoria, koszyk, checkout
+  - [ ] Lighthouse: next‑gen images, lazy loading, prefetch linków
+  - [ ] Preload czcionek, minifikacja, Core Web Vitals
+
+- [ ] PWA (opcjonalnie)
+  - [ ] `manifest.json`, ikony, Service Worker (offline/cache)
+
+- [ ] Analityka / Pixel (opcjonalnie)
+  - [ ] GA4/GTM (`NEXT_PUBLIC_GA_ID`), piksel Meta
+  - [ ] Zdarzenia e‑commerce (view_item, add_to_cart, begin_checkout, purchase)
+
+- [ ] Bezpieczeństwo
+  - [ ] Nagłówki: CSP, X‑Frame‑Options, Referrer‑Policy
+  - [ ] Rate limiting na wrażliwych endpointach
+  - [ ] ReCaptcha dla publicznych formularzy
+
+- [ ] Płatności i koszyk
+  - [ ] Zastąpienie mock payments realnym providerem (lub sandbox jasno oznaczony)
+  - [ ] Test koszyka: dodaj/usuń/aktualizuj, warianty, stan magazynu
+  - [ ] Metody dostawy: progi darmowej dostawy, koszty, opisy (PLN, bez centów)
+
+- [ ] Sklep i wyszukiwarka
+  - [ ] Finalne mapowanie filtrów (pojemność/marka/cena) pod produkcyjne dane
+  - [ ] Paginacja i sortowanie dla dużych katalogów
+  - [ ] (opcjonalnie) Algolia / inny index dla ultraszybkiego search
+
+- [ ] Treści i zgodność
+  - [ ] Strony: Regulamin, Polityka prywatności, Zwroty, Kontakt
+  - [ ] Cookie banner (zgoda, kategorie)
+  - [ ] Tłumaczenia UI (spójność, PL etykiety)
+
+- [ ] Monitoring i logi
+  - [ ] Error tracking (Sentry/Logtail) FE/BE
+  - [ ] Healthcheck i alerty (Pingdom/UptimeRobot)
+
+- [ ] Budowa i rewalidacja
+  - [ ] ISR/Revalidate dla stron produktowych i kategorii
+  - [ ] Webhook z Woo/WordPress do odświeżania cache po zmianach
+
+- [ ] Przekierowania i linki
+  - [ ] `next.config`/`vercel.json`: 301/302 (stare URL‑e, kategorie)
+  - [ ] Linkowanie wewnętrzne: breadcrumbs, produkty powiązane
+
+- [ ] Testy końcowe (checklista)
+  - [ ] Filtry działają (pojemność/marka/cena), wyszukiwarka, warianty na karcie
+  - [ ] Checkout: wszystkie metody płatności/dostawy, potwierdzenia e‑mail
+  - [ ] RWD: header, hero, grid/list, checkout
+  - [ ] A11y: kontrasty, focus states, etykiety
+  - [ ] 404/500 strony i fallbacki

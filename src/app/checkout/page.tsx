@@ -3,13 +3,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { 
   CreditCard, 
   Truck, 
-  MapPin, 
   User, 
-  Mail, 
-  Phone, 
   Lock,
   CheckCircle,
   ArrowLeft,
@@ -19,9 +17,9 @@ import {
 import { useCartStore } from '@/stores/cart-store';
 import { formatPrice } from '@/utils/format-price';
 import Link from 'next/link';
-import mockPaymentService, { PaymentMethod } from '@/services/mock-payment';
-import emailService from '@/services/email-service';
+import { PaymentMethod } from '@/services/mock-payment';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import { useAuthStore } from '@/stores/auth-store';
 
 interface CheckoutForm {
   // Billing Information
@@ -30,6 +28,8 @@ interface CheckoutForm {
   email: string;
   phone: string;
   company: string;
+  nip: string;
+  invoiceRequest: boolean;
   
   // Billing Address
   billingAddress: string;
@@ -61,6 +61,7 @@ interface CheckoutForm {
 function CheckoutPageInner() {
   const { items, total, itemCount, clearCart } = useCartStore();
   const searchParams = useSearchParams();
+  const { user, isAuthenticated } = useAuthStore();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -72,6 +73,8 @@ function CheckoutPageInner() {
     email: '',
     phone: '',
     company: '',
+    nip: '',
+    invoiceRequest: false,
     billingAddress: '',
     billingCity: '',
     billingPostcode: '',
@@ -102,10 +105,45 @@ function CheckoutPageInner() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [quickPaymentSelected, setQuickPaymentSelected] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  // Helper functions
+  const getPaymentMethodTitle = (method: string) => {
+    const titles: Record<string, string> = {
+      'google_pay': 'Google Pay',
+      'apple_pay': 'Apple Pay',
+      'card': 'Karta płatnicza',
+      'transfer': 'Przelew bankowy',
+      'cash': 'Płatność przy odbiorze'
+    };
+    return titles[method] || method;
+  };
+
+  const getShippingMethodTitle = (method: string) => {
+    const titles: Record<string, string> = {
+      'free_shipping': 'Darmowa dostawa',
+      'flat_rate': 'Dostawa standardowa',
+      'local_pickup': 'Odbiór osobisty'
+    };
+    return titles[method] || method;
+  };
+
+  const getSelectedShippingMethod = () => {
+    return shippingMethods.find(m => m.method_id === form.shippingMethod);
+  };
   
   // Shipping state
-  const [shippingMethods, setShippingMethods] = useState<any[]>([]);
-  const [shippingCost, setShippingCost] = useState(0);
+  const [shippingMethods, setShippingMethods] = useState<Array<{
+    id: string;
+    method_id: string;
+    method_title: string;
+    method_description: string;
+    cost: number;
+    free_shipping_threshold: number;
+    zone_id: string;
+    zone_name: string;
+  }>>([]);
+  const [, setShippingCost] = useState(0);
   const [isLoadingShipping, setIsLoadingShipping] = useState(false);
 
   // Load shipping methods
@@ -123,11 +161,16 @@ function CheckoutPageInner() {
         form.shippingPostcode
       );
       console.log('🚚 Shipping methods loaded:', methods);
-      setShippingMethods(methods);
+      if (methods && methods.methods) {
+        setShippingMethods(methods.methods);
+      } else if (Array.isArray(methods)) {
+        setShippingMethods(methods);
+      }
       
       // Set default shipping method and cost
-      if (methods.length > 0) {
-        const defaultMethod = methods.find((m: any) => m.method_id === form.shippingMethod) || methods[0];
+      const methodsArray = methods && methods.methods ? methods.methods : (Array.isArray(methods) ? methods : []);
+      if (methodsArray.length > 0) {
+        const defaultMethod = methodsArray.find((m: { method_id: string; cost: number }) => m.method_id === form.shippingMethod) || methodsArray[0];
         console.log('🚚 Default method selected:', defaultMethod);
         setForm(prev => ({ ...prev, shippingMethod: defaultMethod.method_id }));
         setShippingCost((defaultMethod.cost || 0) * 100); // Convert PLN to cents
@@ -141,39 +184,58 @@ function CheckoutPageInner() {
 
   // Load payment methods and handle URL params
   useEffect(() => {
-    setPaymentMethods(mockPaymentService.getPaymentMethods());
+    // Load real payment gateways from WooCommerce
+    (async () => {
+      const res = await wooCommerceService.getPaymentGateways();
+      if (res.success && res.gateways) {
+        const mapped: PaymentMethod[] = res.gateways
+          .filter(g => g.enabled)
+          .map(g => ({ 
+            id: g.id as any, 
+            name: g.title, 
+            description: g.description || '',
+            icon: g.id === 'cod' ? 'truck' : 'credit-card',
+            processingTime: g.id === 'cod' ? 0 : 3000,
+            successRate: 0.95
+          }));
+        setPaymentMethods(mapped);
+      }
+    })();
     
     // Handle payment method from URL
     const paymentMethod = searchParams.get('payment');
-    if (paymentMethod && ['google_pay', 'apple_pay', 'card', 'transfer', 'cash'].includes(paymentMethod)) {
-      setForm(prev => ({ ...prev, paymentMethod: paymentMethod as any }));
+    if (paymentMethod && ['google_pay', 'apple_pay', 'card', 'transfer', 'cash', 'cod', 'bacs'].includes(paymentMethod)) {
+      setForm(prev => ({ ...prev, paymentMethod: paymentMethod as 'google_pay' | 'apple_pay' | 'card' | 'transfer' | 'cash' }));
       setQuickPaymentSelected(['google_pay', 'apple_pay'].includes(paymentMethod));
       
       // TRUE QUICK PAYMENT - skip to payment step and use defaults
       if (['google_pay', 'apple_pay'].includes(paymentMethod)) {
         setCurrentStep(3); // Skip to payment step
         
-        // Set default values for quick payment
+        // Set user data for quick payment (or defaults if not logged in)
+        const u: any = user;
+        const billing = u?.billing || {};
+        
         setForm(prev => ({
           ...prev,
-          // Default billing (can be changed later)
-          firstName: prev.firstName || 'Jan',
-          lastName: prev.lastName || 'Kowalski',
-          email: prev.email || 'jan.kowalski@example.com',
-          phone: prev.phone || '+48 123 456 789',
-          billingAddress: prev.billingAddress || 'ul. Przykładowa 1',
-          billingCity: prev.billingCity || 'Warszawa',
-          billingPostcode: prev.billingPostcode || '00-001',
-          billingCountry: 'PL',
+          // Use real user data or defaults
+          firstName: prev.firstName || u?.firstName || billing.first_name || '',
+          lastName: prev.lastName || u?.lastName || billing.last_name || '',
+          email: prev.email || u?.email || billing.email || '',
+          phone: prev.phone || billing.phone || '',
+          billingAddress: prev.billingAddress || billing.address || '',
+          billingCity: prev.billingCity || billing.city || '',
+          billingPostcode: prev.billingPostcode || billing.postcode || '',
+          billingCountry: billing.country || 'PL',
           
           // Default shipping (same as billing)
           shippingSameAsBilling: true,
-          shippingFirstName: prev.firstName || 'Jan',
-          shippingLastName: prev.lastName || 'Kowalski',
-          shippingAddress: prev.billingAddress || 'ul. Przykładowa 1',
-          shippingCity: prev.billingCity || 'Warszawa',
-          shippingPostcode: prev.billingPostcode || '00-001',
-          shippingCountry: 'PL',
+          shippingFirstName: prev.firstName || u?.firstName || billing.first_name || '',
+          shippingLastName: prev.lastName || u?.lastName || billing.last_name || '',
+          shippingAddress: prev.billingAddress || billing.address || '',
+          shippingCity: prev.billingCity || billing.city || '',
+          shippingPostcode: prev.billingPostcode || billing.postcode || '',
+          shippingCountry: billing.country || 'PL',
           
           // Accept terms for quick payment
           acceptTerms: true,
@@ -181,6 +243,36 @@ function CheckoutPageInner() {
       }
     }
   }, [searchParams]);
+
+  // Prefill from authenticated user profile
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    const u: any = user;
+    const billing = u.billing || {};
+    const shipping = u.shipping || {};
+
+    setForm(prev => ({
+      ...prev,
+      firstName: prev.firstName || u.first_name || billing.first_name || '',
+      lastName: prev.lastName || u.last_name || billing.last_name || '',
+      email: prev.email || u.email || billing.email || '',
+      phone: prev.phone || u.phone || billing.phone || '',
+      company: prev.company || billing.company || '',
+      nip: prev.nip || u.nip || u._billing_nip || billing.nip || '',
+      invoiceRequest: prev.invoiceRequest || Boolean(u.nip || u._billing_nip || billing.nip),
+      billingAddress: prev.billingAddress || billing.address_1 || '',
+      billingCity: prev.billingCity || billing.city || '',
+      billingPostcode: prev.billingPostcode || billing.postcode || '',
+      billingCountry: prev.billingCountry || billing.country || 'PL',
+      shippingFirstName: prev.shippingFirstName || shipping.first_name || u.first_name || '',
+      shippingLastName: prev.shippingLastName || shipping.last_name || u.last_name || '',
+      shippingCompany: prev.shippingCompany || shipping.company || billing.company || '',
+      shippingAddress: prev.shippingAddress || shipping.address_1 || billing.address_1 || '',
+      shippingCity: prev.shippingCity || shipping.city || billing.city || '',
+      shippingPostcode: prev.shippingPostcode || shipping.postcode || billing.postcode || '',
+      shippingCountry: prev.shippingCountry || shipping.country || billing.country || 'PL'
+    }));
+  }, [isAuthenticated, user]);
 
   // Load shipping methods when address changes
   useEffect(() => {
@@ -201,7 +293,7 @@ function CheckoutPageInner() {
     }
   }, [items, orderComplete]);
 
-  const handleInputChange = (field: keyof CheckoutForm, value: any) => {
+  const handleInputChange = (field: keyof CheckoutForm, value: string | boolean) => {
     setForm(prev => ({ ...prev, [field]: value }));
     
     // Auto-fill shipping if same as billing
@@ -220,29 +312,25 @@ function CheckoutPageInner() {
   };
 
   const validateForm = (): boolean => {
-    const requiredFields = [
-      'firstName', 'lastName', 'email', 'phone',
-      'billingAddress', 'billingCity', 'billingPostcode'
-    ];
-    
-    for (const field of requiredFields) {
-      if (!form[field as keyof CheckoutForm]) {
-        return false;
+    const errors: Record<string, string> = {};
+    const req = ['firstName','lastName','email','phone','billingAddress','billingCity','billingPostcode'];
+    req.forEach((key) => {
+      const value = form[key as keyof CheckoutForm];
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        errors[key] = 'To pole jest wymagane';
       }
+    });
+    if (!form.acceptTerms) {
+      errors['acceptTerms'] = 'Musisz zaakceptować regulamin';
     }
-    
-    if (!form.acceptTerms) return false;
-    
-    return true;
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
-      alert('Proszę wypełnić wszystkie wymagane pola i zaakceptować regulamin.');
-      return;
-    }
+    if (!validateForm()) return;
 
     // Validate card details if card payment
     if (form.paymentMethod === 'card') {
@@ -263,28 +351,104 @@ function CheckoutPageInner() {
     setPaymentError(null);
     
     try {
-      // Process payment first
-      const paymentRequest = {
-        amount: finalTotal,
-        currency: 'PLN',
-        method: form.paymentMethod,
-        orderId: `ORDER-${Date.now()}`,
-        customerEmail: form.email,
-        customerName: `${form.firstName} ${form.lastName}`
+      // Create order in WooCommerce
+      const orderData = {
+        billing: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phone: form.phone,
+          company: form.company,
+          address: form.billingAddress,
+          city: form.billingCity,
+          postcode: form.billingPostcode,
+          country: form.billingCountry
+        },
+        shipping: form.shippingSameAsBilling ? null : {
+          firstName: form.shippingFirstName,
+          lastName: form.shippingLastName,
+          company: form.shippingCompany,
+          address: form.shippingAddress,
+          city: form.shippingCity,
+          postcode: form.shippingPostcode,
+          country: form.shippingCountry
+        },
+        line_items: items.map(item => ({
+          product_id: item.id,
+          variation_id: item.variant?.id || 0,
+          quantity: item.quantity,
+          meta_data: item.variant ? [
+            { key: 'Wybrany wariant', value: item.variant.name || `Wariant ${item.variant.id}` }
+          ] : []
+        })),
+        payment_method: form.paymentMethod,
+        payment_method_title: getPaymentMethodTitle(form.paymentMethod),
+        shipping_lines: [{
+          method_id: form.shippingMethod,
+          method_title: getShippingMethodTitle(form.shippingMethod),
+          total: (finalShippingCost / 100).toFixed(2)
+        }],
+        customer_id: user?.id, // Dodaj customer_id dla zalogowanych użytkowników
+        meta_data: [
+          { key: '_billing_nip', value: form.nip },
+          { key: '_invoice_request', value: form.invoiceRequest ? 'yes' : 'no' }
+        ]
       };
 
-      const paymentResponse = await mockPaymentService.processPayment(paymentRequest);
+      const orderResponse = await fetch('/api/woocommerce?endpoint=orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const orderResult = await orderResponse.json();
       
-      if (!paymentResponse.success) {
-        throw new Error(paymentResponse.message);
+      if (!orderResult.success) {
+        throw new Error(orderResult.error || 'Nie udało się utworzyć zamówienia');
       }
 
-      // Simulate order processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate order number
-      const newOrderNumber = `FILLER-${Date.now()}`;
+      const newOrderNumber = orderResult.order.number;
       setOrderNumber(newOrderNumber);
+      
+      // Automatically save billing data to user profile if logged in
+      if (isAuthenticated && user?.id) {
+        try {
+          await fetch('/api/woocommerce?endpoint=customer/update-profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              customer_id: user.id,
+              profile_data: {
+                firstName: form.firstName,
+                lastName: form.lastName,
+                billing: {
+                  company: form.company,
+                  nip: form.nip,
+                  invoiceRequest: form.invoiceRequest,
+                  address: form.billingAddress,
+                  city: form.billingCity,
+                  postcode: form.billingPostcode,
+                  country: form.billingCountry,
+                  phone: form.phone
+                },
+                shipping: form.shippingSameAsBilling ? null : {
+                  address: form.shippingAddress,
+                  city: form.shippingCity,
+                  postcode: form.shippingPostcode,
+                  country: form.shippingCountry
+                }
+              }
+            }),
+          });
+          console.log('✅ User profile updated with checkout data');
+        } catch (error) {
+          console.error('⚠️ Failed to update user profile:', error);
+        }
+      }
       
       // Send order confirmation email
       try {
@@ -315,12 +479,46 @@ function CheckoutPageInner() {
           paymentMethod: form.paymentMethod
         };
 
-        const emailResponse = await emailService.sendOrderConfirmation(orderEmailData);
-        
-        if (emailResponse.success) {
-          console.log('📧 Email potwierdzenia wysłany:', emailResponse.messageId);
-        } else {
-          console.warn('⚠️ Błąd wysyłania email:', emailResponse.message);
+        // WYŚLIJ EMAIL BEZPOŚREDNIO
+        try {
+          console.log('📧 Wysyłam email bezpośrednio dla zamówienia:', orderResult.order.id);
+          console.log('📧 orderResult:', orderResult);
+          
+          const orderId = orderResult.order.id;
+          if (!orderId) {
+            console.log('⚠️ Brak ID zamówienia, nie można wysłać emaila');
+            console.log('⚠️ orderResult structure:', JSON.stringify(orderResult, null, 2));
+            return;
+          }
+          
+          const emailResponse = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'order_confirmation',
+              order_id: orderId,
+              customer_email: form.email,
+              customer_name: `${form.firstName} ${form.lastName}`,
+              order_number: String(orderData.number || orderData.order?.number || orderId),
+              total: finalTotal,
+              items: items.map(item => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.sale_price || item.price
+              }))
+            }),
+          });
+          
+          if (emailResponse.ok) {
+            console.log('✅ Email wysłany pomyślnie!');
+          } else {
+            const errorText = await emailResponse.text();
+            console.log('⚠️ Błąd wysyłania emaila:', errorText);
+          }
+        } catch (error) {
+          console.error('❌ Błąd email:', error);
         }
       } catch (error) {
         console.error('❌ Błąd email service:', error);
@@ -355,7 +553,7 @@ function CheckoutPageInner() {
   };
   
   const finalShippingCost = calculateShippingCost();
-  const finalTotal = total + finalShippingCost;
+  const finalTotal = total + (finalShippingCost / 100);
 
   if (orderComplete) {
     return (
@@ -515,6 +713,49 @@ function CheckoutPageInner() {
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">
                       Dane osobowe
                     </h2>
+
+                    {/* Billing minimal required fields */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Adres rozliczeniowy *</label>
+                        <input
+                          type="text"
+                          value={form.billingAddress}
+                          onChange={(e) => handleInputChange('billingAddress', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                          required
+                        />
+                        {fieldErrors.billingAddress && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors.billingAddress}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Miasto *</label>
+                        <input
+                          type="text"
+                          value={form.billingCity}
+                          onChange={(e) => handleInputChange('billingCity', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                          required
+                        />
+                        {fieldErrors.billingCity && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors.billingCity}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Kod pocztowy *</label>
+                        <input
+                          type="text"
+                          value={form.billingPostcode}
+                          onChange={(e) => handleInputChange('billingPostcode', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                          required
+                        />
+                        {fieldErrors.billingPostcode && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors.billingPostcode}</p>
+                        )}
+                      </div>
+                    </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -528,6 +769,9 @@ function CheckoutPageInner() {
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
+                        {fieldErrors.firstName && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors.firstName}</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -540,6 +784,9 @@ function CheckoutPageInner() {
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
+                        {fieldErrors.lastName && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors.lastName}</p>
+                        )}
                       </div>
                     </div>
 
@@ -555,6 +802,9 @@ function CheckoutPageInner() {
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
+                        {fieldErrors.email && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -567,6 +817,9 @@ function CheckoutPageInner() {
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
+                        {fieldErrors.phone && (
+                          <p className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p>
+                        )}
                       </div>
                     </div>
 
@@ -580,6 +833,35 @@ function CheckoutPageInner() {
                         onChange={(e) => handleInputChange('company', e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                       />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          NIP (dla faktury)
+                        </label>
+                        <input
+                          type="text"
+                          value={form.nip}
+                          onChange={(e) => handleInputChange('nip', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                          placeholder="1234567890"
+                          maxLength={10}
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={form.invoiceRequest}
+                            onChange={(e) => handleInputChange('invoiceRequest', e.target.checked)}
+                            className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                          />
+                          <span className="text-sm text-gray-700">
+                            Chcę otrzymać fakturę VAT
+                          </span>
+                        </label>
+                      </div>
                     </div>
 
                     <div className="pt-4">
@@ -751,17 +1033,17 @@ function CheckoutPageInner() {
                                     <div className="text-sm text-gray-500">{method.method_description}</div>
                                   </div>
                                   <div className="text-right">
-                                    <div className="font-semibold text-gray-900">
+                                  <div className="font-semibold text-gray-900">
                                       {method.free_shipping_threshold > 0 && total >= (method.free_shipping_threshold * 100)
                                         ? 'Gratis' 
                                         : method.cost > 0
-                                          ? formatPrice(method.cost * 100)
+                                          ? formatPrice(method.cost)
                                           : 'Gratis'
                                       }
                                     </div>
                                     {method.free_shipping_threshold > 0 && total < (method.free_shipping_threshold * 100) && (
                                       <div className="text-xs text-green-600">
-                                        Darmowa dostawa od {formatPrice(method.free_shipping_threshold * 100)}
+                                        Darmowa dostawa od {formatPrice(method.free_shipping_threshold)}
                                       </div>
                                     )}
                                   </div>
@@ -1076,6 +1358,9 @@ function CheckoutPageInner() {
                           <Link href="/polityka-prywatnosci" className="text-black underline hover:no-underline">politykę prywatności</Link> *
                         </div>
                       </label>
+                      {fieldErrors.acceptTerms && (
+                        <p className="text-xs text-red-600">{fieldErrors.acceptTerms}</p>
+                      )}
 
                       <label className="flex items-start">
                         <input
@@ -1131,13 +1416,15 @@ function CheckoutPageInner() {
 
               {/* Order Items */}
               <div className="space-y-4 mb-6">
-                {items.map((item) => (
-                  <div key={`${item.id}-${item.variant?.id || 'default'}`} className="flex items-center space-x-3">
+                {items.map((item, index) => (
+                  <div key={`${item.id}-${item.variant?.id || 'default'}-${index}`} className="flex items-center space-x-3">
                     <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
                       {item.image ? (
-                        <img
+                        <Image
                           src={item.image}
                           alt={item.name}
+                          width={64}
+                          height={64}
                           className="w-full h-full object-cover rounded-lg"
                         />
                       ) : (
@@ -1174,11 +1461,15 @@ function CheckoutPageInner() {
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Dostawa:</span>
-                  <span>{finalShippingCost === 0 ? 'Gratis' : formatPrice(finalShippingCost)}</span>
+                  <span>{finalShippingCost === 0 ? 'Gratis' : formatPrice(finalShippingCost / 100)}</span>
                 </div>
-                {finalShippingCost > 0 && (
+                {(() => {
+                  const selected = shippingMethods.find(m => m.method_id === form.shippingMethod);
+                  const threshold = selected?.free_shipping_threshold || 0;
+                  return finalShippingCost > 0 && threshold > 0;
+                })() && (
                   <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
-                    Darmowa dostawa od {formatPrice(20000)}
+                    Darmowa dostawa od {formatPrice((shippingMethods.find(m => m.method_id === form.shippingMethod)?.free_shipping_threshold || 0))}
                   </div>
                 )}
                 <div className="border-t border-gray-200 pt-3">

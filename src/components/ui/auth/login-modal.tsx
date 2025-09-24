@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
+import ForgotPasswordModal from './forgot-password-modal';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
   });
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -76,6 +78,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
   return (
     <AnimatePresence>
       <motion.div
+        key="login-modal"
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -218,6 +221,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             <div className="text-center">
               <button
                 type="button"
+                onClick={() => setShowForgotPassword(true)}
                 className="text-sm text-gray-600 hover:text-black transition-colors"
               >
                 Zapomniałeś hasła?
@@ -226,6 +230,16 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
           </form>
         </motion.div>
       </motion.div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <ForgotPasswordModal
+          key="forgot-password-modal"
+          isOpen={showForgotPassword}
+          onClose={() => setShowForgotPassword(false)}
+          onBackToLogin={() => setShowForgotPassword(false)}
+        />
+      )}
     </AnimatePresence>
   );
 }

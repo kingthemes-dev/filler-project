@@ -6,6 +6,7 @@ import Header from '@/components/ui/header';
 import Footer from '@/components/ui/footer';
 import CartDrawer from '@/components/ui/cart-drawer';
 import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
+import ErrorBoundary from '@/components/error-boundary';
 
 
 const geistSans = Geist({
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_WORDPRESS_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_WORDPRESS_URL || 'http://localhost:3001'),
   openGraph: {
     title: "FILLER - Profesjonalne kosmetyki i urządzenia",
     description: "Sklep z profesjonalnymi kosmetykami koreańskimi, mezoterapią, nićmi, peelingami, stymulatorami, urządzeniami i wypełniaczami.",
@@ -65,27 +66,31 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
-    <html lang="pl" className="scroll-smooth">
+    <html lang="pl" data-scroll-behavior="smooth">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#000000" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
+        {/* Preconnect to WordPress for faster API calls */}
+        <link rel="preconnect" href="https://qvwltjhdjw.cfolks.pl" crossOrigin="" />
       </head>
                         <body
                     className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+                    suppressHydrationWarning={true}
                   >
-                        <TopBar />
-                        <Header />
-                        <main>
-                          {children}
-                        </main>
-                        <AuthModalManager />
-                        <Footer />
-                        <CartDrawer />
-
+                        <ErrorBoundary>
+                          <TopBar />
+                          <Header />
+                          <main>
+                            {children}
+                          </main>
+                          <AuthModalManager />
+                          <Footer />
+                          <CartDrawer />
+                        </ErrorBoundary>
               </body>
             </html>
           );

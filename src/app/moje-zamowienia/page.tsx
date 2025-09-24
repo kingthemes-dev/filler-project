@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Package, Truck, CheckCircle, Clock, Eye, Download, MapPin, Calendar } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, Eye, Download, Calendar } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatPrice } from '@/utils/format-price';
+import Image from 'next/image';
 
 interface Order {
   id: string;
@@ -44,114 +45,109 @@ export default function MyOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (but wait for auth store to load)
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/');
-    }
+    // Add a small delay to let Zustand persist middleware load from localStorage
+    const timer = setTimeout(() => {
+      if (!isAuthenticated) {
+        router.push('/');
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
-  // Mock orders data - TODO: Replace with real WooCommerce API
+  // Fetch real orders from WooCommerce API
   useEffect(() => {
-    if (isAuthenticated) {
-      // Simulate API call
-      setTimeout(() => {
-        const mockOrders: Order[] = [
-          {
-            id: '1',
-            number: 'FILLER-20241201-001',
-            date: '2024-12-01',
-            status: 'delivered',
-            total: 29900,
-            items: [
-              {
-                id: 1,
-                name: 'Filler SkinRevive - Pure Hyaluronic Acid',
-                quantity: 1,
-                price: 29900,
-                image: 'https://via.placeholder.com/100x100/1f2937/ffffff?text=Product'
-              }
-            ],
-            billing: {
-              address: 'ul. Przykładowa 123',
-              city: 'Warszawa',
-              postcode: '00-001',
-              country: 'PL'
-            },
-            shipping: {
-              address: 'ul. Przykładowa 123',
-              city: 'Warszawa',
-              postcode: '00-001',
-              country: 'PL'
-            },
-            paymentMethod: 'Karta kredytowa',
-            trackingNumber: 'TRK123456789'
-          },
-          {
-            id: '2',
-            number: 'FILLER-20241125-002',
-            date: '2024-11-25',
-            status: 'shipped',
-            total: 54900,
-            items: [
-              {
-                id: 2,
-                name: 'Filler SkinRevive - Pure Hyaluronic Acid',
-                quantity: 1,
-                price: 54900,
-                image: 'https://via.placeholder.com/100x100/1f2937/ffffff?text=Product'
-              }
-            ],
-            billing: {
-              address: 'ul. Przykładowa 123',
-              city: 'Warszawa',
-              postcode: '00-001',
-              country: 'PL'
-            },
-            shipping: {
-              address: 'ul. Przykładowa 123',
-              city: 'Warszawa',
-              postcode: '00-001',
-              country: 'PL'
-            },
-            paymentMethod: 'Przelew bankowy',
-            trackingNumber: 'TRK987654321'
-          },
-          {
-            id: '3',
-            number: 'FILLER-20241120-003',
-            date: '2024-11-20',
-            status: 'processing',
-            total: 129900,
-            items: [
-              {
-                id: 3,
-                name: 'Filler SkinRevive - Pure Hyaluronic Acid',
-                quantity: 1,
-                price: 129900,
-                image: 'https://via.placeholder.com/100x100/1f2937/ffffff?text=Product'
-              }
-            ],
-            billing: {
-              address: 'ul. Przykładowa 123',
-              city: 'Warszawa',
-              postcode: '00-001',
-              country: 'PL'
-            },
-            shipping: {
-              address: 'ul. Przykładowa 123',
-              city: 'Warszawa',
-              postcode: '00-001',
-              country: 'PL'
-            },
-            paymentMethod: 'Płatność przy odbiorze'
-          }
-        ];
-        setOrders(mockOrders);
-        setLoading(false);
-      }, 1000);
+    if (isAuthenticated && user?.id) {
+      fetchOrders();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      
+      // Use standard WooCommerce orders endpoint with customer filter
+      const response = await fetch(`/api/woocommerce?endpoint=orders&customer=${user?.id}`);
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        // Transform WooCommerce orders to our format
+        const transformedOrders = data.map((order: any) => ({
+          id: order.id.toString(),
+          number: order.number,
+          date: order.date_created.split('T')[0],
+          status: mapOrderStatus(order.status),
+          total: parseFloat(order.total), // Keep as PLN (not convert to grosze)
+          items: order.line_items.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: parseFloat(item.price), // Keep as PLN (not convert to grosze)
+            image: item.image?.src || 'https://via.placeholder.com/100x100/1f2937/ffffff?text=Product'
+          })),
+          billing: {
+            address: order.billing.address_1,
+            city: order.billing.city,
+            postcode: order.billing.postcode,
+            country: order.billing.country
+          },
+          shipping: {
+            address: order.shipping.address_1,
+            city: order.shipping.city,
+            postcode: order.shipping.postcode,
+            country: order.shipping.country
+          },
+          paymentMethod: mapPaymentMethod(order.payment_method_title || order.payment_method || 'unknown'),
+          trackingNumber: order.meta_data?.find((meta: any) => meta.key === '_tracking_number')?.value || null
+        }));
+        setOrders(transformedOrders);
+      } else {
+        console.error('Error fetching orders:', data);
+        setOrders([]);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mapOrderStatus = (wcStatus: string): 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' => {
+    const statusMap: Record<string, 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'> = {
+      'pending': 'pending',
+      'processing': 'processing', 
+      'on-hold': 'processing',
+      'completed': 'delivered',
+      'cancelled': 'cancelled',
+      'refunded': 'cancelled',
+      'failed': 'cancelled',
+      'shipped': 'shipped'
+    };
+    
+    return statusMap[wcStatus] || 'pending';
+  };
+
+  const mapPaymentMethod = (paymentMethod: string): string => {
+    const paymentMap: Record<string, string> = {
+      'cod': 'Za pobraniem',
+      'google_pay': 'Google Pay',
+      'apple_pay': 'Apple Pay',
+      'card': 'Karta płatnicza',
+      'transfer': 'Przelew bankowy',
+      'cash': 'Płatność przy odbiorze',
+      'bacs': 'Przelew bankowy',
+      'cheque': 'Czek',
+      'paypal': 'PayPal',
+      'stripe': 'Karta płatnicza (Stripe)',
+      'unknown': 'Nieznana metoda'
+    };
+    
+    return paymentMap[paymentMethod] || paymentMethod;
+  };
+
 
   const getStatusInfo = (status: Order['status']) => {
     switch (status) {
@@ -343,9 +339,11 @@ export default function MyOrdersPage() {
                                 <div key={item.id} className="flex items-center space-x-4">
                                   <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
                                     {item.image ? (
-                                      <img
+                                      <Image
                                         src={item.image}
                                         alt={item.name}
+                                        width={64}
+                                        height={64}
                                         className="w-full h-full object-cover rounded-lg"
                                       />
                                     ) : (

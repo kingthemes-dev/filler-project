@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WooProduct } from '@/types/woocommerce';
 
 // Mock database - w prawdziwej aplikacji używałbyś bazy danych
-let favoritesDB: { [userId: string]: WooProduct[] } = {};
+const favoritesDB: { [userId: string]: WooProduct[] } = {};
 
 export async function GET(request: NextRequest) {
   try {

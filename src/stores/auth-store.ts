@@ -15,6 +15,8 @@ export interface User {
     postcode: string;
     country: string;
     phone: string;
+    company?: string;
+    nip?: string;
   };
   shipping?: {
     address: string;
@@ -41,6 +43,8 @@ export interface AuthActions {
   
   // User management
   updateUser: (userData: Partial<User>) => void;
+  updateProfile: (profileData: any) => Promise<{ success: boolean; message: string; customer?: any }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   clearError: () => void;
   
   // Token management
@@ -54,6 +58,7 @@ export interface RegisterData {
   firstName: string;
   lastName: string;
   phone: string;
+  marketingConsent?: boolean;
 }
 
 export type AuthStore = AuthState & AuthActions;
@@ -75,31 +80,39 @@ export const useAuthStore = create<AuthStore>()(
         
         try {
           // Real WooCommerce API call
-          const userData = await wooCommerceService.loginUser(email, password);
+          const response = await wooCommerceService.loginUser(email, password);
+          
+          if (!response.success || !response.user) {
+            throw new Error('Błąd logowania');
+          }
+          
+          const userData = response.user;
           
           // Transform WooCommerce user data to our format
           const user: User = {
             id: userData.id,
             email: userData.email,
-            firstName: userData.first_name || '',
-            lastName: userData.last_name || '',
+            firstName: (userData as any).first_name || userData.name?.split(' ')[0] || '',
+            lastName: (userData as any).last_name || userData.name?.split(' ').slice(1).join(' ') || '',
             role: 'customer',
             billing: {
-              address: userData.billing?.address_1 || '',
-              city: userData.billing?.city || '',
-              postcode: userData.billing?.postcode || '',
-              country: userData.billing?.country || '',
-              phone: userData.billing?.phone || ''
+              address: (userData as any).billing?.address_1 || '',
+              city: (userData as any).billing?.city || '',
+              postcode: (userData as any).billing?.postcode || '',
+              country: (userData as any).billing?.country || 'PL',
+              phone: (userData as any).billing?.phone || '',
+              company: (userData as any).billing?.company || '',
+              nip: (userData as any).billing?.nip || ''
             },
             shipping: {
-              address: userData.shipping?.address_1 || '',
-              city: userData.shipping?.city || '',
-              postcode: userData.shipping?.postcode || '',
-              country: userData.shipping?.country || ''
+              address: (userData as any).shipping?.address_1 || '',
+              city: (userData as any).shipping?.city || '',
+              postcode: (userData as any).shipping?.postcode || '',
+              country: (userData as any).shipping?.country || 'PL'
             }
           };
           
-          const token = 'woo-user-token-' + userData.id;
+          const token = userData.token;
           
           set({
             user,
@@ -127,14 +140,49 @@ export const useAuthStore = create<AuthStore>()(
         
         try {
           // Real WooCommerce API call
-          const newUser = await wooCommerceService.registerUser(userData);
+          const response = await wooCommerceService.registerUser({
+            username: userData.email,
+            email: userData.email,
+            password: userData.password,
+            first_name: userData.firstName,
+            last_name: userData.lastName
+          });
+          
+          // If marketing consent is given, subscribe to newsletter
+          if (userData.marketingConsent) {
+            try {
+              await fetch('/api/newsletter/subscribe', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  email: userData.email,
+                  firstName: userData.firstName,
+                  lastName: userData.lastName,
+                  consent: true,
+                  source: 'registration'
+                }),
+              });
+              console.log('✅ User subscribed to newsletter with 10% discount');
+            } catch (error) {
+              console.error('❌ Newsletter subscription error:', error);
+              // Don't fail registration if newsletter fails
+            }
+          }
+          
+          if (!response.success || !response.user) {
+            throw new Error('Błąd rejestracji');
+          }
+          
+          const newUser = response.user;
           
           // Transform WooCommerce user data to our format
           const user: User = {
             id: newUser.id,
             email: newUser.email,
-            firstName: newUser.first_name || userData.firstName,
-            lastName: newUser.last_name || userData.lastName,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
             role: 'customer',
             billing: {
               address: '',
@@ -208,6 +256,77 @@ export const useAuthStore = create<AuthStore>()(
           const updatedUser = { ...user, ...userData };
           set({ user: updatedUser });
           console.log('🔐 User updated:', updatedUser);
+        }
+      },
+
+      updateProfile: async (profileData: any) => {
+        const { user } = get();
+        if (!user?.id) {
+          return { success: false, message: 'Użytkownik nie jest zalogowany' };
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+          const response = await fetch('/api/woocommerce?endpoint=customer/update-profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              customer_id: user.id,
+              profile_data: profileData
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Update local user data
+            const { updateUser } = get();
+            updateUser(data.customer);
+            
+            set({ isLoading: false, error: null });
+            return { success: true, message: data.message, customer: data.customer };
+          } else {
+            throw new Error(data.error || 'Nie udało się zaktualizować profilu');
+          }
+        } catch (err: any) {
+          set({ isLoading: false, error: err.message || 'Wystąpił błąd podczas aktualizacji profilu' });
+          return { success: false, message: err.message || 'Wystąpił błąd podczas aktualizacji profilu' };
+        }
+      },
+
+      changePassword: async (currentPassword: string, newPassword: string) => {
+        const { user } = get();
+        if (!user?.id) {
+          return { success: false, message: 'Użytkownik nie jest zalogowany' };
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+          const response = await fetch('/api/woocommerce?endpoint=customer/change-password', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              customer_id: user.id,
+              current_password: currentPassword,
+              new_password: newPassword
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            set({ isLoading: false, error: null });
+            return { success: true, message: data.message };
+          } else {
+            throw new Error(data.error || 'Nie udało się zmienić hasła');
+          }
+        } catch (err: any) {
+          set({ isLoading: false, error: err.message || 'Wystąpił błąd podczas zmiany hasła' });
+          return { success: false, message: err.message || 'Wystąpił błąd podczas zmiany hasła' };
         }
       },
 

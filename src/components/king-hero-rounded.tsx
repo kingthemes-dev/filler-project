@@ -1,13 +1,8 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Heart } from 'lucide-react';
-import { useFavoritesStore } from '@/stores/favorites-store';
 
 interface Product {
   id: number;
@@ -16,9 +11,10 @@ interface Product {
   price: string;
   regular_price?: string;
   sale_price?: string;
-  images: Array<{ src: string; alt: string }>;
-  categories: Array<{ name: string }>;
-  attributes: Array<{ name: string; options: string[] }>;
+  images?: Array<{ src: string; alt: string }>;
+  image?: string;
+  categories?: Array<{ name: string }>;
+  attributes?: Array<{ name: string; options: string[] }>;
   average_rating?: string;
   rating_count?: number;
   stock_status: string;
@@ -26,75 +22,50 @@ interface Product {
   on_sale?: boolean;
 }
 
-export default function KingHeroRounded() {
-  const [featuredProduct, setFeaturedProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface KingHeroRoundedProps {
+  data?: {
+    promocje?: Product[];
+    polecane?: Product[];
+    nowosci?: Product[];
+  };
+}
+
+export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
+  // ARCHITECTURE FIX: Convert to Server Component - no client-side state or effects
+  // Data is already provided from parent Server Component
   
-  // Safely access store with error handling
-  let addToFavorites: (p: any) => void, favorites: any[];
-  try {
-    const store = useFavoritesStore();
-    addToFavorites = store.addToFavorites;
-    favorites = store.favorites;
-  } catch (error) {
-    console.warn('Favorites store not available:', error);
-    addToFavorites = () => {};
-    favorites = [];
-  }
-
-  useEffect(() => {
-    const fetchFeaturedProduct = async () => {
-      try {
-        // Najpierw spróbuj produkty z promocji
-        let response = await fetch('/api/woocommerce?endpoint=products&on_sale=true&per_page=5');
-        let data = await response.json();
-        
-        // API zwraca bezpośrednio tablicę produktów, nie obiekt z success
-        if (Array.isArray(data) && data.length > 0) {
-          // Wybierz losowy produkt z promocji
-          const randomIndex = Math.floor(Math.random() * data.length);
-          console.log('🎯 Hero: Found products on sale:', data.length);
-          console.log('🎯 Hero: Selected product:', data[randomIndex].name);
-          setFeaturedProduct(data[randomIndex]);
-        } else {
-          // Jeśli brak promocji, spróbuj featured
-          response = await fetch('/api/woocommerce?endpoint=products&featured=true&per_page=1');
-          data = await response.json();
-          
-          if (Array.isArray(data) && data.length > 0) {
-            console.log('🎯 Hero: Using featured product:', data[0].name);
-            setFeaturedProduct(data[0]);
-          } else {
-            // Jeśli brak featured, weź pierwszy dostępny
-            response = await fetch('/api/woocommerce?endpoint=products&per_page=1');
-            data = await response.json();
-            
-            if (Array.isArray(data) && data.length > 0) {
-              console.log('🎯 Hero: Using fallback product:', data[0].name);
-              setFeaturedProduct(data[0]);
-            } else {
-              console.log('🎯 Hero: No products found at all');
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching featured product:', error);
-      } finally {
-        setIsLoading(false);
+  // Server-side product selection logic
+  const selectFeaturedProduct = (): Product | null => {
+    try {
+      // Priority 1: Products on sale
+      if (data?.promocje && data.promocje.length > 0) {
+        const randomIndex = Math.floor(Math.random() * data.promocje.length);
+        console.log('🎯 Hero: Found products on sale:', data.promocje.length);
+        console.log('🎯 Hero: Selected product:', data.promocje[randomIndex].name);
+        return data.promocje[randomIndex];
       }
-    };
-
-    fetchFeaturedProduct();
-  }, []);
-
-  const handleAddToFavorites = (product: Product) => {
-    addToFavorites(product);
+      
+      // Priority 2: Featured products
+      if (data?.polecane && data.polecane.length > 0) {
+        console.log('🎯 Hero: Using featured product:', data.polecane[0].name);
+        return data.polecane[0];
+      }
+      
+      // Priority 3: New products
+      if (data?.nowosci && data.nowosci.length > 0) {
+        console.log('🎯 Hero: Using first new product:', data.nowosci[0].name);
+        return data.nowosci[0];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error selecting featured product:', error);
+      return null;
+    }
   };
 
-
-  const isFavorite = (productId: number) => {
-    return favorites.some(fav => fav.id === productId);
-  };
+  const featuredProduct = selectFeaturedProduct();
+  const isLoading = !featuredProduct;
 
   const formatPrice = (price: string) => {
     return `${parseFloat(price).toFixed(2)} PLN`;
@@ -160,8 +131,19 @@ export default function KingHeroRounded() {
                     {/* Product Image */}
                     <div className="relative mb-3 md:mb-4">
                       <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden">
-                        <Image
-                          src={featuredProduct?.images?.[0]?.src || '/placeholder-product.jpg'}
+                                 <Image
+                                   src={(() => {
+                                     const imageUrl = featuredProduct?.images?.[0]?.src || featuredProduct?.image || '/placeholder-product.jpg';
+                                     // Convert to higher quality image by replacing size suffix
+                                     if (imageUrl.includes('-300x300.')) {
+                                       return imageUrl.replace('-300x300.', '-600x600.');
+                                     } else if (imageUrl.includes('-150x150.')) {
+                                       return imageUrl.replace('-150x150.', '-600x600.');
+                                     } else if (imageUrl.includes('-100x100.')) {
+                                       return imageUrl.replace('-100x100.', '-600x600.');
+                                     }
+                                     return imageUrl;
+                                   })()}
                           alt={featuredProduct?.name || 'Produkt'}
                           width={300}
                           height={300}
@@ -169,19 +151,7 @@ export default function KingHeroRounded() {
                         />
                       </div>
 
-                      {/* Favorite Button */}
-                      <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); featuredProduct && handleAddToFavorites(featuredProduct); }}
-                        className="absolute top-2 md:top-3 right-2 md:right-3 p-1.5 md:p-2 bg-white/90 rounded-full shadow-md hover:bg-white transition-colors"
-                      >
-                        <Heart
-                          className={`w-3.5 md:w-4 h-3.5 md:h-4 ${
-                            featuredProduct && isFavorite(featuredProduct.id)
-                              ? 'fill-red-500 text-red-500'
-                              : 'text-gray-600'
-                          }`}
-                        />
-                      </button>
+                      {/* Note: Favorites functionality moved to client components */}
                     </div>
 
                     {/* Price */}

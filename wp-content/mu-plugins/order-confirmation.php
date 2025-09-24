@@ -238,7 +238,7 @@
             <p>Status zamówienia będziesz mógł śledzić w swoim koncie.</p>
             
             <div style="text-align: center; margin: 30px 0;">
-                <a href="<?php echo get_site_url(); ?>/moje-zamowienia" class="cta-button">
+                <a href="<?php echo headless_frontend_url(); ?>/moje-zamowienia" class="cta-button">
                     Sprawdź status zamówienia
                 </a>
             </div>

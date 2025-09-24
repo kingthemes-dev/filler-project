@@ -8,6 +8,7 @@ import { useFavoritesStore } from '@/stores/favorites-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import Image from 'next/image';
 import { formatPrice } from '@/utils/format-price';
 import { WooProduct } from '@/types/woocommerce';
 
@@ -22,17 +23,25 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const [quantity, setQuantity] = useState(1);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [variations, setVariations] = useState<any[]>([]);
+  const [variations, setVariations] = useState<Array<{
+    id: number;
+    attributes?: Array<{ slug: string; option: string }>;
+    price: string;
+    regular_price: string;
+    sale_price: string;
+    name: string;
+    menu_order: number;
+  }>>([]);
   const [selectedCapacity, setSelectedCapacity] = useState<string>('');
 
-  const { addItem } = useCartStore();
+  const { addItem, openCart } = useCartStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
 
   // Helper function to get variation price
   const getVariationPrice = (capacity: string): number => {
     const variation = variations.find(v => {
-      const hasCapacityAttr = v.attributes && v.attributes.some((attr: any) => 
-        attr.name.toLowerCase().includes('pojemność') && attr.option === capacity
+      const hasCapacityAttr = v.attributes && v.attributes.some((attr) => 
+        (attr as any).name?.toLowerCase().includes('pojemność') && attr.option === capacity
       );
       return hasCapacityAttr;
     });
@@ -46,7 +55,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const getSortedCapacityOptions = (): string[] => {
     if (!product?.attributes) return [];
     
-    const capacityAttr = product.attributes.find((attr: any) => 
+    const capacityAttr = product.attributes.find((attr: { name: string; options: string[] }) => 
       attr.name.toLowerCase().includes('pojemność')
     );
     
@@ -65,21 +74,19 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     if (isOpen && product) {
       const fetchVariations = async () => {
         try {
-          // Check if product has variations
-          if (product.variations && product.variations.length > 0) {
-            console.log('🔄 Fetching variations:', product.variations);
-            // Fetch individual variation details using variation IDs
-            const variationPromises = product.variations.map((variationId: number) => 
-              wooCommerceService.getProductById(variationId)
-            );
-            const variationResults = await Promise.all(variationPromises);
-            setVariations(variationResults.filter(Boolean));
-            console.log('✅ Variations fetched:', variationResults);
+          // Dla produktów zmiennych zawsze próbujemy pobrać warianty
+          if (product.type === 'variable') {
+            console.log('🔄 Quick View - Fetching variations for product:', product.id);
+            const variationsResponse = await wooCommerceService.getProductVariations(product.id);
+            console.log('🔄 Quick View - Variations response:', variationsResponse);
+            const fetchedVariations = Array.isArray(variationsResponse) ? variationsResponse : (variationsResponse.variations || []);
+            console.log('✅ Quick View - Variations fetched:', fetchedVariations);
+            setVariations(fetchedVariations);
           } else {
             setVariations([]);
           }
         } catch (error) {
-          console.error('Error fetching variations:', error);
+          console.error('Błąd pobierania wariantów w Quick View:', error);
           setVariations([]);
         }
       };
@@ -130,8 +137,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       if (variations.length > 0 && selectedCapacity) {
         // Find the selected variation
         const selectedVariation = variations.find(v => {
-          const hasCapacityAttr = v.attributes && v.attributes.some((attr: any) => 
-            attr.name.toLowerCase().includes('pojemność') && attr.option === selectedCapacity
+          const hasCapacityAttr = v.attributes && v.attributes.some((attr) => 
+            (attr as any).name?.toLowerCase().includes('pojemność') && attr.option === selectedCapacity
           );
           return hasCapacityAttr;
         });
@@ -158,14 +165,15 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
         } : undefined
       });
       
-      // Show success feedback
+      // Show success feedback and open cart
       setTimeout(() => {
         setIsLoading(false);
-        onClose();
+        onClose(); // Close Quick View
+        openCart(); // Open CartDrawer
       }, 500);
     } catch (error) {
       setIsLoading(false);
-      console.error('Error adding to cart:', error);
+      console.error('Błąd dodawania do koszyka:', error);
     }
   };
 
@@ -190,6 +198,58 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       />
     ));
   };
+
+  // Normalize any attribute option (string | {id,name,slug,...}) to string label
+  const toOptionLabel = (option: any): string => {
+    if (typeof option === 'string') return option;
+    if (option && typeof option === 'object') {
+      return option.name || option.slug || String(option.id ?? '');
+    }
+    return String(option ?? '');
+  };
+
+  // Safe image helper – ensures non-empty HTTP URL, otherwise remote placeholder
+  const getSafeImageSrc = (src?: string): string => {
+    const placeholder = 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
+    if (!src || typeof src !== 'string') return placeholder;
+    let trimmed = src.trim();
+    if (!trimmed || trimmed === '/' || trimmed === '#') return placeholder;
+    // Prefer a 600x600 variant if available: replace any size suffix with -600x600
+    const hasSizeSuffix = /-(?:\d{2,4})x(?:\d{2,4})(?=\.[a-zA-Z]{3,4}$)/.test(trimmed);
+    if (hasSizeSuffix) {
+      trimmed = trimmed.replace(/-(?:\d{2,4})x(?:\d{2,4})(?=\.[a-zA-Z]{3,4}$)/, '-600x600');
+    } else {
+      // If no suffix, try to inject -600x600 before extension for typical WP uploads
+      trimmed = trimmed.replace(/(\.[a-zA-Z]{3,4})$/, '-600x600$1');
+    }
+    // Clean query params that may downscale
+    try {
+      const url = new URL(trimmed, 'https://dummy-base/');
+      // Remove common resize query params
+      url.searchParams.delete('resize');
+      url.searchParams.delete('fit');
+      url.searchParams.delete('quality');
+      url.search = url.search.toString();
+      trimmed = url.href.replace('https://dummy-base/', '');
+    } catch (_) {}
+    // Also remove '-scaled' if present
+    trimmed = trimmed.replace(/-scaled(?=\.[a-zA-Z]{3,4}$)/, '');
+    // Some APIs return relative paths – allow absolute http(s) only
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return placeholder;
+  };
+
+  const isWooPlaceholder = (src?: string): boolean => {
+    if (!src) return true;
+    return /woocommerce-placeholder/i.test(src);
+  };
+
+  const galleryImages = (() => {
+    const fromArray = (product.images || []).filter((img) => img && img.src && !isWooPlaceholder(img.src));
+    if (fromArray.length > 0) return fromArray;
+    // fallback – keep one placeholder to avoid empty UI
+    return [{ src: '', name: product.name, alt: product.name } as any];
+  })();
 
   return (
     <AnimatePresence>
@@ -234,7 +294,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                   <div className="grid grid-cols-5 gap-4">
                     {/* Thumbnails */}
                     <div className="col-span-1 space-y-2">
-                      {product.images.map((image, index) => (
+                      {galleryImages.map((image, index) => (
                         <button
                           key={index}
                           onClick={() => setSelectedImageIndex(index)}
@@ -244,9 +304,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <img
-                            src={image.src}
-                            alt={image.name}
+                          <Image
+                            src={getSafeImageSrc(image.src)}
+                            alt={image.alt || image.name || product.name || 'Zdjęcie produktu'}
+                            width={100}
+                            height={100}
                             className="w-full h-full object-cover"
                           />
                         </button>
@@ -255,15 +317,23 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     
                     {/* Main Image */}
                     <div className="col-span-4 relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg">
-                      <motion.img
+                      <motion.div
                         key={selectedImageIndex}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
-                        src={product.images[selectedImageIndex]?.src || '/placeholder-product.jpg'}
-                        alt={product.images[selectedImageIndex]?.name || product.name}
-                        className="w-full h-full object-cover"
-                      />
+                        className="absolute inset-0"
+                      >
+                        <Image
+                          src={getSafeImageSrc(galleryImages[selectedImageIndex]?.src)}
+                          alt={galleryImages[selectedImageIndex]?.alt || galleryImages[selectedImageIndex]?.name || product.name || 'Zdjęcie produktu'}
+                          fill
+                          sizes="(min-width: 1024px) 50vw, 100vw"
+                          quality={90}
+                          className="object-cover"
+                          priority
+                        />
+                      </motion.div>
                       
                       {/* Sale Badge */}
                       {isOnSale && (
@@ -273,19 +343,25 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       )}
 
                       {/* Brand Overlay */}
-                      {product.attributes && product.attributes.some((attr: any) => attr.name.toLowerCase().includes('marka')) && (
+                      {product.attributes && product.attributes.some((attr: { name: string }) => attr.name.toLowerCase().includes('marka')) && (
                         <div className="absolute top-4 right-4">
                           {product.attributes
-                            .filter((attr: any) => attr.name.toLowerCase().includes('marka'))
-                            .map((attr: any) => 
-                              attr.options.map((option: string, index: number) => (
+                            .filter((attr: { name: string }) => attr.name.toLowerCase().includes('marka'))
+                            .map((attr: { options: any[] }) => 
+                              attr.options.map((option: any, index: number) => {
+                                const label = typeof option === 'string' 
+                                  ? option 
+                                  : (option?.name || option?.slug || String(option?.id || ''));
+                                if (!label) return null;
+                                return (
                                 <span
                                   key={index}
                                   className="px-3 py-1 bg-white/90 backdrop-blur-sm text-gray-800 text-sm font-medium rounded-full border border-gray-200 shadow-sm"
                                 >
-                                  {option}
+                                  {label}
                                 </span>
-                              ))
+                                );
+                              })
                             )}
                         </div>
                       )}
@@ -367,73 +443,90 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       </div>
                     </div>
 
-                    {/* Product Attributes */}
-                    {product.attributes && product.attributes.length > 0 && (
-                      <div className="space-y-4">
-                        {product.attributes.map((attr: any, index: number) => {
-                          const isCapacity = attr.name.toLowerCase().includes('pojemność');
-                          const isBrand = attr.name.toLowerCase().includes('marka');
-                          
-                          return (
-                            <div key={index}>
-                              {!isBrand && (
-                                <>
-                                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center space-x-2">
-                                    {isCapacity && variations.length === 0 && (
-                                      <Droplets className="w-6 h-6 text-gray-500" />
-                                    )}
-                                    <span>{isCapacity && variations.length === 0 ? attr.options[0] : `${attr.name}: ${attr.options[0]}`}</span>
-                                  </h3>
-                                  {/* Capacity as selectable buttons or other attributes as badges */}
-                                  {isCapacity && variations.length > 0 ? (
-                                    <div className="flex flex-wrap gap-3">
-                                      {getSortedCapacityOptions().map((option: string, optionIndex: number) => {
-                                        const variantPrice = getVariationPrice(option);
-                                        const isSelected = selectedCapacity === option;
-                                        
-                                        return (
-                                          <button
-                                            key={optionIndex}
-                                            onClick={() => {
-                                              setSelectedCapacity(option);
-                                            }}
-                                            className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                              isSelected
-                                                ? 'bg-black text-white border-2 border-black'
-                                                : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                            }`}
-                                          >
-                                            <div className="text-center">
-                                              <div className="font-semibold">{option}</div>
-                                              <div className={`text-xs mt-1 ${
-                                                isSelected ? 'text-gray-200' : 'text-gray-500'
-                                              }`}>
-                                                {formatPrice(variantPrice)}
-                                              </div>
-                                            </div>
-                                          </button>
-                                        );
-                                      })}
+                    {/* Product Attributes & Variants */}
+                    <div className="space-y-4">
+                      {/* Debug info */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-gray-500">
+                          Debug: Product ID {product?.id}, Type: {product?.type}, Variations: {variations.length}
+                        </div>
+                      )}
+                      
+                      {/* Show variants if product has them */}
+                      {product?.type === 'variable' && variations.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center space-x-2">
+                            <Droplets className="w-6 h-6 text-gray-500" />
+                            <span>Wybierz pojemność</span>
+                          </h3>
+                          <div className="flex flex-wrap gap-3">
+                            {variations.map((variation, index) => {
+                              const capacityAttr = variation.attributes?.find((attr: any) => 
+                                attr.slug === 'pa_pojemnosc' || attr.name?.toLowerCase().includes('pojemność')
+                              );
+                              const capacity = capacityAttr?.option || `Wariant ${variation.id}`;
+                              const isSelected = selectedCapacity === capacity;
+                              
+                              return (
+                                <button
+                                  key={index}
+                                  onClick={() => {
+                                    setSelectedCapacity(capacity);
+                                    console.log('🔍 Selected capacity:', capacity, 'Price:', variation.price);
+                                  }}
+                                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                    isSelected
+                                      ? 'bg-black text-white border-2 border-black'
+                                      : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div className="text-center">
+                                    <div className="font-semibold">{capacity}</div>
+                                    <div className={`text-xs mt-1 ${
+                                      isSelected ? 'text-gray-200' : 'text-gray-500'
+                                    }`}>
+                                      {formatPrice(parseFloat(variation.price))}
                                     </div>
-                                  ) : !isCapacity && (
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Show other attributes if no variants */}
+                      {product?.attributes && product.attributes.length > 0 && variations.length === 0 && (
+                        <div className="space-y-4">
+                          {product.attributes.map((attr: { name: string; options: any[] }, index: number) => {
+                            const isCapacity = attr.name.toLowerCase().includes('pojemność');
+                            const isBrand = attr.name.toLowerCase().includes('marka');
+                            
+                            return (
+                              <div key={index}>
+                                {!isBrand && (
+                                  <>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                                      {attr.name}: {toOptionLabel(attr.options[0])}
+                                    </h3>
                                     <div className="flex flex-wrap gap-3">
-                                      {attr.options.map((option: string, optionIndex: number) => (
+                                      {attr.options.map((option: any, optionIndex: number) => (
                                         <span
                                           key={optionIndex}
                                           className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
                                         >
-                                          {option}
+                                          {toOptionLabel(option)}
                                         </span>
                                       ))}
                                     </div>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Price - only show if no variations */}
                     {variations.length === 0 && (
@@ -458,34 +551,31 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
 
                     {/* Quantity & Actions */}
-                    <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
                       {/* Quantity Selector */}
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center border border-gray-200 rounded-lg h-[56px]">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                            className="rounded-l-lg rounded-r-none h-full px-4"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <span className="px-4 py-2 min-w-[60px] text-center h-full flex items-center justify-center">
-                            {quantity}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setQuantity(quantity + 1)}
-                            className="rounded-r-lg rounded-l-none h-full px-4"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
+                      <div className="flex items-center border border-gray-200 rounded-lg h-[56px]">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          className="rounded-l-lg rounded-r-none h-full px-4"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="px-4 py-2 min-w-[60px] text-center h-full flex items-center justify-center">
+                          {quantity}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setQuantity(quantity + 1)}
+                          className="rounded-r-lg rounded-l-none h-full px-4"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex items-center space-x-3">
                         <Button
                           onClick={handleAddToCart}
                           disabled={product.stock_status !== 'instock' || isLoading || (variations.length > 0 && !selectedCapacity)}
@@ -496,7 +586,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           ) : (
                             <>
                               <ShoppingCart className="w-5 h-5 mr-2" />
-                              {variations.length > 0 && !selectedCapacity ? 'Wybierz pojemność' : 'Dodaj do koszyka'}
+                              {variations.length > 0 && !selectedCapacity ? 'Wybierz wariant' : 'Dodaj do koszyka'}
                             </>
                           )}
                         </Button>
@@ -516,12 +606,9 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                             }`} 
                           />
                         </Button>
-
-
                       </div>
                     </div>
                   </div>
-                </div>
               </div>
             </motion.div>
           </div>

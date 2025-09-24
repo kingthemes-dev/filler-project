@@ -5,6 +5,7 @@ import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide-
 import { useCartStore, type CartItem } from '@/stores/cart-store';
 import { formatPrice } from '@/utils/format-price';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CartPage() {
   const { items, total, itemCount, removeItem, updateQuantity, clearCart } = useCartStore();
@@ -112,9 +113,11 @@ export default function CartPage() {
                         {/* Product Image */}
                         <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0">
                           {item.image ? (
-                            <img
+                            <Image
                               src={item.image}
                               alt={item.name}
+                              width={80}
+                              height={80}
                               className="w-full h-full object-cover rounded-lg"
                             />
                           ) : (

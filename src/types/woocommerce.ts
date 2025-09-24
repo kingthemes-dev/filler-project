@@ -263,23 +263,17 @@ export interface WooFeeLine {
 }
 
 export interface WooShippingMethod {
-  id: number;
+  id: string;
   method_id: string;
-  method_title: string;
-  method_description: string;
-  settings: {
-    title?: string;
-    cost?: string;
-    free_shipping_requires?: string;
-    free_shipping_minimum_amount?: string;
-    [key: string]: any;
-  };
+  title: string;
+  cost: string;
   zone_id: number;
   zone_name: string;
-  zone_locations: Array<{
-    code: string;
-    type: string;
-  }>;
+  // Additional properties for internal use
+  method_title?: string;
+  method_description?: string;
+  settings?: Record<string, unknown>;
+  zone_locations?: unknown[];
 }
 
 export interface WooShippingZone {

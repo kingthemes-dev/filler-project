@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, Eye, EyeOff, User, Phone, AlertCircle, Check } from 'lucide-react';
+import { X, Mail, Lock, Eye, EyeOff, User, Phone, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 
 interface RegisterModalProps {
@@ -19,12 +19,16 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    company: '',
+    nip: '',
+    invoiceRequest: false
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -35,10 +39,14 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         email: '',
         phone: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        company: '',
+        nip: '',
+        invoiceRequest: false
       });
       setValidationErrors({});
       setAcceptTerms(false);
+      setMarketingConsent(false);
     }
   }, [isOpen]);
 
@@ -68,6 +76,12 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
     if (!formData.phone.trim()) {
       errors.phone = 'Telefon jest wymagany';
+    } else {
+      // Walidacja numeru telefonu - polskie numery
+      const phoneRegex = /^(\+48\s?)?(\d{3}[\s\-]?\d{3}[\s\-]?\d{3}|\d{9})$/;
+      if (!phoneRegex.test(formData.phone.trim())) {
+        errors.phone = 'Proszę wpisać poprawny numer telefonu (np. +48 123 456 789 lub 123 456 789)';
+      }
     }
 
     if (!formData.password) {
@@ -99,7 +113,8 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         lastName: formData.lastName.trim(),
         email: formData.email,
         phone: formData.phone.trim(),
-        password: formData.password
+        password: formData.password,
+        marketingConsent: marketingConsent
       });
     } catch (error) {
       console.error('Registration error:', error);
@@ -135,7 +150,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
         {/* Modal */}
         <motion.div
-          className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto"
+          className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto"
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -213,58 +228,113 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
               </div>
             </div>
 
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                    validationErrors.email ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="twoj@email.com"
-                  disabled={isLoading}
-                />
+            {/* Email & Phone Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Email Field */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                      validationErrors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="twoj@email.com"
+                    disabled={isLoading}
+                  />
+                </div>
+                {validationErrors.email && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {validationErrors.email}
+                  </p>
+                )}
               </div>
-              {validationErrors.email && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {validationErrors.email}
-                </p>
-              )}
+
+              {/* Phone Field */}
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  Telefon
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                      validationErrors.phone ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="+48 123 456 789"
+                    disabled={isLoading}
+                  />
+                </div>
+                {validationErrors.phone && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {validationErrors.phone}
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Phone Field */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Telefon
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            {/* Company and NIP Fields */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* Company */}
+              <div>
+                <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                  Firma (opcjonalnie)
+                </label>
                 <input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                    validationErrors.phone ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="+48 123 456 789"
+                  id="company"
+                  type="text"
+                  value={formData.company}
+                  onChange={(e) => handleInputChange('company', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  placeholder="Nazwa firmy"
                   disabled={isLoading}
                 />
               </div>
-              {validationErrors.phone && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {validationErrors.phone}
-                </p>
-              )}
+
+              {/* NIP */}
+              <div>
+                <label htmlFor="nip" className="block text-sm font-medium text-gray-700 mb-2">
+                  NIP (dla faktury, opcjonalnie)
+                </label>
+                <input
+                  id="nip"
+                  type="text"
+                  value={formData.nip}
+                  onChange={(e) => handleInputChange('nip', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                  placeholder="1234567890"
+                  maxLength={10}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Invoice Request */}
+              <div>
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.invoiceRequest}
+                    onChange={(e) => setFormData(prev => ({ ...prev, invoiceRequest: e.target.checked }))}
+                    className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                    disabled={isLoading}
+                  />
+                  <span className="text-sm text-gray-700">
+                    Chcę otrzymywać faktury VAT (jeśli podano NIP)
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Password Fields */}
@@ -338,31 +408,98 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
               </div>
             </div>
 
-            {/* Terms and Conditions */}
-            <div>
-              <label className="flex items-start">
-                <input
-                  type="checkbox"
-                  checked={acceptTerms}
-                  onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="mr-3 mt-1"
-                />
-                <div className="text-sm text-gray-700">
-                  Akceptuję{' '}
-                  <a href="/regulamin" className="text-black underline hover:no-underline" target="_blank" rel="noopener noreferrer">
+            {/* Marketing Consent - Premium Design */}
+            <div className="mb-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 rounded-xl"></div>
+              <div className="relative p-4 border border-purple-200/50 rounded-xl bg-white/80 backdrop-blur-sm">
+                <label className="flex items-start cursor-pointer space-x-2 group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={marketingConsent}
+                      onChange={(e) => setMarketingConsent(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                      marketingConsent 
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-transparent' 
+                        : 'border-gray-300 group-hover:border-purple-400'
+                    }`}>
+                      {marketingConsent && (
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="text-xl">🎁</span>
+                      <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                        Odbierz 10% rabatu!
+                      </span>
+                      <span className="px-2 py-0.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-semibold rounded-full">
+                        NOWOŚĆ
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Wyrażam zgodę na otrzymywanie ofert marketingowych i odbieram kod rabatowy 10% na pierwsze zakupy.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Terms and Conditions - Premium Design */}
+            <div className="mb-6">
+              <label className="flex items-start cursor-pointer group">
+                <div className="relative mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
+                    acceptTerms 
+                      ? 'bg-gradient-to-r from-gray-700 to-gray-900 border-transparent' 
+                      : 'border-gray-300 group-hover:border-gray-400'
+                  }`}>
+                    {acceptTerms && (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="ml-3 text-sm text-gray-700">
+                  <span className="font-medium">Akceptuję</span>{' '}
+                  <a 
+                    href="/regulamin" 
+                    className="text-black underline hover:no-underline font-medium hover:text-gray-800 transition-colors" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
                     regulamin
                   </a>{' '}
-                  oraz{' '}
-                  <a href="/polityka-prywatnosci" className="text-black underline hover:no-underline" target="_blank" rel="noopener noreferrer">
+                  <span className="font-medium">oraz</span>{' '}
+                  <a 
+                    href="/polityka-prywatnosci" 
+                    className="text-black underline hover:no-underline font-medium hover:text-gray-800 transition-colors" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
                     politykę prywatności
                   </a>
                 </div>
               </label>
               {validationErrors.terms && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {validationErrors.terms}
-                </p>
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                    {validationErrors.terms}
+                  </p>
+                </div>
               )}
             </div>
 

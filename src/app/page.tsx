@@ -1,54 +1,49 @@
-import { Suspense } from 'react';
 import Image from 'next/image';
-import KingProductTabs from '@/components/king-product-tabs';
+import KingProductTabsServer from '@/components/king-product-tabs-server';
 import KingHeroRounded from '@/components/king-hero-rounded';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import NewsletterForm from '@/components/ui/newsletter-form';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Star, TrendingUp, Zap } from 'lucide-react';
-import Link from 'next/link';
+import { Star, TrendingUp, Zap } from 'lucide-react';
 
-export default function HomePage() {
+// ISR - Incremental Static Regeneration
+export const revalidate = 300; // 5 minutes
+
+// Server-side data fetching
+async function getHomeFeedData() {
+  try {
+    // Import the API function directly instead of using fetch
+    const { GET } = await import('@/app/api/home-feed/route');
+    const response = await GET();
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch home feed data:', error);
+    // Return empty data on error
+    return {
+      nowosci: [],
+      promocje: [],
+      polecane: [],
+      bestsellery: []
+    };
+  }
+}
+
+export default async function HomePage() {
+  // Fetch data on server-side
+  const homeFeedData = await getHomeFeedData();
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <KingHeroRounded />
+      <KingHeroRounded data={homeFeedData} />
 
 
 
-      {/* Product Tabs */}
-      <section className="py-16">
-        <div className="max-w-[95vw] mx-auto px-6">
-          <Suspense fallback={
-            <div className="space-y-8">
-              {/* Tabs skeleton */}
-              <div className="flex items-center justify-between">
-                <div className="flex gap-8">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-8 w-20 bg-muted rounded animate-pulse" />
-                  ))}
-                </div>
-                <div className="h-6 w-32 bg-muted rounded animate-pulse" />
-              </div>
-              {/* Products skeleton */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {[...Array(8)].map((_, i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardHeader className="pb-0">
-                      <div className="aspect-square bg-muted rounded-lg" />
-                    </CardHeader>
-                    <CardContent className="pt-3">
-                      <div className="h-4 bg-muted rounded mb-2" />
-                      <div className="h-3 bg-muted rounded w-2/3" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          }>
-            <KingProductTabs />
-          </Suspense>
-        </div>
-      </section>
+      {/* Product Tabs - Server Component with data */}
+      <KingProductTabsServer data={homeFeedData} />
 
 
 
@@ -78,16 +73,7 @@ export default function HomePage() {
           <p className="text-white/90 mb-8 max-w-2xl mx-auto">
             Zapisz się do naszego newslettera i otrzymuj informacje o nowych produktach i promocjach
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Twój adres email"
-              className="flex-1 px-4 py-3 border border-white/30 rounded-lg bg-white/90 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-sm"
-            />
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white border-2 border-white h-12">
-              Zapisz się
-            </Button>
-          </div>
+          <NewsletterForm />
             </div>
           </div>
         </div>

@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
 import KingProductCard from './king-product-card';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import { WooProduct } from '@/types/woocommerce';
 import Link from 'next/link';
 
 interface TabData {
   id: string;
   label: string;
-  products: any[];
+  products: WooProduct[];
   loading: boolean;
 }
 
@@ -41,12 +41,12 @@ export default function KingProductTabs() {
     ));
 
     // Retry logic for frontend
-    let lastError: any;
+    let lastError: Error | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         console.log(`🔄 Frontend attempt ${attempt} for ${tabId}`);
         
-        let products: any[] = [];
+        let products: WooProduct[] = [];
 
         switch (tabId) {
           case 'nowosci':
@@ -90,7 +90,7 @@ export default function KingProductTabs() {
         return; // Success, exit retry loop
 
       } catch (error) {
-        lastError = error;
+        lastError = error as Error;
         console.log(`❌ Frontend attempt ${attempt} failed for ${tabId}:`, error);
         
         if (attempt < 3) {

@@ -1,15 +1,8 @@
 import type { NextConfig } from "next";
 
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
-
 const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
-  },
-  experimental: {
-    // Removed deprecated turbo config
   },
   images: {
     remotePatterns: [
@@ -20,6 +13,10 @@ const nextConfig: NextConfig = {
         pathname: '/wp-content/uploads/**',
       },
     ],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    unoptimized: true,
   },
   webpack: (config) => {
     config.module.rules.push({
@@ -28,8 +25,7 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
-  // Ensure proper module resolution
   transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
 };
 
-module.exports = withBundleAnalyzer(nextConfig);
+export default nextConfig;

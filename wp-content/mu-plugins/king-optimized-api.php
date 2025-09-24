@@ -14,9 +14,15 @@ if (!defined('ABSPATH')) {
 class KingOptimizedAPI {
     
     private $cache_duration = 24 * 60 * 60; // 24 hours
+    private $redis_available = false;
     
     public function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'));
+        
+        // Check if Redis is available
+        if (class_exists('Redis')) {
+            $this->redis_available = true;
+        }
     }
     
     /**
@@ -77,9 +83,11 @@ class KingOptimizedAPI {
     public function get_homepage_data($request) {
         $cache_key = 'king_homepage_data';
         
-        // Try to get from cache
-        $cached_data = wp_cache_get($cache_key, 'king_optimized');
+        // Try to get from Redis cache first
+        $cached_data = $this->get_from_cache($cache_key);
         if ($cached_data !== false) {
+            // Add cache headers
+            $this->add_cache_headers(true);
             return $cached_data;
         }
         
@@ -91,8 +99,11 @@ class KingOptimizedAPI {
             'bestsellery' => $this->get_products_by_tab('bestsellery')
         );
         
-        // Cache for 24 hours
-        wp_cache_set($cache_key, $data, 'king_optimized', $this->cache_duration);
+        // Cache in Redis
+        $this->set_cache($cache_key, $data);
+        
+        // Add cache headers
+        $this->add_cache_headers(false);
         
         return $data;
     }
@@ -211,7 +222,8 @@ class KingOptimizedAPI {
             'status' => 'publish',
             'per_page' => 4,
             'orderby' => 'date',
-            'order' => 'desc'
+            'order' => 'desc',
+            'fields' => 'ids' // Only get IDs for better performance
         );
         
         switch ($tab_type) {
@@ -230,18 +242,21 @@ class KingOptimizedAPI {
                 break;
         }
         
-        $products = wc_get_products($args);
+        $product_ids = wc_get_products($args);
         $formatted_products = array();
         
-        foreach ($products as $product) {
-            $formatted_products[] = $this->format_product($product);
+        foreach ($product_ids as $product_id) {
+            $product = wc_get_product($product_id);
+            if ($product) {
+                $formatted_products[] = $this->format_product($product);
+            }
         }
         
         return $formatted_products;
     }
     
     /**
-     * Format product for list view
+     * Format product for list view - optimized with only essential fields
      */
     private function format_product($product) {
         return array(
@@ -254,7 +269,6 @@ class KingOptimizedAPI {
             'on_sale' => $product->is_on_sale(),
             'featured' => $product->is_featured(),
             'image' => wp_get_attachment_image_url($product->get_image_id(), 'medium'),
-            'categories' => wp_get_post_terms($product->get_id(), 'product_cat', array('fields' => 'names')),
             'stock_status' => $product->get_stock_status(),
             'type' => $product->get_type()
         );
@@ -303,7 +317,72 @@ class KingOptimizedAPI {
         
         return $data;
     }
+    
+    /**
+     * Get data from Redis cache
+     */
+    private function get_from_cache($key) {
+        if (!$this->redis_available) {
+            return wp_cache_get($key, 'king_optimized');
+        }
+        
+        try {
+            $redis = new Redis();
+            $redis->connect('127.0.0.1', 6379);
+            $data = $redis->get('king_optimized:' . $key);
+            $redis->close();
+            
+            return $data ? json_decode($data, true) : false;
+        } catch (Exception $e) {
+            // Fallback to WordPress cache
+            return wp_cache_get($key, 'king_optimized');
+        }
+    }
+    
+    /**
+     * Set data in Redis cache
+     */
+    private function set_cache($key, $data) {
+        if (!$this->redis_available) {
+            wp_cache_set($key, $data, 'king_optimized', $this->cache_duration);
+            return;
+        }
+        
+        try {
+            $redis = new Redis();
+            $redis->connect('127.0.0.1', 6379);
+            $redis->setex('king_optimized:' . $key, $this->cache_duration, json_encode($data));
+            $redis->close();
+        } catch (Exception $e) {
+            // Fallback to WordPress cache
+            wp_cache_set($key, $data, 'king_optimized', $this->cache_duration);
+        }
+    }
+    
+    /**
+     * Add cache headers for better performance
+     */
+    private function add_cache_headers($is_hit = false) {
+        header('Cache-Control: public, s-maxage=300, stale-while-revalidate=86400');
+        header('X-Cache-Status: ' . ($is_hit ? 'HIT' : 'MISS'));
+        header('X-Redis-Available: ' . ($this->redis_available ? 'true' : 'false'));
+    }
+    
+    /**
+     * Clear cache when products are updated
+     */
+    public function clear_cache($post_id) {
+        if (get_post_type($post_id) === 'product') {
+            wp_cache_delete('king_homepage_data', 'king_optimized');
+            wp_cache_delete('king_shop_data_*', 'king_optimized');
+            wp_cache_delete('king_product_data_' . $post_id, 'king_optimized');
+        }
+    }
 }
 
 // Initialize the optimized API
-new KingOptimizedAPI();
+$king_optimized_api = new KingOptimizedAPI();
+
+// Clear cache when products are updated
+add_action('save_post', array($king_optimized_api, 'clear_cache'));
+add_action('delete_post', array($king_optimized_api, 'clear_cache'));

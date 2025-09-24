@@ -6,14 +6,16 @@ import { motion } from 'framer-motion';
 import { Search, Filter, SortAsc, Star, ShoppingCart, Heart } from 'lucide-react';
 import { WooCommerceService } from '@/services/woocommerce-optimized';
 import { formatPrice } from '@/utils/format-price';
+import { WooProduct } from '@/types/woocommerce';
 import { useCartStore } from '@/stores/cart-store';
+import Image from 'next/image';
 import Link from 'next/link';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<WooProduct[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,7 +23,7 @@ function SearchResultsContent() {
   const [processingTime, setProcessingTime] = useState(0);
   
   // Filters and sorting
-  const [filters, setFilters] = useState<any>({});
+  const [filters, setFilters] = useState<Record<string, string | number | boolean>>({});
   const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'rating' | 'newest'>('relevance');
   const [showFilters, setShowFilters] = useState(false);
   
@@ -75,8 +77,8 @@ function SearchResultsContent() {
   };
 
   // Handle filter change
-  const handleFilterChange = (filterType: string, value: any) => {
-    setFilters((prev: any) => ({
+  const handleFilterChange = (filterType: string, value: string | number | boolean) => {
+    setFilters((prev: Record<string, string | number | boolean>) => ({
       ...prev,
       [filterType]: value
     }));
@@ -96,7 +98,7 @@ function SearchResultsContent() {
   };
 
   // Add to cart
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: WooProduct) => {
     addItem({
       id: product.id,
       name: product.name,
@@ -149,7 +151,7 @@ function SearchResultsContent() {
       {/* Search Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Wyniki wyszukiwania dla "{query}"
+          Wyniki wyszukiwania dla &quot;{query}&quot;
         </h1>
         <div className="flex items-center justify-between text-sm text-gray-600">
           <span>
@@ -191,7 +193,7 @@ function SearchResultsContent() {
                     <input
                       type="checkbox"
                       checked={filters.category === category}
-                      onChange={(e) => handleFilterChange('category', e.target.checked ? category : undefined)}
+                      onChange={(e) => handleFilterChange('category', e.target.checked ? category : '')}
                       className="mr-2"
                     />
                     <span className="text-sm text-gray-700">{category}</span>
@@ -214,8 +216,8 @@ function SearchResultsContent() {
                           handleFilterChange('price_min', range.min);
                           handleFilterChange('price_max', range.max);
                         } else {
-                          handleFilterChange('price_min', undefined);
-                          handleFilterChange('price_max', undefined);
+                          handleFilterChange('price_min', '');
+                          handleFilterChange('price_max', '');
                         }
                       }}
                       className="mr-2"
@@ -233,7 +235,7 @@ function SearchResultsContent() {
                 <input
                   type="checkbox"
                   checked={filters.in_stock === true}
-                  onChange={(e) => handleFilterChange('in_stock', e.target.checked ? true : undefined)}
+                  onChange={(e) => handleFilterChange('in_stock', e.target.checked ? true : false)}
                   className="mr-2"
                 />
                 <span className="text-sm text-gray-700">W magazynie</span>
@@ -249,7 +251,7 @@ function SearchResultsContent() {
                     <input
                       type="checkbox"
                       checked={filters.rating_min === option.value}
-                      onChange={(e) => handleFilterChange('rating_min', e.target.checked ? option.value : undefined)}
+                      onChange={(e) => handleFilterChange('rating_min', e.target.checked ? option.value : 0)}
                       className="mr-2"
                     />
                     <span className="text-sm text-gray-700">{option.label}</span>
@@ -308,9 +310,11 @@ function SearchResultsContent() {
                   {/* Product Image */}
                   <div className="aspect-square bg-gray-200 relative">
                     {product.images && product.images.length > 0 ? (
-                      <img 
+                      <Image 
                         src={product.images[0].src} 
                         alt={product.images[0].alt || product.name}
+                        width={300}
+                        height={300}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -348,7 +352,7 @@ function SearchResultsContent() {
                       </div>
                       <span className="text-xs text-gray-400 mx-2">•</span>
                       <span className="text-xs text-gray-600">
-                        {product.review_count} opinii
+                        {(product as any).review_count || 0} opinii
                       </span>
                     </div>
 
@@ -356,11 +360,11 @@ function SearchResultsContent() {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <span className="text-lg font-bold text-gray-900">
-                          {formatPrice(product.sale_price || product.price)}
+                          {formatPrice(parseFloat(product.sale_price || product.price))}
                         </span>
                         {product.sale_price && (
                           <span className="text-sm text-gray-500 line-through ml-2">
-                            {formatPrice(product.price)}
+                            {formatPrice(parseFloat(product.price))}
                           </span>
                         )}
                       </div>
@@ -396,7 +400,7 @@ function SearchResultsContent() {
                 Nie znaleziono produktów
               </h3>
               <p className="text-gray-600 mb-4">
-                Nie znaleziono produktów dla "{query}". Spróbuj inne słowa kluczowe lub zmień filtry.
+                Nie znaleziono produktów dla &quot;{query}&quot;. Spróbuj inne słowa kluczowe lub zmień filtry.
               </p>
               <button
                 onClick={clearFilters}

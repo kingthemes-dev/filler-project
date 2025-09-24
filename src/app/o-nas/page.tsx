@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Shield, Award, Users, Heart, Star, CheckCircle } from 'lucide-react';
+import { Shield, Award, Users, Heart, CheckCircle } from 'lucide-react';
 
 export default function AboutPage() {
   return (

@@ -11,7 +11,7 @@ export async function GET() {
         WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET ? 'SET' : 'NOT SET'
       }
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Test failed' }, { status: 500 });
   }
 }

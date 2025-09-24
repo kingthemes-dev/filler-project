@@ -42,7 +42,7 @@ export default function CategoryTabs({ onCategoryChange, selectedCategories }: C
       const realCategories = response.data || [];
       
       // Użyj tylko kategorii z API (bez dodawania "Wszystkie kategorie")
-      const allCategories = realCategories.map((cat: any) => ({
+      const allCategories = realCategories.map((cat: { id: string; name: string; slug: string; count: number }) => ({
         id: cat.id,
         name: cat.name,
         slug: cat.slug,
@@ -50,13 +50,13 @@ export default function CategoryTabs({ onCategoryChange, selectedCategories }: C
       }));
       
       // Sortuj kategorie - "Wszystkie kategorie" na początku
-      const sortedCategories = allCategories.sort((a: any, b: any) => {
+      const sortedCategories = allCategories.sort((a: { name: string }, b: { name: string }) => {
         if (a.name === 'Wszystkie kategorie') return -1;
         if (b.name === 'Wszystkie kategorie') return 1;
         return a.name.localeCompare(b.name);
       });
       
-      setCategories(sortedCategories);
+      setCategories(sortedCategories.map(c => ({ ...c, id: Number(c.id) })));
     } catch (error) {
       console.error('Error fetching categories:', error);
       // Fallback do hardcoded kategorii
@@ -85,20 +85,7 @@ export default function CategoryTabs({ onCategoryChange, selectedCategories }: C
   }
 
   return (
-    <div className="bg-gray-50 py-8 rounded-3xl">
-      <div className="max-w-[95vw] mx-auto px-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">
-            Sklep
-          </h2>
-          <p className="text-lg text-gray-600">
-            Odkryj nasze produkty do pielęgnacji skóry dla zdrowego blasku
-          </p>
-        </div>
-
-        {/* Category Tabs */}
-        <div className="flex justify-center gap-3 flex-wrap">
+    <div className="flex justify-center gap-3 flex-wrap">
           {categories.map((category) => {
             const categoryId = category.name === 'Wszystkie kategorie' ? '' : category.id.toString();
             const isSelected = selectedCategories.includes(categoryId);
@@ -122,8 +109,6 @@ export default function CategoryTabs({ onCategoryChange, selectedCategories }: C
               </motion.button>
             );
           })}
-        </div>
-      </div>
     </div>
   );
 }

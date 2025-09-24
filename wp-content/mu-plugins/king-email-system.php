@@ -1,4 +1,8 @@
 <?php
+// Ensure shared headless helpers are loaded
+if (file_exists(WP_CONTENT_DIR . '/mu-plugins/headless-config.php')) {
+    require_once WP_CONTENT_DIR . '/mu-plugins/headless-config.php';
+}
 /**
  * King Email System - System powiadomień email
  * 
@@ -25,10 +29,31 @@ class KingEmailSystem {
      * Initialize the email system
      */
     public function init() {
-        // Hook into WooCommerce
+        // Adapter mode: do not send custom emails. Rely on WooCommerce defaults.
+        // Keep only adapters/filters that enrich/brand default emails.
         add_action('woocommerce_order_status_changed', [$this, 'handle_order_status_change'], 10, 4);
-        add_action('woocommerce_new_order', [$this, 'handle_new_order'], 10, 1);
-        add_action('woocommerce_checkout_order_processed', [$this, 'handle_checkout_completed'], 10, 1);
+
+        // Add meta (NIP, firma, tracking) to Woo emails
+        add_action('woocommerce_email_order_meta', [$this, 'inject_order_meta_into_email'], 10, 3);
+        // Rewrite WP links -> headless frontend domain in email content
+        add_filter('woocommerce_mail_content', [$this, 'rewrite_email_content_domain'], 999);
+        // CTA links to frontend (order details + account)
+        add_action('woocommerce_email_after_order_table', [$this, 'inject_frontend_cta_links'], 15, 4);
+        
+        // TYMCZASOWE: Trigger emails for REST API orders
+        add_action('woocommerce_new_order', [$this, 'trigger_rest_api_emails'], 10, 1);
+        add_action('woocommerce_api_create_order', [$this, 'trigger_rest_api_emails'], 10, 2);
+        
+        // Hook into order creation via REST API
+        add_action('woocommerce_rest_insert_shop_order_object', [$this, 'trigger_rest_api_emails'], 10, 2);
+        
+        // Additional hooks for REST API
+        add_action('woocommerce_create_order', [$this, 'trigger_rest_api_emails'], 10, 1);
+        add_action('woocommerce_checkout_order_processed', [$this, 'trigger_rest_api_emails'], 10, 1);
+        
+        // Debug: Log all order creation attempts
+        add_action('woocommerce_new_order', [$this, 'debug_order_creation'], 5, 1);
+        add_action('woocommerce_rest_insert_shop_order_object', [$this, 'debug_rest_order_creation'], 5, 2);
         
         // Custom REST API endpoints
         add_action('rest_api_init', [$this, 'register_rest_routes']);
@@ -104,11 +129,8 @@ class KingEmailSystem {
         $order = wc_get_order($order_id);
         if (!$order) return;
         
-        // Send order confirmation email
-        $this->send_order_confirmation($order);
-        
-        // Log email sent
-        $this->log_email_sent($order_id, 'order_confirmation', $order->get_billing_email());
+        // Adapter: rely on Woo default email. Optionally log.
+        $this->log_email_sent($order_id, 'order_confirmation_adapter', $order->get_billing_email());
     }
     
     /**
@@ -118,11 +140,8 @@ class KingEmailSystem {
         $order = wc_get_order($order_id);
         if (!$order) return;
         
-        // Send order confirmation email
-        $this->send_order_confirmation($order);
-        
-        // Log email sent
-        $this->log_email_sent($order_id, 'order_confirmation', $order->get_billing_email());
+        // Adapter: rely on Woo default email. Optionally log.
+        $this->log_email_sent($order_id, 'order_confirmation_adapter', $order->get_billing_email());
     }
     
     /**
@@ -135,16 +154,76 @@ class KingEmailSystem {
                 break;
                 
             case 'completed':
-                // Order completed - send delivery confirmation
-                $this->send_order_delivered($order);
-                $this->log_email_sent($order_id, 'order_delivered', $order->get_billing_email());
+                // Order completed – rely on Woo default email. Log only.
+                $this->log_email_sent($order_id, 'order_completed_adapter', $order->get_billing_email());
                 break;
                 
             case 'shipped':
-                // Order shipped - send shipping notification
-                $this->send_order_shipped($order);
-                $this->log_email_sent($order_id, 'order_shipped', $order->get_billing_email());
+                // Order shipped – if using custom status/email, add meta only. Log.
+                $this->log_email_sent($order_id, 'order_shipped_adapter', $order->get_billing_email());
                 break;
+        }
+    }
+    
+    /**
+     * Debug order creation
+     */
+    public function debug_order_creation($order_id) {
+        error_log("King Email System DEBUG: woocommerce_new_order hook triggered for order {$order_id}");
+    }
+    
+    /**
+     * Debug REST order creation
+     */
+    public function debug_rest_order_creation($order, $request) {
+        $order_id = $order->get_id();
+        error_log("King Email System DEBUG: woocommerce_rest_insert_shop_order_object hook triggered for order {$order_id}");
+    }
+    
+    /**
+     * TYMCZASOWE: Trigger emails for REST API orders
+     */
+    public function trigger_rest_api_emails($order_id, $order = null) {
+        error_log("King Email System DEBUG: trigger_rest_api_emails called for order {$order_id}");
+        
+        if (!$order) {
+            $order = wc_get_order($order_id);
+        }
+        
+        if (!$order) {
+            error_log("King Email System ERROR: Could not get order {$order_id}");
+            return;
+        }
+        
+        error_log("King Email System DEBUG: Order {$order_id} found, attempting to send emails");
+        
+        try {
+            // Get WooCommerce email class
+            $mailer = WC()->mailer();
+            $emails = $mailer->get_emails();
+            
+            error_log("King Email System DEBUG: Available emails: " . implode(', ', array_keys($emails)));
+            
+            // Send customer invoice email
+            if (isset($emails['customer_invoice'])) {
+                $email = $emails['customer_invoice'];
+                $email->trigger($order_id);
+                error_log("King Email System: ✅ Sent customer_invoice email for order {$order_id}");
+            } else {
+                error_log("King Email System ERROR: customer_invoice email not found");
+            }
+            
+            // Send new order notification to admin
+            if (isset($emails['new_order'])) {
+                $email = $emails['new_order'];
+                $email->trigger($order_id);
+                error_log("King Email System: ✅ Sent new_order email for order {$order_id}");
+            } else {
+                error_log("King Email System ERROR: new_order email not found");
+            }
+            
+        } catch (Exception $e) {
+            error_log("King Email System: ❌ Error triggering emails for order {$order_id}: " . $e->getMessage());
         }
     }
     
@@ -294,10 +373,33 @@ class KingEmailSystem {
      * Process template variables
      */
     private function process_template_variables($template, $variables) {
+        $tpl = (string)$template;
         foreach ($variables as $key => $value) {
-            $template = str_replace('{#' . $key . '}', $value, $template);
+            $tpl = str_replace('{#' . (string)$key . '}', $this->to_string($value), $tpl);
         }
-        return $template;
+        return $tpl;
+    }
+
+    /**
+     * Safely convert any value to string for email templates
+     */
+    private function to_string($value) {
+        if (is_null($value)) {
+            return '';
+        }
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if (is_array($value)) {
+            // Flatten arrays to human-friendly string
+            $parts = array_map(function($v) { return $this->to_string($v); }, $value);
+            return implode(', ', $parts);
+        }
+        if (is_object($value)) {
+            // Encode objects as JSON for safety
+            return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        return (string)$value;
     }
     
     /**
@@ -309,7 +411,9 @@ class KingEmailSystem {
             'From: FILLER <noreply@' . parse_url(get_site_url(), PHP_URL_HOST) . '>'
         ];
         
-        $result = wp_mail($to, $subject, $message, $headers);
+        // Adapter mode: do not send custom emails – leave to Woo defaults
+        // Keep rewrite helper for potential use in filters below
+        $result = true;
         
         if ($result) {
             error_log("King Email System: Email sent successfully to {$to}");
@@ -318,6 +422,58 @@ class KingEmailSystem {
         }
         
         return $result;
+    }
+
+    /**
+     * Inject extra order meta into standard Woo emails
+     */
+    public function inject_order_meta_into_email($order, $sent_to_admin, $plain_text) {
+        if (!$order instanceof WC_Order) { return; }
+        $nip = $order->get_meta('_billing_nip');
+        $company = $order->get_billing_company();
+        $tracking = $order->get_meta('_tracking_number');
+        $lines = [];
+        if (!empty($company)) { $lines[] = __('Firma', 'woocommerce') . ': ' . esc_html($company); }
+        if (!empty($nip)) { $lines[] = 'NIP: ' . esc_html($nip); }
+        if (!empty($tracking)) { $lines[] = __('Numer śledzenia', 'woocommerce') . ': ' . esc_html($tracking); }
+        if (empty($lines)) { return; }
+        if ($plain_text) {
+            echo "\n" . implode("\n", $lines) . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        } else {
+            echo '<div style="margin-top:10px;color:#555">' . wp_kses_post(implode('<br>', $lines)) . '</div>';
+        }
+    }
+
+    /**
+     * Rewrite WP domain to headless frontend domain in Woo email HTML
+     */
+    public function rewrite_email_content_domain($content) {
+        if (function_exists('headless_rewrite_to_frontend')) {
+            return headless_rewrite_to_frontend((string)$content);
+        }
+        return $content;
+    }
+
+    /**
+     * Add CTA links pointing to headless frontend (order details, account)
+     */
+    public function inject_frontend_cta_links($order, $sent_to_admin, $plain_text, $email) {
+        if (!$order instanceof WC_Order) { return; }
+        $frontend = function_exists('headless_frontend_url') ? headless_frontend_url() : site_url();
+        $order_id = $order->get_id();
+        $order_url = rtrim($frontend, '/') . '/moje-zamowienia/' . $order_id;
+        $account_url = rtrim($frontend, '/') . '/moje-konto';
+        if ($plain_text) {
+            echo "\n" . __('Szczegóły zamówienia:', 'woocommerce') . ' ' . $order_url . "\n";
+            echo __('Twoje konto:', 'woocommerce') . ' ' . $account_url . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+        } else {
+            echo '<div style="margin-top:16px">'
+               . '<a href="' . esc_url($order_url) . '" style="display:inline-block;background:#000;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;margin-right:10px;">'
+               . esc_html__('Zobacz zamówienie', 'woocommerce') . '</a>'
+               . '<a href="' . esc_url($account_url) . '" style="display:inline-block;background:#111827;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">'
+               . esc_html__('Przejdź do konta', 'woocommerce') . '</a>'
+               . '</div>';
+        }
     }
     
     /**
@@ -365,6 +521,154 @@ class KingEmailSystem {
             'callback' => [$this, 'get_email_templates'],
             'permission_callback' => [$this, 'check_admin_permissions']
         ]);
+        
+        register_rest_route('king-email/v1', '/trigger-order-email', [
+            'methods' => 'POST',
+            'callback' => [$this, 'trigger_order_email_api'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'order_id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_numeric($param);
+                    }
+                ]
+            ]
+        ]);
+        
+        register_rest_route('king-email/v1', '/send-direct-email', [
+            'methods' => 'POST',
+            'callback' => [$this, 'send_direct_email_api'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'order_id' => [
+                    'required' => true,
+                    'type' => 'integer'
+                ],
+                'customer_email' => [
+                    'required' => true,
+                    'type' => 'string'
+                ],
+                'customer_name' => [
+                    'required' => true,
+                    'type' => 'string'
+                ],
+                'order_number' => [
+                    'required' => true,
+                    'type' => 'string'
+                ],
+                'total' => [
+                    'required' => true,
+                    'type' => 'number'
+                ],
+                'items' => [
+                    'required' => true,
+                    'type' => 'array'
+                ]
+            ]
+        ]);
+    }
+    
+    /**
+     * Trigger order email via API
+     */
+    public function trigger_order_email_api($request) {
+        $order_id = $request->get_param('order_id');
+        
+        if (!$order_id) {
+            return new WP_Error('missing_order_id', 'Brak ID zamówienia', array('status' => 400));
+        }
+        
+        error_log("King Email System API: Triggering email for order {$order_id}");
+        
+        try {
+            $result = $this->trigger_rest_api_emails($order_id);
+            
+            if ($result) {
+                return array(
+                    'success' => true,
+                    'message' => "Email wysłany dla zamówienia {$order_id}",
+                    'order_id' => $order_id
+                );
+            } else {
+                return new WP_Error('email_failed', 'Nie udało się wysłać emaila', array('status' => 500));
+            }
+            
+        } catch (Exception $e) {
+            error_log("King Email System API Error: " . $e->getMessage());
+            return new WP_Error('email_error', $e->getMessage(), array('status' => 500));
+        }
+    }
+    
+    /**
+     * Send direct email via API
+     */
+    public function send_direct_email_api($request) {
+        $order_id = $request->get_param('order_id');
+        $customer_email = $request->get_param('customer_email');
+        $customer_name = $request->get_param('customer_name');
+        $order_number = $request->get_param('order_number');
+        $total = $request->get_param('total');
+        $items = $request->get_param('items');
+        
+        error_log("King Email System API: Sending direct email for order {$order_id} to {$customer_email}");
+        
+        try {
+            // Create email content
+            $subject = "Potwierdzenie zamówienia #{$order_number} - FILLER";
+            
+            $items_html = '';
+            foreach ($items as $item) {
+                $items_html .= "<tr><td>{$item['name']}</td><td>{$item['quantity']}</td><td>{$item['price']} zł</td></tr>";
+            }
+            
+            $message = "
+                <html>
+                <body style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                    <h2 style='color: #333;'>Dziękujemy za zamówienie!</h2>
+                    <p>Witaj {$customer_name},</p>
+                    <p>Twoje zamówienie #{$order_number} zostało przyjęte i jest w trakcie realizacji.</p>
+                    
+                    <h3>Szczegóły zamówienia:</h3>
+                    <table border='1' style='border-collapse: collapse; width: 100%;'>
+                        <tr><th>Produkt</th><th>Ilość</th><th>Cena</th></tr>
+                        {$items_html}
+                    </table>
+                    
+                    <p><strong>Łączna kwota: {$total} zł</strong></p>
+                    
+                    <p>Możesz śledzić status swojego zamówienia w <a href='" . headless_frontend_url() . "/moje-zamowienia'>swoim panelu</a>.</p>
+                    
+                    <p>Pozdrawiamy,<br>Zespół FILLER</p>
+                </body>
+                </html>
+            ";
+            
+            // Send email using WordPress mail
+            $headers = [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: FILLER <noreply@' . parse_url(get_site_url(), PHP_URL_HOST) . '>'
+            ];
+            
+            $result = wp_mail($customer_email, $subject, $message, $headers);
+            
+            if ($result) {
+                error_log("King Email System: ✅ Direct email sent successfully to {$customer_email}");
+                return array(
+                    'success' => true,
+                    'message' => "Email wysłany pomyślnie do {$customer_email}",
+                    'order_id' => $order_id
+                );
+            } else {
+                error_log("King Email System: ❌ Failed to send direct email to {$customer_email}");
+                return new WP_Error('email_failed', 'Nie udało się wysłać emaila', array('status' => 500));
+            }
+            
+        } catch (Exception $e) {
+            error_log("King Email System API Error: " . $e->getMessage());
+            return new WP_Error('email_error', $e->getMessage(), array('status' => 500));
+        }
     }
     
     /**

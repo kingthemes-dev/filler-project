@@ -1,10 +1,11 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight, Truck, CreditCard } from 'lucide-react';
+import { X, ShoppingBag, Trash2, Plus, Minus, Truck, CreditCard, ArrowRight } from 'lucide-react';
 import { useCartStore, type CartItem } from '@/stores/cart-store';
 import { formatPrice } from '@/utils/format-price';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CartDrawer() {
   const { isOpen, closeCart, items, total, itemCount, removeItem, updateQuantity } = useCartStore();
@@ -50,7 +51,6 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            onClick={closeCart}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
@@ -127,18 +127,20 @@ export default function CartDrawer() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {items.map((item) => (
+                  {items.map((item, index) => (
                     <div
-                      key={`${item.id}-${item.variant?.id || 'default'}`}
+                      key={`${item.id}-${item.variant?.id || 'default'}-${index}`}
                       className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Product Image */}
                       <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
                         {item.image ? (
-                          <img
+                          <Image
                             src={item.image}
                             alt={item.name}
+                            width={64}
+                            height={64}
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (
@@ -225,10 +227,9 @@ export default function CartDrawer() {
                   <div className="flex space-x-3">
                     <Link
                       href="/koszyk"
-                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-black hover:text-white transition-colors flex items-center justify-center space-x-2"
+                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-black hover:text-white transition-colors flex items-center justify-center"
                       onClick={closeCart}
                     >
-                      <ShoppingBag className="w-4 h-4" />
                       <span>Zobacz koszyk</span>
                     </Link>
 
@@ -238,7 +239,7 @@ export default function CartDrawer() {
                       onClick={closeCart}
                     >
                       <span>Kasa</span>
-                      <CreditCard className="w-4 h-4" />
+                      <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
 

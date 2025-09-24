@@ -7,6 +7,8 @@ import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import { WooProduct } from '@/types/woocommerce';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function FavoritesModal() {
@@ -22,7 +24,7 @@ export default function FavoritesModal() {
   
   const { addItem, openCart } = useCartStore();
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: WooProduct) => {
     const cartItem = {
       id: product.id,
       name: product.name,
@@ -69,7 +71,10 @@ export default function FavoritesModal() {
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div 
+              className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
@@ -140,9 +145,11 @@ export default function FavoritesModal() {
                         >
                           {/* Product Image */}
                           <div className="relative aspect-square bg-gray-100">
-                            <img
+                            <Image
                               src={imageUrl}
                               alt={product.name}
+                              width={200}
+                              height={200}
                               className="w-full h-full object-cover"
                             />
                             {isOnSale && (

@@ -47,7 +47,7 @@ const apiCall = async (url: string, options: RequestInit = {}) => {
   });
   
   if (!response.ok) {
-    throw new Error(`API call failed: ${response.statusText}`);
+    throw new Error(`Wywołanie API nie powiodło się: ${response.statusText}`);
   }
   
   return response.json();
@@ -83,7 +83,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
           
           set({ lastSyncTime: Date.now() });
         } catch (error) {
-          console.error('Failed to add to favorites:', error);
+          console.error('Nie udało się dodać do ulubionych:', error);
           // Revert local state on error
           set({ favorites });
         } finally {
@@ -110,7 +110,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
           
           set({ lastSyncTime: Date.now() });
         } catch (error) {
-          console.error('Failed to remove from favorites:', error);
+          console.error('Nie udało się usunąć z ulubionych:', error);
           // Revert local state on error
           set({ favorites });
         } finally {
@@ -162,7 +162,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
           
           set({ lastSyncTime: Date.now() });
         } catch (error) {
-          console.error('Failed to clear favorites:', error);
+          console.error('Nie udało się wyczyścić ulubionych:', error);
         } finally {
           set({ isLoading: false });
         }
@@ -187,7 +187,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
           set({ lastSyncTime: Date.now() });
           console.log('🔄 Favorites synced with API');
         } catch (error) {
-          console.error('Failed to sync favorites:', error);
+          console.error('Nie udało się zsynchronizować ulubionych:', error);
         } finally {
           set({ isLoading: false });
         }
@@ -208,7 +208,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
             console.log('📥 Loaded favorites from API:', response.data.length);
           }
         } catch (error) {
-          console.error('Failed to load favorites from API:', error);
+          console.error('Nie udało się załadować ulubionych z API:', error);
         } finally {
           set({ isLoading: false });
         }

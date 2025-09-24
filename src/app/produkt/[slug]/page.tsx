@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Heart, Star, Truck, Shield, ArrowLeft, Droplets } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Truck, Shield, Droplets } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import { formatPrice } from '@/utils/format-price';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import ReviewsList from '@/components/ui/reviews-list';
+import Image from 'next/image';
 import ReviewForm from '@/components/ui/review-form';
 import Link from 'next/link';
+import SimilarProducts from '@/components/ui/similar-products';
+import { WooProduct } from '@/types/woocommerce';
 
 interface ProductPageProps {
   params: Promise<{
@@ -18,16 +21,24 @@ interface ProductPageProps {
 }
 
 export default function ProductPage({ params }: ProductPageProps) {
-  const [product, setProduct] = useState<any>(null);
-  const [variations, setVariations] = useState<any[]>([]);
+  const [product, setProduct] = useState<WooProduct | null>(null);
+  const [variations, setVariations] = useState<WooProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCapacity, setSelectedCapacity] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'shipping'>('description');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [slug, setSlug] = useState<string>('');
   
   const { addItem, openCart } = useCartStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
+
+  // Resolve params Promise
+  useEffect(() => {
+    params.then((resolvedParams) => {
+      setSlug(resolvedParams.slug);
+    });
+  }, [params]);
 
   // Helper function to get variation price
   const getVariationPrice = (capacity: string): number => {
@@ -35,8 +46,8 @@ export default function ProductPage({ params }: ProductPageProps) {
     console.log('🔍 Available variations:', variations);
     
     const variation = variations.find(v => {
-      const hasCapacityAttr = v.attributes && v.attributes.some((attr: any) => 
-        attr.name.toLowerCase().includes('pojemność') && attr.option === capacity
+      const hasCapacityAttr = v.attributes && v.attributes.some((attr) => 
+        attr.name.toLowerCase().includes('pojemność') && (attr as any).option === capacity
       );
       console.log('🔍 Checking variation:', v.id, 'has capacity attr:', hasCapacityAttr);
       return hasCapacityAttr;
@@ -54,10 +65,10 @@ export default function ProductPage({ params }: ProductPageProps) {
     
     return variations
       .map(v => {
-        const capacityAttr = v.attributes?.find((attr: any) => 
+        const capacityAttr = v.attributes?.find((attr) => 
           attr.name.toLowerCase().includes('pojemność')
         );
-        return capacityAttr ? { option: capacityAttr.option, menuOrder: v.menu_order } : null;
+        return capacityAttr ? { option: (capacityAttr as any).option, menuOrder: v.menu_order } : null;
       })
       .filter(Boolean)
       .sort((a, b) => a!.menuOrder - b!.menuOrder)
@@ -65,17 +76,18 @@ export default function ProductPage({ params }: ProductPageProps) {
   };
 
   useEffect(() => {
+    if (!slug) return;
+    
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const resolvedParams = await params;
-        console.log('🔍 Fetching product by slug:', resolvedParams.slug);
+        console.log('🔍 Fetching product by slug:', slug);
         
         // Fetch real product data from WooCommerce
-        const productData = await wooCommerceService.getProductBySlug(resolvedParams.slug);
+        const productData = await wooCommerceService.getProductBySlug(slug);
         
         if (!productData) {
-          console.error('❌ Product not found:', resolvedParams.slug);
+          console.error('❌ Product not found:', slug);
           setProduct(null);
           return;
         }
@@ -83,7 +95,7 @@ export default function ProductPage({ params }: ProductPageProps) {
         console.log('✅ Product found:', productData);
         
         // Fetch variations if they exist
-        let variationsData: any[] = [];
+        let variationsData: WooProduct[] = [];
         if (productData.variations && productData.variations.length > 0) {
           console.log('🔄 Fetching variations:', productData.variations);
           const variationPromises = productData.variations.map((variationId: number) => 
@@ -102,7 +114,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           sale_price: productData.sale_price,
           description: productData.description || 'Brak opisu produktu.',
           short_description: productData.short_description || '',
-          images: productData.images?.map((img: any) => ({ src: img.src })) || [
+          images: productData.images?.map((img: { src: string }) => ({ src: img.src })) || [
             { src: 'https://via.placeholder.com/600x600/1f2937/ffffff?text=No+Image' }
           ],
 
@@ -111,11 +123,13 @@ export default function ProductPage({ params }: ProductPageProps) {
           featured: productData.featured || false,
           stock_quantity: productData.stock_quantity || 0,
           stock_status: productData.stock_status || 'instock',
-          permalink: `/produkt/${resolvedParams.slug}`,
-          categories: productData.categories || []
+          permalink: `/produkt/${slug}`,
+          categories: productData.categories || [],
+          cross_sell_ids: productData.cross_sell_ids || [],
+          related_ids: productData.related_ids || []
         };
         
-        setProduct(transformedProduct);
+        setProduct(transformedProduct as WooProduct);
         setVariations(variationsData);
       } catch (error) {
         console.error('❌ Error fetching product:', error);
@@ -126,7 +140,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     };
 
     fetchProduct();
-  }, [params]);
+  }, [slug]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -144,8 +158,8 @@ export default function ProductPage({ params }: ProductPageProps) {
     
     if (selectedCapacity && variations.length > 0) {
       const variation = variations.find(v => 
-        v.attributes && v.attributes.some((attr: any) => 
-          attr.name.toLowerCase().includes('pojemność') && attr.option === selectedCapacity
+        v.attributes && v.attributes.some((attr) => 
+          attr.name.toLowerCase().includes('pojemność') && (attr as any).option === selectedCapacity
         )
       );
       
@@ -164,9 +178,9 @@ export default function ProductPage({ params }: ProductPageProps) {
     const cartItem = {
       id: variationId, // Use variation ID for unique cart items
       name: variationName, // Use variation name
-      price: finalPrice,
-      regular_price: product.regular_price,
-      sale_price: product.sale_price,
+      price: parseFloat(finalPrice),
+      regular_price: parseFloat(product.regular_price),
+      sale_price: product.sale_price ? parseFloat(product.sale_price) : undefined,
       image: product.images[0]?.src,
       permalink: product.permalink,
       variant: selectedCapacity ? {
@@ -214,9 +228,9 @@ export default function ProductPage({ params }: ProductPageProps) {
     );
   }
 
-  const isOnSale = product.on_sale && product.sale_price < product.regular_price;
+  const isOnSale = product.on_sale && parseFloat(product.sale_price) < parseFloat(product.regular_price);
   const discount = isOnSale 
-    ? Math.round(((product.regular_price - product.sale_price) / product.regular_price) * 100)
+    ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.sale_price)) / parseFloat(product.regular_price)) * 100)
     : 0;
 
   return (
@@ -254,7 +268,7 @@ export default function ProductPage({ params }: ProductPageProps) {
             >
               {/* Thumbnail Images - Left Side */}
               <div className="flex flex-col gap-3">
-                {product.images.map((image: any, index: number) => (
+                {product.images.map((image: { src: string }, index: number) => (
                   <button
                     key={index}
                     onClick={() => setActiveImageIndex(index)}
@@ -264,9 +278,11 @@ export default function ProductPage({ params }: ProductPageProps) {
                         : 'hover:shadow-md hover:scale-105'
                     }`}
                   >
-                    <img
+                    <Image
                       src={image.src}
                       alt={`${product.name} ${index + 1}`}
+                      width={100}
+                      height={100}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -275,18 +291,20 @@ export default function ProductPage({ params }: ProductPageProps) {
               
               {/* Main Image */}
               <div className="flex-1 aspect-square bg-white rounded-lg overflow-hidden shadow-sm relative">
-                <img
+                <Image
                   src={product.images[activeImageIndex]?.src}
                   alt={product.name}
+                  width={500}
+                  height={500}
                   className="w-full h-full object-cover"
                 />
                 
                 {/* Brand Overlay */}
-                {product.attributes && product.attributes.some((attr: any) => attr.name.toLowerCase().includes('marka')) && (
+                {product.attributes && product.attributes.some((attr: { name: string }) => attr.name.toLowerCase().includes('marka')) && (
                   <div className="absolute top-4 right-4">
                     {product.attributes
-                      .filter((attr: any) => attr.name.toLowerCase().includes('marka'))
-                      .map((attr: any) => 
+                      .filter((attr: { name: string }) => attr.name.toLowerCase().includes('marka'))
+                      .map((attr: { options: string[] }) => 
                         attr.options.map((option: string, index: number) => (
                           <span
                             key={index}
@@ -384,7 +402,7 @@ export default function ProductPage({ params }: ProductPageProps) {
               {/* Product Attributes */}
               {product.attributes && product.attributes.length > 0 && (
                 <div className="space-y-4">
-                  {product.attributes.map((attr: any, index: number) => {
+                  {product.attributes.map((attr: { name: string; options: string[] }, index: number) => {
                     const isCapacity = attr.name.toLowerCase().includes('pojemność');
                     const isBrand = attr.name.toLowerCase().includes('marka');
                     
@@ -458,15 +476,15 @@ export default function ProductPage({ params }: ProductPageProps) {
                   {isOnSale ? (
                     <div className="flex items-center space-x-3">
                       <span className="text-3xl font-bold text-red-600">
-                        {formatPrice(product.sale_price)}
+                        {formatPrice(parseFloat(product.sale_price))}
                       </span>
                       <span className="text-xl text-gray-500 line-through">
-                        {formatPrice(product.regular_price)}
+                        {formatPrice(parseFloat(product.regular_price))}
                       </span>
                     </div>
                   ) : (
                     <span className="text-3xl font-bold text-gray-900">
-                      {formatPrice(product.price)}
+                      {formatPrice(parseFloat(product.price))}
                     </span>
                   )}
                 </div>
@@ -706,6 +724,17 @@ export default function ProductPage({ params }: ProductPageProps) {
               </div>
             </div>
           </motion.div>
+
+          {/* Similar Products Section */}
+          {product && (
+            <SimilarProducts
+              productId={product.id}
+              crossSellIds={product.cross_sell_ids || []}
+              relatedIds={product.related_ids || []}
+              categoryId={product.categories?.[0]?.id || 0}
+              limit={4}
+            />
+          )}
         </div>
       </div>
     </div>

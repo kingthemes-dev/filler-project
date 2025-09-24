@@ -45,8 +45,8 @@ export interface SearchResponse {
 }
 
 export class AlgoliaSearchService {
-  private client: any;
-  private index: any;
+  private client: unknown;
+  private index: unknown;
   private isInitialized: boolean = false;
 
   constructor() {
@@ -71,7 +71,7 @@ export class AlgoliaSearchService {
       }
 
       this.client = algoliasearch(appId, searchKey);
-      this.index = this.client.initIndex(indexName);
+      this.index = (this.client as any).initIndex(indexName);
       this.isInitialized = true;
 
       console.log('🔍 Algolia initialized successfully');
@@ -109,7 +109,7 @@ export class AlgoliaSearchService {
    * Search using real Algolia
    */
   private async searchWithAlgolia(options: SearchOptions): Promise<SearchResponse> {
-    const searchParams: any = {
+    const searchParams: Record<string, unknown> = {
       query: options.query,
       page: (options.page || 1) - 1, // Algolia uses 0-based pagination
       hitsPerPage: options.hitsPerPage || 20,
@@ -172,7 +172,7 @@ export class AlgoliaSearchService {
       }
     }
 
-    const response = await this.index.search(options.query, searchParams);
+    const response = await (this.index as any).search(options.query, searchParams);
     
     return {
       hits: response.hits,

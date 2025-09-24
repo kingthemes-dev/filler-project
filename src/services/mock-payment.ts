@@ -93,14 +93,14 @@ export class MockPaymentService {
   async isApplePayAvailable(): Promise<boolean> {
     // W prawdziwej implementacji sprawdzamy czy Apple Pay jest dostępne
     if (typeof window === 'undefined') return false;
-    const ApplePay = (window as any).ApplePaySession;
-    return !!(ApplePay && typeof ApplePay.canMakePayments === 'function' && ApplePay.canMakePayments());
+    const ApplePay = (window as unknown as { ApplePaySession: unknown }).ApplePaySession;
+    return !!((ApplePay as any) && typeof (ApplePay as any).canMakePayments === 'function' && (ApplePay as any).canMakePayments());
   }
 
   /**
    * Inicjalizuj Google Pay
    */
-  async initializeGooglePay(): Promise<any> {
+  async initializeGooglePay(): Promise<{ isReadyToPay: boolean; paymentDataRequest: Record<string, unknown> } | null> {
     if (typeof window === 'undefined') return null;
     
     // W prawdziwej implementacji inicjalizujemy Google Pay API
@@ -123,7 +123,7 @@ export class MockPaymentService {
   /**
    * Inicjalizuj Apple Pay
    */
-  async initializeApplePay(): Promise<any> {
+  async initializeApplePay(): Promise<{ isReadyToPay: boolean; supportedNetworks: string[]; countryCode: string; currencyCode: string } | null> {
     if (typeof window === 'undefined') return null;
     
     // W prawdziwej implementacji inicjalizujemy Apple Pay
@@ -182,7 +182,7 @@ export class MockPaymentService {
   /**
    * Przetwórz płatność Google Pay
    */
-  async processGooglePay(request: PaymentRequest): Promise<PaymentResponse> {
+  async processGooglePay(_request: PaymentRequest): Promise<PaymentResponse> {
     // Symuluj inicjalizację Google Pay
     await this.delay(500);
     
@@ -204,7 +204,7 @@ export class MockPaymentService {
   /**
    * Przetwórz płatność Apple Pay
    */
-  async processApplePay(request: PaymentRequest): Promise<PaymentResponse> {
+  async processApplePay(_request: PaymentRequest): Promise<PaymentResponse> {
     // Symuluj inicjalizację Apple Pay
     await this.delay(500);
     
@@ -251,7 +251,7 @@ export class MockPaymentService {
   /**
    * Symuluj sprawdzenie salda karty
    */
-  async checkCardBalance(cardNumber: string, amount: number): Promise<boolean> {
+  async checkCardBalance(_cardNumber: string, _amount: number): Promise<boolean> {
     await this.delay(800);
     
     // Symuluj sprawdzenie salda (90% szans na wystarczające saldo)
@@ -261,7 +261,7 @@ export class MockPaymentService {
   /**
    * Symuluj autoryzację płatności
    */
-  async authorizePayment(amount: number, method: string): Promise<boolean> {
+  async authorizePayment(_amount: number, _method: string): Promise<boolean> {
     await this.delay(1200);
     
     // Symuluj autoryzację (95% szans na sukces)
