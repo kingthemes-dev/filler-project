@@ -35,7 +35,7 @@ interface Category {
 }
 
 interface ShopClientProps {
-  initialShopData: {
+  initialShopData?: {
     success: boolean;
     products: WooProduct[];
     total: number;
@@ -236,7 +236,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   // Fetch products when filters or page changes (but not on initial load)
   useEffect(() => {
     // Skip initial fetch if we already have data from server
-    if (!hasInitialData && initialShopData?.products?.length > 0) {
+    if (!hasInitialData && (initialShopData?.products?.length || 0) > 0) {
       setHasInitialData(true);
       return;
     }

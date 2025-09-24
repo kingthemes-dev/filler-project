@@ -109,9 +109,9 @@ export default function ProductPage({ params }: ProductPageProps) {
         const transformedProduct = {
           id: productData.id,
           name: productData.name,
-          price: parseFloat(productData.price || '0'),
-          regular_price: parseFloat(productData.regular_price || '0'),
-          sale_price: parseFloat(productData.sale_price || '0'),
+          price: productData.price || '0',
+          regular_price: productData.regular_price || '0',
+          sale_price: productData.sale_price || '0',
           description: productData.description || 'Brak opisu produktu.',
           short_description: productData.short_description || '',
           images: productData.images?.map((img: { src: string }) => ({ src: img.src })) || [
@@ -129,7 +129,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           related_ids: productData.related_ids || []
         };
         
-        setProduct(transformedProduct as WooProduct);
+        setProduct(transformedProduct as unknown as WooProduct);
         setVariations(variationsData);
       } catch (error) {
         console.error('❌ Error fetching product:', error);
@@ -476,15 +476,15 @@ export default function ProductPage({ params }: ProductPageProps) {
                   {isOnSale ? (
                     <div className="flex items-center space-x-3">
                       <span className="text-3xl font-bold text-red-600">
-                        {formatPrice(product.sale_price)}
+                        {formatPrice(parseFloat(product.sale_price))}
                       </span>
                       <span className="text-xl text-gray-500 line-through">
-                        {formatPrice(product.regular_price)}
+                        {formatPrice(parseFloat(product.regular_price))}
                       </span>
                     </div>
                   ) : (
                     <span className="text-3xl font-bold text-gray-900">
-                      {formatPrice(product.price)}
+                      {formatPrice(parseFloat(product.price))}
                     </span>
                   )}
                 </div>
