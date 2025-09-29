@@ -460,7 +460,16 @@ class WooCommerceService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      return await response.json();
+      const text = await response.text();
+      
+      // Handle HTML errors before JSON (common with WordPress)
+      let jsonText = text;
+      const jsonMatch = text.match(/\{.*\}/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[0];
+      }
+      
+      return JSON.parse(jsonText);
     } catch (error) {
       console.error('Error getting nonce:', error);
       throw error;

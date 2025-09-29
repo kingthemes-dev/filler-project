@@ -2,29 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const WC_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
 
+console.log('🔧 Cart Proxy - WC_URL:', WC_URL);
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // Get nonce first
-    const nonceResponse = await fetch(`${WC_URL}/wp-json/king-cart/v1/nonce`);
-    const nonceData = await nonceResponse.json();
-    
-    if (!nonceData.success) {
-      return NextResponse.json({ success: false, error: 'Failed to get nonce' }, { status: 500 });
-    }
-    
-    // Add item to cart with nonce
+    // Use our custom mu-plugin endpoint (nonce verification disabled)
     const cartResponse = await fetch(`${WC_URL}/wp-json/king-cart/v1/add-item`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-WP-Nonce': nonceData.nonce,
       },
       body: JSON.stringify(body),
     });
     
-    const cartData = await cartResponse.json();
+    const cartText = await cartResponse.text();
+    
+    // Handle HTML errors before JSON (common with WordPress)
+    let cartJsonText = cartText;
+    const cartJsonMatch = cartText.match(/\{.*\}/);
+    if (cartJsonMatch) {
+      cartJsonText = cartJsonMatch[0];
+    }
+    
+    const cartData = JSON.parse(cartJsonText);
+    
+    console.log('🔧 Cart Proxy Response:', { status: cartResponse.status, data: cartData });
     
     return NextResponse.json(cartData, { 
       status: cartResponse.status,
