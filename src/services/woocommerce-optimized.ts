@@ -474,11 +474,10 @@ class WooCommerceService {
         throw new Error('Failed to get nonce');
       }
 
-      const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/king-cart/v1/add-item', {
+      const response = await fetch('/api/cart-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': nonceResponse.nonce,
         },
         body: JSON.stringify({
           id: productId,
