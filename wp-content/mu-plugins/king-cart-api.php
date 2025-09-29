@@ -16,6 +16,43 @@ class KingCartAPI {
     public function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'));
         add_action('wp_enqueue_scripts', array($this, 'localize_script'));
+        add_action('rest_api_init', array($this, 'add_cors_support'));
+    }
+    
+    /**
+     * Add CORS support for REST API
+     */
+    public function add_cors_support() {
+        remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
+        add_filter('rest_pre_serve_request', array($this, 'add_cors_headers'));
+    }
+    
+    /**
+     * Add custom CORS headers
+     */
+    public function add_cors_headers($value) {
+        $origin = get_http_origin();
+        $allowed_origins = array(
+            'https://www.filler.pl',
+            'https://filler.pl',
+            'https://filler-project-3pn426bdx-king-themes.vercel.app',
+            'https://filler-project-ft2wd4pxs-king-themes.vercel.app',
+            'https://filler-project-hjv37nadi-king-themes.vercel.app',
+            'https://filler-project-qibwg3yf5-king-themes.vercel.app',
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3002'
+        );
+        
+        if (in_array($origin, $allowed_origins)) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+        }
+        
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-WP-Nonce, x-wp-nonce');
+        header('Access-Control-Allow-Credentials: true');
+        
+        return $value;
     }
     
     /**
@@ -31,9 +68,9 @@ class KingCartAPI {
         
         // Add item to cart (proxy to Store API)
         register_rest_route('king-cart/v1', '/add-item', array(
-            'methods' => 'POST',
+            'methods' => array('POST', 'OPTIONS'),
             'callback' => array($this, 'add_item_to_cart'),
-            'permission_callback' => array($this, 'verify_nonce'),
+            'permission_callback' => array($this, 'verify_nonce_or_options'),
             'args' => array(
                 'id' => array(
                     'required' => true,
@@ -108,6 +145,18 @@ class KingCartAPI {
     }
     
     /**
+     * Verify nonce or allow OPTIONS requests
+     */
+    public function verify_nonce_or_options($request) {
+        // Allow OPTIONS requests for CORS preflight
+        if ($request->get_method() === 'OPTIONS') {
+            return true;
+        }
+        
+        return $this->verify_nonce($request);
+    }
+    
+    /**
      * Verify nonce
      */
     public function verify_nonce($request) {
@@ -127,6 +176,11 @@ class KingCartAPI {
      * Add item to cart via Store API
      */
     public function add_item_to_cart($request) {
+        // Handle OPTIONS request for CORS preflight
+        if ($request->get_method() === 'OPTIONS') {
+            return new WP_REST_Response(null, 200);
+        }
+        
         $product_id = $request->get_param('id');
         $quantity = $request->get_param('quantity');
         $variation = $request->get_param('variation');
