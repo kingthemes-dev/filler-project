@@ -76,18 +76,17 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
     <section className="relative h-[60vh] sm:h-[65vh] lg:h-[68vh] min-h-[400px] sm:min-h-[450px] lg:min-h-[510px] py-4 mt-4 sm:mt-6 mb-6 sm:mb-8">
       <div className="max-w-[95vw] mx-auto px-4 sm:px-6 h-full">
         <div className="relative h-full rounded-2xl sm:rounded-3xl overflow-hidden">
-          {/* Background Video */}
+          {/* Background Image - optimized for LCP */}
           <div className="absolute inset-0 z-0">
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-cover object-center"
-            >
-              <source src="/cosmetic-cream-bg.webm" type="video/webm" />
-            </video>
+            <Image
+              src="/images/hero/home.webp"
+              alt="Hero background"
+              fill
+              priority
+              quality={85}
+              sizes="100vw"
+              className="object-cover object-center"
+            />
             {/* Overlay */}
             <div className="absolute inset-0 bg-black/60 z-10" />
           </div>
