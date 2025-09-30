@@ -568,6 +568,34 @@ class KingEmailSystem {
                 ]
             ]
         ]);
+        
+        register_rest_route('king-email/v1', '/send-newsletter-email', [
+            'methods' => 'POST',
+            'callback' => [$this, 'send_newsletter_email_api'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'to' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'description' => 'Recipient email'
+                ],
+                'subject' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'description' => 'Email subject'
+                ],
+                'message' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'description' => 'Email message'
+                ],
+                'customerName' => [
+                    'required' => false,
+                    'type' => 'string',
+                    'description' => 'Customer name'
+                ]
+            ]
+        ]);
     }
     
     /**
@@ -676,6 +704,48 @@ class KingEmailSystem {
      */
     public function check_admin_permissions() {
         return current_user_can('manage_options');
+    }
+    
+    /**
+     * Send newsletter email via API
+     */
+    public function send_newsletter_email_api($request) {
+        $to = sanitize_email($request->get_param('to'));
+        $subject = sanitize_text_field($request->get_param('subject'));
+        $message = $request->get_param('message');
+        $customerName = sanitize_text_field($request->get_param('customerName'));
+        
+        error_log("King Email System: Sending newsletter email to {$to}");
+        
+        try {
+            // Send email using WordPress mail
+            $headers = [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: Cosmetic Cream <noreply@' . parse_url(get_site_url(), PHP_URL_HOST) . '>'
+            ];
+            
+            $result = wp_mail($to, $subject, $message, $headers);
+            
+            if ($result) {
+                error_log("King Email System: ✅ Newsletter email sent to {$to}");
+                return new WP_REST_Response([
+                    'success' => true,
+                    'message' => 'Email został wysłany'
+                ], 200);
+            } else {
+                error_log("King Email System: ❌ Failed to send newsletter email to {$to}");
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Nie udało się wysłać emaila'
+                ], 500);
+            }
+        } catch (Exception $e) {
+            error_log("King Email System: Exception sending newsletter email: " . $e->getMessage());
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Błąd podczas wysyłania emaila'
+            ], 500);
+        }
     }
     
     /**

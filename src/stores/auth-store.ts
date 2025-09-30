@@ -50,14 +50,14 @@ export interface AuthActions {
   // Token management
   setToken: (token: string) => void;
   clearToken: () => void;
+  
+  // User data
+  fetchUserProfile: () => Promise<void>;
 }
 
 export interface RegisterData {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
   marketingConsent?: boolean;
 }
 
@@ -139,13 +139,15 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         
         try {
+          console.log('🔍 Auth store register data:', userData);
+          
           // Real WooCommerce API call
           const response = await wooCommerceService.registerUser({
-            username: userData.email,
+            username: userData.email, // Keep for compatibility but not used in payload
             email: userData.email,
             password: userData.password,
-            first_name: userData.firstName,
-            last_name: userData.lastName
+            first_name: '', // Will be filled later during checkout
+            last_name: ''   // Will be filled later during checkout
           });
           
           // If marketing consent is given, subscribe to newsletter
@@ -214,7 +216,19 @@ export const useAuthStore = create<AuthStore>()(
           
         } catch (error) {
           console.error('Registration error:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Błąd rejestracji. Spróbuj ponownie.';
+          
+          // Check if it's an email already exists error
+          let errorMessage = 'Błąd rejestracji. Spróbuj ponownie.';
+          if (error instanceof Error) {
+            if (error.message.includes('registration-error-email-exists') || error.message.includes('Email już istnieje')) {
+              errorMessage = 'Ten adres email jest już zarejestrowany. Zaloguj się lub użyj innego adresu.';
+            } else if (error.message.includes('400')) {
+              errorMessage = 'Błąd rejestracji. Sprawdź wprowadzone dane i spróbuj ponownie.';
+            } else {
+              errorMessage = error.message;
+            }
+          }
+          
           set({
             error: errorMessage,
             isLoading: false
@@ -340,6 +354,71 @@ export const useAuthStore = create<AuthStore>()(
 
       clearToken: () => {
         set({ token: null, isAuthenticated: false });
+      },
+      
+      // Fetch user profile from WooCommerce
+      fetchUserProfile: async () => {
+        const { token, user } = get();
+        if (!token || !user) return;
+        
+        try {
+          console.log('🔄 Fetching user profile from WooCommerce...');
+          const response = await fetch('/api/woocommerce?endpoint=customers/' + user.id, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch user profile');
+          }
+          
+          const customerData = await response.json();
+          console.log('📋 Customer data from WooCommerce:', customerData);
+          
+          // Extract NIP from meta_data
+          const nipMeta = customerData.meta_data?.find((meta: any) => meta.key === 'billing_nip');
+          const nipValue = nipMeta?.value || '';
+          
+          console.log('🔍 NIP extraction:', { 
+            nipMeta, 
+            nipValue, 
+            billingNip: customerData.billing?.nip,
+            metaDataLength: customerData.meta_data?.length 
+          });
+          
+          // Update user data with full WooCommerce customer data
+          const updatedUser: User = {
+            id: customerData.id,
+            email: customerData.email,
+            firstName: customerData.first_name || '',
+            lastName: customerData.last_name || '',
+            role: 'customer',
+            billing: {
+              address: customerData.billing?.address_1 || '',
+              city: customerData.billing?.city || '',
+              postcode: customerData.billing?.postcode || '',
+              country: customerData.billing?.country || 'PL',
+              phone: customerData.billing?.phone || '',
+              company: customerData.billing?.company || '',
+              nip: nipValue
+            },
+            shipping: {
+              address: customerData.shipping?.address_1 || '',
+              city: customerData.shipping?.city || '',
+              postcode: customerData.shipping?.postcode || '',
+              country: customerData.shipping?.country || 'PL'
+            }
+          };
+          
+          set({ user: updatedUser });
+          console.log('✅ User profile updated:', updatedUser);
+          
+        } catch (error) {
+          console.error('❌ Error fetching user profile:', error);
+        }
       }
     }),
     {

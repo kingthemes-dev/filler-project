@@ -2,6 +2,15 @@
 @import "tailwindcss/utilities";
 @reference "tailwindcss";
 
+/* Custom scrollbar styles */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 @layer base {
   :root {
     --radius: 0.625rem;

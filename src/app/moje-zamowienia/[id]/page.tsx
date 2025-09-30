@@ -152,8 +152,8 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 
 	if (loading) {
 		return (
-			<div className="min-h-screen bg-gray-50">
-				<div className="max-w-[95vw] mx-auto px-6 py-8">
+    <div className="min-h-screen bg-white">
+				<div className="max-w-[95vw] mx-auto px-6 py-8 pb-16">
 					<div className="text-center">
 						<div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
 						<p className="text-gray-600">Ładowanie zamówienia...</p>
@@ -165,7 +165,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 
 	if (error || !order) {
 		return (
-			<div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
 				<div className="max-w-5xl mx-auto px-4 py-10">
 					<Link href="/moje-zamowienia" className="inline-flex items-center text-sm text-gray-700 hover:text-black">
 						<ArrowLeft className="w-4 h-4 mr-2" /> Wróć do zamówień
@@ -182,8 +182,8 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 	const statusUi = mapOrderStatusToUi(order.status);
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			<div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-white">
+			<div className="max-w-5xl mx-auto px-4 py-8 pb-16">
 				<div className="mb-6 flex items-center justify-between">
 					<Link href="/moje-zamowienia" className="inline-flex items-center text-sm text-gray-700 hover:text-black">
 						<ArrowLeft className="w-4 h-4 mr-2" /> Wróć do zamówień

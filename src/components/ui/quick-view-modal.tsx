@@ -155,7 +155,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
         id: finalId,
         name: finalName,
         price: finalPrice,
-        image: product.images[0]?.src || '',
+        image: wooCommerceService.getProductImageUrl(product, 'medium'),
         quantity,
         attributes: selectedAttributes,
         variant: variations.length > 0 && selectedCapacity ? {
@@ -245,10 +245,27 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   };
 
   const galleryImages = (() => {
-    const fromArray = (product.images || []).filter((img) => img && img.src && !isWooPlaceholder(img.src));
-    if (fromArray.length > 0) return fromArray;
+    console.log('🖼️ Quick View - Product images:', product.images);
+    console.log('🖼️ Quick View - Product images type:', typeof product.images, Array.isArray(product.images));
+    
+    // Handle both string array and object array formats
+    let imageArray = [];
+    if (Array.isArray(product.images)) {
+      // If it's an array of strings
+      if (typeof product.images[0] === 'string') {
+        imageArray = product.images.map((src: string) => ({ src, name: product.name, alt: product.name }));
+      } else {
+        // If it's an array of objects
+        imageArray = product.images.filter((img) => img && img.src && !isWooPlaceholder(img.src));
+      }
+    }
+    
+    console.log('🖼️ Quick View - Processed images:', imageArray);
+    if (imageArray.length > 0) return imageArray;
+    
     // fallback – keep one placeholder to avoid empty UI
-    return [{ src: '', name: product.name, alt: product.name } as any];
+    console.log('🖼️ Quick View - Using fallback placeholder');
+    return [{ src: 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp', name: product.name, alt: product.name } as any];
   })();
 
   return (
@@ -445,19 +462,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
                     {/* Product Attributes & Variants */}
                     <div className="space-y-4">
-                      {/* Debug info */}
-                      {process.env.NODE_ENV === 'development' && (
-                        <div className="text-xs text-gray-500">
-                          Debug: Product ID {product?.id}, Type: {product?.type}, Variations: {variations.length}
-                        </div>
-                      )}
-                      
                       {/* Show variants if product has them */}
                       {product?.type === 'variable' && variations.length > 0 && (
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center space-x-2">
-                            <Droplets className="w-6 h-6 text-gray-500" />
-                            <span>Wybierz pojemność</span>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                            Wybierz wariant
                           </h3>
                           <div className="flex flex-wrap gap-3">
                             {variations.map((variation, index) => {
@@ -505,21 +514,16 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                             return (
                               <div key={index}>
                                 {!isBrand && (
-                                  <>
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                                      {attr.name}: {toOptionLabel(attr.options[0])}
-                                    </h3>
-                                    <div className="flex flex-wrap gap-3">
-                                      {attr.options.map((option: any, optionIndex: number) => (
-                                        <span
-                                          key={optionIndex}
-                                          className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
-                                        >
-                                          {toOptionLabel(option)}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </>
+                                  <div className="flex flex-wrap gap-3">
+                                    {attr.options.map((option: any, optionIndex: number) => (
+                                      <span
+                                        key={optionIndex}
+                                        className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
+                                      >
+                                        {toOptionLabel(option)}
+                                      </span>
+                                    ))}
+                                  </div>
                                 )}
                               </div>
                             );
@@ -534,15 +538,15 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                         {isOnSale ? (
                           <>
                             <span className="text-3xl font-bold text-red-600">
-                              {product.sale_price} zł
+                              {formatPrice(parseFloat(product.sale_price))}
                             </span>
                             <span className="text-xl text-gray-500 line-through">
-                              {product.regular_price} zł
+                              {formatPrice(parseFloat(product.regular_price))}
                             </span>
                           </>
                         ) : (
                           <span className="text-3xl font-bold text-gray-900">
-                            {product.price} zł
+                            {formatPrice(parseFloat(product.price))}
                           </span>
                         )}
                       </div>

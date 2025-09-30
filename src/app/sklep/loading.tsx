@@ -1,7 +1,7 @@
 export default function Loading() {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto px-6 py-8">
+      <div className="max-w-[95vw] mx-auto px-6 py-8 pb-16">
         {/* Hero section skeleton */}
         <div className="bg-gray-50 py-8 mx-6 rounded-3xl">
           <div className="max-w-[95vw] mx-auto px-6">

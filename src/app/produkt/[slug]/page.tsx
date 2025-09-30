@@ -234,7 +234,7 @@ export default function ProductPage({ params }: ProductPageProps) {
     : 0;
 
   return (
-    <div className="min-h-screen bg-white py-8">
+    <div className="min-h-screen bg-white py-8 pb-16">
       <div className="max-w-[95vw] mx-auto px-6">
         {/* Breadcrumb */}
         <div className="mb-8">

@@ -11,6 +11,27 @@ export function formatPrice(price: number): string {
 }
 
 /**
+ * Oblicza cenę z VAT (23% VAT w Polsce)
+ */
+export function calculatePriceWithVAT(priceWithoutVAT: number): number {
+  return priceWithoutVAT * 1.23;
+}
+
+/**
+ * Formatuje cenę z VAT
+ */
+export function formatPriceWithVAT(priceWithoutVAT: number): string {
+  return formatPrice(calculatePriceWithVAT(priceWithoutVAT)) + ' (z VAT)';
+}
+
+/**
+ * Formatuje cenę bez VAT
+ */
+export function formatPriceWithoutVAT(priceWithoutVAT: number): string {
+  return formatPrice(priceWithoutVAT) + ' (netto)';
+}
+
+/**
  * Zwraca cenę jako string z dwoma miejscami po przecinku, bez symbolu waluty (wejście w złotówkach)
  */
 export function formatPriceWithoutCurrency(price: number): string {

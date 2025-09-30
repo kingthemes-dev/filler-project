@@ -217,8 +217,8 @@ export default function MyOrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-[95vw] mx-auto px-6 py-8">
+      <div className="min-h-screen bg-white">
+        <div className="max-w-[95vw] mx-auto px-6 py-8 pb-16">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
             <p className="text-gray-600">Ładowanie zamówień...</p>
@@ -229,8 +229,8 @@ export default function MyOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-8 pb-16">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">

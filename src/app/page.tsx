@@ -48,9 +48,9 @@ export default async function HomePage() {
 
 
       {/* Newsletter Section */}
-      <section className="py-16">
-        <div className="max-w-[95vw] mx-auto px-6">
-          <div className="relative overflow-hidden rounded-3xl">
+      <section className="py-12 sm:py-16">
+        <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl">
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
               <Image
@@ -66,11 +66,11 @@ export default async function HomePage() {
             </div>
             
             {/* Content */}
-            <div className="relative z-10 py-16 px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
+            <div className="relative z-10 py-12 sm:py-16 px-6 sm:px-8 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">
             Zapisz się i odbierz 10% zniżki na pierwsze zakupy
           </h2>
-          <p className="text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto">
             Zapisz się do naszego newslettera i otrzymuj informacje o nowych produktach i promocjach
           </p>
           <NewsletterForm />
@@ -80,9 +80,9 @@ export default async function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16">
-        <div className="max-w-[95vw] mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+      <section className="py-12 sm:py-16">
+        <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
             {/* Quality */}
             <div className="text-center group">
               <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">

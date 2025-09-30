@@ -65,56 +65,53 @@ export default function ShopFilters({
 
   return (
     <>
-      {/* Mobile Filter Toggle */}
-      <div className="lg:hidden mb-6">
-        <Button
+      {/* Mobile Filter Toggle - Hidden on desktop */}
+      <div className="lg:hidden mb-4">
+        <button
           onClick={onToggleFilters}
-          variant="outline"
-          className="w-full justify-between rounded-xl"
+          className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center">
-            <SlidersHorizontal className="w-4 h-4 mr-2" />
-            Filtry
+            <Filter className="w-4 h-4 mr-2" />
+            <span className="font-medium">Filtry</span>
           </div>
           {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </Button>
+        </button>
       </div>
 
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-sm">
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center">
-                  <Filter className="w-5 h-5 mr-2 text-gray-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Filtry</h3>
-                  <span className="ml-2 text-sm text-gray-500">({totalProducts} produktów)</span>
+                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-gray-600" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Filtry</h3>
+                  <span className="ml-2 text-xs sm:text-sm text-gray-500">({totalProducts} produktów)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
+                  <button
                     onClick={onClearFilters}
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     Wyczyść
-                  </Button>
+                  </button>
                   <button
                     onClick={onToggleFilters}
                     className="lg:hidden p-1 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               {/* Categories Filter */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <button
                   onClick={() => toggleSection('categories')}
-                  className="flex items-center justify-between w-full mb-4"
+                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
                 >
-                  <h4 className="font-semibold text-gray-900">Kategorie</h4>
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Kategorie</h4>
                   {expandedSections.categories ? (
                     <ChevronUp className="w-4 h-4 text-gray-500" />
                   ) : (
@@ -143,7 +140,7 @@ export default function ShopFilters({
                           const isSelected = filters.categories && filters.categories.includes(categoryId);
                           
                           return (
-                            <label key={category.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+                            <label key={category.id} className="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                               <input
                                 type="checkbox"
                                 name="categories"
@@ -152,7 +149,7 @@ export default function ShopFilters({
                                 onChange={() => onFilterChange('categories', categoryId)}
                                 className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                               />
-                              <span className="ml-3 text-sm font-medium text-gray-700">{category.name}</span>
+                              <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{category.name}</span>
                               <span className="ml-auto text-xs text-gray-500">({category.count})</span>
                             </label>
                           );
@@ -163,12 +160,12 @@ export default function ShopFilters({
               </div>
 
               {/* Capacities Filter */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <button
                   onClick={() => toggleSection('capacities')}
-                  className="flex items-center justify-between w-full mb-4"
+                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
                 >
-                  <h4 className="font-semibold text-gray-900">Pojemności</h4>
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Pojemności</h4>
                   {expandedSections.capacities ? (
                     <ChevronUp className="w-4 h-4 text-gray-500" />
                   ) : (
@@ -202,7 +199,7 @@ export default function ShopFilters({
                             const isSelected = filters.capacities && filters.capacities.includes(String(capacity.slug));
                             
                             return (
-                              <label key={capacity.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+                              <label key={capacity.id} className="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                                 <input
                                   type="checkbox"
                                 name="capacities"
@@ -211,7 +208,7 @@ export default function ShopFilters({
                                 onChange={() => onFilterChange('capacities', String(capacity.slug))}
                                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                                 />
-                                <span className="ml-3 text-sm font-medium text-gray-700">{capacity.name}</span>
+                                <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{capacity.name}</span>
                                 <span className="ml-auto text-xs text-gray-500">({(capacity as { count?: number }).count || 0})</span>
                               </label>
                             );
@@ -225,12 +222,12 @@ export default function ShopFilters({
               </div>
 
               {/* Brands Filter */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <button
                   onClick={() => toggleSection('brands')}
-                  className="flex items-center justify-between w-full mb-4"
+                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
                 >
-                  <h4 className="font-semibold text-gray-900">Marki</h4>
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Marki</h4>
                   {expandedSections.brands ? (
                     <ChevronUp className="w-4 h-4 text-gray-500" />
                   ) : (
@@ -264,7 +261,7 @@ export default function ShopFilters({
                             const isSelected = filters.brands && filters.brands.includes(String(brand.slug));
                             
                             return (
-                              <label key={brand.id} className="flex items-center p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+                              <label key={brand.id} className="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                                 <input
                                   type="checkbox"
                                 name="brands"
@@ -273,7 +270,7 @@ export default function ShopFilters({
                                 onChange={() => onFilterChange('brands', String(brand.slug))}
                                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                                 />
-                                <span className="ml-3 text-sm font-medium text-gray-700">{brand.name}</span>
+                                <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{brand.name}</span>
                                 <span className="ml-auto text-xs text-gray-500">({(brand as { count?: number }).count || 0})</span>
                               </label>
                             );
@@ -287,12 +284,12 @@ export default function ShopFilters({
               </div>
 
               {/* Price Range Filter */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <button
                   onClick={() => toggleSection('price')}
-                  className="flex items-center justify-between w-full mb-4"
+                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
                 >
-                  <h4 className="font-semibold text-gray-900">Zakres cen</h4>
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Zakres cen</h4>
                   {expandedSections.price ? (
                     <ChevronUp className="w-4 h-4 text-gray-500" />
                   ) : (
@@ -321,7 +318,7 @@ export default function ShopFilters({
                               placeholder="0"
                               value={filters.minPrice ? filters.minPrice : ''}
                               onChange={(e) => onFilterChange('minPrice', (Number(e.target.value) || 0))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
                           <div className="flex-1">
@@ -333,7 +330,7 @@ export default function ShopFilters({
                               placeholder="9999"
                               value={filters.maxPrice ? filters.maxPrice : ''}
                               onChange={(e) => onFilterChange('maxPrice', (Number(e.target.value) || 999999))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
                         </div>
@@ -344,12 +341,12 @@ export default function ShopFilters({
               </div>
 
               {/* Special Offers */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 <button
                   onClick={() => toggleSection('availability')}
-                  className="flex items-center justify-between w-full mb-4"
+                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
                 >
-                  <h4 className="font-semibold text-gray-900">Oferty specjalne</h4>
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Oferty specjalne</h4>
                   {expandedSections.availability ? (
                     <ChevronUp className="w-4 h-4 text-gray-500" />
                   ) : (
@@ -366,38 +363,22 @@ export default function ShopFilters({
                       transition={{ duration: 0.2 }}
                       className="space-y-3"
                     >
-                      <label className={`flex items-center p-4 rounded-xl cursor-pointer transition-all duration-200 border-2 ${
+                      <label className={`flex items-center p-3 sm:p-4 rounded-lg cursor-pointer transition-all duration-200 border-2 ${
                         filters.onSale 
-                          ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200 shadow-sm' 
+                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 shadow-sm' 
                           : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent hover:border-gray-200'
                       }`}>
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={filters.onSale}
-                            onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                            className="w-5 h-5 text-red-600 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200"
-                          />
-                          {filters.onSale && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <div className="ml-4 flex items-center space-x-3">
-                          <div className={`p-2 rounded-lg ${filters.onSale ? 'bg-red-100' : 'bg-gray-100'}`}>
-                            <svg className={`w-5 h-5 ${filters.onSale ? 'text-red-600' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <span className={`text-sm font-semibold ${filters.onSale ? 'text-red-700' : 'text-gray-700'}`}>
-                              Promocje
-                            </span>
-                            <p className="text-xs text-gray-500 mt-0.5">Produkty w promocji</p>
-                          </div>
+                        <input
+                          type="checkbox"
+                          checked={filters.onSale}
+                          onChange={(e) => onFilterChange('onSale', e.target.checked)}
+                          className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+                        />
+                        <div className="ml-3 sm:ml-4">
+                          <span className={`text-xs sm:text-sm font-semibold ${filters.onSale ? 'text-blue-700' : 'text-gray-700'}`}>
+                            Promocje
+                          </span>
+                          <p className="text-xs text-gray-500 mt-0.5">Produkty w promocji</p>
                         </div>
                       </label>
                       

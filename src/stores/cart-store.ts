@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import { calculatePriceWithVAT } from '@/utils/format-price';
 
 // Types
 export interface CartItem {
@@ -202,10 +203,16 @@ export const useCartStore = create<CartStore>()(
         const { items } = get();
         const total = items.reduce((sum, item) => {
           const price = item.sale_price || item.price;
-          return sum + (price * item.quantity);
+          // Price is netto (without VAT), calculate with VAT
+          const priceWithVAT = calculatePriceWithVAT(price);
+          const itemTotal = priceWithVAT * item.quantity;
+          console.log(`🔍 Item ${item.id}: netto=${price}, brutto=${priceWithVAT}, qty=${item.quantity}, itemTotal=${itemTotal}`);
+          return sum + itemTotal;
         }, 0);
         
         const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+        
+        console.log('🔍 Cart calculateTotal result:', { items: items.length, total, itemCount });
         
         set({ total, itemCount });
       },
@@ -217,6 +224,13 @@ export const useCartStore = create<CartStore>()(
         total: state.total,
         itemCount: state.itemCount
       }),
+      onRehydrateStorage: () => (state) => {
+        // Recalculate total when loading from localStorage
+        if (state?.items && state.items.length > 0) {
+          console.log('🔄 Recalculating total from localStorage...');
+          state.calculateTotal();
+        }
+      },
     }
   )
 );

@@ -14,6 +14,7 @@ import { useFavoritesStore } from '@/stores/favorites-store';
 // Wishlist tymczasowo wyłączony na kartach
 // import { useWishlist } from '@/hooks/use-wishlist';
 import QuickViewModal from '@/components/ui/quick-view-modal';
+import { formatPrice } from '@/utils/format-price';
 
 interface KingProductCardProps {
   product: WooProduct;
@@ -554,7 +555,19 @@ export default function KingProductCard({
   // List variant - horizontal layout
   if (variant === 'list') {
     return (
-      <Card className="group hover:shadow-lg transition-all duration-300 border-gray-200 rounded-xl overflow-hidden">
+      <Card 
+        className="group hover:shadow-lg transition-all duration-300 border-gray-200 rounded-xl overflow-hidden relative"
+        onMouseEnter={() => {
+          setIsHovered(true);
+          // Load variations on hover for variable products
+          if (product.type === 'variable' && !variationsLoaded) {
+            handleShowVariants();
+          }
+        }}
+        onMouseLeave={() => {
+          setIsHovered(false);
+        }}
+      >
         <Link href={`/produkt/${product.slug}`} className="flex h-40">
           <div className="w-40 h-40 flex-shrink-0 relative">
             <Image
@@ -664,6 +677,69 @@ export default function KingProductCard({
           </div>
         </Link>
         
+        {/* Hover overlay with variants for variable products in list view */}
+        {product.type === 'variable' && variations.length > 0 && (
+          <div className={`absolute inset-0 bg-white/50 backdrop-blur-sm transition-all duration-300 ${
+            isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}>
+            <div className="flex flex-col justify-center items-center h-full p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">Wybierz wariant</h3>
+              <div className="flex flex-wrap gap-3 justify-center">
+                {getAvailableVariants().map((variant: string) => {
+                  const variation = variations.find((v: { 
+                    id: number; 
+                    attributes?: Array<{ slug: string; option: string }>; 
+                  }) => {
+                    // Znajdź wariację która ma ten sam atrybut
+                    const firstAttr = v.attributes?.find((attr: { slug: string; option: string }) => 
+                      attr.slug && attr.option
+                    );
+                    return firstAttr?.option === variant;
+                  });
+                  
+                  const variantPrice = variation?.price || variation?.sale_price || variation?.regular_price;
+                  const isOnSale = variation?.on_sale;
+                  const regularPrice = variation?.regular_price;
+                  
+                  return (
+                    <button
+                      key={variant}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (variation) {
+                          handleAddToCartWithVariation(variation, variant);
+                        }
+                      }}
+                      className="flex flex-col items-center p-3 border border-gray-200 rounded-xl hover:border-gray-900 hover:shadow-md transition-all duration-200 bg-white"
+                    >
+                      <span className="text-sm font-medium text-gray-900 mb-1">
+                        {variant}
+                      </span>
+                      <div className="text-xs font-bold text-gray-900">
+                        {variantPrice && (
+                          <>
+                            {isOnSale ? (
+                              <>
+                                <span className="text-red-600">{formatPrice(parseFloat(variantPrice))}</span>
+                                {regularPrice && (
+                                  <span className="text-gray-400 line-through ml-1">{formatPrice(parseFloat(regularPrice))}</span>
+                                )}
+                              </>
+                            ) : (
+                              <span>{formatPrice(parseFloat(variantPrice))}</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Quick View Modal */}
         <QuickViewModal
           isOpen={isQuickViewOpen}
@@ -677,9 +753,13 @@ export default function KingProductCard({
   // Default variant - matching the screenshot design
   return (
     <Card 
-      className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border-gray-200 rounded-3xl overflow-hidden p-0"
+      className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border-gray-200 rounded-2xl sm:rounded-3xl overflow-hidden p-0 relative"
       onMouseEnter={() => {
         setIsHovered(true);
+        // Load variations on hover for variable products
+        if (product.type === 'variable' && !variationsLoaded) {
+          handleShowVariants();
+        }
       }}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -754,13 +834,28 @@ export default function KingProductCard({
           </div>
         </CardHeader>
         
-        <CardContent className="px-4 py-2 flex-grow">
-          <div className="text-sm text-gray-500 mb-2 flex items-center">
+        <CardContent className="px-3 sm:px-4 py-2 flex-grow">
+          <div className="text-xs sm:text-sm text-gray-500 mb-2 flex items-center">
             {(() => {
               const cats = (product as { categories?: Array<{ name: string }> }).categories;
-              if (!cats || cats.length === 0) return 'Bez kategorii';
-              const main = cats.find((c) => c?.name && c.name !== 'Wszystkie kategorie' && c.name !== 'Wszystkie');
-              return (main?.name) || (cats[0]?.name) || 'Bez kategorii';
+              
+              if (!cats || cats.length === 0) {
+                return 'Bez kategorii';
+              }
+              
+              // Handle both string arrays and object arrays
+              const main = cats.find((c) => {
+                const categoryName = typeof c === 'string' ? c : c?.name;
+                return categoryName && categoryName !== 'Wszystkie kategorie' && categoryName !== 'Wszystkie';
+              });
+              
+              if (main) {
+                return typeof main === 'string' ? main : main?.name;
+              }
+              
+              // Fallback to first category
+              const firstCat = cats[0];
+              return typeof firstCat === 'string' ? firstCat : firstCat?.name || 'Bez kategorii';
             })()}
             {getBrand() && (
               <>
@@ -769,24 +864,87 @@ export default function KingProductCard({
               </>
             )}
           </div>
-          <h3 className="font-bold text-foreground text-lg mb-2 line-clamp-2">
+          <h3 className="font-bold text-foreground text-base sm:text-lg mb-2 line-clamp-2">
             {product.name}
           </h3>
-          <div className="text-xl font-bold text-foreground">
+          <div className="text-lg sm:text-xl font-bold text-foreground">
             {price}
           </div>
         </CardContent>
       </Link>
       
+      {/* Hover overlay with variants for variable products */}
+      {product.type === 'variable' && variations.length > 0 && (
+        <div className={`absolute inset-0 bg-white/50 backdrop-blur-sm transition-all duration-300 ${
+          isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
+          <div className="flex flex-col justify-center items-center h-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">Wybierz wariant</h3>
+            <div className="flex flex-wrap gap-3 justify-center">
+              {getAvailableVariants().map((variant: string) => {
+                const variation = variations.find((v: { 
+                  id: number; 
+                  attributes?: Array<{ slug: string; option: string }>; 
+                }) => {
+                  // Znajdź wariację która ma ten sam atrybut
+                  const firstAttr = v.attributes?.find((attr: { slug: string; option: string }) => 
+                    attr.slug && attr.option
+                  );
+                  return firstAttr?.option === variant;
+                });
+                
+                const variantPrice = variation?.price || variation?.sale_price || variation?.regular_price;
+                const isOnSale = variation?.on_sale;
+                const regularPrice = variation?.regular_price;
+                
+                return (
+                  <button
+                    key={variant}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (variation) {
+                        handleAddToCartWithVariation(variation, variant);
+                      }
+                    }}
+                    className="flex flex-col items-center p-3 border border-gray-200 rounded-xl hover:border-gray-900 hover:shadow-md transition-all duration-200 bg-white"
+                  >
+                    <span className="text-sm font-medium text-gray-900 mb-1">
+                      {variant}
+                    </span>
+                    <div className="text-xs font-bold text-gray-900">
+                      {variantPrice && (
+                        <>
+                          {isOnSale ? (
+                            <>
+                              <span className="text-red-600">{formatPrice(parseFloat(variantPrice))}</span>
+                              {regularPrice && (
+                                <span className="text-gray-400 line-through ml-1">{formatPrice(parseFloat(regularPrice))}</span>
+                              )}
+                            </>
+                          ) : (
+                            <span>{formatPrice(parseFloat(variantPrice))}</span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {showActions && (
-        <CardFooter className="px-4 pb-4 mt-auto">
+        <CardFooter className="px-3 sm:px-4 pb-4 mt-auto">
           <div className="w-full relative" ref={dropdownRef}>
             <Button 
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 if (product.type === 'variable') {
-                  setIsDropdownOpen(!isDropdownOpen);
+                  // For variable products, just show hover overlay (no dropdown)
                   handleShowVariants();
                 } else {
                   handleAddToCart();
@@ -800,18 +958,17 @@ export default function KingProductCard({
               }}
               onMouseLeave={() => {
                 setIsButtonHovered(false);
-                // Nie zamykaj dropdown po najechaniu, tylko po kliknięciu
               }}
               disabled={isLoading || product.stock_status === 'outofstock'}
-              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-6 font-medium text-base"
+              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-xl sm:rounded-2xl py-4 sm:py-6 font-medium text-sm sm:text-base"
               size="lg"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
               {isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}
             </Button>
             
-            {/* Variants dropdown - appears on click for variable products */}
-            {product.type === 'variable' && isDropdownOpen && (
+            {/* Old dropdown removed - using hover overlay instead */}
+            {false && product.type === 'variable' && isDropdownOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 z-10">
                 <div className="text-sm font-semibold text-gray-900 mb-3 text-center">Wybierz wariant</div>
                 {!variationsLoaded ? (

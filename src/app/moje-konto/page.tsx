@@ -27,7 +27,7 @@ import {
 
 export default function MyAccountPage() {
   const router = useRouter();
-  const { user, isAuthenticated, updateUser, updateProfile, changePassword, logout } = useAuthStore();
+  const { user, isAuthenticated, updateUser, updateProfile, changePassword, logout, fetchUserProfile } = useAuthStore();
   const { favorites, removeFromFavorites } = useFavoritesStore();
   const { addItem, openCart } = useCartStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -70,8 +70,49 @@ export default function MyAccountPage() {
     return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
+  // Fetch user profile when authenticated (same as checkout)
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Check if billing data is empty or missing key fields
+      const hasEmptyBilling = !user.billing || 
+        !user.billing.address || 
+        !user.billing.city || 
+        !user.billing.phone ||
+        Object.values(user.billing).every(value => !value || value === 'PL');
+      
+      // Also check if NIP is missing (even if other fields are filled)
+      const hasEmptyNip = !user.billing?.nip || user.billing.nip === false || user.billing.nip === '';
+      
+      console.log('🔍 My Account: Checking billing data:', { 
+        billing: user.billing, 
+        hasEmptyBilling,
+        hasEmptyNip,
+        shouldFetch: hasEmptyBilling || hasEmptyNip
+      });
+      
+      if (hasEmptyBilling || hasEmptyNip) {
+        console.log('🔄 My Account: User data incomplete (missing NIP or other fields), fetching profile...');
+        fetchUserProfile();
+      }
+    }
+  }, [isAuthenticated, user, fetchUserProfile]);
+
+  // Copy billing data to shipping when sameAsBilling is checked
+  useEffect(() => {
+    if (sameAsBilling) {
+      setFormData(prev => ({
+        ...prev,
+        shippingAddress: prev.billingAddress,
+        shippingCity: prev.billingCity,
+        shippingPostcode: prev.billingPostcode,
+        shippingCountry: prev.billingCountry
+      }));
+    }
+  }, [sameAsBilling, formData.billingAddress, formData.billingCity, formData.billingPostcode, formData.billingCountry]);
+
   // Load user data into form
   useEffect(() => {
+    console.log('🔍 My Account useEffect - user check:', { user: !!user, billing: user?.billing });
     if (user) {
       const meta = (user as any)?.meta_data as Array<{ key: string; value: any }> | undefined;
       const getMeta = (k: string) => meta?.find((m) => m.key === k)?.value;
@@ -134,51 +175,62 @@ export default function MyAccountPage() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
+    console.log('🔍 Validating form data:', formData);
+
     // Validate required fields
     const firstNameValidation = validateName(formData.firstName, 'Imię');
     if (!firstNameValidation.isValid) {
       errors.firstName = firstNameValidation.message!;
+      console.log('❌ First name validation failed:', firstNameValidation);
     }
 
     const lastNameValidation = validateName(formData.lastName, 'Nazwisko');
     if (!lastNameValidation.isValid) {
       errors.lastName = lastNameValidation.message!;
+      console.log('❌ Last name validation failed:', lastNameValidation);
     }
 
     // Validate optional fields
     const nipValidation = validateNIP(formData.nip);
     if (!nipValidation.isValid) {
       errors.nip = nipValidation.message!;
+      console.log('❌ NIP validation failed:', nipValidation);
     }
 
     const phoneValidation = validatePhone(formData.phone);
     if (!phoneValidation.isValid) {
       errors.phone = phoneValidation.message!;
+      console.log('❌ Phone validation failed:', phoneValidation);
     }
 
     const companyValidation = validateCompanyName(formData.company);
     if (!companyValidation.isValid) {
       errors.company = companyValidation.message!;
+      console.log('❌ Company validation failed:', companyValidation);
     }
 
     const billingAddressValidation = validateAddress(formData.billingAddress, 'Adres rozliczeniowy');
     if (!billingAddressValidation.isValid) {
       errors.billingAddress = billingAddressValidation.message!;
+      console.log('❌ Billing address validation failed:', billingAddressValidation);
     }
 
     const billingPostcodeValidation = validatePostalCode(formData.billingPostcode);
     if (!billingPostcodeValidation.isValid) {
       errors.billingPostcode = billingPostcodeValidation.message!;
+      console.log('❌ Billing postcode validation failed:', billingPostcodeValidation);
     }
 
     const shippingAddressValidation = validateAddress(formData.shippingAddress, 'Adres dostawy');
     if (!shippingAddressValidation.isValid) {
       errors.shippingAddress = shippingAddressValidation.message!;
+      console.log('❌ Shipping address validation failed:', shippingAddressValidation);
     }
 
     const shippingPostcodeValidation = validatePostalCode(formData.shippingPostcode);
     if (!shippingPostcodeValidation.isValid) {
       errors.shippingPostcode = shippingPostcodeValidation.message!;
+      console.log('❌ Shipping postcode validation failed:', shippingPostcodeValidation);
     }
 
     setValidationErrors(errors);
@@ -188,7 +240,8 @@ export default function MyAccountPage() {
   const handleSave = async () => {
     // Validate form before saving
     if (!validateForm()) {
-      alert('Proszę poprawić błędy w formularzu');
+      console.log('❌ Form validation failed:', validationErrors);
+      // Errors are now displayed under each field, no need for alert
       return;
     }
 
@@ -322,8 +375,8 @@ export default function MyAccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[95vw] mx-auto px-6 py-8">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-[95vw] mx-auto px-6 py-8 pb-16">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -607,10 +660,18 @@ export default function MyAccountPage() {
                     disabled={!isEditing}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
-                        ? 'border-gray-300' 
+                        ? validationErrors.billingAddress 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
                         : 'border-gray-200 bg-gray-50 text-gray-600'
                     }`}
                   />
+                  {validationErrors.billingAddress && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.billingAddress}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -639,10 +700,18 @@ export default function MyAccountPage() {
                     disabled={!isEditing}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
-                        ? 'border-gray-300' 
+                        ? validationErrors.billingPostcode 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
                         : 'border-gray-200 bg-gray-50 text-gray-600'
                     }`}
                   />
+                  {validationErrors.billingPostcode && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.billingPostcode}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -716,10 +785,18 @@ export default function MyAccountPage() {
                     disabled={!isEditing || sameAsBilling}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
-                        ? 'border-gray-300' 
+                        ? validationErrors.shippingAddress 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
                         : 'border-gray-200 bg-gray-50 text-gray-600'
                     }`}
                   />
+                  {validationErrors.shippingAddress && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.shippingAddress}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -748,10 +825,18 @@ export default function MyAccountPage() {
                     disabled={!isEditing || sameAsBilling}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
                       isEditing 
-                        ? 'border-gray-300' 
+                        ? validationErrors.shippingPostcode 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
                         : 'border-gray-200 bg-gray-50 text-gray-600'
                     }`}
                   />
+                  {validationErrors.shippingPostcode && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      {validationErrors.shippingPostcode}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

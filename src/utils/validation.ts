@@ -44,9 +44,15 @@ export function validateNIP(nip: string): ValidationResult {
 }
 
 // Phone validation (Polish format)
-export function validatePhone(phone: string): ValidationResult {
-  if (!phone) {
-    return { isValid: true }; // Phone is optional
+export function validatePhone(phone: string, required: boolean = true): ValidationResult {
+  if (!phone || !phone.trim()) {
+    if (required) {
+      return {
+        isValid: false,
+        message: 'Numer telefonu jest wymagany'
+      };
+    }
+    return { isValid: true };
   }
 
   // Remove spaces, dashes, parentheses
@@ -136,9 +142,15 @@ export function validateCompanyName(company: string): ValidationResult {
 }
 
 // Address validation
-export function validateAddress(address: string, fieldName: string): ValidationResult {
-  if (!address) {
-    return { isValid: true }; // Address is optional
+export function validateAddress(address: string, fieldName: string, required: boolean = true): ValidationResult {
+  if (!address || !address.trim()) {
+    if (required) {
+      return {
+        isValid: false,
+        message: `${fieldName} jest wymagany`
+      };
+    }
+    return { isValid: true };
   }
 
   if (address.trim().length < 5) {
@@ -159,18 +171,91 @@ export function validateAddress(address: string, fieldName: string): ValidationR
 }
 
 // Postal code validation (Polish format)
-export function validatePostalCode(postcode: string): ValidationResult {
-  if (!postcode) {
-    return { isValid: true }; // Postal code is optional
+export function validatePostalCode(postcode: string, required: boolean = true): ValidationResult {
+  if (!postcode || !postcode.trim()) {
+    if (required) {
+      return {
+        isValid: false,
+        message: 'Kod pocztowy jest wymagany'
+      };
+    }
+    return { isValid: true };
   }
 
   const cleanPostcode = postcode.replace(/\s/g, '');
+  // Polish postal code format: XX-XXX (2 digits, dash, 3 digits)
   const polishPostcodeRegex = /^\d{2}-\d{3}$/;
   
   if (!polishPostcodeRegex.test(cleanPostcode)) {
     return {
       isValid: false,
-      message: 'Nieprawidłowy kod pocztowy (format: 12-345)'
+      message: 'Nieprawidłowy kod pocztowy (format: XX-XXX)'
+    };
+  }
+
+  return { isValid: true };
+}
+
+// Password validation (strong password)
+export function validatePassword(password: string): ValidationResult {
+  if (!password) {
+    return {
+      isValid: false,
+      message: 'Hasło jest wymagane'
+    };
+  }
+
+  if (password.length < 8) {
+    return {
+      isValid: false,
+      message: 'Hasło musi mieć co najmniej 8 znaków'
+    };
+  }
+
+  if (!/(?=.*[a-z])/.test(password)) {
+    return {
+      isValid: false,
+      message: 'Hasło musi zawierać małą literę'
+    };
+  }
+
+  if (!/(?=.*[A-Z])/.test(password)) {
+    return {
+      isValid: false,
+      message: 'Hasło musi zawierać wielką literę'
+    };
+  }
+
+  if (!/(?=.*\d)/.test(password)) {
+    return {
+      isValid: false,
+      message: 'Hasło musi zawierać cyfrę'
+    };
+  }
+
+  if (!/(?=.*[@$!%*?&])/.test(password)) {
+    return {
+      isValid: false,
+      message: 'Hasło musi zawierać znak specjalny (@$!%*?&)'
+    };
+  }
+
+  return { isValid: true };
+}
+
+// Confirm password validation
+export function validateConfirmPassword(password: string, confirmPassword: string): ValidationResult {
+  if (!confirmPassword) {
+    return {
+      isValid: false,
+      message: 'Potwierdzenie hasła jest wymagane'
+    };
+  }
+
+  if (password !== confirmPassword) {
+    return {
+      isValid: false,
+      message: 'Hasła nie są identyczne'
     };
   }
 

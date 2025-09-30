@@ -1,11 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Generate unique discount code
-function generateDiscountCode(email: string, source: string): string {
+// Generate unique discount code and create WooCommerce coupon
+async function generateDiscountCode(email: string, source: string): Promise<string> {
   const timestamp = Date.now().toString().slice(-4);
   const emailPrefix = email.split('@')[0].slice(0, 3).toUpperCase();
   const sourcePrefix = source === 'registration' ? 'REG' : 'NEWS';
-  return `${sourcePrefix}${emailPrefix}${timestamp}`;
+  const code = `${sourcePrefix}${emailPrefix}${timestamp}`;
+  
+  // Create coupon in WooCommerce
+  try {
+    const WC_URL = process.env.WOOCOMMERCE_API_URL;
+    const CK = process.env.WOOCOMMERCE_CONSUMER_KEY;
+    const CS = process.env.WOOCOMMERCE_CONSUMER_SECRET;
+    
+    if (WC_URL && CK && CS) {
+      const couponData = {
+        code: code,
+        discount_type: 'percent',
+        amount: '10', // 10% discount
+        individual_use: true,
+        usage_limit: 1,
+        usage_limit_per_user: 1,
+        limit_usage_to_x_items: null,
+        free_shipping: false,
+        product_ids: [],
+        exclude_product_ids: [],
+        product_categories: [],
+        exclude_product_categories: [],
+        minimum_amount: '50.00', // Minimum 50 PLN
+        maximum_amount: '',
+        expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days
+        customer_email: [email],
+        meta_data: [
+          {
+            key: 'newsletter_subscriber',
+            value: email
+          },
+          {
+            key: 'created_from_newsletter',
+            value: 'true'
+          },
+          {
+            key: 'source',
+            value: source
+          }
+        ]
+      };
+      
+      const response = await fetch(`${WC_URL}/coupons`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${CK}:${CS}`).toString('base64')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(couponData),
+      });
+      
+      if (response.ok) {
+        const createdCoupon = await response.json();
+        console.log(`✅ Created WooCommerce coupon: ${code} for ${email}`, createdCoupon);
+      } else {
+        const errorText = await response.text();
+        console.error(`❌ Failed to create WooCommerce coupon: ${code}`, errorText);
+      }
+    }
+  } catch (error) {
+    console.error('Error creating WooCommerce coupon:', error);
+  }
+  
+  return code;
 }
 
 export async function POST(request: NextRequest) {
@@ -36,7 +99,7 @@ export async function POST(request: NextRequest) {
     const sendinblueListId = parseInt(process.env.SENDINBLUE_LIST_ID || '1');
 
     // Generate discount code for new subscribers
-    const discountCode = generateDiscountCode(email, source);
+    const discountCode = await generateDiscountCode(email, source);
     
     if (!sendinblueApiKey) {
       console.log('📧 Newsletter subscription (no API key):', {
@@ -89,6 +152,30 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Send discount code email
+    try {
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/api/send-newsletter-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          firstName,
+          lastName,
+          discountCode,
+          source
+        }),
+      });
+
+      if (emailResponse.ok) {
+        console.log(`✅ Discount email sent to ${email} with code ${discountCode}`);
+      } else {
+        console.error(`❌ Failed to send discount email to ${email}`);
+      }
+    } catch (emailError) {
+      console.error('Error sending discount email:', emailError);
+    }
 
     return NextResponse.json({
       success: true,

@@ -65,7 +65,7 @@ export default function WishlistPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8 pb-16">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
@@ -80,7 +80,7 @@ export default function WishlistPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8 pb-16">
         <div className="container mx-auto px-4">
           <div className="text-center py-16">
             <div className="text-red-500 mb-4">
@@ -99,7 +99,7 @@ export default function WishlistPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8 pb-16">
         <div className="container mx-auto px-4">
           <div className="text-center py-16">
             <div className="text-gray-400 mb-4">
@@ -121,7 +121,7 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8 pb-16">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

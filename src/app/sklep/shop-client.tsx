@@ -318,7 +318,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto px-6 py-8">
+      <div className="max-w-[95vw] mx-auto px-6 py-8 pb-16">
         {/* Category tabs section */}
         <div className="bg-gray-50 py-8 rounded-3xl">
           <div className="text-center mb-6">
@@ -333,25 +333,29 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         
         <div className="h-6"></div>
         
-        {/* Search and controls */}
-        <div className="bg-gradient-to-r from-gray-50 to-white rounded-2xl border border-gray-100 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 items-center">
-            <div className="flex-1 relative group">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-black transition-colors" />
+        {/* Search and controls - Mobile optimized */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex flex-col gap-4">
+            {/* Search bar */}
+            <div className="relative group">
+              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 group-focus-within:text-black transition-colors" />
               <input
                 type="text"
                 placeholder="Szukaj produktów..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-black/10 focus:border-black transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black/10 focus:border-black transition-all duration-200 bg-gray-50 text-sm sm:text-base"
               />
             </div>
-            <div className="flex gap-3 items-center">
-              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-xl p-1 border border-gray-200">
+            
+            {/* Controls row */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+              {/* Sort dropdown */}
+              <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1 border border-gray-200 flex-1 sm:flex-none">
                 <select
                   value={filters.sortBy}
                   onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                  className="px-4 py-3 border-0 bg-transparent focus:ring-0 focus:outline-none text-sm font-medium text-gray-700 cursor-pointer"
+                  className="px-3 sm:px-4 py-2 sm:py-3 border-0 bg-transparent focus:ring-0 focus:outline-none text-sm font-medium text-gray-700 cursor-pointer flex-1"
                 >
                   <option value="date">Data dodania</option>
                   <option value="price">Cena</option>
@@ -366,7 +370,9 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                   <ChevronDown className={`w-4 h-4 text-gray-600 group-hover:text-black transition-colors ${filters.sortOrder === 'asc' ? 'rotate-180' : ''}`} />
                 </button>
               </div>
-              <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-xl p-1 border border-gray-200">
+              
+              {/* View mode toggle */}
+              <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1 border border-gray-200">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-black text-white' : 'text-gray-600 hover:text-black hover:bg-gray-100'}`}
@@ -382,21 +388,25 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                   <List className="w-4 h-4" />
                 </button>
               </div>
+              
+              {/* Clear button */}
               <button
                 onClick={clearFilters}
-                className="px-4 py-3 text-sm font-medium text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center gap-2"
+                className="px-4 py-2 sm:py-3 text-sm font-medium text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-gray-200"
               >
                 <X className="w-4 h-4" />
                 Wyczyść
               </button>
+              
+              {/* Mobile filter button */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="sm:hidden px-4 py-2 sm:py-3 bg-black text-white rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all duration-200 font-medium"
+              >
+                <Filter className="w-4 h-4" />
+                Filtry
+              </button>
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="lg:hidden px-6 py-3 bg-black text-white rounded-xl flex items-center gap-2 hover:bg-gray-800 transition-all duration-200 font-medium"
-            >
-              <Filter className="w-4 h-4" />
-              Filtry
-            </button>
           </div>
         </div>
         

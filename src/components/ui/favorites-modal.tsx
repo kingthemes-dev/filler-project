@@ -1,15 +1,12 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, ShoppingCart, Eye, Trash2 } from 'lucide-react';
+import { X, Heart, Trash2 } from 'lucide-react';
 import { useFavoritesStore } from '@/stores/favorites-store';
-import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import wooCommerceService from '@/services/woocommerce-optimized';
 import { WooProduct } from '@/types/woocommerce';
-import Image from 'next/image';
-import Link from 'next/link';
+import KingProductCard from '@/components/king-product-card';
 
 export default function FavoritesModal() {
   const { 
@@ -22,24 +19,6 @@ export default function FavoritesModal() {
     lastSyncTime
   } = useFavoritesStore();
   
-  const { addItem, openCart } = useCartStore();
-
-  const handleAddToCart = (product: WooProduct) => {
-    const cartItem = {
-      id: product.id,
-      name: product.name,
-      price: parseFloat(product.price),
-      regular_price: parseFloat(product.regular_price),
-      sale_price: parseFloat(product.sale_price),
-      image: wooCommerceService.getProductImageUrl(product, 'medium'),
-      permalink: `/produkt/${product.slug}`,
-    };
-
-    console.log('🛒 Adding to cart from favorites:', cartItem);
-    addItem(cartItem);
-    openCart();
-  };
-
   const handleRemoveFromFavorites = (productId: number) => {
     removeFromFavorites(productId);
   };
@@ -129,95 +108,29 @@ export default function FavoritesModal() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {favorites.map((product) => {
-                      const isOnSale = wooCommerceService.isProductOnSale(product);
-                      const discount = wooCommerceService.getProductDiscount(product);
-                      const imageUrl = wooCommerceService.getProductImageUrl(product, 'medium');
-                      const price = wooCommerceService.formatPrice(product.price);
-                      const regularPrice = wooCommerceService.formatPrice(product.regular_price);
-
-                      return (
-                        <motion.div
-                          key={product.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                    {favorites.map((product) => (
+                      <motion.div
+                        key={product.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative group"
+                      >
+                        {/* Remove from favorites button overlay */}
+                        <button
+                          onClick={() => handleRemoveFromFavorites(product.id)}
+                          className="absolute top-2 right-2 z-10 w-8 h-8 bg-white/90 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150 opacity-0 group-hover:opacity-100"
                         >
-                          {/* Product Image */}
-                          <div className="relative aspect-square bg-gray-100">
-                            <Image
-                              src={imageUrl}
-                              alt={product.name}
-                              width={200}
-                              height={200}
-                              className="w-full h-full object-cover"
-                            />
-                            {isOnSale && (
-                              <Badge 
-                                variant="destructive" 
-                                className="absolute top-2 left-2"
-                              >
-                                -{discount}%
-                              </Badge>
-                            )}
-                            <button
-                              onClick={() => handleRemoveFromFavorites(product.id)}
-                              className="absolute top-2 right-2 w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
-                            >
-                              <Heart className="w-4 h-4 fill-current text-red-500" />
-                            </button>
-                          </div>
-
-                          {/* Product Info */}
-                          <div className="p-4">
-                            <div className="text-sm text-gray-500 mb-1">
-                              {product.categories && product.categories.length > 0 
-                                ? product.categories[0].name 
-                                : 'Bez kategorii'
-                              }
-                            </div>
-                            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                              {product.name}
-                            </h3>
-                            
-                            {/* Price */}
-                            <div className="mb-4">
-                              {isOnSale ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg font-bold text-foreground">{price}</span>
-                                  <span className="text-sm text-muted-foreground line-through">{regularPrice}</span>
-                                </div>
-                              ) : (
-                                <span className="text-lg font-bold text-foreground">{price}</span>
-                              )}
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1"
-                                asChild
-                              >
-                                <Link href={`/produkt/${product.slug}`}>
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  Zobacz
-                                </Link>
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="flex-1"
-                                onClick={() => handleAddToCart(product)}
-                              >
-                                <ShoppingCart className="w-4 h-4 mr-1" />
-                                Do koszyka
-                              </Button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                          <Heart className="w-4 h-4 fill-current text-red-500" />
+                        </button>
+                        
+                        {/* Use KingProductCard for consistent styling */}
+                        <KingProductCard
+                          product={product}
+                          showActions={true}
+                          variant="default"
+                        />
+                      </motion.div>
+                    ))}
                   </div>
                 )}
               </div>

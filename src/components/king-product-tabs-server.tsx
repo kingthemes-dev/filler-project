@@ -60,17 +60,18 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   const activeTabData = tabs.find(tab => tab.id === activeTab) || tabs[0];
 
   return (
-    <section className="py-16 bg-white">
-      <div className="max-w-[95vw] mx-auto px-6">
+    <section className="py-12 sm:py-16 bg-white">
+      <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-          <div className="flex space-x-8 mb-4 lg:mb-0">
+          {/* Mobile: Horizontal scrollable tabs */}
+          <div className="flex space-x-4 sm:space-x-6 lg:space-x-8 mb-4 lg:mb-0 overflow-x-auto pb-2 scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="relative group"
+                className="relative group flex-shrink-0"
               >
-                <span className="text-2xl font-bold transition-colors text-black">
+                <span className="text-lg sm:text-xl lg:text-2xl font-bold transition-colors text-black whitespace-nowrap">
                   {tab.label}
                 </span>
                 <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left transition-transform duration-300 ${
@@ -81,7 +82,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
           </div>
           <Link 
             href="/sklep" 
-            className="relative text-lg text-black hover:text-black transition-colors group self-start lg:self-auto"
+            className="relative text-base sm:text-lg text-black hover:text-black transition-colors group self-start lg:self-auto whitespace-nowrap"
           >
             Wszystkie produkty
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out" />
@@ -98,7 +99,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
               transition={{ duration: 0.3 }}
             >
               {activeTabData.products.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                   {activeTabData.products.slice(0, 4).map((product) => (
                     <KingProductCard
                       key={product.id}

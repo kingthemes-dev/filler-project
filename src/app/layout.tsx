@@ -6,6 +6,7 @@ import Header from '@/components/ui/header';
 import Footer from '@/components/ui/footer';
 import CartDrawer from '@/components/ui/cart-drawer';
 import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
+import FavoritesModal from '@/components/ui/favorites-modal';
 import ErrorBoundary from '@/components/error-boundary';
 
 
@@ -88,6 +89,7 @@ export default function RootLayout({
                             {children}
                           </main>
                           <AuthModalManager />
+                          <FavoritesModal />
                           <Footer />
                           <CartDrawer />
                         </ErrorBoundary>

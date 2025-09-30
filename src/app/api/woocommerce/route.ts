@@ -465,6 +465,7 @@ async function handleOrderCreation(body: any) {
     payment_method_title,
     shipping_lines,
     customer_id,
+    coupon_lines,
     meta_data
   } = body;
 
@@ -477,6 +478,7 @@ async function handleOrderCreation(body: any) {
 
   try {
     console.log('🔄 Creating order in WooCommerce');
+    console.log('🎫 Coupon lines received:', coupon_lines);
     
     // Prepare order data for WooCommerce
     const orderData: any = {
@@ -522,6 +524,7 @@ async function handleOrderCreation(body: any) {
         meta_data: item.meta_data || []
       })),
       shipping_lines: shipping_lines || [],
+      coupon_lines: coupon_lines || [],
       meta_data: [
         ...(meta_data || []),
         { key: '_created_via', value: 'headless-woo' },
@@ -913,6 +916,100 @@ async function handleShippingMethods(req: NextRequest) {
   }
 }
 
+async function handleCoupons(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const code = searchParams.get('code');
+    
+    if (!WC_URL || !CK || !CS) {
+      return NextResponse.json({ error: 'Brak konfiguracji WooCommerce' }, { status: 500 });
+    }
+
+    // If specific code requested, validate it
+    if (code) {
+      const response = await fetch(`${WC_URL}/coupons?code=${encodeURIComponent(code)}&status=active`, {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${CK}:${CS}`).toString('base64')}`,
+        },
+      });
+      
+      if (!response.ok) {
+        return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400 });
+      }
+      
+      const coupons = await response.json();
+      
+      if (coupons.length === 0) {
+        return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400 });
+      }
+      
+      const coupon = coupons[0];
+      
+      // Check if coupon is still valid
+      if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
+        return NextResponse.json({ error: 'Kod rabatowy został już wykorzystany' }, { status: 400 });
+      }
+      
+      if (coupon.date_expires && new Date(coupon.date_expires) < new Date()) {
+        return NextResponse.json({ error: 'Kod rabatowy wygasł' }, { status: 400 });
+      }
+      
+      // Check per-user usage limit
+      if (coupon.usage_limit_per_user && coupon.usage_limit_per_user > 0) {
+        // For now, we'll rely on WooCommerce to enforce this when creating the order
+        // The used_by array will be checked by WooCommerce API
+        console.log('ℹ️ Coupon has per-user limit:', coupon.usage_limit_per_user);
+      }
+      
+      return NextResponse.json({
+        success: true,
+        coupon: {
+          id: coupon.id,
+          code: coupon.code,
+          discount_type: coupon.discount_type,
+          amount: parseFloat(coupon.amount),
+          minimum_amount: coupon.minimum_amount ? parseFloat(coupon.minimum_amount) : null,
+          maximum_amount: coupon.maximum_amount ? parseFloat(coupon.maximum_amount) : null,
+          usage_limit: coupon.usage_limit,
+          usage_count: coupon.usage_count,
+          date_expires: coupon.date_expires
+        }
+      });
+    }
+    
+    // Return all active coupons (for admin purposes)
+    const response = await fetch(`${WC_URL}/coupons?status=active&_fields=id,code,discount_type,amount,minimum_amount,maximum_amount,usage_limit,usage_count,date_expires`, {
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${CK}:${CS}`).toString('base64')}`,
+      },
+    });
+    
+    const coupons = await response.json();
+    
+    return NextResponse.json({
+      success: true,
+      coupons: coupons.map((coupon: any) => ({
+        id: coupon.id,
+        code: coupon.code,
+        discount_type: coupon.discount_type,
+        amount: parseFloat(coupon.amount),
+        minimum_amount: coupon.minimum_amount ? parseFloat(coupon.minimum_amount) : null,
+        maximum_amount: coupon.maximum_amount ? parseFloat(coupon.maximum_amount) : null,
+        usage_limit: coupon.usage_limit,
+        usage_count: coupon.usage_count,
+        date_expires: coupon.date_expires
+      }))
+    });
+    
+  } catch (error: unknown) {
+    console.error('Coupons API error:', error);
+    return NextResponse.json(
+      { error: 'Nie udało się pobrać kuponów', details: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const endpoint = searchParams.get("endpoint") || "products";
@@ -940,6 +1037,41 @@ export async function GET(req: NextRequest) {
     }
   }
   
+  // Customer profile endpoint
+  if (endpoint.startsWith('customers/')) {
+    const customerId = endpoint.replace('customers/', '');
+    const authHeader = req.headers.get('authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    try {
+      console.log('🔄 Fetching customer data for ID:', customerId);
+      const response = await fetch(`${WC_URL}/customers/${customerId}?consumer_key=${CK}&consumer_secret=${CS}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      console.log('🔍 Customer API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Customer API error:', errorText);
+        return NextResponse.json({ error: 'Customer not found' }, { status: response.status });
+      }
+      
+      const customerData = await response.json();
+      console.log('✅ Customer data fetched:', customerData);
+      return NextResponse.json(customerData);
+    } catch (error: any) {
+      console.error('❌ Customer fetch error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+  
   // Payment gateways
   if (endpoint === 'payment_gateways') {
     if (!WC_URL || !CK || !CS) {
@@ -963,6 +1095,11 @@ export async function GET(req: NextRequest) {
   // Special handling for shipping methods
   if (endpoint === "shipping_methods") {
     return handleShippingMethods(req);
+  }
+  
+  // Special handling for coupons
+  if (endpoint === "coupons") {
+    return handleCoupons(req);
   }
   
   // Special handling for shop endpoint - use new King Shop API

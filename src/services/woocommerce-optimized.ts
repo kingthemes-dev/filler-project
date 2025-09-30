@@ -680,30 +680,46 @@ class WooCommerceService {
 
   async registerUser(userData: { username: string; email: string; password: string; first_name?: string; last_name?: string }): Promise<{ success: boolean; message: string; user?: { id: number; username: string; email: string } }> {
     try {
+      const payload = {
+        email: userData.email,
+        password: userData.password,
+        first_name: userData.first_name || '',
+        last_name: userData.last_name || '',
+        billing: {
+          first_name: userData.first_name || '',
+          last_name: userData.last_name || ''
+        },
+        shipping: {
+          first_name: userData.first_name || '',
+          last_name: userData.last_name || ''
+        }
+      };
+      
+      console.log('🔍 Register user payload:', payload);
+      
       const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3/customers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Basic ' + btoa('ck_deb61eadd7301ebfc5f8074ce7c53c6668eb725d:cs_0de18ed0e013f96aebfb51c77f506bb94e416cb8')
         },
-        body: JSON.stringify({
-          username: userData.username,
-          email: userData.email,
-          password: userData.password,
-          first_name: userData.first_name || '',
-          last_name: userData.last_name || '',
-          billing: {
-            first_name: userData.first_name || '',
-            last_name: userData.last_name || ''
-          },
-          shipping: {
-            first_name: userData.first_name || '',
-            last_name: userData.last_name || ''
-          }
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('❌ Registration error response:', errorText);
+        
+        // Try to parse error response for better error message
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.code === 'registration-error-email-exists') {
+            throw new Error(errorData.message || 'Email już istnieje');
+          }
+        } catch (parseError) {
+          // If parsing fails, use generic error
+        }
+        
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 

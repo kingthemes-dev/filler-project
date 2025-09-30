@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useCartStore, type CartItem } from '@/stores/cart-store';
-import { formatPrice } from '@/utils/format-price';
+import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -20,7 +20,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-white py-12 pb-16">
         <div className="max-w-[95vw] mx-auto px-6">
           <div className="max-w-2xl mx-auto text-center">
             <motion.div
@@ -58,7 +58,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8 pb-16">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="max-w-6xl mx-auto">
@@ -138,7 +138,7 @@ export default function CartPage() {
                             </p>
                           )}
                           <p className="text-lg font-bold text-black">
-                            {formatPrice(item.sale_price || item.price)}
+                            {formatPriceWithVAT(item.sale_price || item.price)}
                           </p>
                         </div>
 
@@ -191,16 +191,12 @@ export default function CartPage() {
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Produkty ({itemCount}):</span>
-                    <span>{formatPrice(total)}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Dostawa:</span>
-                    <span>Gratis</span>
+                    <span>{formatPrice(total)} (z VAT)</span>
                   </div>
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between text-xl font-bold text-gray-900">
                       <span>Razem:</span>
-                      <span>{formatPrice(total)}</span>
+                      <span>{formatPrice(total)} (z VAT)</span>
                     </div>
                   </div>
                 </div>
@@ -217,7 +213,6 @@ export default function CartPage() {
                 {/* Additional Info */}
                 <div className="text-sm text-gray-500 text-center">
                   <p>Bezpieczne płatności</p>
-                  <p>Darmowa dostawa od 200 zł</p>
                 </div>
               </motion.div>
             </div>

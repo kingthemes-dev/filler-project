@@ -10,7 +10,6 @@ import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
 import EmailNotificationCenter from './email/email-notification-center';
 import SearchBar from './search/search-bar';
-import FavoritesModal from './favorites-modal';
 
 
 
@@ -87,14 +86,14 @@ export default function Header() {
   return (
     <>
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-[95vw] mx-auto px-6">
-        <div className="flex items-center justify-between h-20">
+      <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center mr-3">
-              <span className="text-white text-xl font-bold">F</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+              <span className="text-white text-lg sm:text-xl font-bold">F</span>
             </div>
-            <span className="text-2xl font-bold text-black">FILLER</span>
+            <span className="text-xl sm:text-2xl font-bold text-black">FILLER</span>
           </div>
 
           {/* Navigation */}
@@ -470,7 +469,6 @@ export default function Header() {
       />
       
       {/* Favorites Modal */}
-      <FavoritesModal />
     </>
   );
 }

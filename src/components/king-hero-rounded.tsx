@@ -73,9 +73,9 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
 
 
   return (
-    <section className="relative h-[68vh] min-h-[510px] py-4 mt-6 mb-8">
-      <div className="max-w-[95vw] mx-auto px-6 h-full">
-        <div className="relative h-full rounded-3xl overflow-hidden">
+    <section className="relative h-[60vh] sm:h-[65vh] lg:h-[68vh] min-h-[400px] sm:min-h-[450px] lg:min-h-[510px] py-4 mt-4 sm:mt-6 mb-6 sm:mb-8">
+      <div className="max-w-[95vw] mx-auto px-4 sm:px-6 h-full">
+        <div className="relative h-full rounded-2xl sm:rounded-3xl overflow-hidden">
           {/* Background Video */}
           <div className="absolute inset-0 z-0">
             <video
@@ -93,21 +93,21 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           </div>
           
           {/* Content */}
-          <div className="relative z-20 h-full pl-8 md:pl-16 pt-16 md:pt-24 pr-8 md:pr-12 pb-8 md:pb-12">
+          <div className="relative z-20 h-full pl-4 sm:pl-8 md:pl-16 pt-8 sm:pt-16 md:pt-24 pr-4 sm:pr-8 md:pr-12 pb-8 md:pb-12">
             {/* Top Section - Text Content */}
-            <div className="text-white space-y-4 md:space-y-6">
-              <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold leading-tight">
+            <div className="text-white space-y-3 sm:space-y-4 md:space-y-6">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold leading-tight">
                 Hurtownia produktów<br />
                 medycyny estetycznej
               </h1>
 
-              <p className="text-base md:text-lg text-white/90 max-w-2xl leading-relaxed">
+              <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl leading-relaxed">
                 Profesjonalne produkty do medycyny estetycznej, mezoterapii i zabiegów kosmetycznych.
                 Najwyższa jakość, certyfikowane preparaty, kompleksowa obsługa.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" asChild className="bg-white border-2 border-white text-black hover:bg-gray-100 hover:text-black text-lg md:text-xl px-8 md:px-12 py-4 md:py-6 rounded-2xl transition-all duration-300">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <Button size="lg" asChild className="bg-white border-2 border-white text-black hover:bg-gray-100 hover:text-black text-base sm:text-lg md:text-xl px-6 sm:px-8 md:px-12 py-3 sm:py-4 md:py-6 rounded-xl sm:rounded-2xl transition-all duration-300">
                   <Link href="/sklep">
                     Zobacz produkty
                   </Link>

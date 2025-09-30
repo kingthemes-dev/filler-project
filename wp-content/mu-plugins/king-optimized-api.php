@@ -273,6 +273,26 @@ class KingOptimizedAPI {
      * Format product for list view - optimized with only essential fields
      */
     private function format_product($product) {
+        // Get categories
+        $categories = array();
+        $product_categories = wp_get_post_terms($product->get_id(), 'product_cat');
+        
+        // Debug log
+        error_log('🔍 Product categories debug - Product ID: ' . $product->get_id() . ', Categories: ' . print_r($product_categories, true));
+        
+        if (!is_wp_error($product_categories)) {
+            foreach ($product_categories as $category) {
+                $categories[] = array(
+                    'id' => $category->term_id,
+                    'name' => $category->name,
+                    'slug' => $category->slug
+                );
+            }
+        }
+        
+        // Debug log final categories
+        error_log('🔍 Final categories array: ' . print_r($categories, true));
+        
         return array(
             'id' => $product->get_id(),
             'name' => $product->get_name(),
@@ -284,7 +304,8 @@ class KingOptimizedAPI {
             'featured' => $product->is_featured(),
             'image' => wp_get_attachment_image_url($product->get_image_id(), 'medium'),
             'stock_status' => $product->get_stock_status(),
-            'type' => $product->get_type()
+            'type' => $product->get_type(),
+            'categories' => $categories
         );
     }
     
