@@ -249,11 +249,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     console.log('🖼️ Quick View - Product images type:', typeof product.images, Array.isArray(product.images));
     
     // Handle both string array and object array formats
-    let imageArray = [];
+    let imageArray: any[] = [];
     if (Array.isArray(product.images)) {
       // If it's an array of strings
       if (typeof product.images[0] === 'string') {
-        imageArray = product.images.map((src: string) => ({ src, name: product.name, alt: product.name }));
+        imageArray = (product.images as any).map((src: string) => ({ src, name: product.name, alt: product.name }));
       } else {
         // If it's an array of objects
         imageArray = product.images.filter((img) => img && img.src && !isWooPlaceholder(img.src));

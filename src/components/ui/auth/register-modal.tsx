@@ -25,9 +25,15 @@ interface RegisterModalProps {
 export default function RegisterModal({ isOpen, onClose, onSwitchToLogin, onRegistrationSuccess }: RegisterModalProps) {
   const { register, isLoading, error, isAuthenticated } = useAuthStore();
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
+    phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    company: '',
+    nip: '',
+    invoiceRequest: false
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

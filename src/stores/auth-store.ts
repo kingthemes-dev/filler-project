@@ -58,6 +58,11 @@ export interface AuthActions {
 export interface RegisterData {
   email: string;
   password: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  company?: string;
+  nip?: string;
   marketingConsent?: boolean;
 }
 
@@ -183,15 +188,15 @@ export const useAuthStore = create<AuthStore>()(
           const user: User = {
             id: newUser.id,
             email: newUser.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
             role: 'customer',
             billing: {
               address: '',
               city: '',
               postcode: '',
               country: 'PL',
-              phone: userData.phone
+              phone: userData.phone || ''
             },
             shipping: {
               address: '',

@@ -81,17 +81,15 @@ export default function MyAccountPage() {
         Object.values(user.billing).every(value => !value || value === 'PL');
       
       // Also check if NIP is missing (even if other fields are filled)
-      const hasEmptyNip = !user.billing?.nip || user.billing.nip === false || user.billing.nip === '';
       
       console.log('🔍 My Account: Checking billing data:', { 
         billing: user.billing, 
         hasEmptyBilling,
-        hasEmptyNip,
-        shouldFetch: hasEmptyBilling || hasEmptyNip
+        shouldFetch: hasEmptyBilling
       });
       
-      if (hasEmptyBilling || hasEmptyNip) {
-        console.log('🔄 My Account: User data incomplete (missing NIP or other fields), fetching profile...');
+      if (hasEmptyBilling) {
+        console.log('🔄 My Account: User data incomplete, fetching profile...');
         fetchUserProfile();
       }
     }

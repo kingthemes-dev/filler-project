@@ -698,7 +698,7 @@ export default function KingProductCard({
                   });
                   
                   const variantPrice = variation?.price || variation?.sale_price || variation?.regular_price;
-                  const isOnSale = variation?.on_sale;
+                  const isOnSale = variation?.sale_price && parseFloat(variation.sale_price) < parseFloat(variation.regular_price || '0');
                   const regularPrice = variation?.regular_price;
                   
                   return (
@@ -894,7 +894,7 @@ export default function KingProductCard({
                 });
                 
                 const variantPrice = variation?.price || variation?.sale_price || variation?.regular_price;
-                const isOnSale = variation?.on_sale;
+                const isOnSale = variation?.sale_price && parseFloat(variation.sale_price) < parseFloat(variation.regular_price || '0');
                 const regularPrice = variation?.regular_price;
                 
                 return (
