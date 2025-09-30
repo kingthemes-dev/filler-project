@@ -870,9 +870,9 @@ export default function KingProductCard({
               </>
             )}
           </div>
-          <h3 className="font-bold text-foreground text-base sm:text-lg mb-2 line-clamp-2">
+          <p className="font-bold text-foreground text-base sm:text-lg mb-2 line-clamp-2">
             {product.name}
-          </h3>
+          </p>
           <div className="text-lg sm:text-xl font-bold text-foreground">
             {price}
           </div>
