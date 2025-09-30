@@ -78,14 +78,15 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
         <div className="relative h-full rounded-2xl sm:rounded-3xl overflow-hidden">
           {/* Background Image - optimized for LCP - native img for fastest load */}
           <div className="absolute inset-0 z-0">
-            <Image
+            <img
               src="/images/hero/home.webp"
               alt="Hero background"
-              fill
-              priority
-              quality={75}
-              sizes="100vw"
-              className="object-cover object-center"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              width="1920"
+              height="1080"
+              className="absolute inset-0 w-full h-full object-cover object-center"
             />
             {/* Overlay */}
             <div className="absolute inset-0 bg-black/60 z-10" />

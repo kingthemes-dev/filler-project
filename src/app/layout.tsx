@@ -82,7 +82,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://qvwltjhdjw.cfolks.pl" crossOrigin="" />
         <link rel="dns-prefetch" href="https://qvwltjhdjw.cfolks.pl" />
         {/* Preload hero image for faster LCP - highest priority */}
-        <link rel="preload" as="image" href="/images/hero/home.webp" type="image/webp" fetchPriority="high" />
+        <link rel="preload" as="image" href="/images/hero/home.webp" type="image/webp" fetchPriority="high" imagesrcset="/images/hero/home.webp 1920w" imagesizes="100vw" />
         {/* Preload critical CSS inline */}
         <style dangerouslySetInnerHTML={{__html: `
           .text-white{color:#fff}
