@@ -412,6 +412,7 @@ export default function KingProductCard({
                 alt={product.name}
                 width={300}
                 height={300}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
               />
@@ -445,6 +446,7 @@ export default function KingProductCard({
                 alt={product.name}
                 width={300}
                 height={300}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
               />
@@ -526,6 +528,7 @@ export default function KingProductCard({
                 size="sm"
                 onClick={handleQuickView}
                 className="px-3 h-10 hover:bg-black hover:text-white transition-colors"
+                aria-label="Szybki podgląd"
               >
                 <Eye className="w-4 h-4" />
               </Button>
@@ -534,6 +537,7 @@ export default function KingProductCard({
                 size="sm"
                 onClick={handleToggleFavorite}
                 className={`px-3 h-10 hover:bg-black hover:text-white transition-colors ${isClient && isFavorite(product.id) ? 'text-destructive' : ''}`}
+                aria-label={isClient && isFavorite(product.id) ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
               >
                 <Heart className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current' : ''}`} />
               </Button>
@@ -815,6 +819,7 @@ export default function KingProductCard({
                   handleQuickView();
                 }}
                 className="w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
+                aria-label="Szybki podgląd"
               >
                 <Eye className="w-4 h-4 text-gray-700" />
               </button>
@@ -825,6 +830,7 @@ export default function KingProductCard({
                   handleToggleFavorite();
                 }}
                 className="w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
+                aria-label={isClient && isFavorite(product.id) ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
               >
                 <Heart className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current text-red-500' : 'text-gray-700'}`} />
               </button>

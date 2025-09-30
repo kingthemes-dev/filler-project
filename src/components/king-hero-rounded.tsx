@@ -124,9 +124,9 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
                 <Card className="w-45 md:w-51 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 group-hover:-translate-y-0.5">
                   <CardContent className="px-4 md:px-6 pt-1 pb-1">
                     {/* Product Name */}
-                    <h3 className="text-xs md:text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-3 md:mb-4">
+                    <h2 className="text-xs md:text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-3 md:mb-4">
                       {featuredProduct?.name || 'Produkt'}
-                    </h3>
+                    </h2>
 
                     {/* Product Image */}
                     <div className="relative mb-3 md:mb-4">

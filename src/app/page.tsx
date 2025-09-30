@@ -1,9 +1,12 @@
 import Image from 'next/image';
-import KingProductTabsServer from '@/components/king-product-tabs-server';
+import dynamic from 'next/dynamic';
 import KingHeroRounded from '@/components/king-hero-rounded';
-import NewsletterForm from '@/components/ui/newsletter-form';
 import { Button } from '@/components/ui/button';
 import { Star, TrendingUp, Zap } from 'lucide-react';
+
+// Dynamic imports for below-the-fold components
+const KingProductTabsServer = dynamic(() => import('@/components/king-product-tabs-server'));
+const NewsletterForm = dynamic(() => import('@/components/ui/newsletter-form'));
 
 // ISR - Incremental Static Regeneration
 export const revalidate = 300; // 5 minutes

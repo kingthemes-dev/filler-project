@@ -129,6 +129,7 @@ export default function Header() {
                         <button 
                           className="md:hidden text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
                           onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+                          aria-label="Szukaj produktów"
                         >
                           <Search className="w-6 h-6" />
                         </button>
@@ -139,6 +140,7 @@ export default function Header() {
                             onClick={() => setIsEmailCenterOpen(true)}
                             className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
                             title="Email Notification Center"
+                            aria-label="Centrum powiadomień email"
                           >
                             <Mail className="w-6 h-6" />
                           </button>
@@ -268,6 +270,7 @@ export default function Header() {
                               }}
                               className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
                               data-test="open-login-btn"
+                              aria-label="Zaloguj się"
                             >
                               <User className="w-6 h-6" />
                             </button>
@@ -277,6 +280,7 @@ export default function Header() {
                             className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
                             onClick={openFavoritesModal}
                             title="Ulubione"
+                            aria-label="Ulubione produkty"
                           >
                             <Heart className="w-6 h-6 group-hover:text-red-500 transition-colors" />
                             {isMounted && favoritesCount > 0 && (
@@ -297,6 +301,7 @@ export default function Header() {
                             console.log('🛒 After openCart call');
                           }}
                           title="Koszyk"
+                          aria-label="Koszyk zakupowy"
                         >
                           <ShoppingCart className="w-6 h-6 group-hover:text-green-600 transition-colors" />
                           {itemCount > 0 && (
@@ -310,6 +315,7 @@ export default function Header() {
                         <button
                           className="lg:hidden text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
                           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                          aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
                         >
                           {isMobileMenuOpen ? (
                             <X className="w-6 h-6" />

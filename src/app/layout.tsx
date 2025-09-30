@@ -77,6 +77,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* Preconnect to WordPress for faster API calls */}
         <link rel="preconnect" href="https://qvwltjhdjw.cfolks.pl" crossOrigin="" />
+        {/* Preload critical fonts */}
+        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" as="style" />
+        {/* Preload hero image for faster LCP */}
+        <link rel="preload" as="image" href="/images/hero/home.webp" type="image/webp" />
       </head>
                         <body
                     className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
