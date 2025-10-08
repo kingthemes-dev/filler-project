@@ -537,7 +537,7 @@ export default function KingProductCard({
                 <Button 
                   onClick={handleAddToCartWithVariant}
                   disabled={isLoading || product.stock_status === 'outofstock'}
-                  className="flex-1 h-12 py-6 hover:bg-black hover:text-white transition-colors text-base"
+                  className="flex-1 h-10 py-2 hover:bg-black hover:text-white transition-colors text-sm"
                   size="sm"
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
@@ -967,7 +967,7 @@ export default function KingProductCard({
                 setIsButtonHovered(false);
               }}
               disabled={isLoading || product.stock_status === 'outofstock'}
-              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-xl sm:rounded-2xl py-4 sm:py-6 font-medium text-sm sm:text-base"
+              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-lg py-3 font-medium text-sm"
               size="lg"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />

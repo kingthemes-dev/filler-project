@@ -281,7 +281,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto px-6 py-8 pb-16">
+      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
         {/* Category tabs section */}
         <div className="bg-gray-50 py-8 rounded-3xl">
           <div className="text-center mb-6">
@@ -403,7 +403,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                 ))}
               </div>
             ) : (
-              <div className={`grid gap-4 lg:gap-6 ${viewMode === 'grid' ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} relative`}>
+              <div className={`grid mobile-grid ${viewMode === 'grid' ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} relative`}>
                 {/* PRO: Subtle refreshing indicator */}
                 {refreshing && (
                   <div className="absolute top-0 right-0 z-10 bg-white/80 backdrop-blur-sm rounded-lg p-2">
@@ -420,9 +420,9 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
               </div>
             )}
             
-            {/* PRO: Paginacja */}
-            {!filterLoading && products.length > 0 && totalProducts > productsPerPage && (
-              <div className="flex justify-center items-center space-x-2 py-8">
+        {/* PRO: Paginacja */}
+        {!filterLoading && products.length > 0 && totalProducts > productsPerPage && (
+          <div className="flex justify-center items-center space-x-3 py-6">
                 {/* Poprzednia strona */}
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}

@@ -130,41 +130,41 @@ export default function CartDrawer() {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {items.map((item, index) => (
                     <div
                       key={`${item.id}-${item.variant?.id || 'default'}-${index}`}
-                      className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
+                      className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Product Image */}
-                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0">
                         {item.image ? (
                           <Image
                             src={item.image}
                             alt={item.name}
-                            width={64}
-                            height={64}
+                            width={48}
+                            height={48}
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (
                           <div className="w-full h-full bg-gray-300 rounded-lg flex items-center justify-center">
-                            <ShoppingBag className="w-6 h-6 text-gray-500" />
+                            <ShoppingBag className="w-4 h-4 text-gray-500" />
                           </div>
                         )}
                       </div>
 
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                        <h3 className="text-xs font-medium text-gray-900 leading-tight">
                           {item.name}
                         </h3>
-                        {item.variant && (
+                        {item.variant && item.variant.name !== 'Pojemność' && (
                           <p className="text-xs text-gray-500">
-                            {item.variant.name}: {item.variant.value}
+                            {item.variant.value}
                           </p>
                         )}
-                        <p className="text-sm font-medium text-black mt-1">
+                        <p className="text-xs font-medium text-black mt-0.5">
                           {formatPrice(item.sale_price || item.price)} (netto)
                         </p>
                       </div>
@@ -207,16 +207,6 @@ export default function CartDrawer() {
             {/* Footer - Fixed at bottom */}
             {items.length > 0 && (
               <div className="border-t border-gray-200 p-6 space-y-4 bg-white rounded-bl-2xl" onClick={(e) => e.stopPropagation()}>
-                {/* Free shipping reminder small */}
-                <div className="rounded-lg bg-emerald-50 p-3 border border-emerald-200">
-                  {remainingForFreeShipping > 0 ? (
-                    <p className="text-xs text-emerald-800">
-                      Dodaj za <span className="font-semibold text-emerald-900">{formatPrice(remainingForFreeShipping)}</span>, aby skorzystać z darmowej dostawy.
-                    </p>
-                  ) : (
-                    <p className="text-xs font-medium text-emerald-800">Darmowa dostawa aktywna.</p>
-                  )}
-                </div>
 
                 {/* Total */}
                 <div className="flex items-center justify-between mb-4">

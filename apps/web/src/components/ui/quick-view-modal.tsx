@@ -387,7 +387,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 </div>
 
                 {/* Product Details */}
-                <div className="lg:w-1/2 p-6 overflow-y-auto">
+                <div className="lg:w-1/2 p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
                   <div className="space-y-6">
                     {/* Product Title & Badges */}
                     <div className="space-y-4">
@@ -428,7 +428,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       </div>
                       
                       {/* Badges */}
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 flex-wrap">
                         {isOnSale && (
                           <span className="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
                             -{discountPercentage}%

@@ -12,6 +12,21 @@
 }
 
 @layer base {
+  /* Mobile-first minimal margins */
+  .mobile-container {
+    @apply px-2 sm:px-4 md:px-6 lg:px-8;
+  }
+  
+  /* Mobile product grid - minimal spacing */
+  .mobile-grid {
+    @apply gap-2 sm:gap-4;
+  }
+  
+  /* Mobile compact spacing */
+  .mobile-compact {
+    @apply space-y-2 sm:space-y-4;
+  }
+
   :root {
     --radius: 0.625rem;
     --background: 0 0% 100%;
