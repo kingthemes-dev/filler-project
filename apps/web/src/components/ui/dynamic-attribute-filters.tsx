@@ -133,7 +133,7 @@ export default function DynamicAttributeFilters({
                   const cleanName = (attr.name || attrSlug)
                     .replace(/^pa_/i, '') // Remove pa_ prefix
                     .replace(/_/g, ' ') // Replace underscores with spaces
-                    .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize first letter of each word
+                    .replace(/\b\w/g, (l: string) => l.toUpperCase()); // Capitalize first letter of each word
                   
                   attributesMap[attrSlug] = {
                     name: cleanName,
