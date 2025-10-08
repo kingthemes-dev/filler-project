@@ -875,15 +875,22 @@ export default function KingProductCard({
               {product.attributes.map((attr: { name: string; options: string[] }, attrIndex: number) => {
                 if (!attr.options || !Array.isArray(attr.options)) return null;
                 
-                return attr.options.slice(0, 2).map((option: string, optionIndex: number) => {
+                return attr.options.slice(0, 2).map((option: any, optionIndex: number) => {
                   if (!option) return null;
+                  
+                  // Handle both string and object options
+                  const optionValue = typeof option === 'string' 
+                    ? option 
+                    : (option?.name || option?.slug || String(option?.id || ''));
+                  
+                  if (!optionValue) return null;
                   
                   return (
                     <span
                       key={`${attrIndex}-${optionIndex}`}
                       className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full"
                     >
-                      {option}
+                      {optionValue}
                     </span>
                   );
                 });
