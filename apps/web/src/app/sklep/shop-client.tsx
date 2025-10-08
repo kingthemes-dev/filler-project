@@ -183,7 +183,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     // PRO: Debounce product fetching to prevent excessive API calls
     const timeoutId = setTimeout(() => {
       fetchProducts();
-    }, 500); // 500ms debounce for product fetching
+    }, 200); // 200ms debounce for faster response
     
     return () => clearTimeout(timeoutId);
   }, [filters]); // PRO: Remove fetchProducts from dependencies to prevent infinite loop
@@ -211,6 +211,13 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       // Handle dynamic attribute filters (comma-separated values)
       setFilters(prev => {
         const attributeValues = (value as string).split(',').filter(v => v.trim());
+        console.log('🔧 Attribute filter change:', { key, value, attributeValues });
+        // PRO: If no values, remove the attribute completely
+        if (attributeValues.length === 0) {
+          const newFilters = { ...prev };
+          delete newFilters[key];
+          return newFilters;
+        }
         return { ...prev, [key]: attributeValues };
       });
     } else {

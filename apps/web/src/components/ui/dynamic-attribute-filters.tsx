@@ -30,6 +30,7 @@ export default function DynamicAttributeFilters({
   const [refreshing, setRefreshing] = useState(false); // PRO: Separate state for refreshing
   const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(new Set());
   const [lastFiltersHash, setLastFiltersHash] = useState<string>('');
+  const [attributesCache, setAttributesCache] = useState<Map<string, DynamicFilters['attributes']>>(new Map()); // PRO: Cache for performance
 
   useEffect(() => {
     console.log('🔄 DynamicAttributeFilters useEffect triggered - loading attributes with current filters:', currentFilters);
@@ -45,6 +46,14 @@ export default function DynamicAttributeFilters({
       attributes: Object.keys(selectedFilters).filter(key => key.startsWith('pa_')).sort()
     });
     
+    // PRO: Check cache first for performance
+    if (attributesCache.has(filtersHash)) {
+      console.log('🚀 Using cached attributes for filters:', filtersHash);
+      setAttributes(attributesCache.get(filtersHash)!);
+      setLastFiltersHash(filtersHash);
+      return;
+    }
+    
     // PRO: Only reload if filters actually changed
     if (filtersHash === lastFiltersHash) {
       console.log('🔄 Filters unchanged, skipping reload');
@@ -52,11 +61,11 @@ export default function DynamicAttributeFilters({
     }
     
     // PRO: Immediate load for better UX (no debounce for attributes)
-    loadAttributes();
+    loadAttributes(filtersHash);
     setLastFiltersHash(filtersHash);
   }, [currentFilters, selectedFilters]); // PRO: Also reload when selectedFilters change
 
-  const loadAttributes = async () => {
+  const loadAttributes = async (filtersHash?: string) => {
     try {
       // PRO: Use refreshing for subsequent loads, loading only for initial load
       if (Object.keys(attributes).length > 0) {
@@ -151,9 +160,19 @@ export default function DynamicAttributeFilters({
         
         console.log('📦 Dynamic attributes extracted from products:', attributesMap);
         setAttributes(attributesMap);
+        
+        // PRO: Save to cache for performance
+        if (filtersHash) {
+          setAttributesCache(prev => new Map(prev).set(filtersHash, attributesMap));
+        }
       } else {
         console.log('📦 No products found for current filters');
         setAttributes({});
+        
+        // PRO: Save empty result to cache too
+        if (filtersHash) {
+          setAttributesCache(prev => new Map(prev).set(filtersHash, {}));
+        }
       }
     } catch (error) {
       console.error('❌ Error loading dynamic attributes:', error);
