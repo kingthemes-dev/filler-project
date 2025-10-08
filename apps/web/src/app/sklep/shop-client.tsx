@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { Search, Filter, X, ChevronDown, Grid3X3, List } from 'lucide-react';
 import KingProductCard from '@/components/king-product-card';
-import HierarchicalCategories from '@/components/ui/hierarchical-categories';
 
 // Import filters directly for instant loading
 import ShopFilters from '@/components/ui/shop-filters';
@@ -282,11 +281,6 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Sklep</h1>
             <p className="text-gray-600">Odkryj nasze najlepsze produkty</p>
           </div>
-          <HierarchicalCategories 
-            onCategoryChange={handleCategoryChange}
-            selectedCategory={filters.categories[0]}
-            selectedSubcategory={filters.categories[1]}
-          />
         </div>
         
         <div className="h-6"></div>
