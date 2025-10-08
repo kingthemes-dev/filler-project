@@ -33,6 +33,7 @@ export default function DynamicAttributeFilters({
 
   useEffect(() => {
     console.log('🔄 DynamicAttributeFilters useEffect triggered - loading attributes with current filters:', currentFilters);
+    console.log('🔄 selectedFilters:', selectedFilters);
     
     // PRO: Create hash of current filters to check if we need to reload
     const filtersHash = JSON.stringify({
@@ -53,7 +54,7 @@ export default function DynamicAttributeFilters({
     // PRO: Immediate load for better UX (no debounce for attributes)
     loadAttributes();
     setLastFiltersHash(filtersHash);
-  }, [currentFilters]); // Reload when filters change
+  }, [currentFilters, selectedFilters]); // PRO: Also reload when selectedFilters change
 
   const loadAttributes = async () => {
     try {

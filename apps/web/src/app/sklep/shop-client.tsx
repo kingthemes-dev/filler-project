@@ -186,14 +186,14 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     }, 500); // 500ms debounce for product fetching
     
     return () => clearTimeout(timeoutId);
-  }, [filters, fetchProducts]);
+  }, [filters]); // PRO: Remove fetchProducts from dependencies to prevent infinite loop
 
   // Fetch products when page changes (PRO: Pagination)
   useEffect(() => {
-    if (currentPage > 1) {
+    if (currentPage > 1) { // Only fetch if not initial load (page 1 handled by initial load)
       fetchProducts();
     }
-  }, [currentPage, fetchProducts]);
+  }, [currentPage]); // PRO: Remove fetchProducts from dependencies to prevent infinite loop
 
   const handleFilterChange = (key: string, value: string | number | boolean) => {
     console.log('🔧 handleFilterChange called:', { key, value, type: typeof value });
