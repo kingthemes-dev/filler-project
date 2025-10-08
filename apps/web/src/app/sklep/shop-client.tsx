@@ -259,15 +259,15 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   const clearFilters = () => {
     // PRO: Clear all filters including dynamic attributes
-    const clearedFilters = {
+    const clearedFilters: FilterState = {
       search: '',
       categories: [],
       minPrice: 0,
       maxPrice: 10000,
       inStock: false,
       onSale: false,
-      sortBy: 'date',
-      sortOrder: 'desc'
+      sortBy: 'date' as const,
+      sortOrder: 'desc' as const
     };
     
     setFilters(clearedFilters);
