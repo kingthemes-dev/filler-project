@@ -6,11 +6,13 @@ const WP_BASE_URL = process.env.WP_BASE_URL || process.env.NEXT_PUBLIC_WORDPRESS
 
 export async function GET() {
   try {
-    // PRO Architecture: Use existing /api/woocommerce endpoint instead of direct WooCommerce API
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3002';
+    // PRO Architecture: Call WordPress King Shop API directly (same as /api/woocommerce?endpoint=shop)
+    const shopUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-shop/v1/data?endpoint=shop&per_page=50`;
+    
+    console.log('🏠 Home feed - calling King Shop API:', shopUrl);
     
     // Fetch products using our optimized API
-    const productsResponse = await fetch(`${baseUrl}/api/woocommerce?endpoint=shop&per_page=50`, {
+    const productsResponse = await fetch(shopUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -29,6 +31,11 @@ export async function GET() {
     
     const responseData = await productsResponse.json();
     const products = responseData.products || [];
+    
+    console.log('✅ Home feed data received:', {
+      products: products.length,
+      total: responseData.total || 0
+    });
     
     // Filter out test products (products with empty prices or generic names)
     // PRO: Don't require images - products can have placeholder images
