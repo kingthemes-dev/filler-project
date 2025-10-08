@@ -15,6 +15,7 @@ interface DynamicAttributeFiltersProps {
     minPrice?: number;
     maxPrice?: number;
     attributes?: string[];
+    attributeValues?: Record<string, any>; // PRO: Actual attribute values
   };
 }
 
@@ -49,14 +50,10 @@ export default function DynamicAttributeFilters({
       return;
     }
     
-    // PRO: Debounce to prevent excessive API calls
-    const timeoutId = setTimeout(() => {
-      loadAttributes();
-      setLastFiltersHash(filtersHash);
-    }, 300); // 300ms debounce
-    
-    return () => clearTimeout(timeoutId);
-  }, [currentFilters, lastFiltersHash]); // Reload when filters change
+    // PRO: Immediate load for better UX (no debounce for attributes)
+    loadAttributes();
+    setLastFiltersHash(filtersHash);
+  }, [currentFilters]); // Reload when filters change
 
   const loadAttributes = async () => {
     try {
@@ -88,18 +85,20 @@ export default function DynamicAttributeFilters({
       }
       
       // PRO: Przekaż wszystkie atrybuty dla tree-like recalculation
-      Object.keys(selectedFilters).forEach(key => {
-        if (key.startsWith('pa_') && selectedFilters[key]) {
-          const attributeName = key.replace('pa_', '');
-          const filterValue = selectedFilters[key];
-          const values = Array.isArray(filterValue) 
-            ? filterValue 
-            : [String(filterValue)];
-          values.forEach((value: string) => {
-            params.append(`attribute_${attributeName}`, value);
-          });
-        }
-      });
+      if (currentFilters.attributeValues) {
+        Object.keys(currentFilters.attributeValues).forEach(key => {
+          if (key.startsWith('pa_') && currentFilters.attributeValues![key]) {
+            const attributeName = key.replace('pa_', '');
+            const filterValue = currentFilters.attributeValues![key];
+            const values = Array.isArray(filterValue) 
+              ? filterValue 
+              : [String(filterValue)];
+            values.forEach((value: string) => {
+              params.append(`attribute_${attributeName}`, value);
+            });
+          }
+        });
+      }
       
       const response = await fetch(`/api/woocommerce?${params.toString()}`);
       if (!response.ok) {

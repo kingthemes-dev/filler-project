@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"app/sklep/shop-client.tsx -> @/components/ui/shop-filters\":{\"id\":\"app/sklep/shop-client.tsx -> @/components/ui/shop-filters\",\"files\":[\"static/chunks/_app-pages-browser_src_components_ui_shop-filters_tsx.js\"]}}"

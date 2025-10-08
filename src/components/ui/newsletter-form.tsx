@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, Mail, AlertCircle, Gift, Sparkles } from 'lucide-react';
+import { Check, Mail, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function NewsletterForm() {
   const [email, setEmail] = useState('');
@@ -83,7 +83,7 @@ export default function NewsletterForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Twój adres email"
-                className="w-full pl-12 pr-4 py-4 border-2 border-white/20 rounded-2xl bg-white/95 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-4 focus:ring-purple-500/30 focus:border-purple-300 backdrop-blur-sm text-lg font-medium shadow-xl transition-all duration-300 hover:shadow-2xl"
+                className="w-full pl-12 pr-4 h-14 border-2 border-white/20 rounded-2xl bg-white/95 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-4 focus:ring-purple-500/30 focus:border-purple-300 backdrop-blur-sm text-lg font-medium shadow-xl transition-all duration-300 hover:shadow-2xl"
                 required
               />
             </div>
@@ -97,18 +97,15 @@ export default function NewsletterForm() {
             {isLoading ? (
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <div className="flex items-center space-x-2">
-                <Gift className="w-5 h-5" />
-                <span>Odbierz 10%!</span>
-              </div>
+              <span>Odbierz 10%!</span>
             )}
           </Button>
         </div>
         
         {/* Premium Consent Checkbox */}
-        <div className="flex items-center justify-center">
-          <label className="flex items-start cursor-pointer group max-w-md">
-            <div className="relative mt-1">
+        <div className="flex items-start justify-start">
+          <label className="flex items-start cursor-pointer group w-full">
+            <div className="relative mt-1 flex-shrink-0">
               <input
                 type="checkbox"
                 checked={consent}
@@ -127,16 +124,16 @@ export default function NewsletterForm() {
                 )}
               </div>
             </div>
-            <div className="ml-3 text-white/90">
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="font-semibold">🎁 Otrzymuj oferty i promocje</span>
-                <span className="px-2 py-0.5 bg-white/20 text-white text-xs font-semibold rounded-full">
+            <div className="ml-3 text-white/90 flex-1">
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="font-semibold text-base">Otrzymuj oferty i promocje</span>
+                <span className="px-2 py-1 bg-white/20 text-white text-xs font-semibold rounded-full">
                   +10%
                 </span>
               </div>
-              <p className="text-sm text-white/70">
+              <p className="text-sm text-white/70 leading-relaxed">
                 Możesz zrezygnować w każdej chwili. Zgodnie z naszą{' '}
-                <a href="/polityka-prywatnosci" className="underline hover:text-white font-medium">
+                <a href="/polityka-prywatnosci" className="underline hover:text-white font-medium transition-colors">
                   Polityką Prywatności
                 </a>
               </p>

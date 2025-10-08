@@ -174,7 +174,14 @@ export default function ShopFilters({
                               minPrice: filters.minPrice,
                               maxPrice: filters.maxPrice,
                               // PRO: Include all dynamic attributes for tree-like recalculation
-                              attributes: Object.keys(filters).filter(key => key.startsWith('pa_'))
+                              attributes: Object.keys(filters).filter(key => key.startsWith('pa_')),
+                              // PRO: Pass actual attribute values for better tree-like filtering
+                              attributeValues: Object.keys(filters)
+                                .filter(key => key.startsWith('pa_'))
+                                .reduce((acc, key) => {
+                                  acc[key] = filters[key];
+                                  return acc;
+                                }, {} as Record<string, any>)
                             }}
                           />
                         </motion.div>

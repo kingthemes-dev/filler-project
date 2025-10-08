@@ -338,10 +338,15 @@ class KingShopAPI {
         foreach ($request->get_params() as $param_name => $param_value) {
             if (strpos($param_name, 'attribute_') === 0 && !empty($param_value)) {
                 $attr_name = 'pa_' . str_replace('attribute_', '', $param_name);
+                error_log("King Shop API Debug - Processing attribute filter: {$param_name} = {$param_value} -> {$attr_name}");
                 if (!isset($attribute_filters[$attr_name])) {
                     $attribute_filters[$attr_name] = array();
                 }
-                $attribute_filters[$attr_name][] = sanitize_title($param_value);
+                // PRO: Handle comma-separated values (multiple selections)
+                $values = is_array($param_value) ? $param_value : explode(',', $param_value);
+                foreach ($values as $value) {
+                    $attribute_filters[$attr_name][] = sanitize_title(trim($value));
+                }
             }
         }
         
@@ -351,6 +356,8 @@ class KingShopAPI {
             }
             foreach ($attribute_filters as $attr_name => $attr_values) {
                 if (!empty($attr_values)) {
+                    // Remove duplicates
+                    $attr_values = array_unique($attr_values);
                     $args['tax_query'][] = array(
                         'taxonomy' => $attr_name,
                         'field' => 'slug',

@@ -258,7 +258,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   };
 
   const clearFilters = () => {
-    setFilters({
+    // PRO: Clear all filters including dynamic attributes
+    const clearedFilters = {
       search: '',
       categories: [],
       minPrice: 0,
@@ -267,7 +268,10 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       onSale: false,
       sortBy: 'date',
       sortOrder: 'desc'
-    });
+    };
+    
+    setFilters(clearedFilters);
+    setSearchInput(''); // PRO: Also clear search input
   };
 
   // totalPages is now managed by state

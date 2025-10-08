@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 import { WooShippingMethod } from '@/types/woocommerce';
+import { env } from '@/config/env';
 
 // Redis is optional - will be undefined if not available
 const redis: unknown = undefined;
 
-const WC_URL = process.env.WOOCOMMERCE_API_URL;
+const WC_URL = env.WOOCOMMERCE_API_URL;
 const SITE_BASE = WC_URL ? WC_URL.replace(/\/wp-json\/wc\/v3.*/, '') : '';
-const CK = process.env.WOOCOMMERCE_CONSUMER_KEY;
-const CS = process.env.WOOCOMMERCE_CONSUMER_SECRET;
+const CK = env.WOOCOMMERCE_CONSUMER_KEY;
+const CS = env.WOOCOMMERCE_CONSUMER_SECRET;
 
 // Handle password reset using WordPress REST API
 async function handlePasswordReset(body: { email: string }) {
