@@ -350,16 +350,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                 </button>
               </div>
               
-              {/* Clear button */}
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 sm:py-3 text-sm font-medium text-gray-600 hover:text-black hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-gray-200"
-              >
-                <X className="w-4 h-4" />
-                Wyczyść
-              </button>
-              
-              {/* Mobile filter button */}
+              {/* Mobile filter button - only show on mobile */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="sm:hidden px-4 py-2 sm:py-3 bg-black text-white rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all duration-200 font-medium"
