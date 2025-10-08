@@ -107,8 +107,10 @@ class WooCommerceService {
       if (options?.capacities && options.capacities.length > 0) params.append('capacities', options.capacities.join(','));
       if (options?.brands && options.brands.length > 0) params.append('brands', options.brands.join(','));
       
-      // Use local API route instead of direct call (aggregated response)
-      const response = await fetch(`/api/woocommerce?${params.toString()}`);
+          // Use local API route instead of direct call (aggregated response)
+          // Use absolute URL for server-side calls
+          const baseUrl = typeof window === 'undefined' ? 'http://localhost:3002' : '';
+          const response = await fetch(`${baseUrl}/api/woocommerce?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -610,7 +612,8 @@ class WooCommerceService {
     rating: number;
   }): Promise<{ success: boolean; review?: { id: number; review: string; rating: number; reviewer: string; date_created: string }; error?: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=reviews`, {
+      // PRO: Use dedicated reviews endpoint
+      const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -619,13 +622,27 @@ class WooCommerceService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const review = await response.json();
+      return {
+        success: true,
+        review: {
+          id: review.id,
+          review: review.review,
+          rating: review.rating,
+          reviewer: review.reviewer,
+          date_created: review.date_created
+        }
+      };
     } catch (error) {
       console.error('Error creating product review:', error);
-      throw error;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create review'
+      };
     }
   }
 

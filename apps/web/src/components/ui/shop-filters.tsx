@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import DynamicCategoryFilters from './dynamic-category-filters';
+import DynamicAttributeFilters from './dynamic-attribute-filters';
 
 interface Category {
   id: number;
@@ -14,41 +16,42 @@ interface Category {
 
 interface ShopFiltersProps {
   categories: Category[];
-  capacities: Array<{ id: string; name: string; slug: string }>;
-  brands: Array<{ id: string; name: string; slug: string }>;
   filters: {
     categories: string[];
-    capacities: string[];
-    brands: string[];
+    search: string;
     minPrice: number;
     maxPrice: number;
     inStock: boolean;
     onSale: boolean;
+    [key: string]: string[] | string | number | boolean; // Dynamiczne atrybuty
   };
-  onFilterChange: (key: keyof ShopFiltersProps['filters'], value: string | number | boolean) => void;
+  onFilterChange: (key: string, value: string | number | boolean) => void;
+  onCategoryChange: (categoryId: string, subcategoryId?: string) => void;
   onClearFilters: () => void;
   showFilters: boolean;
   onToggleFilters: () => void;
   totalProducts: number;
   attributesLoading: boolean;
+  wooCommerceCategories?: Array<{ id: number; name: string; slug: string; parent: number; count: number }>;
+  products?: any[]; // Dodaj produkty jako prop
 }
 
 export default function ShopFilters({
   categories,
-  capacities,
-  brands,
   filters,
   onFilterChange,
+  onCategoryChange,
   onClearFilters,
   showFilters,
   onToggleFilters,
   totalProducts,
-  attributesLoading
+  attributesLoading,
+  wooCommerceCategories,
+  products = []
 }: ShopFiltersProps) {
   const [expandedSections, setExpandedSections] = useState({
     categories: true,
-    capacities: true,
-    brands: true,
+    attributes: true,
     price: true,
     availability: true,
   });
@@ -126,164 +129,60 @@ export default function ShopFilters({
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="space-y-2"
                     >
-                      
-                      {categories
-                        .sort((a, b) => {
-                          if (a.name === 'Wszystkie kategorie') return -1;
-                          if (b.name === 'Wszystkie kategorie') return 1;
-                          return a.name.localeCompare(b.name);
-                        })
-                        .map((category) => {
-                          const categoryId = category.name === 'Wszystkie kategorie' ? '' : category.slug;
-                          const isSelected = filters.categories && filters.categories.includes(categoryId);
-                          
-                          return (
-                            <label key={category.id} className="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                              <input
-                                type="checkbox"
-                                name="categories"
-                                value={categoryId}
-                                checked={isSelected}
-                                onChange={() => onFilterChange('categories', categoryId)}
-                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                              />
-                              <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{category.name}</span>
-                              <span className="ml-auto text-xs text-gray-500">({category.count})</span>
-                            </label>
-                          );
-                        })}
+                      <DynamicCategoryFilters
+                        onCategoryChange={onCategoryChange}
+                        selectedCategories={filters.categories}
+                        totalProducts={totalProducts}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
-              {/* Capacities Filter */}
-              <div className="mb-4 sm:mb-6">
-                <button
-                  onClick={() => toggleSection('capacities')}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
-                >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Pojemności</h4>
-                  {expandedSections.capacities ? (
-                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
-                
-                <AnimatePresence>
-                  {expandedSections.capacities && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-2"
+
+
+                  {/* Dynamic Attributes Filter */}
+                  <div className="mb-4 sm:mb-6">
+                    <button
+                      onClick={() => toggleSection('attributes')}
+                      className="flex items-center justify-between w-full mb-3 sm:mb-4"
                     >
-                      {attributesLoading ? (
-                        <div className="space-y-2">
-                          {[...Array(3)].map((_, index) => (
-                            <div key={index} className="flex items-center p-3 rounded-xl">
-                              <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
-                              <div className="ml-3 h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
-                              <div className="ml-auto h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : capacities && capacities.length > 0 ? (
-                        capacities
-                          .sort((a, b) => a.name.localeCompare(b.name))
-                          .map((capacity) => {
-                            const isSelected = filters.capacities && filters.capacities.includes(String(capacity.slug));
-                            
-                            return (
-                              <label key={capacity.id} className="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                <input
-                                  type="checkbox"
-                                name="capacities"
-                                value={String(capacity.slug)}
-                                checked={isSelected}
-                                onChange={() => onFilterChange('capacities', String(capacity.slug))}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                                />
-                                <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{capacity.name}</span>
-                                <span className="ml-auto text-xs text-gray-500">({(capacity as { count?: number }).count || 0})</span>
-                              </label>
-                            );
-                          })
+                      <h4 className="text-sm sm:text-base font-semibold text-gray-900">Atrybuty</h4>
+                      {expandedSections.attributes ? (
+                        <ChevronUp className="w-4 h-4 text-gray-500" />
                       ) : (
-                        <div className="p-3 text-sm text-gray-500">Brak danych o pojemnościach</div>
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
                       )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Brands Filter */}
-              <div className="mb-4 sm:mb-6">
-                <button
-                  onClick={() => toggleSection('brands')}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
-                >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Marki</h4>
-                  {expandedSections.brands ? (
-                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
-                
-                <AnimatePresence>
-                  {expandedSections.brands && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-2"
-                    >
-                      {attributesLoading ? (
-                        <div className="space-y-2">
-                          {[...Array(2)].map((_, index) => (
-                            <div key={index} className="flex items-center p-3 rounded-xl">
-                              <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
-                              <div className="ml-3 h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-                              <div className="ml-auto h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : brands && brands.length > 0 ? (
-                        brands
-                          .sort((a, b) => a.name.localeCompare(b.name))
-                          .map((brand) => {
-                            const isSelected = filters.brands && filters.brands.includes(String(brand.slug));
-                            
-                            return (
-                              <label key={brand.id} className="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                <input
-                                  type="checkbox"
-                                name="brands"
-                                value={String(brand.slug)}
-                                checked={isSelected}
-                                onChange={() => onFilterChange('brands', String(brand.slug))}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                                />
-                                <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{brand.name}</span>
-                                <span className="ml-auto text-xs text-gray-500">({(brand as { count?: number }).count || 0})</span>
-                              </label>
-                            );
-                          })
-                      ) : (
-                        <div className="p-3 text-sm text-gray-500">Brak danych o markach</div>
+                    </button>
+                    
+                    <AnimatePresence>
+                      {expandedSections.attributes && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <DynamicAttributeFilters
+                            onFilterChange={onFilterChange}
+                            selectedFilters={filters}
+                            totalProducts={totalProducts}
+                            currentFilters={{
+                              categories: filters.categories,
+                              search: filters.search as string,
+                              minPrice: filters.minPrice,
+                              maxPrice: filters.maxPrice,
+                              // PRO: Include all dynamic attributes for tree-like recalculation
+                              attributes: Object.keys(filters).filter(key => key.startsWith('pa_'))
+                            }}
+                          />
+                        </motion.div>
                       )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                    </AnimatePresence>
+                  </div>
 
-              {/* Price Range Filter */}
+                  {/* Price Range Filter */}
               <div className="mb-4 sm:mb-6">
                 <button
                   onClick={() => toggleSection('price')}

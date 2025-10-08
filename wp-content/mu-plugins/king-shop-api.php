@@ -103,6 +103,35 @@ class KingShopAPI {
                 )
             )
         ));
+        
+        // Dynamic attributes endpoint - PRO Architecture
+        register_rest_route('king-shop/v1', '/attributes', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_dynamic_attributes'),
+            'permission_callback' => '__return_true',
+            'args' => array(
+                'category' => array(
+                    'required' => false,
+                    'type' => 'string',
+                    'description' => 'Category slug or comma-separated slugs for filtering attributes'
+                ),
+                'search' => array(
+                    'required' => false,
+                    'type' => 'string',
+                    'description' => 'Search term for additional filtering'
+                ),
+                'min_price' => array(
+                    'required' => false,
+                    'type' => 'number',
+                    'description' => 'Minimum price for filtering'
+                ),
+                'max_price' => array(
+                    'required' => false,
+                    'type' => 'number',
+                    'description' => 'Maximum price for filtering'
+                )
+            )
+        ));
     }
     
     /**
@@ -130,7 +159,7 @@ class KingShopAPI {
         $cache_key = 'king_shop_data_' . md5(serialize(array(
             $page, $per_page, $category, $search, $orderby, $order,
             $on_sale, $featured, $min_price, $max_price, $attributes,
-            $capacities, $brands
+            $capacities, $brands, $request->get_params()
         )));
         
         // Try Redis cache first
@@ -161,10 +190,16 @@ class KingShopAPI {
         
         // Add filters
         if ($category) {
-            if (is_numeric($category)) {
-                $args['category'] = array($category);
+            // Handle multiple categories (comma-separated)
+            if (strpos($category, ',') !== false) {
+                $category_slugs = array_filter(array_map('trim', explode(',', $category)));
+                $args['category'] = $category_slugs;
             } else {
-                $args['category'] = array($category);
+                if (is_numeric($category)) {
+                    $args['category'] = array($category);
+                } else {
+                    $args['category'] = array($category);
+                }
             }
         }
         
@@ -272,6 +307,59 @@ class KingShopAPI {
                 );
             }
         }
+
+        // New: pa_* attribute filters (e.g., pa_pojemnosc, pa_marka, pa_zastosowanie)
+        $pa_filters = array();
+        foreach ($request->get_params() as $param_name => $param_value) {
+            if (strpos($param_name, 'pa_') === 0 && !empty($param_value)) {
+                $pa_filters[$param_name] = $param_value;
+            }
+        }
+        
+        if (!empty($pa_filters)) {
+            if (!isset($args['tax_query'])) {
+                $args['tax_query'] = array('relation' => 'AND');
+            }
+            foreach ($pa_filters as $attr_name => $attr_values) {
+                $attr_slugs = array_filter(array_map('sanitize_title', explode(',', (string)$attr_values)));
+                if (!empty($attr_slugs)) {
+                    $args['tax_query'][] = array(
+                        'taxonomy' => $attr_name,
+                        'field' => 'slug',
+                        'terms' => $attr_slugs,
+                        'operator' => 'IN'
+                    );
+                }
+            }
+        }
+        
+        // PRO: attribute_* filters for tree-like recalculation (e.g., attribute_pojemnosc, attribute_marka)
+        $attribute_filters = array();
+        foreach ($request->get_params() as $param_name => $param_value) {
+            if (strpos($param_name, 'attribute_') === 0 && !empty($param_value)) {
+                $attr_name = 'pa_' . str_replace('attribute_', '', $param_name);
+                if (!isset($attribute_filters[$attr_name])) {
+                    $attribute_filters[$attr_name] = array();
+                }
+                $attribute_filters[$attr_name][] = sanitize_title($param_value);
+            }
+        }
+        
+        if (!empty($attribute_filters)) {
+            if (!isset($args['tax_query'])) {
+                $args['tax_query'] = array('relation' => 'AND');
+            }
+            foreach ($attribute_filters as $attr_name => $attr_values) {
+                if (!empty($attr_values)) {
+                    $args['tax_query'][] = array(
+                        'taxonomy' => $attr_name,
+                        'field' => 'slug',
+                        'terms' => $attr_values,
+                        'operator' => 'IN'
+                    );
+                }
+            }
+        }
         
         // Get products with pagination - use WP_Query for better meta_query support
         $wp_query_args = array(
@@ -290,20 +378,33 @@ class KingShopAPI {
             $wp_query_args['s'] = $search;
         }
         
-        // Add category filter
+        // Add category filter - PRO Architecture: Handle multiple categories with OR logic
         if ($category) {
-            if (is_numeric($category)) {
-                $wp_query_args['tax_query'][] = array(
-                    'taxonomy' => 'product_cat',
-                    'field' => 'term_id',
-                    'terms' => array($category),
-                );
-            } else {
+            error_log('King Shop API Debug - Category filter: ' . $category);
+            // Handle multiple categories (comma-separated) - use OR logic
+            if (strpos($category, ',') !== false) {
+                $category_slugs = array_filter(array_map('trim', explode(',', $category)));
+                error_log('King Shop API Debug - Multiple categories: ' . print_r($category_slugs, true));
                 $wp_query_args['tax_query'][] = array(
                     'taxonomy' => 'product_cat',
                     'field' => 'slug',
-                    'terms' => array($category),
+                    'terms' => $category_slugs,
+                    'operator' => 'IN'
                 );
+            } else {
+                if (is_numeric($category)) {
+                    $wp_query_args['tax_query'][] = array(
+                        'taxonomy' => 'product_cat',
+                        'field' => 'term_id',
+                        'terms' => array($category),
+                    );
+                } else {
+                    $wp_query_args['tax_query'][] = array(
+                        'taxonomy' => 'product_cat',
+                        'field' => 'slug',
+                        'terms' => array($category),
+                    );
+                }
             }
         }
         
@@ -316,10 +417,14 @@ class KingShopAPI {
             );
         }
         
-        // Ensure tax_query relation
+        // PRO Architecture: Set proper tax_query relation
+        // Multiple tax_query conditions should use AND relation (different taxonomies)
         if (count($wp_query_args['tax_query']) > 1) {
             $wp_query_args['tax_query']['relation'] = 'AND';
         }
+        
+        // Debug: Log final tax_query structure
+        error_log('King Shop API Debug - Final tax_query: ' . print_r($wp_query_args['tax_query'], true));
         
         $wp_query = new WP_Query($wp_query_args);
         $product_ids = array();
@@ -603,6 +708,162 @@ class KingShopAPI {
         } catch (Exception $e) {
             return false;
         }
+    }
+    
+    /**
+     * Get dynamic attributes based on current filters - PRO Architecture
+     */
+    public function get_dynamic_attributes($request) {
+        $category = $request->get_param('category');
+        $search = $request->get_param('search');
+        $min_price = $request->get_param('min_price');
+        $max_price = $request->get_param('max_price');
+        
+        // Create cache key for attributes
+        $cache_key = 'king_attributes_' . md5(serialize(array(
+            $category, $search, $min_price, $max_price
+        )));
+        
+        // TEMPORARY: Skip cache to debug
+        // TODO: Re-enable cache after fixing the issue
+        
+        // Build query to get products that match current filters
+        $wp_query_args = array(
+            'post_type' => 'product',
+            'post_status' => 'publish',
+            'posts_per_page' => -1, // Get all products to count attributes
+            'meta_query' => array(),
+            'tax_query' => array()
+        );
+        
+        // Add search
+        if ($search) {
+            $wp_query_args['s'] = $search;
+        }
+        
+        // Add category filter
+        if ($category) {
+            if (strpos($category, ',') !== false) {
+                $category_slugs = array_filter(array_map('trim', explode(',', $category)));
+                $wp_query_args['tax_query'][] = array(
+                    'taxonomy' => 'product_cat',
+                    'field' => 'slug',
+                    'terms' => $category_slugs,
+                    'operator' => 'IN'
+                );
+            } else {
+                if (is_numeric($category)) {
+                    $wp_query_args['tax_query'][] = array(
+                        'taxonomy' => 'product_cat',
+                        'field' => 'term_id',
+                        'terms' => array($category),
+                    );
+                } else {
+                    $wp_query_args['tax_query'][] = array(
+                        'taxonomy' => 'product_cat',
+                        'field' => 'slug',
+                        'terms' => array($category),
+                    );
+                }
+            }
+        }
+        
+        // Add price filters
+        if ($min_price !== null && $min_price !== '') {
+            $wp_query_args['meta_query'][] = array(
+                'key' => '_price',
+                'value' => (float) $min_price,
+                'compare' => '>=',
+                'type' => 'NUMERIC',
+            );
+        }
+        if ($max_price !== null && $max_price !== '') {
+            $wp_query_args['meta_query'][] = array(
+                'key' => '_price',
+                'value' => (float) $max_price,
+                'compare' => '<=',
+                'type' => 'NUMERIC',
+            );
+        }
+        
+        // Set tax_query relation
+        if (count($wp_query_args['tax_query']) > 1) {
+            $wp_query_args['tax_query']['relation'] = 'AND';
+        }
+        
+        $wp_query = new WP_Query($wp_query_args);
+        $product_ids = array();
+        
+        if ($wp_query->have_posts()) {
+            while ($wp_query->have_posts()) {
+                $wp_query->the_post();
+                $product_ids[] = get_the_ID();
+            }
+            wp_reset_postdata();
+        }
+        
+        // Get all product attributes
+        $attributes = array();
+        
+        if (!empty($product_ids)) {
+            // Get all attribute taxonomies
+            $attribute_taxonomies = wc_get_attribute_taxonomies();
+            
+            foreach ($attribute_taxonomies as $attribute) {
+                $taxonomy = 'pa_' . $attribute->attribute_name;
+                
+                // Get terms for this attribute that are used by filtered products
+                $terms = wp_get_object_terms($product_ids, $taxonomy, array(
+                    'hide_empty' => true
+                ));
+                
+                if (!is_wp_error($terms) && !empty($terms)) {
+                    $attribute_data = array(
+                        'id' => $attribute->attribute_id,
+                        'name' => $attribute->attribute_label,
+                        'slug' => $attribute->attribute_name,
+                        'type' => $attribute->attribute_type,
+                        'order_by' => $attribute->attribute_orderby,
+                        'has_archives' => $attribute->attribute_public,
+                        'terms' => array()
+                    );
+                    
+                    foreach ($terms as $term) {
+                        // Count how many products have this term
+                        $count = 0;
+                        foreach ($product_ids as $product_id) {
+                            if (has_term($term->term_id, $taxonomy, $product_id)) {
+                                $count++;
+                            }
+                        }
+                        
+                        if ($count > 0) {
+                            $attribute_data['terms'][] = array(
+                                'id' => $term->term_id,
+                                'name' => $term->name,
+                                'slug' => $term->slug,
+                                'count' => $count
+                            );
+                        }
+                    }
+                    
+                    if (!empty($attribute_data['terms'])) {
+                        $attributes[$attribute->attribute_name] = $attribute_data;
+                    }
+                }
+            }
+        }
+        
+        $response_data = array(
+            'success' => true,
+            'attributes' => $attributes,
+            'total_products' => count($product_ids)
+        );
+        
+        // TEMPORARY: Skip cache to debug
+        // TODO: Re-enable cache after fixing the issue
+        
+        return new WP_REST_Response($response_data, 200);
     }
     
     /**

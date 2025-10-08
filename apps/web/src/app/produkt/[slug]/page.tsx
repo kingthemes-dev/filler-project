@@ -114,7 +114,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           sale_price: productData.sale_price || '0',
           description: productData.description || 'Brak opisu produktu.',
           short_description: productData.short_description || '',
-          images: productData.images?.map((img: { src: string }) => ({ src: img.src })) || [
+          images: productData.images?.map((img: { src: string }) => ({ src: img.src })).filter((img: { src: string }) => img.src && img.src.trim() !== '') || [
             { src: '/images/placeholder-product.jpg' }
           ],
 
@@ -278,26 +278,38 @@ export default function ProductPage({ params }: ProductPageProps) {
                         : 'hover:shadow-md hover:scale-105'
                     }`}
                   >
-                    <Image
-                      src={image.src}
-                      alt={`${product.name} ${index + 1}`}
-                      width={100}
-                      height={100}
-                      className="w-full h-full object-cover"
-                    />
+                    {image.src ? (
+                      <Image
+                        src={image.src}
+                        alt={`${product.name} ${index + 1}`}
+                        width={100}
+                        height={100}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-xs text-gray-500">?</span>
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
               
               {/* Main Image */}
               <div className="flex-1 aspect-square bg-white rounded-lg overflow-hidden shadow-sm relative">
-                <Image
-                  src={product.images[activeImageIndex]?.src}
-                  alt={product.name}
-                  width={500}
-                  height={500}
-                  className="w-full h-full object-cover"
-                />
+                {product.images[activeImageIndex]?.src ? (
+                  <Image
+                    src={product.images[activeImageIndex].src}
+                    alt={product.name}
+                    width={500}
+                    height={500}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500">Brak obrazka</span>
+                  </div>
+                )}
                 
                 {/* Brand Overlay */}
                 {product.attributes && product.attributes.some((attr: { name: string }) => attr.name.toLowerCase().includes('marka')) && (

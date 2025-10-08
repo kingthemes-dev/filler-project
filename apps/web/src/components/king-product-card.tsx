@@ -363,6 +363,27 @@ export default function KingProductCard({
     return typeof first === 'string' ? first : (first as any)?.name || (first as any)?.slug || String(first);
   };
 
+  // Helper function to get main category (parent: 0)
+  const getMainCategory = (): string | null => {
+    const cats = (product as { categories?: Array<{ name: string }> }).categories;
+    if (!cats || cats.length === 0) return null;
+    
+    // Main categories (parent: 0) are: Mezoterapia, Peelingi, Stymulatory, Wypełniacze
+    const mainCategories = ['Mezoterapia', 'Peelingi', 'Stymulatory', 'Wypełniacze'];
+    
+    // Find the first main category in the product's categories
+    const main = cats.find((c) => {
+      const categoryName = typeof c === 'string' ? c : c?.name;
+      return categoryName && mainCategories.includes(categoryName);
+    });
+    
+    if (main) {
+      return typeof main === 'string' ? main : main?.name;
+    }
+    
+    return null;
+  };
+
   const renderPrice = () => {
     if (isOnSale) {
       return (
@@ -842,27 +863,7 @@ export default function KingProductCard({
         
         <CardContent className="px-3 sm:px-4 py-2 flex-grow">
           <div className="text-xs sm:text-sm text-gray-500 mb-2 flex items-center">
-            {(() => {
-              const cats = (product as { categories?: Array<{ name: string }> }).categories;
-              
-              if (!cats || cats.length === 0) {
-                return 'Bez kategorii';
-              }
-              
-              // Handle both string arrays and object arrays
-              const main = cats.find((c) => {
-                const categoryName = typeof c === 'string' ? c : c?.name;
-                return categoryName && categoryName !== 'Wszystkie kategorie' && categoryName !== 'Wszystkie';
-              });
-              
-              if (main) {
-                return typeof main === 'string' ? main : main?.name;
-              }
-              
-              // Fallback to first category
-              const firstCat = cats[0];
-              return typeof firstCat === 'string' ? firstCat : firstCat?.name || 'Bez kategorii';
-            })()}
+            {getMainCategory() || 'Bez kategorii'}
             {getBrand() && (
               <>
                 <div className="w-1 h-1 bg-gray-300 rounded-full mx-2"></div>

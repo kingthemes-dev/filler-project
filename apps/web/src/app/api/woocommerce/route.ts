@@ -622,22 +622,9 @@ async function handleOrderCreation(body: any) {
   }
 }
 
-// Handle shop endpoint - use optimized API and aggregate shop sidebar data
-async function handleShopEndpoint(req: NextRequest) {
+// Handle attributes endpoint - PRO Architecture: Dynamic attributes based on filters
+async function handleAttributesEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const page = searchParams.get("page") || "1";
-  const perPage = searchParams.get("per_page") || "12";
-  const category = searchParams.get("category") || "";
-  const search = searchParams.get("search") || "";
-  const orderby = searchParams.get("orderby") || "date";
-  const order = searchParams.get("order") || "desc";
-  const onSale = searchParams.get("on_sale") === "true";
-  const featured = searchParams.get("featured") === "true";
-  const minPrice = searchParams.get("min_price") || "";
-  const maxPrice = searchParams.get("max_price") || "";
-  const capacities = searchParams.get("capacities") || ""; // comma-separated
-  const brands = searchParams.get("brands") || ""; // comma-separated
-  const bypassCache = searchParams.get("cache") === "off";
   
   if (!WC_URL || !CK || !CS) {
     return NextResponse.json(
@@ -647,8 +634,66 @@ async function handleShopEndpoint(req: NextRequest) {
   }
 
   try {
-    // Use new King Shop API - everything in one request
-    const shopUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-shop/v1/data?page=${page}&per_page=${perPage}${category ? `&category=${category}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}&orderby=${orderby}&order=${order}${onSale ? '&on_sale=true' : ''}${featured ? '&featured=true' : ''}${minPrice ? `&min_price=${minPrice}` : ''}${maxPrice ? `&max_price=${maxPrice}` : ''}${capacities ? `&capacities=${encodeURIComponent(capacities)}` : ''}${brands ? `&brands=${encodeURIComponent(brands)}` : ''}${bypassCache ? '&cache=off' : ''}`;
+    // PRO Architecture: WordPress robi całe filtrowanie atrybutów
+    const attributesUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-shop/v1/attributes?${searchParams.toString()}`;
+    
+    console.log('🏷️ Attributes endpoint - calling King Shop API:', attributesUrl);
+    
+    const response = await fetch(attributesUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Filler-Store/1.0'
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    console.log('✅ Attributes data received from WordPress:', {
+      attributes: data.attributes ? Object.keys(data.attributes).length : 0,
+      total_products: data.total_products || 0
+    });
+
+    // WordPress zrobił całe filtrowanie - zwracamy dane jak są
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=300",
+        "X-Cache": "MISS",
+      },
+    });
+
+  } catch (error) {
+    console.error('❌ Attributes endpoint error:', error);
+    return NextResponse.json(
+      { error: 'Nie udało się pobrać atrybutów', details: error instanceof Error ? error.message : 'Nieznany błąd' },
+      { status: 500 }
+    );
+  }
+}
+
+// Handle shop endpoint - PRO Architecture: WordPress robi całe filtrowanie
+async function handleShopEndpoint(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  
+  if (!WC_URL || !CK || !CS) {
+    return NextResponse.json(
+      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    // PRO Architecture: WordPress robi całe filtrowanie
+    // Next.js tylko przekazuje parametry i cache'uje odpowiedź
+    const shopUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-shop/v1/data?${searchParams.toString()}`;
     
     console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
     
@@ -668,14 +713,14 @@ async function handleShopEndpoint(req: NextRequest) {
 
     const data = await response.json();
     
-    console.log('✅ Shop data received:', {
+    console.log('✅ Shop data received from WordPress:', {
       products: data.products?.length || 0,
       total: data.total,
       categories: data.categories?.length || 0,
-      capacities: data.attributes?.capacities?.length || 0,
-      brands: data.attributes?.brands?.length || 0
+      attributes: data.attributes ? Object.keys(data.attributes).length : 0
     });
 
+    // WordPress zrobił całe filtrowanie - zwracamy dane jak są
     return NextResponse.json(data, {
       status: 200,
       headers: {
@@ -1100,6 +1145,11 @@ export async function GET(req: NextRequest) {
   // Special handling for coupons
   if (endpoint === "coupons") {
     return handleCoupons(req);
+  }
+  
+  // Special handling for attributes endpoint - PRO Architecture
+  if (endpoint === "attributes") {
+    return handleAttributesEndpoint(req);
   }
   
   // Special handling for shop endpoint - use new King Shop API

@@ -26,10 +26,10 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
       try {
         setLoading(true);
         let products: WooProduct[] = [];
+        // PRO: Don't require images - products can have placeholder images
         const isValid = (p: any) => (
           p && p.price && String(p.price).trim() !== '' &&
-          p.name && p.name !== 'Produkt' &&
-          Array.isArray(p.images) && p.images.length > 0
+          p.name && p.name !== 'Produkt'
         );
 
         // PERFORMANCE FIX: Batch fetch multiple products in single API call
@@ -72,37 +72,49 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
           }
         }
 
-        // Priority 3: Fallback to category products
+        // Priority 3: Fallback to category products - PRO Architecture
         if (products.length < limit && categoryId) {
-          console.log('📂 Fetching category products as fallback');
-          const categoryProducts = await wooCommerceService.getProducts({
-            category: categoryId.toString(),
-            per_page: limit - products.length + 1,
-            orderby: 'date',
-            order: 'desc'
-          });
-
-          if (categoryProducts && categoryProducts.data) {
-            const filtered = categoryProducts.data
-              .filter((product: WooProduct) => product.id !== productId && isValid(product))
-              .slice(0, limit - products.length);
-            products = [...products, ...filtered];
+          console.log('📂 Fetching category products as fallback from PRO API');
+          try {
+            const categoryResponse = await fetch(
+              `/api/woocommerce?endpoint=shop&category=${categoryId}&per_page=${limit - products.length + 1}&orderby=date&order=desc&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes`
+            );
+            
+            if (categoryResponse.ok) {
+              const categoryData = await categoryResponse.json();
+              if (categoryData.success && categoryData.products) {
+                const filtered = categoryData.products
+                  .filter((product: WooProduct) => product.id !== productId && isValid(product))
+                  .slice(0, limit - products.length);
+                products = [...products, ...filtered];
+                console.log('✅ Category fallback successful:', filtered.length, 'products');
+              }
+            }
+          } catch (error) {
+            console.error('❌ Category fallback error:', error);
           }
         }
 
-        // Priority 4: Final fallback to latest store products
+        // Priority 4: Final fallback to latest store products - PRO Architecture
         if (products.length < limit) {
-          console.log('🧯 Fetching latest products as final fallback');
-          const latest = await wooCommerceService.getProducts({
-            per_page: limit - products.length + 2,
-            orderby: 'date',
-            order: 'desc'
-          });
-          if (latest && latest.data) {
-            const filtered = latest.data
-              .filter((p: WooProduct) => p.id !== productId && isValid(p))
-              .slice(0, limit - products.length);
-            products = [...products, ...filtered];
+          console.log('🧯 Fetching latest products as final fallback from PRO API');
+          try {
+            const latestResponse = await fetch(
+              `/api/woocommerce?endpoint=shop&per_page=${limit - products.length + 2}&orderby=date&order=desc&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes`
+            );
+            
+            if (latestResponse.ok) {
+              const latestData = await latestResponse.json();
+              if (latestData.success && latestData.products) {
+                const filtered = latestData.products
+                  .filter((p: WooProduct) => p.id !== productId && isValid(p))
+                  .slice(0, limit - products.length);
+                products = [...products, ...filtered];
+                console.log('✅ Latest fallback successful:', filtered.length, 'products');
+              }
+            }
+          } catch (error) {
+            console.error('❌ Latest fallback error:', error);
           }
         }
 
@@ -180,8 +192,11 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
           className="text-center mb-12"
         >
           <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-            Produkty często kupowane razem
+            Produkty podobne
           </h2>
+          <p className="text-gray-600 text-lg">
+            Klienci, którzy oglądali ten produkt, oglądali również
+          </p>
         </motion.div>
 
         {/* Products Grid */}

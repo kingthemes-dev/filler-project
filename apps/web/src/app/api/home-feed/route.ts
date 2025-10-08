@@ -6,12 +6,11 @@ const WP_BASE_URL = process.env.WP_BASE_URL || process.env.NEXT_PUBLIC_WORDPRESS
 
 export async function GET() {
   try {
-    // Use standard WooCommerce API instead of custom endpoint
-    const baseUrl = `${WP_BASE_URL}/wp-json/wc/v3`;
-    const auth = `consumer_key=${process.env.WOOCOMMERCE_CONSUMER_KEY}&consumer_secret=${process.env.WOOCOMMERCE_CONSUMER_SECRET}`;
+    // PRO Architecture: Use existing /api/woocommerce endpoint instead of direct WooCommerce API
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3002';
     
-    // Fetch all products with basic fields
-    const productsResponse = await fetch(`${baseUrl}/products?${auth}&per_page=50&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,categories,stock_status,date_created,type,variations`, {
+    // Fetch products using our optimized API
+    const productsResponse = await fetch(`${baseUrl}/api/woocommerce?endpoint=shop&per_page=50`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -24,30 +23,18 @@ export async function GET() {
       }
     });
 
-    const raw = await productsResponse.text();
     if (!productsResponse.ok) {
-      throw new Error(`WooCommerce API error: ${productsResponse.status} ${raw.slice(0,120)}`);
-    }
-    let products: any[] = [];
-    try { products = raw ? JSON.parse(raw) : []; } catch (e) {
-      console.warn('Home feed: non-JSON from WooCommerce, returning empty feed. Snippet:', raw.slice(0, 200));
-      return NextResponse.json(
-        { nowosci: [], promocje: [], polecane: [], bestsellery: [] },
-        {
-          status: 200,
-          headers: {
-            'Cache-Control': 'no-store',
-            'X-Feed-Fallback': 'non-json-from-wp'
-          }
-        }
-      );
+      throw new Error(`API error: ${productsResponse.status}`);
     }
     
+    const responseData = await productsResponse.json();
+    const products = responseData.products || [];
+    
     // Filter out test products (products with empty prices or generic names)
+    // PRO: Don't require images - products can have placeholder images
     const validProducts = products.filter((p: any) => 
       p.price && p.price !== '' && 
-      p.name && p.name !== 'Produkt' && 
-      p.images && p.images.length > 0
+      p.name && p.name !== 'Produkt'
     );
 
     // Sort products by date (newest first)
