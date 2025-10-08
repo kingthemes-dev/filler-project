@@ -129,8 +129,14 @@ export default function DynamicAttributeFilters({
               const attrSlug = attr.slug?.replace('pa_', '') || attr.name?.toLowerCase().replace(/\s+/g, '-');
               if (attrSlug && attr.options && Array.isArray(attr.options)) {
                 if (!attributesMap[attrSlug]) {
+                  // PRO: Clean attribute name - remove pa_ prefix and format nicely
+                  const cleanName = (attr.name || attrSlug)
+                    .replace(/^pa_/i, '') // Remove pa_ prefix
+                    .replace(/_/g, ' ') // Replace underscores with spaces
+                    .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize first letter of each word
+                  
                   attributesMap[attrSlug] = {
-                    name: attr.name || attrSlug,
+                    name: cleanName,
                     slug: attrSlug,
                     terms: []
                   };
