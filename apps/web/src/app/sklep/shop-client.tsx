@@ -2,14 +2,11 @@
 
 import { useState, useEffect, useCallback, memo } from 'react';
 import { Search, Filter, X, ChevronDown, Grid3X3, List } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import KingProductCard from '@/components/king-product-card';
 import HierarchicalCategories from '@/components/ui/hierarchical-categories';
 
-// Lazy load heavy components
-const ShopFilters = dynamic(() => import('@/components/ui/shop-filters'), {
-  loading: () => <div className="animate-pulse bg-gray-200 rounded-2xl h-96"></div>
-});
+// Import filters directly for instant loading
+import ShopFilters from '@/components/ui/shop-filters';
 import { wooCommerceOptimized as wooCommerceService } from '@/services/woocommerce-optimized';
 
 import { WooProduct } from '@/types/woocommerce';
