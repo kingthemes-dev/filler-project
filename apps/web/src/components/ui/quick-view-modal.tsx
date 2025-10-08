@@ -359,29 +359,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                         </Badge>
                       )}
 
-                      {/* Brand Overlay */}
-                      {product.attributes && product.attributes.some((attr: { name: string }) => attr.name.toLowerCase().includes('marka')) && (
-                        <div className="absolute top-4 right-4">
-                          {product.attributes
-                            .filter((attr: { name: string }) => attr.name.toLowerCase().includes('marka'))
-                            .map((attr: { options: any[] }) => 
-                              attr.options.map((option: any, index: number) => {
-                                const label = typeof option === 'string' 
-                                  ? option 
-                                  : (option?.name || option?.slug || String(option?.id || ''));
-                                if (!label) return null;
-                                return (
-                                <span
-                                  key={index}
-                                  className="px-3 py-1 bg-white/90 backdrop-blur-sm text-gray-800 text-sm font-medium rounded-full border border-gray-200 shadow-sm"
-                                >
-                                  {label}
-                                </span>
-                                );
-                              })
-                            )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -458,6 +435,31 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           </span>
                         )}
                       </div>
+                      
+                      {/* AUTO: Product Attributes - All attributes in gray badges */}
+                      {product.attributes && product.attributes.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {product.attributes.map((attr: any, attrIndex: number) => {
+                            if (!attr.options || !Array.isArray(attr.options)) return null;
+                            
+                            return attr.options.map((option: any, optionIndex: number) => {
+                              const value = typeof option === 'string' 
+                                ? option 
+                                : (option?.name || option?.slug || String(option?.id || ''));
+                              if (!value) return null;
+                              
+                              return (
+                                <span
+                                  key={`${attrIndex}-${optionIndex}`}
+                                  className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full"
+                                >
+                                  {value}
+                                </span>
+                              );
+                            });
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {/* Product Attributes & Variants */}

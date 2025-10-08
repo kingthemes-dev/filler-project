@@ -311,23 +311,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                   </div>
                 )}
                 
-                {/* Brand Overlay */}
-                {product.attributes && product.attributes.some((attr: { name: string }) => attr.name.toLowerCase().includes('marka')) && (
-                  <div className="absolute top-4 right-4">
-                    {product.attributes
-                      .filter((attr: { name: string }) => attr.name.toLowerCase().includes('marka'))
-                      .map((attr: { options: string[] }) => 
-                        attr.options.map((option: string, index: number) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-white/90 backdrop-blur-sm text-gray-800 text-sm font-medium rounded-full border border-gray-200 shadow-sm"
-                          >
-                            {option}
-                          </span>
-                        ))
-                      )}
-                  </div>
-                )}
               </div>
             </motion.div>
 
@@ -407,80 +390,32 @@ export default function ProductPage({ params }: ProductPageProps) {
                     </span>
                   )}
                 </div>
+                
+                {/* AUTO: Product Attributes - All attributes in gray badges */}
+                {product.attributes && product.attributes.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {product.attributes.map((attr: { name: string; options: string[] }, attrIndex: number) => {
+                      if (!attr.options || !Array.isArray(attr.options)) return null;
+                      
+                      return attr.options.map((option: string, optionIndex: number) => {
+                        if (!option) return null;
+                        
+                        return (
+                          <span
+                            key={`${attrIndex}-${optionIndex}`}
+                            className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full"
+                          >
+                            {option}
+                          </span>
+                        );
+                      });
+                    })}
+                  </div>
+                )}
               </div>
 
 
 
-              {/* Product Attributes */}
-              {product.attributes && product.attributes.length > 0 && (
-                <div className="space-y-4">
-                  {product.attributes.map((attr: { name: string; options: string[] }, index: number) => {
-                    const isCapacity = attr.name.toLowerCase().includes('pojemność');
-                    const isBrand = attr.name.toLowerCase().includes('marka');
-                    
-                    return (
-                      <div key={index}>
-                        {!isBrand && (
-                          // Only show non-brand attributes
-                          <>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center space-x-2">
-                              {isCapacity && variations.length === 0 && (
-                                <Droplets className="w-6 h-6 text-gray-500" />
-                              )}
-                              <span>{isCapacity && variations.length === 0 ? attr.options[0] : `${attr.name}: ${attr.options[0]}`}</span>
-                            </h3>
-                            {/* Capacity as selectable buttons or other attributes as badges */}
-                            {isCapacity && variations.length > 0 ? (
-                              <div className="flex flex-wrap gap-3">
-                                {getSortedCapacityOptions().map((option: string, optionIndex: number) => {
-                                  // Use real prices from variations
-                                  const variantPrice = getVariationPrice(option);
-                                  const isSelected = selectedCapacity === option;
-                                  
-                                  return (
-                                    <button
-                                      key={optionIndex}
-                                      onClick={() => {
-                                        console.log('🔘 Selecting capacity:', option);
-                                        setSelectedCapacity(option);
-                                      }}
-                                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                        isSelected
-                                          ? 'bg-black text-white border-2 border-black'
-                                          : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                      }`}
-                                    >
-                                      <div className="text-center">
-                                        <div className="font-semibold">{option}</div>
-                                        <div className={`text-xs mt-1 ${
-                                          isSelected ? 'text-gray-200' : 'text-gray-500'
-                                        }`}>
-                                          {formatPrice(variantPrice)}
-                                        </div>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            ) : !isCapacity && (
-                              <div className="flex flex-wrap gap-3">
-                                {attr.options.map((option: string, optionIndex: number) => (
-                                  <span
-                                    key={optionIndex}
-                                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
-                                  >
-                                    {option}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
 
               {/* Price - only show if no capacity variants */}
               {variations.length === 0 && (
