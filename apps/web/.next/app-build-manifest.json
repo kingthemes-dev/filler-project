@@ -25,6 +25,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/home-feed/route.js"
+    ],
+    "/api/woocommerce/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/woocommerce/route.js"
     ]
   }
 }
