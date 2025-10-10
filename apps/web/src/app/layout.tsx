@@ -26,9 +26,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FILLER - Profesjonalne kosmetyki i urządzenia",
-  description: "Sklep z profesjonalnymi kosmetykami koreańskimi, mezoterapią, nićmi, peelingami, stymulatorami, urządzeniami i wypełniaczami. Najwyższa jakość w najlepszych cenach.",
-  keywords: ["kosmetyki koreańskie", "mezoterapia", "nici", "peelingi", "stymulatory", "urządzenia", "wypełniacz", "kosmetyki profesjonalne"],
+  title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+  description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny. Sprawdź nas.",
+  keywords: ["hurtownia medycyny estetycznej", "produkty medycyny estetycznej", "filler", "kosmetyki profesjonalne", "mezoterapia", "nici", "peelingi", "stymulatory", "urządzenia", "wypełniacz"],
   authors: [{ name: "FILLER Team" }],
   creator: "FILLER",
   publisher: "FILLER",
@@ -39,15 +39,15 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_WORDPRESS_URL || 'http://localhost:3001'),
   openGraph: {
-    title: "FILLER - Profesjonalne kosmetyki i urządzenia",
-    description: "Sklep z profesjonalnymi kosmetykami koreańskimi, mezoterapią, nićmi, peelingami, stymulatorami, urządzeniami i wypełniaczami.",
+    title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+    description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny. Sprawdź nas.",
     type: "website",
     locale: "pl_PL",
   },
   twitter: {
     card: "summary_large_image",
-    title: "FILLER - Profesjonalne kosmetyki i urządzenia",
-    description: "Sklep z profesjonalnymi kosmetykami koreańskimi, mezoterapią, nićmi, peelingami, stymulatorami, urządzeniami i wypełniaczami.",
+    title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+    description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny. Sprawdź nas.",
   },
   robots: {
     index: true,
