@@ -210,7 +210,16 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     } else if (key.startsWith('pa_')) {
       // Handle dynamic attribute filters (comma-separated values)
       setFilters(prev => {
-        const attributeValues = (value as string).split(',').filter(v => v.trim());
+        // Handle both string (comma-separated) and array values
+        let attributeValues: string[];
+        if (typeof value === 'string') {
+          attributeValues = value.split(',').filter(v => v.trim());
+        } else if (Array.isArray(value)) {
+          attributeValues = value;
+        } else {
+          attributeValues = [String(value)];
+        }
+        
         console.log('🔧 Attribute filter change:', { key, value, attributeValues });
         // PRO: If no values, remove the attribute completely
         if (attributeValues.length === 0) {

@@ -217,7 +217,15 @@ export default function DynamicAttributeFilters({
   const isAttributeExpanded = (attributeSlug: string) => expandedAttributes.has(attributeSlug);
   const isTermSelected = (attributeSlug: string, termSlug: string) => {
     const filterValue = selectedFilters[`pa_${attributeSlug}`];
-    const terms = Array.isArray(filterValue) ? filterValue : [];
+    let terms: string[] = [];
+    
+    if (Array.isArray(filterValue)) {
+      terms = filterValue;
+    } else if (typeof filterValue === 'string') {
+      terms = filterValue.split(',').filter(v => v.trim());
+    }
+    
+    console.log('🔍 isTermSelected check:', { attributeSlug, termSlug, filterValue, terms, result: terms.includes(termSlug) });
     return terms.includes(termSlug);
   };
 
