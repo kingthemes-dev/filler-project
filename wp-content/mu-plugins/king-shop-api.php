@@ -793,6 +793,38 @@ class KingShopAPI {
             );
         }
         
+        // PRO: Add attribute_* filters for tree-like recalculation
+        $attribute_filters = array();
+        foreach ($request->get_params() as $param_name => $param_value) {
+            if (strpos($param_name, 'attribute_') === 0 && !empty($param_value)) {
+                $attr_name = 'pa_' . str_replace('attribute_', '', $param_name);
+                error_log("King Attributes API Debug - Processing attribute filter: {$param_name} = {$param_value} -> {$attr_name}");
+                if (!isset($attribute_filters[$attr_name])) {
+                    $attribute_filters[$attr_name] = array();
+                }
+                // Handle comma-separated values (multiple selections)
+                $values = is_array($param_value) ? $param_value : explode(',', $param_value);
+                foreach ($values as $value) {
+                    $attribute_filters[$attr_name][] = sanitize_title(trim($value));
+                }
+            }
+        }
+        
+        if (!empty($attribute_filters)) {
+            foreach ($attribute_filters as $attr_name => $attr_values) {
+                if (!empty($attr_values)) {
+                    // Remove duplicates
+                    $attr_values = array_unique($attr_values);
+                    $wp_query_args['tax_query'][] = array(
+                        'taxonomy' => $attr_name,
+                        'field' => 'slug',
+                        'terms' => $attr_values,
+                        'operator' => 'IN'
+                    );
+                }
+            }
+        }
+        
         // Set tax_query relation
         if (count($wp_query_args['tax_query']) > 1) {
             $wp_query_args['tax_query']['relation'] = 'AND';

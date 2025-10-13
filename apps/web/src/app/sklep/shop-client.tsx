@@ -242,30 +242,53 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const handleCategoryChange = (categoryId: string, subcategoryId?: string) => {
     console.log('🔧 handleCategoryChange called:', { categoryId, subcategoryId });
     setFilters(prev => {
-      // Użyj subcategoryId jeśli jest dostępne, w przeciwnym razie categoryId
-      const finalCategoryId = subcategoryId || categoryId;
-      
-      if (finalCategoryId === '') {
-        // "Wszystkie kategorie" - wyczyść wszystkie
-        return { ...prev, categories: [] };
-      }
-      
-      // Toggle category (dodaj jeśli nie ma, usuń jeśli jest)
       const currentCategories = prev.categories;
-      const newCategories = currentCategories.includes(finalCategoryId)
-        ? currentCategories.filter(cat => cat !== finalCategoryId)
-        : [...currentCategories, finalCategoryId];
       
-      console.log('🔧 Category change:', { 
-        currentCategories, 
-        finalCategoryId, 
-        newCategories 
-      });
-      
-      return { 
-        ...prev, 
-        categories: newCategories
-      };
+      if (subcategoryId) {
+        // PRO: Podkategoria - dodaj zarówno kategorię główną jak i podkategorię
+        const mainCategoryExists = currentCategories.includes(categoryId);
+        const subcategoryExists = currentCategories.includes(subcategoryId);
+        
+        let newCategories = [...currentCategories];
+        
+        if (subcategoryExists) {
+          // Usuń podkategorię
+          newCategories = newCategories.filter(cat => cat !== subcategoryId);
+        } else {
+          // Dodaj podkategorię i kategorię główną jeśli nie istnieje
+          if (!mainCategoryExists) {
+            newCategories.push(categoryId);
+          }
+          newCategories.push(subcategoryId);
+        }
+        
+        console.log('🔧 Subcategory change:', { 
+          currentCategories, 
+          categoryId, 
+          subcategoryId, 
+          newCategories 
+        });
+        
+        return { ...prev, categories: newCategories };
+      } else {
+        // PRO: Kategoria główna - toggle tylko tej kategorii
+        if (categoryId === '') {
+          // "Wszystkie kategorie" - wyczyść wszystkie
+          return { ...prev, categories: [] };
+        }
+        
+        const newCategories = currentCategories.includes(categoryId)
+          ? currentCategories.filter(cat => cat !== categoryId)
+          : [...currentCategories, categoryId];
+        
+        console.log('🔧 Main category change:', { 
+          currentCategories, 
+          categoryId, 
+          newCategories 
+        });
+        
+        return { ...prev, categories: newCategories };
+      }
     });
   };
 

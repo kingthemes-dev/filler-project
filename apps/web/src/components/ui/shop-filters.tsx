@@ -55,6 +55,12 @@ export default function ShopFilters({
     price: true,
     availability: true,
   });
+  
+  // Price range state for slider
+  const [priceRange, setPriceRange] = useState({
+    min: filters.minPrice || 0,
+    max: filters.maxPrice || 10000
+  });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -105,6 +111,25 @@ export default function ShopFilters({
                   >
                     <X className="w-4 h-4" />
                   </button>
+                </div>
+              </div>
+
+              {/* Search Filter */}
+              <div className="mb-4 sm:mb-6">
+                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Wyszukiwanie</h4>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Szukaj produktów..."
+                    value={filters.search}
+                    onChange={(e) => onFilterChange('search', e.target.value)}
+                    className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                 </div>
               </div>
 
@@ -212,33 +237,73 @@ export default function ShopFilters({
                       transition={{ duration: 0.2 }}
                       className="space-y-4"
                     >
-                      {/* Custom Price Inputs */}
-                      <div className="space-y-3">
-                        <div className="flex gap-3">
-                          <div className="flex-1">
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Od (zł)
-                            </label>
-                            <input
-                              type="number"
-                              placeholder="0"
-                              value={filters.minPrice ? filters.minPrice : ''}
-                              onChange={(e) => onFilterChange('minPrice', (Number(e.target.value) || 0))}
-                              className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Do (zł)
-                            </label>
-                            <input
-                              type="number"
-                              placeholder="9999"
-                              value={filters.maxPrice ? filters.maxPrice : ''}
-                              onChange={(e) => onFilterChange('maxPrice', (Number(e.target.value) || 999999))}
-                              className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
+                      {/* Price Range Slider */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <span>{priceRange.min} zł</span>
+                          <span>{priceRange.max} zł</span>
+                        </div>
+                        
+                        <div className="relative">
+                          <input
+                            type="range"
+                            min="0"
+                            max="10000"
+                            step="100"
+                            value={priceRange.min}
+                            onChange={(e) => {
+                              const newMin = parseInt(e.target.value);
+                              setPriceRange(prev => ({ ...prev, min: newMin }));
+                              onFilterChange('minPrice', newMin);
+                            }}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+                          />
+                          <input
+                            type="range"
+                            min="0"
+                            max="10000"
+                            step="100"
+                            value={priceRange.max}
+                            onChange={(e) => {
+                              const newMax = parseInt(e.target.value);
+                              setPriceRange(prev => ({ ...prev, max: newMax }));
+                              onFilterChange('maxPrice', newMax);
+                            }}
+                            className="absolute top-0 w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer slider-thumb"
+                          />
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setPriceRange({ min: 0, max: 1000 });
+                              onFilterChange('minPrice', 0);
+                              onFilterChange('maxPrice', 1000);
+                            }}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            Do 1000 zł
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPriceRange({ min: 1000, max: 5000 });
+                              onFilterChange('minPrice', 1000);
+                              onFilterChange('maxPrice', 5000);
+                            }}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            1000-5000 zł
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPriceRange({ min: 5000, max: 10000 });
+                              onFilterChange('minPrice', 5000);
+                              onFilterChange('maxPrice', 10000);
+                            }}
+                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            Powyżej 5000 zł
+                          </button>
                         </div>
                       </div>
                     </motion.div>

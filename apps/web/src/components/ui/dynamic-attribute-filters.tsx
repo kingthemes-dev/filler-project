@@ -75,10 +75,9 @@ export default function DynamicAttributeFilters({
       }
       console.log('🔄 Loading dynamic attributes with filters:', currentFilters);
       
-      // PRO Architecture: Użyj istniejącego endpoint'u /data dla dynamicznych atrybutów
+      // PRO Architecture: Użyj dedykowanego endpoint'u /attributes dla dynamicznych atrybutów
       const params = new URLSearchParams();
-      params.append('endpoint', 'shop');
-      params.append('per_page', '100'); // Pobierz więcej produktów aby mieć lepsze liczniki
+      params.append('endpoint', 'attributes');
       
       // Przekaż aktualne filtry do WordPress
       if (currentFilters.categories.length > 0) {
@@ -110,7 +109,9 @@ export default function DynamicAttributeFilters({
         });
       }
       
-      const response = await fetch(`/api/woocommerce?${params.toString()}`);
+      const apiUrl = `/api/woocommerce?${params.toString()}`;
+      console.log('🌐 Fetching dynamic attributes from:', apiUrl);
+      const response = await fetch(apiUrl, { cache: 'no-store' }); // Always fetch fresh attributes
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -118,53 +119,26 @@ export default function DynamicAttributeFilters({
       const data = await response.json();
       console.log('📦 Dynamic attributes from API:', data);
       
-      if (data.success && data.products) {
-        // Extract attributes from products - PRO Architecture: Dynamic attributes from filtered products
+      if (data.success && data.attributes) {
+        // PRO: Use direct attributes from API response
         const attributesMap: { [key: string]: { name: string; slug: string; terms: any[] } } = {};
         
-        // Process all products to extract unique attributes and their terms
-        data.products.forEach((product: any) => {
-          if (product.attributes && Array.isArray(product.attributes)) {
-            product.attributes.forEach((attr: any) => {
-              const attrSlug = attr.slug?.replace('pa_', '') || attr.name?.toLowerCase().replace(/\s+/g, '-');
-              if (attrSlug && attr.options && Array.isArray(attr.options)) {
-                if (!attributesMap[attrSlug]) {
-                  // PRO: Clean attribute name - remove pa_ prefix and format nicely
-                  const cleanName = (attr.name || attrSlug)
-                    .replace(/^pa_/i, '') // Remove pa_ prefix
-                    .replace(/_/g, ' ') // Replace underscores with spaces
-                    .replace(/\b\w/g, (l: string) => l.toUpperCase()); // Capitalize first letter of each word
-                  
-                  attributesMap[attrSlug] = {
-                    name: cleanName,
-                    slug: attrSlug,
-                    terms: []
-                  };
-                }
-                
-                // Add terms with counts
-                attr.options.forEach((option: any) => {
-                  const termSlug = option.slug || option.name?.toLowerCase().replace(/\s+/g, '-');
-                  if (termSlug) {
-                    const existingTerm = attributesMap[attrSlug].terms.find(t => t.slug === termSlug);
-                    if (existingTerm) {
-                      existingTerm.count++;
-                    } else {
-                      attributesMap[attrSlug].terms.push({
-                        id: option.id || 0,
-                        name: option.name || termSlug,
-                        slug: termSlug,
-                        count: 1
-                      });
-                    }
-                  }
-                });
-              }
-            });
-          }
+        // Process attributes from API response
+        Object.entries(data.attributes).forEach(([attrSlug, attrData]: [string, any]) => {
+          // PRO: Clean attribute name - remove pa_ prefix and format nicely
+          const cleanName = (attrData.name || attrSlug)
+            .replace(/^pa_/i, '') // Remove pa_ prefix
+            .replace(/_/g, ' ') // Replace underscores with spaces
+            .replace(/\b\w/g, (l: string) => l.toUpperCase()); // Capitalize first letter of each word
+          
+          attributesMap[attrSlug] = {
+            name: cleanName,
+            slug: attrSlug,
+            terms: attrData.terms || []
+          };
         });
         
-        console.log('📦 Dynamic attributes extracted from products:', attributesMap);
+        console.log('📦 Dynamic attributes from API:', attributesMap);
         setAttributes(attributesMap);
         
         // PRO: Save to cache for performance
@@ -172,7 +146,7 @@ export default function DynamicAttributeFilters({
           setAttributesCache(prev => new Map(prev).set(filtersHash, attributesMap));
         }
       } else {
-        console.log('📦 No products found for current filters');
+        console.log('📦 No attributes found for current filters');
         setAttributes({});
         
         // PRO: Save empty result to cache too
