@@ -511,7 +511,7 @@ export default function KingProductCard({
                       <button
                         key={variant}
                         onClick={() => handleVariantSelect(variant)}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        className={`px-3 py-2 text-sm rounded-2xl border transition-colors ${
                           selectedVariant === variant
                             ? 'bg-black text-white border-black'
                             : 'bg-white text-gray-700 border-gray-300 hover:border-black'
@@ -647,7 +647,7 @@ export default function KingProductCard({
                       handleShowVariants();
                     }}
                     size="sm"
-                    className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium rounded-lg"
+                    className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium rounded-2xl"
                   >
                     Wybierz wariant
                   </Button>
@@ -660,7 +660,7 @@ export default function KingProductCard({
                     }}
                     disabled={product.stock_status === 'outofstock' || isLoading}
                     size="sm"
-                    className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium rounded-lg"
+                    className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium rounded-2xl"
                   >
                     {isLoading ? 'Dodawanie...' : 'Dodaj do koszyka'}
                   </Button>
@@ -674,7 +674,7 @@ export default function KingProductCard({
                     e.stopPropagation();
                     handleQuickView();
                   }}
-                  className="px-4 py-3 h-10 w-10 rounded-lg border-gray-200 hover:border-gray-300"
+                  className="px-4 py-3 h-10 w-10 rounded-2xl border-gray-200 hover:border-gray-300"
                 >
                   <Eye className="w-4 h-4" />
                 </Button>
@@ -687,7 +687,7 @@ export default function KingProductCard({
                     e.stopPropagation();
                     handleToggleFavorite();
                   }}
-                  className={`px-4 py-3 h-10 w-10 rounded-lg ${
+                  className={`px-4 py-3 h-10 w-10 rounded-2xl ${
                     isClient && isFavorite(product.id) ? 'text-red-500 border-red-200 bg-red-50 hover:bg-red-100' : 'text-gray-500 border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -987,7 +987,7 @@ export default function KingProductCard({
                 setIsButtonHovered(false);
               }}
               disabled={isLoading || product.stock_status === 'outofstock'}
-              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-lg py-3 font-medium text-sm"
+              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-3 font-medium text-sm"
               size="lg"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
