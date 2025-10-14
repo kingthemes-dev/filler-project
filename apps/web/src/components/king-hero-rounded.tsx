@@ -73,7 +73,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
 
 
   return (
-    <section className="relative h-[50vh] sm:h-[55vh] lg:h-[60vh] min-h-[350px] sm:min-h-[400px] lg:min-h-[450px] py-2 mt-2 mb-4">
+    <section className="relative h-[60vh] sm:h-[65vh] lg:h-[70vh] min-h-[500px] sm:min-h-[550px] lg:min-h-[600px] py-4 mt-4 mb-6">
       <div className="max-w-[95vw] mx-auto px-4 sm:px-6 h-full">
         <div className="relative h-full rounded-2xl sm:rounded-3xl overflow-hidden">
           {/* Background Image - optimized for LCP - native img for fastest load */}
@@ -93,21 +93,21 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           </div>
           
           {/* Content */}
-          <div className="relative z-20 h-full pl-4 sm:pl-8 md:pl-16 pt-6 sm:pt-12 md:pt-16 pr-4 sm:pr-8 md:pr-12 pb-6 md:pb-8">
-            {/* Top Section - Text Content */}
-            <div className="text-white space-y-3 sm:space-y-4 md:space-y-6">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold leading-tight">
+          <div className="relative z-20 h-full flex flex-col justify-center md:justify-start items-center md:items-start text-center md:text-left px-6 sm:px-8 md:px-16 pt-8 md:pt-16">
+            {/* Text Content - Centered on mobile, Left aligned on desktop */}
+            <div className="text-white space-y-6 sm:space-y-8 md:space-y-6 max-w-4xl md:max-w-2xl">
+              <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-6xl font-bold leading-tight">
                 Hurtownia produktów<br />
                 medycyny estetycznej
               </h1>
 
-              <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl leading-relaxed">
+              <p className="text-base sm:text-lg md:text-lg text-white/90 max-w-3xl md:max-w-2xl mx-auto md:mx-0 leading-relaxed">
                 Profesjonalne produkty do medycyny estetycznej, mezoterapii i zabiegów kosmetycznych.
                 Najwyższa jakość, certyfikowane preparaty, kompleksowa obsługa.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <Button size="lg" asChild className="bg-white border-2 border-white text-black hover:bg-gray-100 hover:text-black text-base sm:text-lg md:text-xl px-6 sm:px-8 md:px-12 py-3 sm:py-4 md:py-6 rounded-xl sm:rounded-2xl transition-all duration-300">
+              <div className="flex justify-center md:justify-start">
+                <Button size="lg" asChild className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black text-lg sm:text-xl md:text-xl px-8 sm:px-10 md:px-12 py-4 sm:py-5 md:py-6 rounded-xl sm:rounded-2xl transition-all duration-300">
                   <Link href="/sklep">
                     Zobacz produkty
                   </Link>

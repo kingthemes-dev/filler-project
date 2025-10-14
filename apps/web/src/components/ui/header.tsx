@@ -88,18 +88,18 @@ export default function Header() {
   return (
     <>
       <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50`}>
-      <div className={`max-w-[95vw] mx-auto px-4 sm:px-6`}>
-        <div className="flex items-center gap-4 h-16 sm:h-20">
+        <div className={`max-w-[95vw] mx-auto px-6 sm:px-8`}>
+          <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
           <div className="flex items-center flex-none">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center mr-2 sm:mr-3">
-              <span className="text-white text-lg sm:text-xl font-bold">F</span>
+            <div className="w-7 h-7 sm:w-9 sm:h-9 bg-black rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+              <span className="text-white text-sm sm:text-lg font-bold">F</span>
             </div>
-            <span className="text-xl sm:text-2xl font-bold text-black">FILLER</span>
+            <span className="text-lg sm:text-xl font-bold text-black">FILLER</span>
           </div>
 
-          {/* Navigation - left of search */}
-          <nav className="hidden lg:flex items-center gap-6 flex-none">
+          {/* Navigation - desktop only */}
+          <nav className="hidden lg:flex items-center gap-6 flex-none ml-8">
             <Link href="/" className="text-gray-700 hover:text-black transition-colors font-medium">
               Strona główna
             </Link>
@@ -122,65 +122,130 @@ export default function Header() {
             </a>
           </nav>
 
-          {/* Adaptive Search */}
-          <div className="hidden md:flex flex-1 min-w-[160px]">
+          {/* Search Bar - desktop only */}
+          <div className="hidden md:flex flex-1 mx-8">
             <SearchBar 
               placeholder="Szukaj produktów..."
-              className="w-full"
+              className="w-full text-sm"
             />
           </div>
 
-                                {/* Right side icons */}
-                      <div className="flex items-center space-x-4 lg:space-x-6 flex-none">
-                        {/* Mobile search icon */}
-                        <button 
-                          className="md:hidden text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
-                          onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-                          aria-label="Szukaj produktów"
-                        >
-                          <Search className="w-6 h-6" />
-                        </button>
-                        
-                        {/* Email Notification Center - Admin Only */}
-                        {isAuthenticated && user?.role === 'admin' && (
-                          <button 
-                            onClick={() => setIsEmailCenterOpen(true)}
-                            className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
-                            title="Email Notification Center"
-                            aria-label="Centrum powiadomień email"
-                          >
-                            <Mail className="w-6 h-6" />
-                          </button>
-                        )}
-                        
+          {/* Mobile Icons with Labels */}
+          <div className="md:hidden flex items-center space-x-6">
+            {/* Mobile Search Icon */}
+            <button 
+              className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+              aria-label="Szukaj produktów"
+            >
+              <Search className="w-5 h-5" />
+              <span className="text-xs font-medium">Szukaj</span>
+            </button>
 
-                        
-                        {/* Desktop icons - hidden on mobile */}
-                        <div className="hidden md:flex items-center space-x-4">
-                          {/* User Menu */}
-                          {isAuthenticated ? (
-                            <div className="relative user-menu-container">
-                              <button
-                                onClick={() => setShowUserMenu(!showUserMenu)}
-                                className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center space-x-2"
-                              >
-                                <User className="w-6 h-6" />
-                                <span className="text-sm font-medium">
-                                  {user?.firstName || 'Moje konto'}
-                                </span>
-                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
-                              </button>
+            {/* Mobile User Icon */}
+            {isAuthenticated ? (
+              <Link
+                href="/moje-konto"
+                className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+                aria-label="Moje konto"
+              >
+                <User className="w-5 h-5" />
+                <span className="text-xs font-medium">Konto</span>
+              </Link>
+            ) : (
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
+                className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+                aria-label="Zaloguj się"
+              >
+                <User className="w-5 h-5" />
+                <span className="text-xs font-medium">Konto</span>
+              </button>
+            )}
 
-                              {/* User Dropdown Menu */}
-                              <AnimatePresence>
-                                {showUserMenu && (
-                                  <motion.div
-                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                                    className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
-                                  >
+            {/* Mobile Favorites Icon */}
+            <button
+              onClick={() => openFavoritesModal()}
+              className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
+              aria-label="Ulubione"
+            >
+              <Heart className="w-5 h-5" />
+              <span className="text-xs font-medium">Ulubione</span>
+              {favoritesCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {favoritesCount}
+                </span>
+              )}
+            </button>
+
+            {/* Mobile Cart Icon */}
+            <button
+              onClick={openCart}
+              className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
+              aria-label="Koszyk"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span className="text-xs font-medium">Koszyk</span>
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+
+            {/* Mobile Menu Icon */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+              aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+              <span className="text-xs font-medium">Menu</span>
+            </button>
+          </div>
+
+          {/* Desktop icons - hidden on mobile */}
+          <div className="hidden md:flex items-center space-x-6">
+            {/* Email Notification Center - Admin Only */}
+            {isAuthenticated && user?.role === 'admin' && (
+              <button 
+                onClick={() => setIsEmailCenterOpen(true)}
+                className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
+                title="Email Notification Center"
+                aria-label="Centrum powiadomień email"
+              >
+                <Mail className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* User Menu */}
+            {isAuthenticated ? (
+              <div className="relative user-menu-container">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center space-x-2"
+                >
+                  <User className="w-6 h-6" />
+                  <span className="text-sm font-medium">
+                    {user?.firstName || 'Moje konto'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* User Dropdown Menu */}
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+                    >
                                     {/* User Info */}
                                     <div className="px-4 py-3 border-b border-gray-100">
                                       <div className="flex items-center space-x-3">
@@ -283,55 +348,54 @@ export default function Header() {
                             </button>
                           )}
                           
-                          <button 
-                            className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
-                            onClick={openFavoritesModal}
-                            title="Ulubione"
-                            aria-label="Ulubione produkty"
-                          >
-                            <Heart className="w-6 h-6 group-hover:text-red-500 transition-colors" />
-                            {isMounted && favoritesCount > 0 && (
-                              <span className="pointer-events-none absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white animate-pulse">
-                                {favoritesCount}
-                              </span>
-                            )}
-                          </button>
-                        </div>
-                        
-                        {/* Cart - visible on all screens */}
-                        <button 
-                          className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
-                          onClick={() => {
-                            console.log('🛒 Cart button clicked!');
-                            console.log('🛒 Current cart state:', useCartStore.getState());
-                            openCart();
-                            console.log('🛒 After openCart call');
-                          }}
-                          title="Koszyk"
-                          aria-label="Koszyk zakupowy"
-                        >
-                          <ShoppingCart className="w-6 h-6 group-hover:text-green-600 transition-colors" />
-                          {itemCount > 0 && (
-                            <span className="pointer-events-none absolute -top-2 -right-2 bg-green-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white animate-bounce">
-                              {itemCount}
-                            </span>
-                          )}
-                        </button>
-                        
-                        {/* Mobile menu button */}
-                        <button
-                          className="lg:hidden text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
-                          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                          aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
-                        >
-                          {isMobileMenuOpen ? (
-                            <X className="w-6 h-6" />
-                          ) : (
-                            <Menu className="w-6 h-6" />
-                          )}
-                        </button>
-                      </div>
-                  </div>
+            <button 
+              className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
+              onClick={openFavoritesModal}
+              title="Ulubione"
+              aria-label="Ulubione produkty"
+            >
+              <Heart className="w-6 h-6 group-hover:text-red-500 transition-colors" />
+              {isMounted && favoritesCount > 0 && (
+                <span className="pointer-events-none absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white animate-pulse">
+                  {favoritesCount}
+                </span>
+              )}
+            </button>
+
+            {/* Cart */}
+            <button 
+              className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
+              onClick={() => {
+                console.log('🛒 Cart button clicked!');
+                console.log('🛒 Current cart state:', useCartStore.getState());
+                openCart();
+                console.log('🛒 After openCart call');
+              }}
+              title="Koszyk"
+              aria-label="Koszyk zakupowy"
+            >
+              <ShoppingCart className="w-6 h-6 group-hover:text-green-600 transition-colors" />
+              {itemCount > 0 && (
+                <span className="pointer-events-none absolute -top-2 -right-2 bg-green-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white animate-bounce">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+
+            {/* Burger Menu - medium screens (md to lg) */}
+            <button
+              className="hidden md:flex lg:hidden items-center justify-center w-8 h-8 text-gray-700 hover:text-black transition-colors"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
+          </div>
+          </div>
         </div>
         
         {/* Mobile Search Bar */}
@@ -347,18 +411,68 @@ export default function Header() {
               <div className="px-4 py-4">
                 <SearchBar 
                   placeholder="Szukaj produktów..."
-                  className="w-full"
+                  className="w-full text-sm"
                 />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
         
+        {/* Medium Screen Menu (md to lg) */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              className="hidden md:block lg:hidden bg-white border-t border-gray-200 shadow-lg"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <div className="px-6 py-4">
+                <nav className="flex flex-col space-y-4">
+                  <Link 
+                    href="/" 
+                    className="text-lg font-medium text-gray-700 hover:text-black transition-colors py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Strona główna
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsShopOpen(!isShopOpen);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-left text-lg font-medium text-gray-900 hover:text-black transition-colors py-2 inline-flex items-center gap-2"
+                  >
+                    Sklep
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  <a 
+                    href="/o-nas" 
+                    className="text-lg font-medium text-gray-700 hover:text-black transition-colors py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    O nas
+                  </a>
+                  <a 
+                    href="/kontakt" 
+                    className="text-lg font-medium text-gray-700 hover:text-black transition-colors py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Kontakt
+                  </a>
+                </nav>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Mobile Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="lg:hidden bg-white border-t border-gray-200 shadow-lg"
+              className="md:hidden lg:hidden bg-white border-t border-gray-200 shadow-lg"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -409,66 +523,29 @@ export default function Header() {
                   </a>
                 </nav>
                 
-                                          {/* Mobile Action Buttons */}
-                          <div className="flex items-center space-x-4 pt-4">
-                            {isAuthenticated ? (
-                              <>
-                                <Link
-                                  href="/moje-konto"
-                                  className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3"
-                                  onClick={() => setIsMobileMenuOpen(false)}
-                                >
-                                  <User className="w-6 h-6" />
-                                  <span className="text-sm font-medium">Moje konto</span>
-                                </Link>
-                                <Link
-                                  href="/moje-zamowienia"
-                                  className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3"
-                                  onClick={() => setIsMobileMenuOpen(false)}
-                                >
-                                  <Package className="w-6 h-6" />
-                                  <span className="text-sm font-medium">Moje zamówienia</span>
-                                </Link>
-                                <button
-                                  onClick={() => {
-                                    logout();
-                                    setIsMobileMenuOpen(false);
-                                  }}
-                                  className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors py-3"
-                                >
-                                  <LogOut className="w-6 h-6" />
-                                  <span className="text-sm font-medium">Wyloguj się</span>
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setIsMobileMenuOpen(false);
-                                  window.dispatchEvent(new CustomEvent('openLogin'));
-                                }}
-                                className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3"
-                              >
-                                <User className="w-6 h-6" />
-                                <span className="text-sm font-medium">Zaloguj się</span>
-                              </button>
-                            )}
-                            
-                            <button 
-                              onClick={() => {
-                                openFavoritesModal();
-                                setIsMobileMenuOpen(false);
-                              }}
-                              className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
-                            >
-                              <Heart className="w-6 h-6" />
-                              <span className="text-sm font-medium">Ulubione</span>
-                              {favoritesCount > 0 && (
-                                <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                  {favoritesCount}
-                                </span>
-                              )}
-                            </button>
-                          </div>
+              {/* Mobile Menu Actions - tylko dla zalogowanych */}
+              {isAuthenticated && (
+                <div className="pt-4 border-t border-gray-100">
+                  <Link
+                    href="/moje-zamowienia"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Package className="w-6 h-6" />
+                    <span className="text-sm font-medium">Moje zamówienia</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors py-3 w-full text-left"
+                  >
+                    <LogOut className="w-6 h-6" />
+                    <span className="text-sm font-medium">Wyloguj się</span>
+                  </button>
+                </div>
+              )}
               </div>
             </motion.div>
           )}

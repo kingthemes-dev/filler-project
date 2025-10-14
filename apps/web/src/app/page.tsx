@@ -2,7 +2,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import KingHeroRounded from '@/components/king-hero-rounded';
 import { Button } from '@/components/ui/button';
-import { Star, TrendingUp, Zap } from 'lucide-react';
+import { Award, Truck, Headphones, Shield } from 'lucide-react';
 
 // Dynamic imports for below-the-fold components
 const KingProductTabsServer = dynamic(() => import('@/components/king-product-tabs-server'));
@@ -87,51 +87,58 @@ export default async function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 sm:py-16">
+      <section>
         <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6">
             {/* Quality */}
-            <div className="text-center group">
-              <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                <div className="w-16 h-16 border-2 border-gray-300 rounded-full flex items-center justify-center group-hover:border-black transition-colors duration-300">
-                  <Star className="w-8 h-8 text-gray-600 group-hover:text-black transition-colors duration-300" />
-                </div>
+            <div className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg">
+              <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
+                <Award className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Najwyższa jakość
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Najlepsze ceny
               </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Wszystkie nasze produkty przechodzą rygorystyczną kontrolę jakości
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Najkorzystniejsza oferta na rynku. Regularne promocje i kody rabatowe.
               </p>
             </div>
             
             {/* Delivery */}
-            <div className="text-center group">
-              <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                <div className="w-16 h-16 border-2 border-gray-300 rounded-full flex items-center justify-center group-hover:border-black transition-colors duration-300">
-                  <TrendingUp className="w-8 h-8 text-gray-600 group-hover:text-black transition-colors duration-300" />
-                </div>
+            <div className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg">
+              <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
+                <Truck className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Szybka dostawa
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Niezawodna dostawa
               </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Gwarantujemy szybką i bezpieczną dostawę do Twojego domu
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Wysyłka w 1 dzień roboczy. Możliwość zamówienia transportu medycznego.
               </p>
             </div>
             
             {/* Support */}
-            <div className="text-center group">
-              <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                <div className="w-16 h-16 border-2 border-gray-300 rounded-full flex items-center justify-center group-hover:border-black transition-colors duration-300">
-                  <Zap className="w-8 h-8 text-gray-600 group-hover:text-black transition-colors duration-300" />
-                </div>
+            <div className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg">
+              <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
+                <Headphones className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Obsługa 24/7
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Profesjonalne wsparcie
               </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Nasz zespół jest dostępny 24/7, aby Ci pomóc
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Masz pytanie? Skontaktuj się z nami i porozmawiaj z ekspertem.
+              </p>
+            </div>
+
+            {/* Originality */}
+            <div className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg">
+              <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
+                <Shield className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Gwarancja oryginalności
+              </h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Szeroka oferta oryginalnych preparatów prosto od producentów i oficjalnych dystrybutorów.
               </p>
             </div>
           </div>
