@@ -97,17 +97,20 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             id="shop-explore-panel"
             role="dialog"
             aria-modal="true"
-            className="fixed left-0 right-0 z-50"
-            style={{ top: headerTop }}
+            className="absolute left-0 right-0 z-50"
+            style={{ top: 0 }}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
             <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
-              <OverlayHeader onClose={onClose} />
-
-              <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden mt-0">
+              <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+                {/* Pasek headera w tym samym kontenerze (jedne zaokrąglenia) */}
+                <div className="px-4 sm:px-6">
+                  <OverlayHeader onClose={onClose} />
+                </div>
+                <div className="border-t border-gray-100" />
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
                   {/* Kategorie główne */}
