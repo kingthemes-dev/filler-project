@@ -1,0 +1,46 @@
+{
+  "name": "@king/shared-types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types and Zod schemas for KING™ Headless Enterprise",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.5"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "import": "./dist/schemas/index.js",
+      "require": "./dist/schemas/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "king",
+    "headless",
+    "wordpress",
+    "woocommerce",
+    "types",
+    "zod",
+    "schemas"
+  ],
+  "author": "KING™ Themes",
+  "license": "GPL-2.0-or-later"
+}
