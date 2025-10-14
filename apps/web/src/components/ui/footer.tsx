@@ -17,7 +17,7 @@ export default function Footer() {
            {/* Logo i kontakt - Mobile */}
            <div className="lg:hidden mb-8 -mt-4">
              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 py-4 mb-3">
-               <div className="flex items-center justify-between mb-4">
+               <div className="flex items-start justify-between mb-4 min-h-[80px]">
                  <div className="flex items-center">
                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
                      <span className="text-white font-bold text-xl">F</span>
