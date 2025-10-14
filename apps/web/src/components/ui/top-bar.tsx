@@ -15,10 +15,10 @@ export default function TopBar() {
         <motion.div
           className="flex whitespace-nowrap"
           animate={{
-            x: ['100vw', '-100%'],
+            x: ['100vw', '-100vw'],
           }}
           transition={{
-            duration: 25,
+            duration: 30,
             repeat: Infinity,
             ease: 'linear',
           }}

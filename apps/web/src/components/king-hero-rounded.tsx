@@ -73,7 +73,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
 
 
   return (
-    <section className="relative h-[60vh] sm:h-[65vh] lg:h-[68vh] min-h-[400px] sm:min-h-[450px] lg:min-h-[510px] py-4 mt-4 sm:mt-6 mb-6 sm:mb-8">
+    <section className="relative h-[50vh] sm:h-[55vh] lg:h-[60vh] min-h-[350px] sm:min-h-[400px] lg:min-h-[450px] py-2 mt-2 mb-4">
       <div className="max-w-[95vw] mx-auto px-4 sm:px-6 h-full">
         <div className="relative h-full rounded-2xl sm:rounded-3xl overflow-hidden">
           {/* Background Image - optimized for LCP - native img for fastest load */}
@@ -93,7 +93,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           </div>
           
           {/* Content */}
-          <div className="relative z-20 h-full pl-4 sm:pl-8 md:pl-16 pt-8 sm:pt-16 md:pt-24 pr-4 sm:pr-8 md:pr-12 pb-8 md:pb-12">
+          <div className="relative z-20 h-full pl-4 sm:pl-8 md:pl-16 pt-6 sm:pt-12 md:pt-16 pr-4 sm:pr-8 md:pr-12 pb-6 md:pb-8">
             {/* Top Section - Text Content */}
             <div className="text-white space-y-3 sm:space-y-4 md:space-y-6">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold leading-tight">
@@ -116,7 +116,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
             </div>
 
             {/* Bottom Section - Product Card */}
-            <div className="hidden md:flex justify-center lg:justify-end absolute bottom-8 right-8 lg:bottom-12 lg:right-12">
+            <div className="hidden md:flex justify-center lg:justify-end absolute bottom-4 right-4 lg:bottom-6 lg:right-6">
               {isLoading ? (
                 <div className="w-45 md:w-51 h-58 md:h-64 bg-white/10 rounded-2xl animate-pulse" />
               ) : featuredProduct ? (
