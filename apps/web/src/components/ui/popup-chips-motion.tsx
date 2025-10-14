@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 
 type Density = 'low' | 'med' | 'high';
 
@@ -80,7 +80,7 @@ export default function PopupChipsMotion({ labels, isOpen, density = 'med', clas
     <div
       ref={containerRef}
       className={
-        `relative w-full h-[62vh] md:h-[68vh] overflow-hidden rounded-2xl border border-gray-200 bg-white ${className || ''}`
+        `relative w-full h-[45vh] md:h-[50vh] overflow-hidden rounded-2xl border border-gray-200 bg-white ${className || ''}`
       }
     >
       {items.map((label, idx) => (
@@ -99,15 +99,37 @@ function Chip({ label, container, shake }: { label: string; container: { w: numb
   useEffect(() => {
     const pad = 24;
     const startX = Math.random() * Math.max(0, container.w - 200 - pad) + pad;
-    const startY = Math.random() * Math.max(0, container.h - 56 - pad) + pad;
+    const startY = pad; // start wyżej
     x.set(startX);
     y.set(startY);
+
+    // Drop to bottom with subtle bounce (bez pętli, jednorazowa animacja)
+    const bottomY = clamp(container.h - 56 - pad, pad, Number.MAX_SAFE_INTEGER);
+    animate(y, bottomY, { type: 'spring', stiffness: 220, damping: 22, bounce: 0.35 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [container.w, container.h]);
 
   // Apply shake as a tiny offset
   const shakeX = useTransform(x, (v) => v + shake.x);
   const shakeY = useTransform(y, (v) => v + shake.y);
+
+  // Drag constraints and post-drag bounce to the bounds
+  const pad = 24;
+  const bounds = {
+    left: pad,
+    top: pad,
+    right: Math.max(pad, container.w - 200 - pad),
+    bottom: Math.max(pad, container.h - 56 - pad)
+  };
+
+  const handleDragEnd = () => {
+    const cx = clamp(x.get(), bounds.left, bounds.right);
+    const cy = clamp(y.get(), bounds.top, bounds.bottom);
+    const hitX = cx !== x.get();
+    const hitY = cy !== y.get();
+    if (hitX) animate(x, cx, { type: 'spring', stiffness: 300, damping: 20, bounce: 0.4 });
+    if (hitY) animate(y, cy, { type: 'spring', stiffness: 300, damping: 20, bounce: 0.4 });
+  };
 
   return (
     <motion.div
@@ -116,6 +138,8 @@ function Chip({ label, container, shake }: { label: string; container: { w: numb
       drag
       dragMomentum
       dragElastic={0.18}
+      dragConstraints={bounds}
+      onDragEnd={handleDragEnd}
       whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 300, damping: 24 }}
