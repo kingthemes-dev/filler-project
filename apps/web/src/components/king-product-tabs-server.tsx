@@ -82,7 +82,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
           </div>
 
           {/* View All Products - Desktop: link on the right */}
-          <div className="hidden lg:block">
+          <div className="hidden md:block">
             <Link 
               href="/sklep" 
               className="relative text-base sm:text-lg text-black hover:text-black transition-colors group whitespace-nowrap"
