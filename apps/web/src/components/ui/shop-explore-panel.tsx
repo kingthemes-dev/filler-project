@@ -42,12 +42,12 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         // optional: log silently in dev
       }
     };
-  const mainCategories = useMemo(() => categories.filter(c => (c.parent || 0) === 0), [categories]);
-  const subCategories = useMemo(() => categories.filter(c => (c.parent || 0) === (selectedCat || 0)), [categories, selectedCat]);
-
     load();
     return () => { mounted = false; };
   }, [open]);
+
+  const mainCategories = useMemo(() => categories.filter(c => (c.parent || 0) === 0), [categories]);
+  const subCategories = useMemo(() => categories.filter(c => (c.parent || 0) === (selectedCat || 0)), [categories, selectedCat]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
