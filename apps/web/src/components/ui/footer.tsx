@@ -229,28 +229,6 @@ export default function Footer() {
               © 2024 Filler. Wszystkie prawa zastrzeżone.
             </p>
             
-            {/* Social Media Icons */}
-            <div className="flex space-x-3 mt-4 md:mt-0">
-              <a 
-                href="https://facebook.com/filler" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              
-              <a 
-                href="https://instagram.com/filler" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-            </div>
           </div>
         </div>
       </div>
