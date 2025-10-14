@@ -10,7 +10,7 @@ const announcements = [
 
 export default function TopBar() {
   return (
-    <div className="bg-black text-white overflow-hidden">
+    <div className="bg-black text-white overflow-hidden" data-topbar>
       <div className="relative h-12 flex items-center">
         <motion.div
           className="flex whitespace-nowrap"

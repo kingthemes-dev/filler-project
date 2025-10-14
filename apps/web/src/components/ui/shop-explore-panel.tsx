@@ -29,9 +29,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     const measure = () => {
       try {
         const headerEl = document.querySelector('header');
+        const topBarEl = document.querySelector('[data-topbar]');
         if (headerEl) {
-          // Ustaw overlay tuż pod rzeczywistym headerem (sticky top)
-          if (mounted) setHeaderTop(Math.round(rect.height));
+          // Ustaw overlay tuż pod top-bar + header
+          const rect = (headerEl as HTMLElement).getBoundingClientRect();
+          const topRect = (topBarEl as HTMLElement | null)?.getBoundingClientRect();
+          const headerH = Math.round(rect.height);
+          const topH = topRect ? Math.round(topRect.height) : 0;
+          if (mounted) setHeaderTop(headerH + topH);
           // Try to match inner container width
           const inner = headerEl.querySelector('div.max-w-\[95vw\]');
           const innerRect = (inner as HTMLElement | null)?.getBoundingClientRect();
