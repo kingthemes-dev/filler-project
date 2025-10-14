@@ -14,14 +14,13 @@ import { WooProduct } from '@/types/woocommerce';
 interface FilterState {
   search: string;
   categories: string[];
-  brands?: string[];
   minPrice: number;
   maxPrice: number;
   inStock: boolean;
   onSale: boolean;
   sortBy: 'date' | 'price' | 'name' | 'popularity';
   sortOrder: 'asc' | 'desc';
-  [key: string]: string[] | string | number | boolean; // Dynamiczne atrybuty
+  [key: string]: string[] | string | number | boolean; // Dynamiczne atrybuty (brands, pa_*, etc.)
 }
 
 interface Category {

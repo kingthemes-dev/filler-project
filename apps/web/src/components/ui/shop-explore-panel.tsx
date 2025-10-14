@@ -216,7 +216,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                           <Link
                             key={String(t.id)}
                             href={`/sklep?brands=${encodeURIComponent(t.slug)}`}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-3.5 py-1.5 text-sm text-gray-900 shadow-sm hover:bg-gray-50 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 transition-colors"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-2.5 py-1 text-xs text-gray-900 shadow-sm hover:bg-gray-50 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 transition-colors"
                             onClick={onClose}
                             title={t.name}
                           >
