@@ -26,7 +26,7 @@ export default function Footer() {
                  </div>
                  
                  {/* Social Media Icons - Mobile only */}
-                 <div className="flex space-x-2">
+                 <div className="flex flex-col space-y-2 items-center justify-center">
                    <a 
                      href="https://facebook.com/filler" 
                      target="_blank" 
