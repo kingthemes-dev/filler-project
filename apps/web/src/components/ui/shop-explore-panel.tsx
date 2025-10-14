@@ -175,7 +175,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   {/* Podkategorie / Zastosowanie */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xs uppercase tracking-wide text-gray-500">Podkategorie · Zastosowanie</h3>
+                      <h3 className="text-xs uppercase tracking-wide text-gray-500">Zastosowanie</h3>
                       {currentMain && (
                         <Link
                           href={`/sklep?category=${encodeURIComponent(currentMain.slug)}`}
