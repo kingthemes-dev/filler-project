@@ -15,10 +15,28 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const [categories, setCategories] = useState<Array<{ id: number; name: string; slug: string; count?: number; parent?: number }>>([]);
   const [attributes, setAttributes] = useState<Record<string, Array<{ id: number | string; name: string; slug: string }>>>({});
   const [selectedCat, setSelectedCat] = useState<number | null>(null);
+  const [headerTop, setHeaderTop] = useState<number>(64);
+  const [containerPx, setContainerPx] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let mounted = true;
+    // Measure header height and container width to align overlay exactly
+    const measure = () => {
+      try {
+        const headerEl = document.querySelector('header');
+        if (headerEl) {
+          const rect = (headerEl as HTMLElement).getBoundingClientRect();
+          if (mounted) setHeaderTop(Math.round(rect.height));
+          // Try to match inner container width
+          const inner = headerEl.querySelector('div.max-w-\[95vw\]');
+          const innerRect = (inner as HTMLElement | null)?.getBoundingClientRect();
+          if (innerRect && mounted) setContainerPx(Math.round(innerRect.width));
+        }
+      } catch {}
+    };
+    measure();
+    window.addEventListener('resize', measure);
     const load = async () => {
       try {
         // 1) pełne kategorie (z parent) do kolumny 1 i 2
@@ -75,13 +93,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             id="shop-explore-panel"
             role="dialog"
             aria-modal="true"
-            className="fixed left-0 right-0 top-[64px] sm:top-[80px] z-50"
+            className="fixed left-0 right-0 z-50"
+            style={{ top: headerTop }}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="mx-auto max-w-[95vw] px-4 sm:px-6">
+            <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
               <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                   <div className="text-sm font-semibold text-gray-900">Sklep · Przeglądaj</div>
