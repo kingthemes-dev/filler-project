@@ -117,11 +117,11 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
           {/* Zaokrąglone tło obejmujące header + panel; header pozostaje ponad tym tłem */}
           <div
-            className="fixed z-[45]"
-            style={{ top: headerTop - headerHeightPx, left: containerLeftPx, right: `calc(100vw - ${containerRightPx}px)` }}
+            className="fixed left-0 right-0 z-[45]"
+            style={{ top: headerTop - headerHeightPx }}
             aria-hidden
           >
-              <div className="rounded-2xl bg-white shadow-xl" style={{ height: headerHeightPx + panelHeightPx }} />
+              <div className="bg-white rounded-b-2xl shadow-xl" style={{ height: headerHeightPx + panelHeightPx }} />
           </div>
 
           <motion.div
@@ -137,7 +137,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           >
             <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
               <div className="relative">
-                <div ref={panelRef} className="relative rounded-2xl bg-white overflow-hidden z-50 pt-6 sm:pt-8">
+                <div ref={panelRef} className="relative overflow-hidden z-50 pt-6 sm:pt-8">
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
                   {/* Kategorie główne */}
