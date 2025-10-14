@@ -103,17 +103,19 @@ export default function Header() {
             <Link href="/" className="text-gray-700 hover:text-black transition-colors font-medium">
               Strona główna
             </Link>
-            <button
-              type="button"
-              onClick={() => setIsShopOpen(!isShopOpen)}
-              className="text-gray-900 hover:text-black transition-colors font-medium inline-flex items-center gap-1"
-              aria-haspopup="dialog"
-              aria-expanded={isShopOpen}
-              aria-controls="shop-explore-panel"
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsShopOpen(true)}
+              onMouseLeave={() => setIsShopOpen(false)}
             >
-              Sklep
-              <ChevronDown className="w-4 h-4" />
-            </button>
+              <Link 
+                href="/sklep"
+                className="text-gray-900 hover:text-black transition-colors font-medium inline-flex items-center gap-1"
+              >
+                Sklep
+                <ChevronDown className="w-4 h-4" />
+              </Link>
+            </div>
             <a href="/o-nas" className="text-gray-700 hover:text-black transition-colors font-medium">
               O nas
             </a>
@@ -437,17 +439,14 @@ export default function Header() {
                   >
                     Strona główna
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsShopOpen(!isShopOpen);
-                      setIsMobileMenuOpen(false);
-                    }}
+                  <Link
+                    href="/sklep"
                     className="text-left text-lg font-medium text-gray-900 hover:text-black transition-colors py-2 inline-flex items-center gap-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Sklep
                     <ChevronDown className="w-4 h-4" />
-                  </button>
+                  </Link>
                   <a 
                     href="/o-nas" 
                     className="text-lg font-medium text-gray-700 hover:text-black transition-colors py-2"

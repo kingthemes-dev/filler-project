@@ -160,6 +160,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
+            onMouseEnter={() => {}} // Prevent closing on hover
+            onMouseLeave={() => onClose()} // Close when leaving the panel
           >
             <div className="mx-auto px-4 sm:px-6 pb-8 sm:pb-12" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
               <div className="relative">
