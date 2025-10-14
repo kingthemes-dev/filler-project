@@ -59,6 +59,21 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     window.addEventListener('resize', measure);
     const load = async () => {
       try {
+        // Sprawdź cache w sessionStorage (5 minut)
+        const cacheKey = 'shop-explore-data';
+        const cached = sessionStorage.getItem(cacheKey);
+        const now = Date.now();
+        
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (data.timestamp && (now - data.timestamp) < 300000) { // 5 minut
+            setCategories(data.categories || []);
+            setAttributes(data.attributes || {});
+            setSelectedCat(data.selectedCat || null);
+            return;
+          }
+        }
+
         // 1) pełne kategorie (z parent) do kolumny 1 i 2
         const catsRes = await fetch('/api/woocommerce?endpoint=products/categories&per_page=100', { cache: 'no-store' });
         const cats = catsRes.ok ? await catsRes.json() : [];
@@ -70,12 +85,23 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         const normCats = Array.isArray(cats)
           ? cats.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug, parent: c.parent || 0, count: counters[c.id] ?? c.count }))
           : [];
-        setCategories(normCats);
-        setSelectedCat((normCats.find(c => (c.parent || 0) === 0)?.id) || null);
-        setAttributes({
+        const selectedCatId = (normCats.find(c => (c.parent || 0) === 0)?.id) || null;
+        const attrs = {
           capacities: shop.attributes?.capacities || [],
           brands: shop.attributes?.brands || []
-        });
+        };
+        
+        setCategories(normCats);
+        setSelectedCat(selectedCatId);
+        setAttributes(attrs);
+        
+        // Zapisz w cache
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          categories: normCats,
+          attributes: attrs,
+          selectedCat: selectedCatId,
+          timestamp: now
+        }));
       } catch (e) {
         // optional: log silently in dev
       }
@@ -135,17 +161,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
+            <div className="mx-auto px-4 sm:px-6 pb-8 sm:pb-12" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
               <div className="relative">
-                {/* Close button */}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onClose(); }}
-                  aria-label="Zamknij"
-                  className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 z-[60] inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/80 backdrop-blur hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10"
-                >
-                  <X className="h-5 w-5" />
-                </button>
 
                 <div ref={panelRef} className="relative overflow-hidden z-50 pt-6 sm:pt-8">
 
@@ -210,7 +227,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   {/* Marki */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Marka</h3>
-                    <div className="max-h-[60vh] overflow-auto pr-1">
+                    <div className="max-h-[60vh] overflow-auto pr-1 pb-2">
                       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
                         {((attributes.brands || []).slice(0, 36)).map((t: any) => (
                           <Link

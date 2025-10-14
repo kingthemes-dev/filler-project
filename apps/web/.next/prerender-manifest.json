@@ -30,6 +30,30 @@
         "x-next-revalidate-tag-token"
       ]
     },
+    "/koszyk": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/koszyk",
+      "dataRoute": "/koszyk.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
     "/_not-found": {
       "initialStatus": 404,
       "experimentalBypassFor": [
@@ -55,7 +79,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/checkout": {
+    "/": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -67,9 +91,10 @@
           "value": "multipart/form-data;.*"
         }
       ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/checkout",
-      "dataRoute": "/checkout.rsc",
+      "initialRevalidateSeconds": 300,
+      "initialExpireSeconds": 31536000,
+      "srcRoute": "/",
+      "dataRoute": "/index.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -79,7 +104,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/koszyk": {
+    "/regulamin": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -92,8 +117,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/koszyk",
-      "dataRoute": "/koszyk.rsc",
+      "srcRoute": "/regulamin",
+      "dataRoute": "/regulamin.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -103,7 +128,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/moje-faktury": {
+    "/kontakt": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -116,8 +141,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/moje-faktury",
-      "dataRoute": "/moje-faktury.rsc",
+      "srcRoute": "/kontakt",
+      "dataRoute": "/kontakt.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -175,7 +200,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/reset-hasla": {
+    "/wyszukiwanie": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -188,32 +213,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/reset-hasla",
-      "dataRoute": "/reset-hasla.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/kontakt": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/kontakt",
-      "dataRoute": "/kontakt.rsc",
+      "srcRoute": "/wyszukiwanie",
+      "dataRoute": "/wyszukiwanie.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -247,79 +248,6 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/wyszukiwanie": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/wyszukiwanie",
-      "dataRoute": "/wyszukiwanie.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/regulamin": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/regulamin",
-      "dataRoute": "/regulamin.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": 300,
-      "initialExpireSeconds": 31536000,
-      "srcRoute": "/",
-      "dataRoute": "/index.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
     "/moje-zamowienia": {
       "experimentalBypassFor": [
         {
@@ -344,6 +272,54 @@
         "x-next-revalidate-tag-token"
       ]
     },
+    "/reset-hasla": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/reset-hasla",
+      "dataRoute": "/reset-hasla.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/checkout": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/checkout",
+      "dataRoute": "/checkout.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
     "/o-nas": {
       "experimentalBypassFor": [
         {
@@ -359,6 +335,30 @@
       "initialRevalidateSeconds": false,
       "srcRoute": "/o-nas",
       "dataRoute": "/o-nas.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/moje-faktury": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/moje-faktury",
+      "dataRoute": "/moje-faktury.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",

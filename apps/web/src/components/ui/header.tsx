@@ -105,7 +105,7 @@ export default function Header() {
             </Link>
             <button
               type="button"
-              onClick={() => setIsShopOpen(true)}
+              onClick={() => setIsShopOpen(!isShopOpen)}
               className="text-gray-900 hover:text-black transition-colors font-medium inline-flex items-center gap-1"
               aria-haspopup="dialog"
               aria-expanded={isShopOpen}
