@@ -112,7 +112,7 @@ export default function Header() {
               aria-controls="shop-explore-panel"
             >
               Sklep
-              <ChevronDown className="w-4 h-4" />
+              <ChevronDown className="w-3 h-3 stroke-1" />
             </button>
             <a href="/o-nas" className="text-gray-700 hover:text-black transition-colors font-medium">
               O nas
@@ -138,7 +138,7 @@ export default function Header() {
                           onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
                           aria-label="Szukaj produktów"
                         >
-                          <Search className="w-6 h-6" />
+                          <Search className="w-5 h-5 stroke-1" />
                         </button>
                         
                         {/* Email Notification Center - Admin Only */}
@@ -149,7 +149,7 @@ export default function Header() {
                             title="Email Notification Center"
                             aria-label="Centrum powiadomień email"
                           >
-                            <Mail className="w-6 h-6" />
+                            <Mail className="w-5 h-5 stroke-1" />
                           </button>
                         )}
                         
@@ -164,11 +164,11 @@ export default function Header() {
                                 onClick={() => setShowUserMenu(!showUserMenu)}
                                 className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center space-x-2"
                               >
-                                <User className="w-6 h-6" />
+                                <User className="w-5 h-5 stroke-1" />
                                 <span className="text-sm font-medium">
                                   {user?.firstName || 'Moje konto'}
                                 </span>
-                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
+                                <ChevronDown className={`w-3 h-3 stroke-1 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
                               </button>
 
                               {/* User Dropdown Menu */}
@@ -203,7 +203,7 @@ export default function Header() {
                                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                                         onClick={() => setShowUserMenu(false)}
                                       >
-                                        <Settings className="w-4 h-4" />
+                                        <Settings className="w-4 h-4 stroke-1" />
                                         <span>Moje konto</span>
                                       </Link>
                                       
@@ -212,7 +212,7 @@ export default function Header() {
                                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                                         onClick={() => setShowUserMenu(false)}
                                       >
-                                        <Package className="w-4 h-4" />
+                                        <Package className="w-4 h-4 stroke-1" />
                                         <span>Moje zamówienia</span>
                                       </Link>
 
@@ -223,7 +223,7 @@ export default function Header() {
                                         }}
                                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors w-full text-left"
                                       >
-                                        <Heart className="w-4 h-4" />
+                                        <Heart className="w-4 h-4 stroke-1" />
                                         <span>Ulubione</span>
                                         {favoritesCount > 0 && (
                                           <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -238,7 +238,7 @@ export default function Header() {
                                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                                         onClick={() => setShowUserMenu(false)}
                                       >
-                                        <FileText className="w-4 h-4" />
+                                        <FileText className="w-4 h-4 stroke-1" />
                                         <span>Faktury</span>
                                       </Link>
                                     </div>
@@ -252,7 +252,7 @@ export default function Header() {
                                         }}
                                         className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors w-full text-left"
                                       >
-                                        <LogOut className="w-4 h-4" />
+                                        <LogOut className="w-4 h-4 stroke-1" />
                                         <span>Wyloguj się</span>
                                       </button>
                                     </div>
@@ -279,7 +279,7 @@ export default function Header() {
                               data-test="open-login-btn"
                               aria-label="Zaloguj się"
                             >
-                              <User className="w-6 h-6" />
+                              <User className="w-5 h-5 stroke-1" />
                             </button>
                           )}
                           
@@ -289,7 +289,7 @@ export default function Header() {
                             title="Ulubione"
                             aria-label="Ulubione produkty"
                           >
-                            <Heart className="w-6 h-6 group-hover:text-red-500 transition-colors" />
+                            <Heart className="w-5 h-5 stroke-1 group-hover:text-red-500 transition-colors" />
                             {isMounted && favoritesCount > 0 && (
                               <span className="pointer-events-none absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white animate-pulse">
                                 {favoritesCount}
@@ -310,7 +310,7 @@ export default function Header() {
                           title="Koszyk"
                           aria-label="Koszyk zakupowy"
                         >
-                          <ShoppingCart className="w-6 h-6 group-hover:text-green-600 transition-colors" />
+                          <ShoppingCart className="w-5 h-5 stroke-1 group-hover:text-green-600 transition-colors" />
                           {itemCount > 0 && (
                             <span className="pointer-events-none absolute -top-2 -right-2 bg-green-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white animate-bounce">
                               {itemCount}
@@ -325,9 +325,9 @@ export default function Header() {
                           aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
                         >
                           {isMobileMenuOpen ? (
-                            <X className="w-6 h-6" />
+                            <X className="w-5 h-5 stroke-1" />
                           ) : (
-                            <Menu className="w-6 h-6" />
+                            <Menu className="w-5 h-5 stroke-1" />
                           )}
                         </button>
                       </div>
@@ -418,7 +418,7 @@ export default function Header() {
                                   className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3"
                                   onClick={() => setIsMobileMenuOpen(false)}
                                 >
-                                  <User className="w-6 h-6" />
+                                  <User className="w-5 h-5 stroke-1" />
                                   <span className="text-sm font-medium">Moje konto</span>
                                 </Link>
                                 <Link
@@ -426,7 +426,7 @@ export default function Header() {
                                   className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3"
                                   onClick={() => setIsMobileMenuOpen(false)}
                                 >
-                                  <Package className="w-6 h-6" />
+                                  <Package className="w-5 h-5 stroke-1" />
                                   <span className="text-sm font-medium">Moje zamówienia</span>
                                 </Link>
                                 <button
@@ -436,7 +436,7 @@ export default function Header() {
                                   }}
                                   className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors py-3"
                                 >
-                                  <LogOut className="w-6 h-6" />
+                                  <LogOut className="w-5 h-5 stroke-1" />
                                   <span className="text-sm font-medium">Wyloguj się</span>
                                 </button>
                               </>
@@ -448,7 +448,7 @@ export default function Header() {
                                 }}
                                 className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3"
                               >
-                                <User className="w-6 h-6" />
+                                <User className="w-5 h-5 stroke-1" />
                                 <span className="text-sm font-medium">Zaloguj się</span>
                               </button>
                             )}
@@ -460,7 +460,7 @@ export default function Header() {
                               }}
                               className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
                             >
-                              <Heart className="w-6 h-6" />
+                              <Heart className="w-5 h-5 stroke-1" />
                               <span className="text-sm font-medium">Ulubione</span>
                               {favoritesCount > 0 && (
                                 <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">

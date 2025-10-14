@@ -15,10 +15,10 @@ export default function TopBar() {
         <motion.div
           className="flex whitespace-nowrap"
           animate={{
-            x: [0, -1000],
+            x: ['100vw', '-100%'],
           }}
           transition={{
-            duration: 20,
+            duration: 25,
             repeat: Infinity,
             ease: 'linear',
           }}
@@ -26,6 +26,15 @@ export default function TopBar() {
           {announcements.map((announcement, index) => (
             <span
               key={index}
+              className="inline-block mx-8 text-sm font-medium tracking-wider uppercase"
+            >
+              {announcement}
+            </span>
+          ))}
+          {/* Duplicate for seamless loop */}
+          {announcements.map((announcement, index) => (
+            <span
+              key={`duplicate-${index}`}
               className="inline-block mx-8 text-sm font-medium tracking-wider uppercase"
             >
               {announcement}
