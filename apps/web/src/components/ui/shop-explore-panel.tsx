@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, User, Heart, ShoppingCart } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
 import Link from 'next/link';
-import PopupChipsMotion from './popup-chips-motion';
 import SearchBar from './search/search-bar';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -201,12 +200,19 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   {/* Marki */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Marka</h3>
-                    <div className="max-h-[60vh] overflow-hidden pr-1">
-                      <PopupChipsMotion
-                        isOpen={open}
-                        density="med"
-                        labels={(attributes.brands || []).map((t: any) => t.name)}
-                      />
+                    <div className="max-h-[60vh] overflow-auto pr-1">
+                      <div className="flex flex-wrap gap-2">
+                        {((attributes.brands || []).slice(0, 40)).map((t: any) => (
+                          <Link
+                            key={String(t.id)}
+                            href={`/sklep?brands=${encodeURIComponent(t.slug)}`}
+                            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm hover:border-black hover:bg-gray-50"
+                            onClick={onClose}
+                          >
+                            {t.name}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
