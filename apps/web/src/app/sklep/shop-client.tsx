@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, memo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Search, Filter, X, ChevronDown, Grid3X3, List } from 'lucide-react';
 import KingProductCard from '@/components/king-product-card';
 
@@ -13,6 +14,7 @@ import { WooProduct } from '@/types/woocommerce';
 interface FilterState {
   search: string;
   categories: string[];
+  brands?: string[];
   minPrice: number;
   maxPrice: number;
   inStock: boolean;
@@ -58,6 +60,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     categories: [],
+    brands: [],
     minPrice: 0,
     maxPrice: 10000, // 1000 zł w groszach
     inStock: false,
@@ -65,6 +68,36 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     sortBy: 'date',
     sortOrder: 'desc'
   });
+  // Sync filters with URL query params (category, brands, dynamic attrs)
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (!searchParams) return;
+    const categoryParam = searchParams.get('category') || '';
+    const brandsParam = searchParams.get('brands') || '';
+
+    const urlCategories = categoryParam
+      ? categoryParam.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+    const urlBrands = brandsParam
+      ? brandsParam.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    // Collect any pa_* attribute filters from URL as well
+    const newAttrs: Record<string, string[]> = {};
+    searchParams.forEach((value, key) => {
+      if (key.startsWith('pa_')) {
+        newAttrs[key] = value.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    });
+
+    setFilters((prev) => ({
+      ...prev,
+      categories: urlCategories,
+      brands: urlBrands,
+      ...newAttrs,
+    }));
+  }, [searchParams]);
+
 
   // Debounced search
   const [searchInput, setSearchInput] = useState(filters.search);
@@ -105,6 +138,10 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       // Categories - WordPress obsłuży wielokrotne kategorie
       if (filters.categories.length > 0) {
         params.append('category', filters.categories.join(','));
+      }
+      // Brands
+      if (filters.brands && (filters.brands as string[]).length > 0) {
+        params.append('brands', (filters.brands as string[]).join(','));
       }
       
       // Search, sorting, prices
@@ -198,7 +235,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const handleFilterChange = (key: string, value: string | number | boolean) => {
     console.log('🔧 handleFilterChange called:', { key, value, type: typeof value });
     
-    if (key === 'categories') {
+    if (key === 'categories' || key === 'brands') {
       // Handle array filters (checkboxes)
       setFilters(prev => {
         const currentArray = prev[key] as string[];
@@ -297,6 +334,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     const clearedFilters: FilterState = {
       search: '',
       categories: [],
+      brands: [],
       minPrice: 0,
       maxPrice: 10000,
       inStock: false,
