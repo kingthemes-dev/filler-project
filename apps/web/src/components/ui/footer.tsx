@@ -62,29 +62,6 @@ export default function Footer() {
                      </div>
                    </div>
                  </div>
-                 
-                 {/* Social Media - po prawej */}
-                 <div className="flex flex-col space-y-3 ml-6">
-                   <a 
-                     href="https://facebook.com/filler" 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40 group"
-                     aria-label="Facebook"
-                   >
-                     <Facebook className="w-6 h-6 text-white group-hover:text-blue-400 transition-colors duration-300" />
-                   </a>
-                   
-                   <a 
-                     href="https://instagram.com/filler" 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40 group"
-                     aria-label="Instagram"
-                   >
-                     <Instagram className="w-6 h-6 text-white group-hover:text-pink-400 transition-colors duration-300" />
-                   </a>
-                 </div>
                </div>
              </div>
            </div>
