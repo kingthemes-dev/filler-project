@@ -201,13 +201,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   <div>
                     <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Marka</h3>
                     <div className="max-h-[60vh] overflow-auto pr-1">
-                      <div className="flex flex-wrap gap-2">
-                        {((attributes.brands || []).slice(0, 40)).map((t: any) => (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+                        {((attributes.brands || []).slice(0, 36)).map((t: any) => (
                           <Link
                             key={String(t.id)}
                             href={`/sklep?brands=${encodeURIComponent(t.slug)}`}
-                            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm hover:border-black hover:bg-gray-50"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-3.5 py-1.5 text-sm text-gray-900 shadow-sm hover:bg-gray-50 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 transition-colors"
                             onClick={onClose}
+                            title={t.name}
                           >
                             {t.name}
                           </Link>
