@@ -21,6 +21,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const [selectedCat, setSelectedCat] = useState<number | null>(null);
   const [headerTop, setHeaderTop] = useState<number>(0);
   const [containerPx, setContainerPx] = useState<number | null>(null);
+  const [containerLeftPx, setContainerLeftPx] = useState<number>(0);
+  const [containerRightPx, setContainerRightPx] = useState<number>(0);
   const [headerHeightPx, setHeaderHeightPx] = useState<number>(0);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [panelHeightPx, setPanelHeightPx] = useState<number>(0);
@@ -45,7 +47,11 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           // Try to match inner container width
           const inner = headerEl.querySelector('div.max-w-\[95vw\]');
           const innerRect = (inner as HTMLElement | null)?.getBoundingClientRect();
-          if (innerRect && mounted) setContainerPx(Math.round(innerRect.width));
+          if (innerRect && mounted) {
+            setContainerPx(Math.round(innerRect.width));
+            setContainerLeftPx(Math.round(innerRect.left));
+            setContainerRightPx(Math.round(innerRect.right));
+          }
         }
       } catch {}
     };
@@ -111,13 +117,11 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
           {/* Zaokrąglone tło obejmujące header + panel; header pozostaje ponad tym tłem */}
           <div
-            className="fixed left-0 right-0 z-[45]"
-            style={{ top: headerTop - headerHeightPx }}
+            className="fixed z-[45]"
+            style={{ top: headerTop - headerHeightPx, left: containerLeftPx, right: `calc(100vw - ${containerRightPx}px)` }}
             aria-hidden
           >
-            <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
               <div className="rounded-2xl bg-white shadow-xl" style={{ height: headerHeightPx + panelHeightPx }} />
-            </div>
           </div>
 
           <motion.div
