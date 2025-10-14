@@ -107,7 +107,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
               <OverlayHeader onClose={onClose} />
 
-              <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden mt-3">
+              <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden mt-0">
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
                   {/* Kategorie główne */}
