@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, User, Heart, ShoppingCart } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
@@ -21,6 +21,9 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const [selectedCat, setSelectedCat] = useState<number | null>(null);
   const [headerTop, setHeaderTop] = useState<number>(0);
   const [containerPx, setContainerPx] = useState<number | null>(null);
+  const [headerHeightPx, setHeaderHeightPx] = useState<number>(0);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [panelHeightPx, setPanelHeightPx] = useState<number>(0);
 
   useEffect(() => {
     if (!open) return;
@@ -38,6 +41,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           const topH = topRect ? Math.round(topRect.height) : 0;
           const correctionPx =  -2; // minimalna korekta na border/shadow
           if (mounted) setHeaderTop(headerH + topH + correctionPx);
+          if (mounted) setHeaderHeightPx(headerH);
           // Try to match inner container width
           const inner = headerEl.querySelector('div.max-w-\[95vw\]');
           const innerRect = (inner as HTMLElement | null)?.getBoundingClientRect();
@@ -71,7 +75,13 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
       }
     };
     load();
-    return () => { mounted = false; };
+    // Observe panel height to draw combined rounded highlight (header+panel)
+    const ro = new ResizeObserver(() => {
+      if (panelRef.current) setPanelHeightPx(panelRef.current.offsetHeight);
+    });
+    if (panelRef.current) ro.observe(panelRef.current);
+    if (panelRef.current) setPanelHeightPx(panelRef.current.offsetHeight);
+    return () => { mounted = false; ro.disconnect(); };
   }, [open]);
 
   const mainCategories = useMemo(() => categories.filter(c => (c.parent || 0) === 0), [categories]);
@@ -111,7 +121,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             transition={{ duration: 0.2 }}
           >
             <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
-              <div className="rounded-2xl bg-white shadow-xl overflow-hidden">
+              <div className="relative">
+                {/* Zaokrąglony highlight obejmujący header + panel */}
+                <div
+                  aria-hidden
+                  className="absolute left-0 right-0 rounded-2xl bg-white shadow-xl"
+                  style={{ top: -headerHeightPx, height: headerHeightPx + panelHeightPx }}
+                />
+                <div ref={panelRef} className="relative rounded-2xl overflow-hidden">
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
                   {/* Kategorie główne */}
@@ -189,6 +206,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       </div>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
