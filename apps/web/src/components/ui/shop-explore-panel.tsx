@@ -107,7 +107,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
       {open && (
         <> 
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-40"
+            className="fixed inset-0 bg-black/65 backdrop-blur-[2px] z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -137,7 +137,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           >
             <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
               <div className="relative">
-                <div ref={panelRef} className="relative rounded-2xl overflow-hidden z-50 pt-4 sm:pt-6">
+                <div ref={panelRef} className="relative rounded-2xl bg-white overflow-hidden z-50 pt-6 sm:pt-8">
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
                   {/* Kategorie główne */}
