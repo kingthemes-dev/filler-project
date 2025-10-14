@@ -2,9 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, User, Heart, ShoppingCart } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
 import Link from 'next/link';
+import SearchBar from './search/search-bar';
+import { useCartStore } from '@/stores/cart-store';
+import { useAuthStore } from '@/stores/auth-store';
+import { useFavoritesStore } from '@/stores/favorites-store';
 
 interface ShopExplorePanelProps {
   open: boolean;
@@ -15,7 +19,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const [categories, setCategories] = useState<Array<{ id: number; name: string; slug: string; count?: number; parent?: number }>>([]);
   const [attributes, setAttributes] = useState<Record<string, Array<{ id: number | string; name: string; slug: string }>>>({});
   const [selectedCat, setSelectedCat] = useState<number | null>(null);
-  const [headerTop, setHeaderTop] = useState<number>(64);
+  const [headerTop, setHeaderTop] = useState<number>(0);
   const [containerPx, setContainerPx] = useState<number | null>(null);
 
   useEffect(() => {
@@ -26,8 +30,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
       try {
         const headerEl = document.querySelector('header');
         if (headerEl) {
-          const rect = (headerEl as HTMLElement).getBoundingClientRect();
-          if (mounted) setHeaderTop(Math.round(rect.height));
+          // Overlay zakrywa header – headerTop = 0, bo rysujemy własny pasek w overlayu
+          if (mounted) setHeaderTop(0);
           // Try to match inner container width
           const inner = headerEl.querySelector('div.max-w-\[95vw\]');
           const innerRect = (inner as HTMLElement | null)?.getBoundingClientRect();
@@ -101,13 +105,9 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             transition={{ duration: 0.2 }}
           >
             <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
-              <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                  <div className="text-sm font-semibold text-gray-900">Sklep · Przeglądaj</div>
-                  <button onClick={onClose} aria-label="Zamknij" className="p-2 rounded hover:bg-gray-50">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+              <OverlayHeader onClose={onClose} />
+
+              <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden mt-3">
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
                   {/* Kategorie główne */}
@@ -196,6 +196,50 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 }
 
 
-// Removed TopOverlayBar to keep header in-place; overlay starts below header height
+function OverlayHeader({ onClose }: { onClose: () => void }) {
+  let itemCount = 0, openCart = () => {};
+  let openFavoritesModal = () => {};
+  let isAuthenticated = false;
+  try { const cart = useCartStore(); itemCount = cart.itemCount; openCart = cart.openCart; } catch {}
+  try { const fav = useFavoritesStore(); openFavoritesModal = fav.openFavoritesModal; } catch {}
+  try { const auth = useAuthStore(); isAuthenticated = auth.isAuthenticated; } catch {}
 
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div className="h-16 sm:h-20 flex items-center gap-4 px-4 sm:px-6">
+        {/* Logo (placeholder F) */}
+        <div className="flex items-center flex-none">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+            <span className="text-white text-lg sm:text-xl font-bold">F</span>
+          </div>
+          <span className="text-xl sm:text-2xl font-bold text-black">FILLER</span>
+        </div>
+
+        {/* Menu */}
+        <nav className="hidden lg:flex items-center gap-6 flex-none">
+          <Link href="/" className="text-gray-700 hover:text-black transition-colors font-medium" onClick={onClose}>Strona główna</Link>
+          <span className="text-gray-900 font-medium">Sklep</span>
+          <a href="/o-nas" className="text-gray-700 hover:text-black transition-colors font-medium" onClick={onClose}>O nas</a>
+          <a href="/kontakt" className="text-gray-700 hover:text-black transition-colors font-medium" onClick={onClose}>Kontakt</a>
+        </nav>
+
+        {/* Search */}
+        <div className="hidden md:flex flex-1 min-w-[160px]">
+          <SearchBar placeholder="Szukaj produktów..." className="w-full" />
+        </div>
+
+        {/* Icons */}
+        <div className="flex items-center gap-4 flex-none ml-2">
+          <button className="text-gray-700 hover:text-black" onClick={() => { openFavoritesModal(); onClose(); }} aria-label="Ulubione"><Heart className="w-6 h-6" /></button>
+          <button className="text-gray-700 hover:text-black relative" onClick={() => { openCart(); onClose(); }} aria-label="Koszyk">
+            <ShoppingCart className="w-6 h-6" />
+            {itemCount > 0 && (<span className="absolute -top-2 -right-2 bg-black text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{itemCount}</span>)}
+          </button>
+          <button className="text-gray-700 hover:text-black" aria-label="Konto" title={isAuthenticated ? 'Moje konto' : 'Zaloguj się'} onClick={onClose}><User className="w-6 h-6" /></button>
+          <button onClick={onClose} aria-label="Zamknij" className="p-2 rounded hover:bg-gray-50"><X className="w-5 h-5" /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
