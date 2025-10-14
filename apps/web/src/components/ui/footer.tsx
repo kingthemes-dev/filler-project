@@ -16,37 +16,35 @@ export default function Footer() {
          <div className="relative max-w-[95vw] mx-auto px-4 sm:px-6">
            {/* Logo i kontakt - Mobile */}
            <div className="lg:hidden mb-8 -mt-4">
-             <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 py-4 mb-3">
-               <div className="flex items-start justify-between mb-4 min-h-[80px]">
-                 <div className="flex items-center">
-                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
-                     <span className="text-white font-bold text-xl">F</span>
-                   </div>
-                   <h3 className="text-3xl font-bold">FILLER</h3>
+             <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 py-4 mb-3 relative">
+               <div className="flex items-center mb-4">
+                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+                   <span className="text-white font-bold text-xl">F</span>
                  </div>
+                 <h3 className="text-3xl font-bold">FILLER</h3>
+               </div>
+               
+               {/* Social Media Icons - Mobile only - positioned absolutely */}
+               <div className="absolute top-1/2 right-4 transform -translate-y-1/2 flex flex-col space-y-2">
+                 <a 
+                   href="https://facebook.com/filler" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40 group"
+                   aria-label="Facebook"
+                 >
+                   <Facebook className="w-6 h-6 text-white group-hover:text-blue-400 transition-colors duration-300" />
+                 </a>
                  
-                 {/* Social Media Icons - Mobile only */}
-                 <div className="flex flex-col space-y-2 items-center justify-center h-full">
-                   <a 
-                     href="https://facebook.com/filler" 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40 group"
-                     aria-label="Facebook"
-                   >
-                     <Facebook className="w-6 h-6 text-white group-hover:text-blue-400 transition-colors duration-300" />
-                   </a>
-                   
-                   <a 
-                     href="https://instagram.com/filler" 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40 group"
-                     aria-label="Instagram"
-                   >
-                     <Instagram className="w-6 h-6 text-white group-hover:text-pink-400 transition-colors duration-300" />
-                   </a>
-                 </div>
+                 <a 
+                   href="https://instagram.com/filler" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40 group"
+                   aria-label="Instagram"
+                 >
+                   <Instagram className="w-6 h-6 text-white group-hover:text-pink-400 transition-colors duration-300" />
+                 </a>
                </div>
                
                <div className="flex justify-between items-start">
