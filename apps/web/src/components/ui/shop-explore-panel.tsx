@@ -105,19 +105,19 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             transition={{ duration: 0.2 }}
           >
             <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
-              <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+              <div className="rounded-2xl bg-white shadow-xl overflow-hidden">
                 {/* Pasek headera w tym samym kontenerze (jedne zaokrąglenia) */}
                 <div className="px-4 sm:px-6">
                   <OverlayHeader onClose={onClose} />
                 </div>
-                <div className="border-t border-gray-100" />
+                <div className="h-px" />
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
                   {/* Kategorie główne */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Kategorie</h3>
                     <div className="max-h-[60vh] overflow-auto pr-2">
-                      <ul className="rounded-xl border border-gray-100 divide-y divide-gray-100">
+                      <ul className="rounded-xl">
                         {mainCategories.map((c) => (
                           <li key={c.id}>
                             <button
