@@ -36,7 +36,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           const topRect = (topBarEl as HTMLElement | null)?.getBoundingClientRect();
           const headerH = Math.round(rect.height);
           const topH = topRect ? Math.round(topRect.height) : 0;
-          if (mounted) setHeaderTop(headerH + topH);
+          const correctionPx =  -2; // minimalna korekta na border/shadow
+          if (mounted) setHeaderTop(headerH + topH + correctionPx);
           // Try to match inner container width
           const inner = headerEl.querySelector('div.max-w-\[95vw\]');
           const innerRect = (inner as HTMLElement | null)?.getBoundingClientRect();
