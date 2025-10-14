@@ -33,6 +33,7 @@
     appearance: none;
     background: transparent;
     cursor: pointer;
+    pointer-events: auto;
   }
   
   .slider-thumb::-webkit-slider-thumb {
@@ -45,6 +46,14 @@
     cursor: pointer;
     border: 2px solid #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    pointer-events: auto;
+  }
+  
+  .slider-thumb::-webkit-slider-track {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    height: 8px;
   }
   
   .slider-thumb::-moz-range-thumb {

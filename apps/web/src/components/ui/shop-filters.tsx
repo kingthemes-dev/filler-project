@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,14 @@ export default function ShopFilters({
     min: filters.minPrice || 0,
     max: filters.maxPrice || 10000
   });
+
+  // Sync priceRange with filters when they change externally
+  React.useEffect(() => {
+    setPriceRange({
+      min: filters.minPrice || 0,
+      max: filters.maxPrice || 10000
+    });
+  }, [filters.minPrice, filters.maxPrice]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -244,7 +252,8 @@ export default function ShopFilters({
                           <span>{priceRange.max} zł</span>
                         </div>
                         
-                        <div className="relative">
+                        <div className="relative h-6">
+                          <div className="absolute top-3 left-0 right-0 h-2 bg-gray-200 rounded-lg"></div>
                           <input
                             type="range"
                             min="0"
@@ -253,10 +262,12 @@ export default function ShopFilters({
                             value={priceRange.min}
                             onChange={(e) => {
                               const newMin = parseInt(e.target.value);
-                              setPriceRange(prev => ({ ...prev, min: newMin }));
-                              onFilterChange('minPrice', newMin);
+                              if (newMin <= priceRange.max) {
+                                setPriceRange(prev => ({ ...prev, min: newMin }));
+                                onFilterChange('minPrice', newMin);
+                              }
                             }}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+                            className="absolute top-3 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb z-10"
                           />
                           <input
                             type="range"
@@ -266,10 +277,12 @@ export default function ShopFilters({
                             value={priceRange.max}
                             onChange={(e) => {
                               const newMax = parseInt(e.target.value);
-                              setPriceRange(prev => ({ ...prev, max: newMax }));
-                              onFilterChange('maxPrice', newMax);
+                              if (newMax >= priceRange.min) {
+                                setPriceRange(prev => ({ ...prev, max: newMax }));
+                                onFilterChange('maxPrice', newMax);
+                              }
                             }}
-                            className="absolute top-0 w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer slider-thumb"
+                            className="absolute top-3 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb z-20"
                           />
                         </div>
                         
