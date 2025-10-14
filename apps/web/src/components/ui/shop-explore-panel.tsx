@@ -144,16 +144,16 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   <div>
                     <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Kategorie</h3>
                     <div className="max-h-[60vh] overflow-auto pr-2">
-                      <ul className="rounded-xl">
+                      <ul className="rounded-xl divide-y divide-gray-100 border border-gray-100 bg-white/60">
                         {mainCategories.map((c) => (
                           <li key={c.id}>
                             <button
                               onClick={() => setSelectedCat(c.id)}
-                              className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors ${selectedCat === c.id ? 'bg-gray-50' : ''}`}
+                              className={`w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 ${selectedCat === c.id ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
                             >
-                              <span className="text-gray-900">{c.name}</span>
+                              <span className="text-gray-900 font-medium">{c.name}</span>
                               {typeof c.count === 'number' && (
-                                <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{c.count}</span>
+                                <span className="inline-flex h-6 items-center rounded-full bg-gray-100 px-2 text-xs text-gray-600">{c.count}</span>
                               )}
                             </button>
                           </li>
@@ -186,7 +186,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                             <Link
                               key={sc.id}
                               href={`/sklep?category=${encodeURIComponent(sc.slug)}`}
-                              className="px-3 py-2 rounded-lg border border-gray-200 text-sm hover:border-black hover:bg-gray-50"
+                              className="px-3 py-2 min-h-[42px] rounded-lg border border-gray-200 text-sm bg-white/70 hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 flex items-center justify-between"
                               onClick={onClose}
                             >
                               {sc.name}
