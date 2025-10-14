@@ -137,6 +137,15 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           >
             <div className="mx-auto px-4 sm:px-6" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
               <div className="relative">
+                {/* Close button */}
+                <button
+                  onClick={onClose}
+                  aria-label="Zamknij"
+                  className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 z-50 inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/80 backdrop-blur hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
                 <div ref={panelRef} className="relative overflow-hidden z-50 pt-6 sm:pt-8">
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
