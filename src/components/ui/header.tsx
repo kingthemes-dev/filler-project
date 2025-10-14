@@ -10,6 +10,7 @@ import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
 import EmailNotificationCenter from './email/email-notification-center';
 import SearchBar from './search/search-bar';
+import ShopExplorePanel from './shop-explore-panel';
 
 
 
@@ -20,6 +21,7 @@ export default function Header() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
+  const [isShopOpen, setIsShopOpen] = useState(false);
   
   // Safely access stores with error handling
   let itemCount = 0, openCart = () => {}, user = null, isAuthenticated = false, logout = () => {};
@@ -87,26 +89,31 @@ export default function Header() {
     <>
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16 sm:h-20">
+        <div className="flex items-center gap-4 h-16 sm:h-20">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-none">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center mr-2 sm:mr-3">
               <span className="text-white text-lg sm:text-xl font-bold">F</span>
             </div>
             <span className="text-xl sm:text-2xl font-bold text-black">FILLER</span>
           </div>
 
-          {/* Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8">
+          {/* Navigation - moved next to logo (left) */}
+          <nav className="hidden lg:flex items-center gap-6 flex-none">
             <Link href="/" className="text-gray-700 hover:text-black transition-colors font-medium">
               Strona główna
             </Link>
-            
-                                    {/* Shop Link */}
-                        <a href="/sklep" className="text-gray-700 hover:text-black transition-colors font-medium">
-                          Sklep
-                        </a>
-            
+            <button
+              type="button"
+              onClick={() => setIsShopOpen(true)}
+              className="text-gray-900 hover:text-black transition-colors font-medium inline-flex items-center gap-1"
+              aria-haspopup="dialog"
+              aria-expanded={isShopOpen}
+              aria-controls="shop-explore-panel"
+            >
+              Sklep
+              <ChevronDown className="w-4 h-4" />
+            </button>
             <a href="/o-nas" className="text-gray-700 hover:text-black transition-colors font-medium">
               O nas
             </a>
@@ -115,16 +122,16 @@ export default function Header() {
             </a>
           </nav>
 
+          {/* Adaptive Search - fills available space */}
+          <div className="hidden md:flex flex-1 min-w-[160px]">
+            <SearchBar 
+              placeholder="Szukaj produktów..."
+              className="w-full"
+            />
+          </div>
+
                                 {/* Right side icons */}
-                      <div className="flex items-center space-x-4 lg:space-x-6">
-                        {/* Search - desktop full bar, mobile icon */}
-                        <div className="hidden md:block">
-                          <SearchBar 
-                            placeholder="Szukaj produktów..."
-                            className="w-64"
-                          />
-                        </div>
-                        
+                      <div className="flex items-center space-x-4 lg:space-x-6 flex-none">
                         {/* Mobile search icon */}
                         <button 
                           className="md:hidden text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
@@ -473,6 +480,9 @@ export default function Header() {
         isOpen={isEmailCenterOpen}
         onClose={() => setIsEmailCenterOpen(false)}
       />
+      
+      {/* Shop Explore Panel */}
+      <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       
       {/* Favorites Modal */}
     </>
