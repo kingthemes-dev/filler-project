@@ -30,8 +30,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
       try {
         const headerEl = document.querySelector('header');
         if (headerEl) {
-          // Overlay zakrywa header – headerTop = 0, bo rysujemy własny pasek w overlayu
-          if (mounted) setHeaderTop(0);
+          // Ustaw overlay tuż pod rzeczywistym headerem (sticky top)
+          if (mounted) setHeaderTop(Math.round(rect.height));
           // Try to match inner container width
           const inner = headerEl.querySelector('div.max-w-\[95vw\]');
           const innerRect = (inner as HTMLElement | null)?.getBoundingClientRect();
@@ -97,8 +97,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             id="shop-explore-panel"
             role="dialog"
             aria-modal="true"
-            className="absolute left-0 right-0 z-50"
-            style={{ top: 0 }}
+            className="fixed left-0 right-0 z-50"
+            style={{ top: headerTop }}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
