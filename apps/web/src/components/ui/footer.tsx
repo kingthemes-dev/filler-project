@@ -17,11 +17,36 @@ export default function Footer() {
            {/* Logo i kontakt - Mobile */}
            <div className="lg:hidden mb-8 -mt-4">
              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 py-4 mb-3">
-               <div className="flex items-center mb-4">
-                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
-                   <span className="text-white font-bold text-xl">F</span>
+               <div className="flex items-center justify-between mb-4">
+                 <div className="flex items-center">
+                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+                     <span className="text-white font-bold text-xl">F</span>
+                   </div>
+                   <h3 className="text-3xl font-bold">FILLER</h3>
                  </div>
-                 <h3 className="text-3xl font-bold">FILLER</h3>
+                 
+                 {/* Social Media Icons - Mobile only */}
+                 <div className="flex space-x-2">
+                   <a 
+                     href="https://facebook.com/filler" 
+                     target="_blank" 
+                     rel="noopener noreferrer"
+                     className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40 group"
+                     aria-label="Facebook"
+                   >
+                     <Facebook className="w-6 h-6 text-white group-hover:text-blue-400 transition-colors duration-300" />
+                   </a>
+                   
+                   <a 
+                     href="https://instagram.com/filler" 
+                     target="_blank" 
+                     rel="noopener noreferrer"
+                     className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all duration-300 border border-white/20 hover:border-white/40 group"
+                     aria-label="Instagram"
+                   >
+                     <Instagram className="w-6 h-6 text-white group-hover:text-pink-400 transition-colors duration-300" />
+                   </a>
+                 </div>
                </div>
                
                <div className="flex justify-between items-start">
@@ -112,11 +137,36 @@ export default function Footer() {
           
           {/* Logo i kontakt */}
           <div>
-            <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
-                <span className="text-white font-bold text-xl">F</span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+                  <span className="text-white font-bold text-xl">F</span>
+                </div>
+                <h3 className="text-3xl font-bold">FILLER</h3>
               </div>
-              <h3 className="text-3xl font-bold">FILLER</h3>
+              
+              {/* Social Media Icons - Mobile only */}
+              <div className="flex space-x-2 lg:hidden">
+                <a 
+                  href="https://facebook.com/filler" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="w-5 h-5" />
+                </a>
+                
+                <a 
+                  href="https://instagram.com/filler" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-5 h-5" />
+                </a>
+              </div>
             </div>
             
             <div className="space-y-4 mb-8">
@@ -157,28 +207,6 @@ export default function Footer() {
               </div>
             </div>
             
-            {/* Social Media */}
-            <div className="flex space-x-3">
-              <a 
-                href="https://facebook.com/filler" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              
-              <a 
-                href="https://instagram.com/filler" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-            </div>
           </div>
 
              {/* O firmie */}
@@ -229,6 +257,28 @@ export default function Footer() {
               © 2024 Filler. Wszystkie prawa zastrzeżone.
             </p>
             
+            {/* Social Media Icons - Desktop only */}
+            <div className="hidden lg:flex space-x-3 mt-4 md:mt-0">
+              <a 
+                href="https://facebook.com/filler" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+              
+              <a 
+                href="https://instagram.com/filler" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
