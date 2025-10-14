@@ -11,14 +11,14 @@ const announcements = [
 export default function TopBar() {
   return (
     <div className="bg-black text-white overflow-hidden" data-topbar>
-      <div className="relative h-12 flex items-center">
+      <div className="relative h-7 flex items-center">
         <motion.div
           className="flex whitespace-nowrap"
           animate={{
             x: ['100vw', '-100vw'],
           }}
           transition={{
-            duration: 30,
+            duration: 45,
             repeat: Infinity,
             ease: 'linear',
           }}
@@ -26,7 +26,7 @@ export default function TopBar() {
           {announcements.map((announcement, index) => (
             <span
               key={index}
-              className="inline-block mx-8 text-sm font-medium tracking-wider uppercase"
+              className="inline-block mx-8 text-xs font-medium tracking-wider uppercase"
             >
               {announcement}
             </span>
@@ -35,7 +35,7 @@ export default function TopBar() {
           {announcements.map((announcement, index) => (
             <span
               key={`duplicate-${index}`}
-              className="inline-block mx-8 text-sm font-medium tracking-wider uppercase"
+              className="inline-block mx-8 text-xs font-medium tracking-wider uppercase"
             >
               {announcement}
             </span>
