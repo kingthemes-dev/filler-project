@@ -48,6 +48,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
   const mainCategories = useMemo(() => categories.filter(c => (c.parent || 0) === 0), [categories]);
   const subCategories = useMemo(() => categories.filter(c => (c.parent || 0) === (selectedCat || 0)), [categories, selectedCat]);
+  const currentMain = useMemo(() => mainCategories.find(c => c.id === selectedCat) || null, [mainCategories, selectedCat]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -114,7 +115,19 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
                   {/* Podkategorie / Zastosowanie */}
                   <div>
-                    <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Podkategorie · Zastosowanie</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs uppercase tracking-wide text-gray-500">Podkategorie · Zastosowanie</h3>
+                      {currentMain && (
+                        <Link
+                          href={`/sklep?category=${encodeURIComponent(currentMain.slug)}`}
+                          onClick={onClose}
+                          className="text-xs font-medium text-gray-700 hover:text-black px-2 py-1 rounded-lg hover:bg-gray-100"
+                          title={`Zobacz wszystko: ${currentMain.name}`}
+                        >
+                          Zobacz wszystko
+                        </Link>
+                      )}
+                    </div>
                     <div className="max-h-[60vh] overflow-auto pr-2">
                       {subCategories.length === 0 ? (
                         <div className="text-sm text-gray-500 px-2">Brak podkategorii</div>
