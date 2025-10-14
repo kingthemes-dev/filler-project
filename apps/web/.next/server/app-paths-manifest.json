@@ -1,5 +1,6 @@
 {
+  "/api/woocommerce/route": "app/api/woocommerce/route.js",
   "/page": "app/page.js",
-  "/sklep/page": "app/sklep/page.js",
-  "/produkt/[slug]/page": "app/produkt/[slug]/page.js"
+  "/produkt/[slug]/page": "app/produkt/[slug]/page.js",
+  "/sklep/page": "app/sklep/page.js"
 }

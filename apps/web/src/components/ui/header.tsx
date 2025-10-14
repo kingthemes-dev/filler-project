@@ -106,7 +106,6 @@ export default function Header() {
             <div 
               className="relative"
               onMouseEnter={() => setIsShopOpen(true)}
-              onMouseLeave={() => setIsShopOpen(false)}
             >
               <Link 
                 href="/sklep"
