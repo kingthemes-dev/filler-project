@@ -2,13 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, User, Heart, ShoppingCart } from 'lucide-react';
+import { X } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
 import Link from 'next/link';
-import SearchBar from './search/search-bar';
-import { useCartStore } from '@/stores/cart-store';
-import { useAuthStore } from '@/stores/auth-store';
-import { useFavoritesStore } from '@/stores/favorites-store';
 
 interface ShopExplorePanelProps {
   open: boolean;
@@ -79,15 +75,13 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             id="shop-explore-panel"
             role="dialog"
             aria-modal="true"
-            className="fixed left-0 right-0 top-0 z-50"
+            className="fixed left-0 right-0 top-[64px] sm:top-[80px] z-50"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            {/* Top bar inside overlay replicating header: search + client panel */}
-            <TopOverlayBar onClose={onClose} />
-            <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mx-auto max-w-[95vw] px-4 sm:px-6">
               <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                   <div className="text-sm font-semibold text-gray-900">Sklep · Przeglądaj</div>
@@ -183,69 +177,6 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 }
 
 
-function TopOverlayBar({ onClose }: { onClose: () => void }) {
-  // Minimal wiring for icons
-  let itemCount = 0, openCart = () => {}; 
-  let openFavoritesModal = () => {};
-  let isAuthenticated = false;
-  try {
-    const cart = useCartStore();
-    itemCount = cart.itemCount;
-    openCart = cart.openCart;
-  } catch {}
-  try {
-    const fav = useFavoritesStore();
-    openFavoritesModal = fav.openFavoritesModal;
-  } catch {}
-  try {
-    const auth = useAuthStore();
-    isAuthenticated = auth.isAuthenticated;
-  } catch {}
-
-  return (
-    <div className="bg-white border-b border-gray-200">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="h-16 sm:h-20 flex items-center gap-4">
-          {/* Left spacer to align with site logo in real header */}
-          <div className="hidden sm:block w-28" />
-          {/* Search fills center */}
-          <div className="flex-1">
-            <SearchBar placeholder="Szukaj produktów..." className="w-full" />
-          </div>
-          {/* Client panel icons */}
-          <div className="flex items-center gap-4 ml-2">
-            <button
-              className="text-gray-700 hover:text-black transition-colors"
-              onClick={() => { openFavoritesModal(); onClose(); }}
-              aria-label="Ulubione"
-            >
-              <Heart className="w-6 h-6" />
-            </button>
-            <button
-              className="text-gray-700 hover:text-black transition-colors relative"
-              onClick={() => { openCart(); onClose(); }}
-              aria-label="Koszyk"
-            >
-              <ShoppingCart className="w-6 h-6" />
-              {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-black text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                  {itemCount}
-                </span>
-              )}
-            </button>
-            <button
-              className="text-gray-700 hover:text-black transition-colors"
-              onClick={onClose}
-              aria-label="Konto"
-              title={isAuthenticated ? 'Moje konto' : 'Zaloguj się'}
-            >
-              <User className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Removed TopOverlayBar to keep header in-place; overlay starts below header height
 
 
