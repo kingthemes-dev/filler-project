@@ -208,7 +208,7 @@ function OverlayHeader({ onClose }: { onClose: () => void }) {
   try { const auth = useAuthStore(); isAuthenticated = auth.isAuthenticated; } catch {}
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+    <div className="bg-white">
       <div className="h-16 sm:h-20 flex items-center gap-4 px-4 sm:px-6">
         {/* Logo (placeholder F) */}
         <div className="flex items-center flex-none">
