@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
@@ -12,17 +12,28 @@ interface ShopExplorePanelProps {
 }
 
 export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProps) {
-  const [categories, setCategories] = useState<Array<{ id: number | string; name: string; slug: string; count?: number }>>([]);
+  const [categories, setCategories] = useState<Array<{ id: number; name: string; slug: string; count?: number; parent?: number }>>([]);
   const [attributes, setAttributes] = useState<Record<string, Array<{ id: number | string; name: string; slug: string }>>>({});
+  const [selectedCat, setSelectedCat] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let mounted = true;
     const load = async () => {
       try {
+        // 1) pełne kategorie (z parent) do kolumny 1 i 2
+        const catsRes = await fetch('/api/woocommerce?endpoint=products/categories&per_page=100', { cache: 'no-store' });
+        const cats = catsRes.ok ? await catsRes.json() : [];
+        // 2) szybkie metadane z shop (liczniki/atrybuty)
         const shop = await woo.getShopData(1, 1);
         if (!mounted) return;
-        setCategories(shop.categories || []);
+        const counters: Record<number, number> = {};
+        (shop.categories || []).forEach((c: any) => { counters[c.id] = c.count ?? 0; });
+        const normCats = Array.isArray(cats)
+          ? cats.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug, parent: c.parent || 0, count: counters[c.id] ?? c.count }))
+          : [];
+        setCategories(normCats);
+        setSelectedCat((normCats.find(c => (c.parent || 0) === 0)?.id) || null);
         setAttributes({
           capacities: shop.attributes?.capacities || [],
           brands: shop.attributes?.brands || []
@@ -31,6 +42,9 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         // optional: log silently in dev
       }
     };
+  const mainCategories = useMemo(() => categories.filter(c => (c.parent || 0) === 0), [categories]);
+  const subCategories = useMemo(() => categories.filter(c => (c.parent || 0) === (selectedCat || 0)), [categories, selectedCat]);
+
     load();
     return () => { mounted = false; };
   }, [open]);
@@ -75,36 +89,58 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-5 sm:p-6">
-                  {/* Kategorie (kolumna lewa) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
+                  {/* Kategorie główne */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Kategorie</h3>
                     <div className="max-h-[60vh] overflow-auto pr-2">
-                      <ul className="divide-y divide-gray-100 rounded-xl border border-gray-100">
-                        {(categories || []).map((c) => (
-                          <li key={String(c.id)}>
-                            <Link
-                              href={`/sklep?category=${encodeURIComponent(c.slug)}`}
-                              className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
-                              onClick={onClose}
+                      <ul className="rounded-xl border border-gray-100 divide-y divide-gray-100">
+                        {mainCategories.map((c) => (
+                          <li key={c.id}>
+                            <button
+                              onClick={() => setSelectedCat(c.id)}
+                              className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors ${selectedCat === c.id ? 'bg-gray-50' : ''}`}
                             >
                               <span className="text-gray-900">{c.name}</span>
                               {typeof c.count === 'number' && (
                                 <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{c.count}</span>
                               )}
-                            </Link>
+                            </button>
                           </li>
                         ))}
                       </ul>
                     </div>
                   </div>
 
-                  {/* Marki (kolumna prawa) */}
+                  {/* Podkategorie / Zastosowanie */}
+                  <div>
+                    <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Podkategorie · Zastosowanie</h3>
+                    <div className="max-h-[60vh] overflow-auto pr-2">
+                      {subCategories.length === 0 ? (
+                        <div className="text-sm text-gray-500 px-2">Brak podkategorii</div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          {subCategories.map((sc) => (
+                            <Link
+                              key={sc.id}
+                              href={`/sklep?category=${encodeURIComponent(sc.slug)}`}
+                              className="px-3 py-2 rounded-lg border border-gray-200 text-sm hover:border-black hover:bg-gray-50"
+                              onClick={onClose}
+                            >
+                              {sc.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Marki */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Marka</h3>
                     <div className="max-h-[60vh] overflow-auto pr-1">
                       <div className="flex flex-wrap gap-2">
-                        {((attributes.brands || []).slice(0, 30)).map((t) => (
+                        {((attributes.brands || []).slice(0, 40)).map((t) => (
                           <Link
                             key={String(t.id)}
                             href={`/sklep?brands=${encodeURIComponent(t.slug)}`}
