@@ -66,65 +66,55 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="mx-auto max-w-[95vw] px-4 sm:px-6">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6">
               <div className="rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                  <div className="text-sm font-semibold text-gray-700">Sklep · Przeglądaj</div>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                  <div className="text-sm font-semibold text-gray-900">Sklep · Przeglądaj</div>
                   <button onClick={onClose} aria-label="Zamknij" className="p-2 rounded hover:bg-gray-50">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 sm:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-5 sm:p-6">
+                  {/* Kategorie (kolumna lewa) */}
                   <div>
-                    <h3 className="text-xs uppercase tracking-wide text-gray-400 mb-3">Kategorie</h3>
-                    <ul className="space-y-2">
-                      {(categories || []).map((c) => (
-                        <li key={String(c.id)}>
-                          <Link
-                            href={`/sklep?category=${encodeURIComponent(c.slug)}`}
-                            className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-900"
-                            onClick={onClose}
-                          >
-                            <span>{c.name}</span>
-                            {typeof c.count === 'number' && (
-                              <span className="text-xs text-gray-500">{c.count}</span>
-                            )}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xs uppercase tracking-wide text-gray-400 mb-3">Pojemność</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {(attributes.capacities || []).map((t) => (
-                        <Link
-                          key={String(t.id)}
-                          href={`/sklep?capacities=${encodeURIComponent(t.slug)}`}
-                          className="px-3 py-1.5 rounded-full border border-gray-200 text-sm hover:border-black hover:bg-gray-50"
-                          onClick={onClose}
-                        >
-                          {t.name}
-                        </Link>
-                      ))}
+                    <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Kategorie</h3>
+                    <div className="max-h-[60vh] overflow-auto pr-2">
+                      <ul className="divide-y divide-gray-100 rounded-xl border border-gray-100">
+                        {(categories || []).map((c) => (
+                          <li key={String(c.id)}>
+                            <Link
+                              href={`/sklep?category=${encodeURIComponent(c.slug)}`}
+                              className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                              onClick={onClose}
+                            >
+                              <span className="text-gray-900">{c.name}</span>
+                              {typeof c.count === 'number' && (
+                                <span className="text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{c.count}</span>
+                              )}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
 
+                  {/* Marki (kolumna prawa) */}
                   <div>
-                    <h3 className="text-xs uppercase tracking-wide text-gray-400 mb-3">Marka</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {(attributes.brands || []).map((t) => (
-                        <Link
-                          key={String(t.id)}
-                          href={`/sklep?brands=${encodeURIComponent(t.slug)}`}
-                          className="px-3 py-1.5 rounded-full border border-gray-200 text-sm hover:border-black hover:bg-gray-50"
-                          onClick={onClose}
-                        >
-                          {t.name}
-                        </Link>
-                      ))}
+                    <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Marka</h3>
+                    <div className="max-h-[60vh] overflow-auto pr-1">
+                      <div className="flex flex-wrap gap-2">
+                        {((attributes.brands || []).slice(0, 30)).map((t) => (
+                          <Link
+                            key={String(t.id)}
+                            href={`/sklep?brands=${encodeURIComponent(t.slug)}`}
+                            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm hover:border-black hover:bg-gray-50"
+                            onClick={onClose}
+                          >
+                            {t.name}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
