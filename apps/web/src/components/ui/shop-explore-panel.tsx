@@ -139,9 +139,10 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
               <div className="relative">
                 {/* Close button */}
                 <button
-                  onClick={onClose}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onClose(); }}
                   aria-label="Zamknij"
-                  className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 z-50 inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/80 backdrop-blur hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10"
+                  className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 z-[60] inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/80 backdrop-blur hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10"
                 >
                   <X className="h-5 w-5" />
                 </button>
