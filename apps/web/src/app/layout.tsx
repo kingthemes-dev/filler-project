@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import TopBar from '@/components/ui/top-bar';
@@ -79,9 +80,15 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* Cookiebot */}
-        <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="fa168711-f44f-4971-91cf-f37e7337d834" data-blockingmode="auto" type="text/javascript"></script>
+        <Script
+          id="Cookiebot"
+          src="https://consent.cookiebot.com/uc.js"
+          data-cbid="fa168711-f44f-4971-91cf-f37e7337d834"
+          data-blockingmode="auto"
+          strategy="beforeInteractive"
+        />
         {/* Google Tag Manager */}
-        <script dangerouslySetInnerHTML={{__html: `
+        <Script id="gtm" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
           (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
           new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
           j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=

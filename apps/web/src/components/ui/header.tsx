@@ -88,18 +88,21 @@ export default function Header() {
   return (
     <>
       <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50`}>
-        <div className={`max-w-[95vw] mx-auto px-6 sm:px-8`}>
-          <div className="flex items-center justify-between h-16 sm:h-20">
+        <div className={`max-w-[95vw] mx-auto px-4 sm:px-8`}>
+          <div className="grid grid-cols-[auto,1fr,auto] items-center h-16 sm:h-20 gap-2 overflow-x-hidden">
           {/* Logo */}
-          <div className="flex items-center flex-none">
+          <div className="flex items-center flex-none col-start-1">
             <div className="w-7 h-7 sm:w-9 sm:h-9 bg-black rounded-lg flex items-center justify-center mr-2 sm:mr-3">
               <span className="text-white text-sm sm:text-lg font-bold">F</span>
             </div>
             <span className="text-lg sm:text-xl font-bold text-black">FILLER</span>
           </div>
 
+          {/* Spacer / Middle column for mobile to allow shrink without overflow */}
+          <div className="min-w-0 md:hidden col-start-2" />
+
           {/* Navigation - desktop only */}
-          <nav className="hidden lg:flex items-center gap-6 flex-none ml-8">
+          <nav className="hidden lg:flex items-center gap-6 flex-none ml-8 col-start-2">
             <Link href="/" className="text-gray-700 hover:text-black transition-colors font-medium">
               Strona główna
             </Link>
@@ -124,7 +127,7 @@ export default function Header() {
           </nav>
 
           {/* Search Bar - desktop only */}
-          <div className="hidden md:flex flex-1 mx-8">
+          <div className="hidden md:flex flex-1 mx-8 col-start-2 min-w-0">
             <SearchBar 
               placeholder="Szukaj produktów..."
               className="w-full text-sm"
@@ -132,46 +135,46 @@ export default function Header() {
           </div>
 
           {/* Mobile Icons with Labels */}
-          <div className="md:hidden flex items-center space-x-6">
+          <div className="md:hidden col-start-3 flex items-center gap-3 justify-end min-w-0">
             {/* Mobile Search Icon */}
             <button 
-              className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+              className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
               aria-label="Szukaj produktów"
             >
               <Search className="w-5 h-5" />
-              <span className="text-xs font-medium">Szukaj</span>
+              <span className="hidden sm:block text-[11px] font-medium">Szukaj</span>
             </button>
 
             {/* Mobile User Icon */}
             {isAuthenticated ? (
               <Link
                 href="/moje-konto"
-                className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+                className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
                 aria-label="Moje konto"
               >
                 <User className="w-5 h-5" />
-                <span className="text-xs font-medium">Konto</span>
+                <span className="hidden sm:block text-[11px] font-medium">Konto</span>
               </Link>
             ) : (
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
-                className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+                className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
                 aria-label="Zaloguj się"
               >
                 <User className="w-5 h-5" />
-                <span className="text-xs font-medium">Konto</span>
+                <span className="hidden sm:block text-[11px] font-medium">Konto</span>
               </button>
             )}
 
             {/* Mobile Favorites Icon */}
             <button
               onClick={() => openFavoritesModal()}
-              className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
+              className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
               aria-label="Ulubione"
             >
               <Heart className="w-5 h-5" />
-              <span className="text-xs font-medium">Ulubione</span>
+              <span className="hidden sm:block text-[11px] font-medium">Ulubione</span>
               {favoritesCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                   {favoritesCount}
@@ -182,11 +185,11 @@ export default function Header() {
             {/* Mobile Cart Icon */}
             <button
               onClick={openCart}
-              className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
+              className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
               aria-label="Koszyk"
             >
               <ShoppingCart className="w-5 h-5" />
-              <span className="text-xs font-medium">Koszyk</span>
+              <span className="hidden sm:block text-[11px] font-medium">Koszyk</span>
               {itemCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                   {itemCount}
@@ -197,7 +200,7 @@ export default function Header() {
             {/* Mobile Menu Icon */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+              className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
               aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
             >
               {isMobileMenuOpen ? (
@@ -205,7 +208,7 @@ export default function Header() {
               ) : (
                 <Menu className="w-5 h-5" />
               )}
-              <span className="text-xs font-medium">Menu</span>
+              <span className="hidden sm:block text-[11px] font-medium">Menu</span>
             </button>
           </div>
 
