@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import KingProductCard from './king-product-card';
 import { WooProduct } from '@/types/woocommerce';
@@ -39,16 +39,27 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   const allSources = [data.nowosci || [], data.promocje || [], data.polecane || [], data.bestsellery || []];
   const allProducts = mergeUnique(allSources);
 
-  const nowosci = data.nowosci && data.nowosci.length > 0 ? data.nowosci : allProducts;
-  const promocjeRaw = data.promocje && data.promocje.length > 0 ? data.promocje : allProducts;
-  const promocje = mergeUnique([promocjeRaw]).filter(p => Boolean(p.on_sale));
-  const polecaneRaw = data.polecane && data.polecane.length > 0 ? data.polecane : allProducts;
-  const polecane = mergeUnique([polecaneRaw]).filter(p => Boolean(p.featured));
-  // For bestsellers - filter by actual sales data or leave empty if no real bestsellers
-  const bestselleryRaw = Array.isArray(data.bestsellery) ? data.bestsellery : [];
-  // Since backend returns all products, we need to filter for actual bestsellers
-  // For now, show empty until we have real sales data
-  const bestsellery = bestselleryRaw.filter(p => p.total_sales && p.total_sales > 0);
+  // Memoize filtered data to prevent unnecessary recalculations
+  const nowosci = useMemo(() => 
+    data.nowosci && data.nowosci.length > 0 ? data.nowosci : allProducts.slice(0, 8),
+    [data.nowosci, allProducts]
+  );
+  
+  const promocje = useMemo(() => {
+    const promocjeRaw = data.promocje && data.promocje.length > 0 ? data.promocje : allProducts;
+    return mergeUnique([promocjeRaw]).filter(p => Boolean(p.on_sale)).slice(0, 8);
+  }, [data.promocje, allProducts]);
+  
+  const polecane = useMemo(() => {
+    const polecaneRaw = data.polecane && data.polecane.length > 0 ? data.polecane : allProducts;
+    return mergeUnique([polecaneRaw]).filter(p => Boolean(p.featured)).slice(0, 8);
+  }, [data.polecane, allProducts]);
+  
+  const bestsellery = useMemo(() => {
+    const bestselleryRaw = Array.isArray(data.bestsellery) ? data.bestsellery : [];
+    // For now, show first 8 products as bestsellers until we have real sales data
+    return bestselleryRaw.slice(0, 8);
+  }, [data.bestsellery]);
 
   const tabs: TabData[] = [
     { id: 'nowosci', label: 'Nowości', products: nowosci },

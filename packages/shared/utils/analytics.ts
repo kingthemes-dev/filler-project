@@ -2,13 +2,14 @@
  * Analytics and monitoring utilities
  */
 
-import { env } from '@/config/env';
+// Avoid importing app-level env validation here; use public env directly to prevent runtime crashes
+const PUBLIC_GA_ID = process.env.NEXT_PUBLIC_GA_ID || '';
 import { logger } from './logger';
 
 // Google Analytics configuration
 export const GA_CONFIG = {
-  measurementId: env.NEXT_PUBLIC_GA_ID,
-  enabled: !!env.NEXT_PUBLIC_GA_ID
+  measurementId: PUBLIC_GA_ID,
+  enabled: !!PUBLIC_GA_ID
 };
 
 // Event types for tracking

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { analytics } from '@headless-woo/shared/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,24 @@ export default function ShopFilters({
     price: true,
     availability: true,
   });
+
+  // Restore expanded state from localStorage
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('shopFiltersExpanded');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setExpandedSections((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch {}
+  }, []);
+
+  // Persist expanded state
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('shopFiltersExpanded', JSON.stringify(expandedSections));
+    } catch {}
+  }, [expandedSections]);
   
   // Price range state for slider
   const [priceRange, setPriceRange] = useState({
@@ -80,6 +99,58 @@ export default function ShopFilters({
 
   // Price ranges use PLN directly (not grosze)
 
+  // Count active filters to show in toggle and to conditionally show "Wyczyść"
+  const activeFiltersCount = React.useMemo(() => {
+    let count = 0;
+    if ((filters.categories || []).length > 0) count++;
+    if ((filters.search as string)?.trim()) count++;
+    if (filters.minPrice && filters.minPrice > 0) count++;
+    if (filters.maxPrice && filters.maxPrice < 10000) count++;
+    if (filters.inStock) count++;
+    if (filters.onSale) count++;
+    Object.keys(filters).forEach((key) => {
+      if (key.startsWith('pa_')) {
+        const v = filters[key];
+        if (Array.isArray(v) ? v.length > 0 : Boolean(v)) count++;
+      }
+    });
+    return count;
+  }, [filters]);
+
+  // Close on Esc when mobile panel is open
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showFilters) onToggleFilters();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showFilters, onToggleFilters]);
+
+  // Analytics: open/close filters
+  useEffect(() => {
+    analytics.track('filters_panel_state', { open: showFilters });
+  }, [showFilters]);
+
+  // Focus trap and initial focus for mobile panel
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (showFilters && panelRef.current) {
+      // initial focus
+      closeBtnRef.current?.focus();
+      const handleFocus = (e: FocusEvent) => {
+        if (!panelRef.current) return;
+        if (showFilters && !panelRef.current.contains(e.target as Node)) {
+          // keep focus inside
+          e.preventDefault?.();
+          closeBtnRef.current?.focus();
+        }
+      };
+      document.addEventListener('focusin', handleFocus);
+      return () => document.removeEventListener('focusin', handleFocus);
+    }
+  }, [showFilters]);
+
   return (
     <>
       {/* Mobile Filter Toggle - Hidden on desktop */}
@@ -87,10 +158,12 @@ export default function ShopFilters({
         <button
           onClick={onToggleFilters}
           className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          aria-expanded={showFilters}
+          aria-controls="filters-panel"
         >
           <div className="flex items-center">
             <Filter className="w-4 h-4 mr-2" />
-            <span className="font-medium">Filtry</span>
+            <span className="font-medium">Filtry{activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ''}</span>
           </div>
           {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
@@ -98,24 +171,35 @@ export default function ShopFilters({
 
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+        <div
+          className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-sm"
+          id="filters-panel"
+          role="region"
+          aria-labelledby="filters-heading"
+          tabIndex={-1}
+          ref={panelRef}
+        >
               {/* Header */}
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center">
                   <Filter className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-gray-600" />
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Filtry</h3>
+                  <h3 id="filters-heading" className="text-base sm:text-lg font-semibold text-gray-900">Filtry</h3>
                   <span className="ml-2 text-xs sm:text-sm text-gray-500">({totalProducts} produktów)</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {activeFiltersCount > 0 && (
                   <button
-                    onClick={onClearFilters}
-                    className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    Wyczyść
-                  </button>
+                    onClick={() => { analytics.track('filters_clear'); onClearFilters(); }}
+                      className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      Wyczyść
+                    </button>
+                  )}
                   <button
                     onClick={onToggleFilters}
                     className="lg:hidden p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label="Zamknij filtry"
+                    ref={closeBtnRef}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -125,7 +209,7 @@ export default function ShopFilters({
               {/* Search Filter */}
               <div className="mb-4 sm:mb-6">
                 <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Wyszukiwanie</h4>
-                <div className="relative">
+                <div className="relative" data-testid="filter-search">
                   <input
                     type="text"
                     placeholder="Szukaj produktów..."
@@ -260,6 +344,7 @@ export default function ShopFilters({
                             max="10000"
                             step="100"
                             value={priceRange.min}
+                            onWheel={(e) => e.preventDefault()}
                             onChange={(e) => {
                               const newMin = parseInt(e.target.value);
                               if (newMin <= priceRange.max) {
@@ -275,6 +360,7 @@ export default function ShopFilters({
                             max="10000"
                             step="100"
                             value={priceRange.max}
+                            onWheel={(e) => e.preventDefault()}
                             onChange={(e) => {
                               const newMax = parseInt(e.target.value);
                               if (newMax >= priceRange.min) {

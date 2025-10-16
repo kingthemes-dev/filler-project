@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { UI_SPACING } from '@/config/constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, FileText } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
@@ -89,20 +90,28 @@ export default function Header() {
     <>
       <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50`}>
         <div className={`max-w-[95vw] mx-auto px-4 sm:px-8`}>
-          <div className="grid grid-cols-[auto,1fr,auto] items-center h-16 sm:h-20 gap-2 overflow-x-hidden">
+          <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-x-hidden">
           {/* Logo */}
-          <div className="flex items-center flex-none col-start-1">
-            <div className="w-7 h-7 sm:w-9 sm:h-9 bg-black rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+          <div className="flex items-center flex-none">
+            <div className="w-7 h-7 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
               <span className="text-white text-sm sm:text-lg font-bold">F</span>
             </div>
             <span className="text-lg sm:text-xl font-bold text-black">FILLER</span>
           </div>
 
+          {/* Desktop spacer between logo and nav (exact 75px) */}
+          <div
+            className="hidden lg:block"
+            style={{ width: `${UI_SPACING.HEADER_NAV_GAP_DESKTOP}px` }}
+          />
+
           {/* Spacer / Middle column for mobile to allow shrink without overflow */}
           <div className="min-w-0 md:hidden col-start-2" />
 
           {/* Navigation - desktop only */}
-          <nav className="hidden lg:flex items-center gap-6 flex-none ml-8 col-start-2">
+          <nav
+            className="hidden lg:flex items-center gap-6 flex-none"
+          >
             <Link href="/" className="text-gray-700 hover:text-black transition-colors font-medium">
               Strona główna
             </Link>
@@ -126,8 +135,11 @@ export default function Header() {
             </a>
           </nav>
 
-          {/* Search Bar - desktop only */}
-          <div className="hidden md:flex flex-1 mx-8 col-start-2 min-w-0">
+          {/* Search Bar - desktop only (flex-1 on desktop) */}
+          <div
+            className="hidden md:flex mx-4 lg:mx-0 min-w-0 lg:flex-1 w-full max-w-none lg:px-[var(--search-pad)]"
+            style={{ ['--search-pad' as any]: `${UI_SPACING.SEARCH_SIDE_PADDING_DESKTOP}px` }}
+          >
             <SearchBar 
               placeholder="Szukaj produktów..."
               className="w-full text-sm"
@@ -142,7 +154,7 @@ export default function Header() {
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
               aria-label="Szukaj produktów"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-6 h-6" />
               <span className="hidden sm:block text-[11px] font-medium">Szukaj</span>
             </button>
 
@@ -153,7 +165,7 @@ export default function Header() {
                 className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
                 aria-label="Moje konto"
               >
-                <User className="w-5 h-5" />
+                <User className="w-6 h-6" />
                 <span className="hidden sm:block text-[11px] font-medium">Konto</span>
               </Link>
             ) : (
@@ -162,7 +174,7 @@ export default function Header() {
                 className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
                 aria-label="Zaloguj się"
               >
-                <User className="w-5 h-5" />
+                <User className="w-6 h-6" />
                 <span className="hidden sm:block text-[11px] font-medium">Konto</span>
               </button>
             )}
@@ -173,7 +185,7 @@ export default function Header() {
               className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
               aria-label="Ulubione"
             >
-              <Heart className="w-5 h-5" />
+              <Heart className="w-6 h-6" />
               <span className="hidden sm:block text-[11px] font-medium">Ulubione</span>
               {favoritesCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
@@ -188,7 +200,7 @@ export default function Header() {
               className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
               aria-label="Koszyk"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <ShoppingCart className="w-6 h-6" />
               <span className="hidden sm:block text-[11px] font-medium">Koszyk</span>
               {itemCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
@@ -204,16 +216,16 @@ export default function Header() {
               aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
             >
               {isMobileMenuOpen ? (
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               ) : (
-                <Menu className="w-5 h-5" />
+                <Menu className="w-6 h-6" />
               )}
               <span className="hidden sm:block text-[11px] font-medium">Menu</span>
             </button>
           </div>
 
           {/* Desktop icons - hidden on mobile */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-6 justify-end">
             {/* Email Notification Center - Admin Only */}
             {isAuthenticated && user?.role === 'admin' && (
               <button 

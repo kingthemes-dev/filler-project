@@ -24,13 +24,20 @@ interface EnvConfig {
 }
 
 // Required environment variables
-const REQUIRED_ENV_VARS = [
-  'WOOCOMMERCE_API_URL',
-  'WOOCOMMERCE_CONSUMER_KEY',
-  'WOOCOMMERCE_CONSUMER_SECRET',
-  'NEXT_PUBLIC_WORDPRESS_URL',
-  'NEXT_PUBLIC_BASE_URL'
-] as const;
+// On the client we only require public URLs to avoid runtime crashes during hydration
+const isBrowser = typeof window !== 'undefined';
+const REQUIRED_ENV_VARS = isBrowser
+  ? [
+      'NEXT_PUBLIC_WORDPRESS_URL',
+      'NEXT_PUBLIC_BASE_URL'
+    ] as const
+  : [
+      'WOOCOMMERCE_API_URL',
+      'WOOCOMMERCE_CONSUMER_KEY',
+      'WOOCOMMERCE_CONSUMER_SECRET',
+      'NEXT_PUBLIC_WORDPRESS_URL',
+      'NEXT_PUBLIC_BASE_URL'
+    ] as const;
 
 // Optional environment variables
 const OPTIONAL_ENV_VARS = [
@@ -51,21 +58,26 @@ function validateEnv(): EnvConfig {
   }
   
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}\n` +
-      'Please check your .env.local file.'
-    );
+    // In the browser, warn instead of crashing; server will still validate strictly
+    const message = `Missing required environment variables: ${missing.join(', ')}\nPlease check your .env.local file.`;
+    if (isBrowser) {
+      console.warn(message);
+    } else {
+      throw new Error(message);
+    }
   }
   
   // Validate URLs
   const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
   
-  try {
-    new URL(wordpressUrl);
-    new URL(baseUrl);
-  } catch (error) {
-    throw new Error('Invalid URL in environment variables');
+  if (wordpressUrl && baseUrl) {
+    try {
+      new URL(wordpressUrl);
+      new URL(baseUrl);
+    } catch (error) {
+      if (!isBrowser) throw new Error('Invalid URL in environment variables');
+    }
   }
   
   // Validate NODE_ENV
@@ -75,15 +87,15 @@ function validateEnv(): EnvConfig {
   }
   
   return {
-    WOOCOMMERCE_API_URL: process.env.WOOCOMMERCE_API_URL!,
-    WOOCOMMERCE_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY!,
-    WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET!,
-    NEXT_PUBLIC_WORDPRESS_URL: wordpressUrl,
-    NEXT_PUBLIC_BASE_URL: baseUrl,
+    WOOCOMMERCE_API_URL: process.env.WOOCOMMERCE_API_URL || '',
+    WOOCOMMERCE_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY || '',
+    WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET || '',
+    NEXT_PUBLIC_WORDPRESS_URL: wordpressUrl || '',
+    NEXT_PUBLIC_BASE_URL: baseUrl || '',
     SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,
     SENDINBLUE_LIST_ID: process.env.SENDINBLUE_LIST_ID,
     NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,
-    NODE_ENV: nodeEnv
+    NODE_ENV: nodeEnv || 'development'
   };
 }
 

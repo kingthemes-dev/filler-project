@@ -71,12 +71,14 @@ export default function KingProductCard({
     };
   }, [isDropdownOpen]);
 
-  // Debug variations state changes
+  // Debug variations state changes (only in development)
   useEffect(() => {
-    console.log('🔄 variations state changed:', variations);
-    console.log('🔄 variations.length:', variations.length);
-    console.log('🔄 variations type:', typeof variations);
-    console.log('🔄 variations is array:', Array.isArray(variations));
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 variations state changed:', variations);
+      console.log('🔄 variations.length:', variations.length);
+      console.log('🔄 variations type:', typeof variations);
+      console.log('🔄 variations is array:', Array.isArray(variations));
+    }
   }, [variations]);
   
   // Safely access stores with error handling
@@ -177,24 +179,34 @@ export default function KingProductCard({
   };
 
   const handleShowVariants = async () => {
-    console.log('🔄 handleShowVariants called for product:', product.id);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 handleShowVariants called for product:', product.id);
+    }
+    
     if (!variationsLoaded) {
       try {
         const response = await wooCommerceService.getProductVariations(product.id);
-        console.log('🔄 Variations response:', response);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Variations response:', response);
+        }
+        
         // API zwraca warianty jako tablicę bezpośrednio, nie w obiekcie z właściwością variations
         const variations = Array.isArray(response) ? response : (response.variations || []);
-        console.log('🔄 Setting variations:', variations);
-        console.log('🔄 variations type:', typeof variations);
-        console.log('🔄 variations is array:', Array.isArray(variations));
-        console.log('🔄 variations length:', variations.length);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Setting variations:', variations);
+          console.log('🔄 variations type:', typeof variations);
+          console.log('🔄 variations is array:', Array.isArray(variations));
+          console.log('🔄 variations length:', variations.length);
+        }
+        
         setVariations([...variations]); // Force new array reference
         setVariationsLoaded(true);
-        console.log('🔄 Variations set, variationsLoaded:', true);
-        // Force re-render by updating state
-        setTimeout(() => {
-          console.log('🔄 After timeout - variations:', variations);
-        }, 100);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Variations set, variationsLoaded:', true);
+        }
       } catch (error) {
         console.error('Błąd ładowania wariantów:', error);
       }

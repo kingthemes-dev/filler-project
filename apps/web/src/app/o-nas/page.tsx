@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import PageContainer from '@/components/ui/page-container';
 import { Shield, Award, Users, Heart, CheckCircle } from 'lucide-react';
 
 export default function AboutPage() {
@@ -8,7 +9,7 @@ export default function AboutPage() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-gray-50 to-white py-20">
-        <div className="max-w-[95vw] mx-auto px-6">
+        <PageContainer>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -23,12 +24,12 @@ export default function AboutPage() {
               Zapewniamy najwyższą jakość i bezpieczeństwo zabiegów.
             </p>
           </motion.div>
-        </div>
+        </PageContainer>
       </section>
 
       {/* Main Content */}
       <section className="py-20">
-        <div className="max-w-[95vw] mx-auto px-6">
+        <PageContainer>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             
             {/* Left Column - Text Content */}
@@ -87,12 +88,12 @@ export default function AboutPage() {
               </div>
             </motion.div>
           </div>
-        </div>
+        </PageContainer>
       </section>
 
       {/* Features Section */}
       <section className="bg-gray-50 py-20">
-        <div className="max-w-[95vw] mx-auto px-6">
+        <PageContainer>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -149,7 +150,7 @@ export default function AboutPage() {
               </motion.div>
             ))}
           </div>
-        </div>
+        </PageContainer>
       </section>
 
       {/* CTA Section */}

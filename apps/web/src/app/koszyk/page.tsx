@@ -5,6 +5,7 @@ import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide-
 import { useCartStore, type CartItem } from '@/stores/cart-store';
 import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import Link from 'next/link';
+import PageContainer from '@/components/ui/page-container';
 import Image from 'next/image';
 
 export default function CartPage() {
@@ -21,7 +22,7 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-white py-12 pb-16">
-        <div className="max-w-[95vw] mx-auto px-6">
+        <PageContainer>
           <div className="max-w-2xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -52,7 +53,7 @@ export default function CartPage() {
               </div>
             </motion.div>
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }

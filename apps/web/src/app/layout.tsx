@@ -9,6 +9,8 @@ import CartDrawer from '@/components/ui/cart-drawer';
 import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
 import FavoritesModal from '@/components/ui/favorites-modal';
 import ErrorBoundary from '@/components/error-boundary';
+import ReactQueryProvider from './providers/react-query-provider';
+import { HydrationBoundary } from '@tanstack/react-query';
 
 
 const geistSans = Geist({
@@ -117,9 +119,13 @@ export default function RootLayout({
                         <ErrorBoundary>
                           <TopBar />
                           <Header />
-                          <main>
-                            {children}
-                          </main>
+                          <ReactQueryProvider>
+                            <HydrationBoundary>
+                              <main>
+                                {children}
+                              </main>
+                            </HydrationBoundary>
+                          </ReactQueryProvider>
                           <AuthModalManager />
                           <FavoritesModal />
                           <Footer />

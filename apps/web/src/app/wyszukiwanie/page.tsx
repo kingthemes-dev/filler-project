@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import PageContainer from '@/components/ui/page-container';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Search, Filter, SortAsc, Star, ShoppingCart, Heart } from 'lucide-react';
@@ -132,7 +133,7 @@ function SearchResultsContent() {
 
   if (!query) {
     return (
-      <div className="max-w-[95vw] mx-auto px-6 py-8">
+      <PageContainer className="py-8">
         <div className="text-center">
           <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -142,12 +143,12 @@ function SearchResultsContent() {
             Użyj wyszukiwarki w górnej części strony, aby znaleźć produkty
           </p>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="max-w-[95vw] mx-auto px-6 py-8">
+    <PageContainer className="py-8">
       {/* Search Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -452,7 +453,7 @@ function SearchResultsContent() {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

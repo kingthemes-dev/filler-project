@@ -1,6 +1,6 @@
 'use client';
 
-import { Facebook, Instagram, Mail, Phone, MapPin, Clock, Award, Truck, Shield } from 'lucide-react';
+import { Facebook, Instagram, Mail, Phone, MapPin, Clock, Award, Truck, Shield, Building2, User, CreditCard, Info } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -91,9 +91,9 @@ export default function Footer() {
 
            {/* Mobile Tabs */}
            <div className="lg:hidden mb-8 -mt-4">
-             <div className="grid grid-cols-2 gap-3">
-               <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
-                 <h4 className="text-white font-semibold pb-2 mb-3 border-b border-white/20">O firmie</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
+                <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><Building2 className="w-5 h-5 text-white/80" />O firmie</h4>
                  <div className="space-y-2 text-sm text-gray-300">
                    <a href="/kontakt" className="block hover:text-white transition-colors cursor-pointer">Kontakt</a>
                    <a href="/o-nas" className="block hover:text-white transition-colors cursor-pointer">O nas</a>
@@ -102,8 +102,8 @@ export default function Footer() {
                  </div>
                </div>
                
-               <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
-                 <h4 className="text-white font-semibold pb-2 mb-3 border-b border-white/20">Moje konto</h4>
+              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
+                <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><User className="w-5 h-5 text-white/80" />Moje konto</h4>
                  <div className="space-y-2 text-sm text-gray-300">
                    <a href="/moje-zamowienia" className="block hover:text-white transition-colors cursor-pointer">Twoje zamówienia</a>
                    <a href="/moje-konto" className="block hover:text-white transition-colors cursor-pointer">Ustawienia konta</a>
@@ -111,16 +111,16 @@ export default function Footer() {
                  </div>
                </div>
                
-               <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
-                 <h4 className="text-white font-semibold pb-2 mb-3 border-b border-white/20">Płatności</h4>
+              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
+                <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><CreditCard className="w-5 h-5 text-white/80" />Płatności</h4>
                  <div className="space-y-2 text-sm text-gray-300">
                    <a href="/formy-platnosci" className="block hover:text-white transition-colors cursor-pointer">Formy płatności</a>
                    <a href="/czas-koszty-dostawy" className="block hover:text-white transition-colors cursor-pointer">Czas i koszty dostawy</a>
                  </div>
                </div>
                
-               <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
-                 <h4 className="text-white font-semibold pb-2 mb-3 border-b border-white/20">Informacje</h4>
+              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
+                <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><Info className="w-5 h-5 text-white/80" />Informacje</h4>
                  <div className="space-y-2 text-sm text-gray-300">
                    <a href="/polityka-prywatnosci" className="block hover:text-white transition-colors cursor-pointer">Polityka prywatności</a>
                    <a href="/regulamin" className="block hover:text-white transition-colors cursor-pointer">Regulamin sklepu</a>

@@ -38,7 +38,7 @@ export default function FavoritesModal() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/50 z-[70]"
             onClick={closeFavoritesModal}
           />
           
@@ -48,7 +48,11 @@ export default function FavoritesModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+            onClick={(e) => {
+              // Close when clicking on the empty area (overlay container)
+              if (e.target === e.currentTarget) closeFavoritesModal();
+            }}
           >
             <div 
               className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col"

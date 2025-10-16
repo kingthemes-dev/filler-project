@@ -1,8 +1,10 @@
 import Image from 'next/image';
+import PageContainer from '@/components/ui/page-container';
 import dynamic from 'next/dynamic';
 import KingHeroRounded from '@/components/king-hero-rounded';
 import { Button } from '@/components/ui/button';
 import { Award, Truck, Headphones, Shield } from 'lucide-react';
+import { Metadata } from 'next';
 
 // Dynamic imports for below-the-fold components
 const KingProductTabsServer = dynamic(() => import('@/components/king-product-tabs-server'));
@@ -10,8 +12,42 @@ const NewsletterForm = dynamic(() => import('@/components/ui/newsletter-form'));
 
 // ISR - Incremental Static Regeneration
 export const revalidate = 300; // 5 minutes
+export const dynamic = 'force-static';
 
-// Server-side data fetching
+// Generate metadata for homepage
+export const metadata: Metadata = {
+  title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+  description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny, szybka dostawa, gwarancja oryginalności. Sprawdź naszą ofertę!",
+  keywords: [
+    "hurtownia medycyny estetycznej",
+    "produkty medycyny estetycznej", 
+    "filler",
+    "kosmetyki profesjonalne",
+    "mezoterapia",
+    "nici",
+    "peelingi",
+    "stymulatory",
+    "wypełniacz",
+    "urządzenia"
+  ],
+  openGraph: {
+    title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+    description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny, szybka dostawa, gwarancja oryginalności.",
+    type: "website",
+    locale: "pl_PL",
+    siteName: "FILLER",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+    description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny, szybka dostawa, gwarancja oryginalności.",
+  },
+  alternates: {
+    canonical: "/",
+  },
+};
+
+// Server-side data fetching with proper error handling
 async function getHomeFeedData() {
   try {
     // Import the API function directly instead of using fetch
@@ -22,10 +58,22 @@ async function getHomeFeedData() {
       throw new Error(`API error: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Validate data structure
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid data structure received');
+    }
+
+    return {
+      nowosci: Array.isArray(data.nowosci) ? data.nowosci : [],
+      promocje: Array.isArray(data.promocje) ? data.promocje : [],
+      polecane: Array.isArray(data.polecane) ? data.polecane : [],
+      bestsellery: Array.isArray(data.bestsellery) ? data.bestsellery : []
+    };
   } catch (error) {
     console.error('Failed to fetch home feed data:', error);
-    // Return empty data on error
+    // Return empty data on error with proper structure
     return {
       nowosci: [],
       promocje: [],
@@ -52,7 +100,7 @@ export default async function HomePage() {
 
       {/* Newsletter Section */}
       <section className="py-12 sm:py-16">
-        <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
+        <PageContainer>
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl">
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
@@ -83,12 +131,12 @@ export default async function HomePage() {
               </div>
             </div>
           </div>
-        </div>
+        </PageContainer>
       </section>
 
       {/* Features Section */}
       <section>
-        <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
+        <PageContainer>
           <div className="grid grid-cols-2 gap-4 sm:gap-6">
             {/* Quality */}
             <div className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg">
@@ -142,7 +190,7 @@ export default async function HomePage() {
               </p>
             </div>
           </div>
-        </div>
+        </PageContainer>
       </section>
     </div>
   );

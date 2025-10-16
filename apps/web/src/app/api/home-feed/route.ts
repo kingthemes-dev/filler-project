@@ -9,9 +9,11 @@ export async function GET() {
     // PRO Architecture: Call WordPress King Shop API directly (same as /api/woocommerce?endpoint=shop)
     const shopUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-shop/v1/data?endpoint=shop&per_page=50`;
     
-    console.log('🏠 Home feed - calling King Shop API:', shopUrl);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🏠 Home feed - calling King Shop API:', shopUrl);
+    }
     
-    // Fetch products using our optimized API
+    // Fetch products using our optimized API with timeout
     const productsResponse = await fetch(shopUrl, {
       method: 'GET',
       headers: {
@@ -22,7 +24,8 @@ export async function GET() {
       next: { 
         revalidate: 300, // 5 minutes
         tags: ['home-feed'] 
-      }
+      },
+      signal: AbortSignal.timeout(10000) // 10s timeout
     });
 
     if (!productsResponse.ok) {
@@ -32,16 +35,19 @@ export async function GET() {
     const responseData = await productsResponse.json();
     const products = responseData.products || [];
     
-    console.log('✅ Home feed data received:', {
-      products: products.length,
-      total: responseData.total || 0
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Home feed data received:', {
+        products: products.length,
+        total: responseData.total || 0
+      });
+    }
     
     // Filter out test products (products with empty prices or generic names)
     // PRO: Don't require images - products can have placeholder images
     const validProducts = products.filter((p: any) => 
       p.price && p.price !== '' && 
-      p.name && p.name !== 'Produkt'
+      p.name && p.name !== 'Produkt' &&
+      p.status === 'publish' // Only published products
     );
 
     // Sort products by date (newest first)
@@ -49,7 +55,7 @@ export async function GET() {
       new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
     );
 
-    // Organize data into categories
+    // Organize data into categories with proper fallbacks
     const data = {
       nowosci: sortedProducts.slice(0, 8), // Latest 8 valid products
       promocje: validProducts.filter((p: any) => p.on_sale).slice(0, 8),
@@ -69,17 +75,19 @@ export async function GET() {
   } catch (error) {
     console.error('Home feed API error:', error);
     
-    return NextResponse.json(
-      { 
-        error: 'Failed to fetch home feed data',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { 
-        status: 500,
-        headers: {
-          'Cache-Control': 'no-store'
-        }
+    // Return fallback data instead of error
+    const fallbackData = {
+      nowosci: [],
+      promocje: [],
+      polecane: [],
+      bestsellery: []
+    };
+    
+    return NextResponse.json(fallbackData, {
+      status: 200, // Return 200 with empty data instead of 500
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
       }
-    );
+    });
   }
 }

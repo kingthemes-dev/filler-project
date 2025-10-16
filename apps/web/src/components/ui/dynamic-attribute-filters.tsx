@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { FixedSizeList as List } from 'react-window';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { dynamicCategoriesService, DynamicFilters } from '@/services/dynamic-categories';
@@ -61,9 +63,50 @@ export default function DynamicAttributeFilters({
     }
     
     // PRO: Immediate load for better UX (no debounce for attributes)
-    loadAttributes(filtersHash);
-    setLastFiltersHash(filtersHash);
+    loadAttributes(filtersHash).then(() => setLastFiltersHash(filtersHash));
   }, [currentFilters, selectedFilters]); // PRO: Also reload when selectedFilters change
+
+  // React Query: fetch attributes with current filters (deduplicated, cached)
+  const attributesQuery = useQuery({
+    queryKey: ['shop','attributes',{ categories: (currentFilters.categories||[]).slice().sort(), search: currentFilters.search||'', min: currentFilters.minPrice||0, max: currentFilters.maxPrice||0, selected: Object.keys(selectedFilters).filter(k=>k.startsWith('pa_')).sort() }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('endpoint', 'attributes');
+      if (currentFilters.categories?.length) params.append('category', currentFilters.categories.join(','));
+      if (currentFilters.search) params.append('search', currentFilters.search);
+      if (currentFilters.minPrice !== undefined) params.append('min_price', String(currentFilters.minPrice));
+      if (currentFilters.maxPrice !== undefined) params.append('max_price', String(currentFilters.maxPrice));
+      if (currentFilters.attributeValues) {
+        Object.keys(currentFilters.attributeValues).forEach(key => {
+          if (key.startsWith('pa_') && currentFilters.attributeValues![key]) {
+            const attributeName = key.replace('pa_', '');
+            const filterValue = currentFilters.attributeValues![key];
+            const values = Array.isArray(filterValue) ? filterValue : [String(filterValue)];
+            values.forEach((value: string) => params.append(`attribute_${attributeName}`, value));
+          }
+        });
+      }
+      const res = await fetch(`/api/woocommerce?${params.toString()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    staleTime: 10 * 60_000,
+    enabled: true,
+  });
+
+  useEffect(() => {
+    if (attributesQuery.data?.attributes) {
+      const attributesMap: { [key: string]: { name: string; slug: string; terms: any[] } } = {};
+      Object.entries(attributesQuery.data.attributes).forEach(([attrSlug, attrData]: [string, any]) => {
+        const cleanName = (attrData.name || attrSlug)
+          .replace(/^pa_/i, '')
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, (l: string) => l.toUpperCase());
+        attributesMap[attrSlug] = { name: cleanName, slug: attrSlug, terms: attrData.terms || [] };
+      });
+      setAttributes(attributesMap);
+    }
+  }, [attributesQuery.data]);
 
   const loadAttributes = async (filtersHash?: string) => {
     try {
@@ -271,29 +314,37 @@ export default function DynamicAttributeFilters({
                 className="overflow-hidden bg-white"
               >
                 <div className="border-t border-gray-100">
-                  {attribute.terms
-                    .filter(term => term.count > 0) // Pokaż tylko terminy z produktami
-                    .sort((a, b) => b.count - a.count) // Sortuj według liczby produktów
-                    .map((term, index) => (
-                      <motion.label
-                        key={term.id}
-                        className="flex items-center p-2 sm:p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
-                        <input
-                          type="checkbox"
-                          name={attributeSlug}
-                          value={term.slug}
-                          checked={isTermSelected(attributeSlug, term.slug)}
-                          onChange={() => handleAttributeTermClick(attributeSlug, term.slug)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                        />
-                        <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{term.name}</span>
-                        <span className="ml-auto text-xs text-gray-500">({term.count})</span>
-                      </motion.label>
-                    ))}
+            {(() => {
+              const items = attribute.terms
+                .filter(term => term.count > 0)
+                .sort((a, b) => b.count - a.count);
+              const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+                const term = items[index];
+                return (
+                  <div style={style}>
+                    <label className="flex items-center px-2 sm:px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0">
+                      <input
+                        type="checkbox"
+                        name={attributeSlug}
+                        value={term.slug}
+                        checked={isTermSelected(attributeSlug, term.slug)}
+                        onChange={() => handleAttributeTermClick(attributeSlug, term.slug)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                      />
+                      <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{term.name}</span>
+                      <span className="ml-auto text-xs text-gray-500">({term.count})</span>
+                    </label>
+                  </div>
+                );
+              };
+              const itemSize = 44; // px per row
+              const height = Math.min(8, items.length) * itemSize; // show up to 8 rows without scroll
+              return (
+                <List height={height} width={'100%'} itemCount={items.length} itemSize={itemSize} overscanCount={8}>
+                  {Row as any}
+                </List>
+              );
+            })()}
                 </div>
               </motion.div>
             )}

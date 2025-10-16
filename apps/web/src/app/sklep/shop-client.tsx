@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useRouter, useSearchParams as useNextSearchParams } from 'next/navigation';
+import { analytics } from '@headless-woo/shared/utils/analytics';
+import PageContainer from '@/components/ui/page-container';
 import { useSearchParams } from 'next/navigation';
-import { Search, Filter, X, ChevronDown, Grid3X3, List } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import KingProductCard from '@/components/king-product-card';
 
 // Import filters directly for instant loading
@@ -10,6 +13,7 @@ import ShopFilters from '@/components/ui/shop-filters';
 import { wooCommerceOptimized as wooCommerceService } from '@/services/woocommerce-optimized';
 
 import { WooProduct } from '@/types/woocommerce';
+import { useQuery } from '@tanstack/react-query';
 
 interface FilterState {
   search: string;
@@ -50,10 +54,11 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const [allCategories, setAllCategories] = useState<Category[]>(initialShopData?.categories || []);
   const [loading, setLoading] = useState(false);
   const [totalProducts, setTotalProducts] = useState(initialShopData?.total || 0);
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(12); // PRO: 12 produktów na stronę
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  // fixed grid view – list variant removed
   const [filterLoading, setFilterLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false); // PRO: Separate state for refreshing
   const [filters, setFilters] = useState<FilterState>({
@@ -67,6 +72,10 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     sortBy: 'date',
     sortOrder: 'desc'
   });
+  
+  console.log('🔍 ShopClient filters state:', filters);
+  const router = useRouter();
+  const nextSearchParams = useNextSearchParams();
   // Sync filters with URL query params (category, brands, dynamic attrs)
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -97,6 +106,33 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     }));
   }, [searchParams]);
 
+  // Sync filters -> URL (shallow) whenever filters change (avoid loops)
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.search) params.set('search', filters.search);
+    if (filters.categories.length) params.set('category', filters.categories.join(','));
+    if ((filters.brands as string[]).length) params.set('brands', (filters.brands as string[]).join(','));
+    if (filters.minPrice > 0) params.set('min_price', String(filters.minPrice));
+    if (filters.maxPrice < 10000) params.set('max_price', String(filters.maxPrice));
+    if (filters.inStock) params.set('in_stock', 'true');
+    if (filters.onSale) params.set('on_sale', 'true');
+    params.set('sort', filters.sortBy);
+    params.set('order', filters.sortOrder);
+    Object.keys(filters).forEach((key) => {
+      if (key.startsWith('pa_')) {
+        const v = filters[key];
+        if (Array.isArray(v) && v.length) params.set(key, v.join(','));
+        else if (typeof v === 'string' && v) params.set(key, v);
+      }
+    });
+    const qs = params.toString();
+    const url = qs ? `/sklep?${qs}` : '/sklep';
+    const current = typeof window !== 'undefined' ? window.location.search.replace(/^\?/, '') : '';
+    if (current !== qs) {
+      router.replace(url, { scroll: false });
+    }
+  }, [filters, router]);
+
 
   // Debounced search
   const [searchInput, setSearchInput] = useState(filters.search);
@@ -111,56 +147,27 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   // Categories and attributes are now fetched together with products
 
-  // Fetch products with filters - PRO Architecture: WordPress robi całe filtrowanie
-  const fetchProducts = useCallback(async () => {
-    console.log('🚀 fetchProducts called - START', { 
-      filters, 
-      currentPage,
-      productsPerPage
-    });
-    
-    // PRO: Set loading state based on whether it's a filter change or page change
-    if (products.length > 0) {
-      setRefreshing(true);
-    } else {
-      setFilterLoading(true);
-    }
-    setLoading(true);
-    
-    try {
-      // PRO Architecture: Build API URL with all filters - WordPress zrobi resztę
+  // React Query for products with SSR hydration
+  const queryKey = ['shop','products',{ page: currentPage, perPage: productsPerPage, filters: JSON.stringify(filters) }];
+  console.log('🔍 shopQuery queryKey:', queryKey);
+  console.log('🔍 shopQuery filters:', filters);
+  
+  const shopQuery = useQuery({
+    queryKey,
+    queryFn: async () => {
+      console.log('🔍 shopQuery queryFn called with filters:', filters);
       const params = new URLSearchParams();
       params.append('endpoint', 'shop');
       params.append('page', currentPage.toString());
       params.append('per_page', productsPerPage.toString());
-      
-      // Categories - WordPress obsłuży wielokrotne kategorie
-      if (filters.categories.length > 0) {
-        params.append('category', filters.categories.join(','));
-      }
-      // Brands
-      if (filters.brands && (filters.brands as string[]).length > 0) {
-        params.append('brands', (filters.brands as string[]).join(','));
-      }
-      
-      // Search, sorting, prices
-      if (filters.search) {
-        params.append('search', filters.search);
-      }
+      if (filters.categories.length > 0) params.append('category', filters.categories.join(','));
+      if (filters.brands && (filters.brands as string[]).length > 0) params.append('brands', (filters.brands as string[]).join(','));
+      if (filters.search) params.append('search', filters.search);
       params.append('orderby', filters.sortBy === 'name' ? 'title' : filters.sortBy);
       params.append('order', filters.sortOrder);
-      
-      if (filters.onSale) {
-        params.append('on_sale', 'true');
-      }
-      if (filters.minPrice >= 0) {
-        params.append('min_price', filters.minPrice.toString());
-      }
-      if (filters.maxPrice < 10000) {
-        params.append('max_price', filters.maxPrice.toString());
-      }
-      
-      // Dynamic attribute filters - WordPress obsłuży pa_* parametry
+      if (filters.onSale) params.append('on_sale', 'true');
+      if (filters.minPrice >= 0) params.append('min_price', String(filters.minPrice));
+      if (filters.maxPrice < 10000) params.append('max_price', String(filters.maxPrice));
       Object.keys(filters).forEach(key => {
         if (key.startsWith('pa_') && Array.isArray(filters[key]) && (filters[key] as string[]).length > 0) {
           params.append(key, (filters[key] as string[]).join(','));
@@ -168,68 +175,61 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       });
       
       const apiUrl = `/api/woocommerce?${params.toString()}`;
-      console.log('🌐 API URL:', apiUrl);
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
       
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-      console.log('📦 API response:', data);
+      console.log('✅ Shop data received from WordPress:', { 
+        products: data.products?.length || 0, 
+        total: data.total, 
+        categories: data.categories?.length || 0, 
+        attributes: Object.keys(data.attributes || {}).length 
+      });
       
-      if (data.success && data.products) {
-        // PRO: Pagination - zawsze zastępuj produkty (nie append)
-        const uniqueProducts = data.products.filter((product: WooProduct, index: number, self: WooProduct[]) => 
-          index === self.findIndex((p: WooProduct) => p.id === product.id)
-        );
-        setProducts(uniqueProducts);
-        
-        setTotalProducts(data.total || 0);
-        
-        console.log('✅ Products set:', { currentPage, loaded: data.products.length, total: data.total });
-        
-        // Set categories and attributes only on first page
-        if (currentPage === 1 && data.categories && data.categories.length > 0) {
-          setAllCategories(data.categories);
-        }
-      } else {
-        console.error('❌ API call failed or no products:', data);
-        setProducts([]);
-        setTotalProducts(0);
-      }
-    } catch (error) {
-      console.error('❌ Error fetching products:', error);
-      setProducts([]);
-      setTotalProducts(0);
-    } finally {
-      console.log('🚀 fetchProducts called - END');
-      setLoading(false);
-      setFilterLoading(false);
-      setRefreshing(false); // PRO: Reset refreshing state
-    }
-  }, [filters, currentPage, productsPerPage]);
+      return data;
+    },
+    staleTime: 30000,
+    enabled: true,
+    refetchOnMount: true,
+  });
 
-  // Always fetch products on initial load
+  // Update products and total from shopQuery data
   useEffect(() => {
-    console.log('🔄 Initial load - fetching products');
-    fetchProducts();
-  }, []); // Empty dependency array - only run once on mount
+    console.log('🔍 useEffect shopQuery.data:', shopQuery.data);
+    if (shopQuery.data) {
+      console.log('🔍 Setting products:', shopQuery.data.products?.length);
+      console.log('🔍 Setting totalProducts:', shopQuery.data.total);
+      setProducts(shopQuery.data.products || []);
+      setTotalProducts(shopQuery.data.total || 0);
+      setAllCategories(shopQuery.data.categories || []);
+    }
+    setLoading(shopQuery.isLoading);
+    setFilterLoading(shopQuery.isFetching && !shopQuery.isLoading);
+    setRefreshing(shopQuery.isFetching);
+  }, [shopQuery.data, shopQuery.isLoading, shopQuery.isFetching]);
 
-  // Reset to first page and fetch products when filters change - PRO: Debounced
+  // Categories query (separate, cached long-term)
+  const categoriesQuery = useQuery({
+    queryKey: ['shop','categories'],
+    queryFn: async () => {
+      const res = await wooCommerceService.getCategories();
+      return res;
+    },
+    staleTime: 30 * 60_000,
+    enabled: allCategories.length === 0,
+  });
+
+
+  useEffect(() => {
+    if (categoriesQuery.data?.data && allCategories.length === 0) {
+      setAllCategories(categoriesQuery.data.data as any);
+    }
+  }, [categoriesQuery.data]);
+
+  // Reset to first page when filters change (React Query will auto fetch from key change)
   useEffect(() => {
     setCurrentPage(1);
-    
-    // PRO: Debounce product fetching to prevent excessive API calls
-    const timeoutId = setTimeout(() => {
-      fetchProducts();
-    }, 200); // 200ms debounce for faster response
-    
-    return () => clearTimeout(timeoutId);
-  }, [filters]); // PRO: Remove fetchProducts from dependencies to prevent infinite loop
-
-  // Fetch products when page changes (PRO: Pagination)
-  useEffect(() => {
-    if (currentPage > 1) { // Only fetch if not initial load (page 1 handled by initial load)
-      fetchProducts();
-    }
-  }, [currentPage]); // PRO: Remove fetchProducts from dependencies to prevent infinite loop
+  }, [filters]);
 
   const handleFilterChange = (key: string, value: string | number | boolean) => {
     console.log('🔧 handleFilterChange called:', { key, value, type: typeof value });
@@ -323,7 +323,9 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           newCategories 
         });
         
-        return { ...prev, categories: newCategories };
+        const nextState = { ...prev, categories: newCategories };
+        analytics.track('filter_change', { key: 'categories', value: nextState.categories });
+        return nextState;
       }
     });
   };
@@ -343,91 +345,58 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     };
     
     setFilters(clearedFilters);
+    analytics.track('filters_clear_all');
     setSearchInput(''); // PRO: Also clear search input
+  };
+
+  // Helpers: active filters and clearing single filter
+  const activeFilters = () => {
+    const items: Array<{ key: string; value: string; label: string }> = [];
+    if (filters.search) items.push({ key: 'search', value: String(filters.search), label: `Szukaj: ${filters.search}` });
+    filters.categories.forEach((c) => items.push({ key: 'category', value: c, label: `Kategoria: ${c}` }));
+    if ((filters.brands as string[]).length) (filters.brands as string[]).forEach((b) => items.push({ key: 'brands', value: b, label: `Marka: ${b}` }));
+    if (filters.minPrice > 0) items.push({ key: 'minPrice', value: String(filters.minPrice), label: `Min: ${filters.minPrice} zł` });
+    if (filters.maxPrice < 10000) items.push({ key: 'maxPrice', value: String(filters.maxPrice), label: `Max: ${filters.maxPrice} zł` });
+    if (filters.inStock) items.push({ key: 'inStock', value: 'true', label: 'W magazynie' });
+    if (filters.onSale) items.push({ key: 'onSale', value: 'true', label: 'Promocje' });
+    Object.keys(filters).forEach((key) => {
+      if (key.startsWith('pa_')) {
+        const v = filters[key];
+        const values = Array.isArray(v) ? v : typeof v === 'string' ? v.split(',').filter(Boolean) : [];
+        values.forEach((val) => items.push({ key, value: val, label: `${key.replace('pa_', '')}: ${val}` }));
+      }
+    });
+    return items;
+  };
+
+  const clearSingleFilter = (key: string, value: string) => {
+    if (key === 'search') setFilters((p) => { analytics.track('filter_remove', { key, value }); return ({ ...p, search: '' }); });
+    else if (key === 'category') setFilters((p) => ({ ...p, categories: p.categories.filter((c) => c !== value) }));
+    else if (key === 'brands') setFilters((p) => ({ ...p, brands: (p.brands as string[]).filter((b) => b !== value) }));
+    else if (key === 'minPrice') setFilters((p) => ({ ...p, minPrice: 0 }));
+    else if (key === 'maxPrice') setFilters((p) => ({ ...p, maxPrice: 10000 }));
+    else if (key === 'inStock') setFilters((p) => ({ ...p, inStock: false }));
+    else if (key === 'onSale') setFilters((p) => ({ ...p, onSale: false }));
+    else if (key.startsWith('pa_')) setFilters((p) => {
+      const v = p[key];
+      const values = Array.isArray(v) ? v : typeof v === 'string' ? v.split(',').filter(Boolean) : [];
+      const next = values.filter((val) => val !== value);
+      analytics.track('filter_remove', { key, value });
+      return { ...p, [key]: next } as any;
+    });
   };
 
   // totalPages is now managed by state
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
-        {/* Category tabs section */}
-        <div className="bg-gray-50 py-8 rounded-3xl">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Sklep</h1>
-            <p className="text-gray-600">Odkryj nasze najlepsze produkty</p>
-          </div>
+      <PageContainer className="py-4 pb-12">
+        {/* Minimal header */}
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Sklep</h1>
         </div>
         
-        <div className="h-6"></div>
-        
-        {/* Search and controls - Mobile optimized */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8">
-          <div className="flex flex-col gap-4">
-            {/* Search bar */}
-            <div className="relative group">
-              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 group-focus-within:text-black transition-colors" />
-              <input
-                type="text"
-                placeholder="Szukaj produktów..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black/10 focus:border-black transition-all duration-200 bg-gray-50 text-sm sm:text-base"
-              />
-            </div>
-            
-            {/* Controls row */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
-              {/* Sort dropdown */}
-              <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1 border border-gray-200 flex-1 sm:flex-none">
-                <select
-                  value={filters.sortBy}
-                  onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                  className="px-3 sm:px-4 py-2 sm:py-3 border-0 bg-transparent focus:ring-0 focus:outline-none text-sm font-medium text-gray-700 cursor-pointer flex-1"
-                >
-                  <option value="date">Data dodania</option>
-                  <option value="price">Cena</option>
-                  <option value="name">Nazwa</option>
-                  <option value="popularity">Popularność</option>
-                </select>
-                <button
-                  onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors group"
-                  title={filters.sortOrder === 'asc' ? 'Sortuj malejąco' : 'Sortuj rosnąco'}
-                >
-                  <ChevronDown className={`w-4 h-4 text-gray-600 group-hover:text-black transition-colors ${filters.sortOrder === 'asc' ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-              
-              {/* View mode toggle */}
-              <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1 border border-gray-200">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-black text-white' : 'text-gray-600 hover:text-black hover:bg-gray-100'}`}
-                  title="Widok siatki"
-                >
-                  <Grid3X3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-black text-white' : 'text-gray-600 hover:text-black hover:bg-gray-100'}`}
-                  title="Widok listy"
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
-              
-              {/* Mobile filter button - only show on mobile */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="sm:hidden px-4 py-2 sm:py-3 bg-black text-white rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-all duration-200 font-medium"
-              >
-                <Filter className="w-4 h-4" />
-                Filtry
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Usunięto górną wyszukiwarkę – pozostaje ta w panelu filtrów */}
         
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters sidebar */}
@@ -453,6 +422,42 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           
           {/* Products grid */}
           <div className="flex-1">
+            {/* Active filter chips (compact, desktop only) */}
+            {activeFilters().length > 0 && (
+              <div className="hidden lg:flex flex-wrap gap-2 mb-3 items-center">
+                {(() => {
+                  const chips = activeFilters();
+                  const importantKeys = new Set(['category', 'brands', 'minPrice', 'maxPrice']);
+                  const prioritized = chips.filter(c => importantKeys.has(c.key));
+                  const visible = prioritized.slice(0, 6);
+                  const hiddenCount = chips.length - visible.length;
+                  return (
+                    <>
+                      {visible.map(({ key, label, value }) => (
+                        <button
+                          key={key + ':' + value}
+                          onClick={() => clearSingleFilter(key, value)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-800 text-xs hover:bg-gray-200"
+                          title={`Usuń filtr: ${label}`}
+                        >
+                          <span className="truncate max-w-[180px]">{label}</span>
+                          <X className="w-3 h-3" />
+                        </button>
+                      ))}
+                      {hiddenCount > 0 && (
+                        <span className="text-xs text-gray-500">+{hiddenCount} więcej</span>
+                      )}
+                      <button
+                        onClick={clearFilters}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black text-white text-xs hover:bg-gray-900"
+                      >
+                        Wyczyść wszystkie
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
             <div className="mb-6">
               <p className="text-gray-600">
                 Znaleziono <span className="font-semibold">{totalProducts}</span> produktów
@@ -472,7 +477,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                 ))}
               </div>
             ) : (
-              <div className={`grid mobile-grid ${viewMode === 'grid' ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} relative`}>
+              <div className={`grid mobile-grid grid-cols-2 lg:grid-cols-3 relative`}>
                 {/* PRO: Subtle refreshing indicator */}
                 {refreshing && (
                   <div className="absolute top-0 right-0 z-10 bg-white/80 backdrop-blur-sm rounded-lg p-2">
@@ -483,7 +488,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                   <MemoizedProductCard
                     key={product.id}
                     product={product}
-                    variant={viewMode === 'list' ? 'list' : 'default'}
+                    variant={'default'}
                   />
                 ))}
               </div>
@@ -566,7 +571,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             )}
           </div>
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }
