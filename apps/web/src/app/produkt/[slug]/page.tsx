@@ -11,21 +11,9 @@ export const dynamicParams = true;
 
 // Generate static params for popular products
 export async function generateStaticParams() {
-  try {
-    // Pre-generate static pages for most popular products
-    const popularProducts = await wooCommerceOptimized.getProducts({
-      per_page: 50,
-      orderby: 'popularity',
-      order: 'desc'
-    });
-    
-    return popularProducts.data?.map((product: any) => ({
-      slug: product.slug,
-    })) || [];
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
+  // Skip static generation during build to avoid API issues
+  // Pages will be generated on-demand
+  return [];
 }
 
 // Generate metadata for product pages
