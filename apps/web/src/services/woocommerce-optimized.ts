@@ -9,10 +9,8 @@ class WooCommerceService {
   private baseUrl: string;
 
   constructor() {
-    // Use full URL during build time, relative URL during runtime
-    this.baseUrl = process.env.NEXT_PUBLIC_BASE_URL 
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/woocommerce`
-      : '/api/woocommerce';
+    // Use relative URL for Vercel deployment
+    this.baseUrl = '/api/woocommerce';
     console.log('🚀 WooCommerce Optimized Service initialized');
   }
 
