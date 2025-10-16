@@ -69,7 +69,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
       "image": product.images?.map(img => img.src) || [],
       "brand": {
         "@type": "Brand",
-        "name": product.attributes?.find(attr => attr.name === 'pa_marka')?.options?.[0]?.name || "Unknown"
+        "name": product.attributes?.find(attr => attr.name === 'pa_marka')?.options?.[0] || "Unknown"
       },
       "offers": {
         "@type": "Offer",

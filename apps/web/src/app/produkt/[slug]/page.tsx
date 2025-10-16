@@ -19,9 +19,9 @@ export async function generateStaticParams() {
       order: 'desc'
     });
     
-    return popularProducts.map((product: any) => ({
+    return popularProducts.data?.map((product: any) => ({
       slug: product.slug,
-    }));
+    })) || [];
   } catch (error) {
     console.error('Error generating static params:', error);
     return [];
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       openGraph: {
         title: `${product.name} - ${price} zł`,
         description: description,
-        type: 'product',
+        type: 'website',
         images: product.images?.map(img => ({
           url: img.src,
           width: 800,

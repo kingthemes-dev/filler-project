@@ -1,14 +1,14 @@
 import Image from 'next/image';
 import PageContainer from '@/components/ui/page-container';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import KingHeroRounded from '@/components/king-hero-rounded';
 import { Button } from '@/components/ui/button';
 import { Award, Truck, Headphones, Shield } from 'lucide-react';
 import { Metadata } from 'next';
 
 // Dynamic imports for below-the-fold components
-const KingProductTabsServer = dynamic(() => import('@/components/king-product-tabs-server'));
-const NewsletterForm = dynamic(() => import('@/components/ui/newsletter-form'));
+const KingProductTabsServer = dynamicImport(() => import('@/components/king-product-tabs-server'));
+const NewsletterForm = dynamicImport(() => import('@/components/ui/newsletter-form'));
 
 // ISR - Incremental Static Regeneration
 export const revalidate = 300; // 5 minutes

@@ -10,7 +10,6 @@ import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
 import FavoritesModal from '@/components/ui/favorites-modal';
 import ErrorBoundary from '@/components/error-boundary';
 import ReactQueryProvider from './providers/react-query-provider';
-import { HydrationBoundary } from '@tanstack/react-query';
 
 
 const geistSans = Geist({
@@ -120,11 +119,9 @@ export default function RootLayout({
                           <TopBar />
                           <Header />
                           <ReactQueryProvider>
-                            <HydrationBoundary>
-                              <main>
-                                {children}
-                              </main>
-                            </HydrationBoundary>
+                            <main>
+                              {children}
+                            </main>
                           </ReactQueryProvider>
                           <AuthModalManager />
                           <FavoritesModal />
