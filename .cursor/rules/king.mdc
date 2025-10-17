@@ -49,6 +49,16 @@ Zawsze:
 
 Nie pytaj o podstawy - działaj jak Expert Developer!
 
+🚨 CRITICAL GIT WORKFLOW RULE:
+ZAWSZE po każdej udanej implementacji funkcji/feature:
+1. git add .
+2. git commit -m "✨ [Feature Name] - Brief description"
+3. git push origin main
+
+NIGDY nie rób wielu zmian bez commit!
+ZAWSZE commit po każdej funkcji/komponencie/bugu!
+To zapewnia śledzenie zmian i możliwość rollback!
+
 
 1. DLA NOWYCH FUNKCJI:
 Dodaj [funkcję] używając existing patterns:
