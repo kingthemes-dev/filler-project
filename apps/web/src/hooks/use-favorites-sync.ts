@@ -48,3 +48,6 @@ export const useFavoritesSync = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isAuthenticated, syncWithAPI]);
 };
+
+// Default export for compatibility
+export default useFavoritesSync;

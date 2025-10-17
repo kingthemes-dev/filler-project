@@ -65,6 +65,24 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.NEXT_PUBLIC_GA_ID?.replace('G-', ''),
   },
+  manifest: '/manifest.json',
+  themeColor: '#000000',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Filler.pl',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+  },
 };
 
 export default function RootLayout({
@@ -128,6 +146,73 @@ export default function RootLayout({
                           <Footer />
                           <CartDrawer />
                         </ErrorBoundary>
+                        
+                        {/* PWA Service Worker Registration */}
+                        <Script
+                          id="pwa-sw-register"
+                          strategy="afterInteractive"
+                          dangerouslySetInnerHTML={{
+                            __html: `
+                              if ('serviceWorker' in navigator) {
+                                window.addEventListener('load', function() {
+                                  navigator.serviceWorker.register('/sw.js')
+                                    .then(function(registration) {
+                                      console.log('SW registered: ', registration);
+                                    })
+                                    .catch(function(registrationError) {
+                                      console.log('SW registration failed: ', registrationError);
+                                    });
+                                });
+                              }
+                            `,
+                          }}
+                        />
+                        
+                        {/* PWA Install Prompt */}
+                        <Script
+                          id="pwa-install-prompt"
+                          strategy="afterInteractive"
+                          dangerouslySetInnerHTML={{
+                            __html: `
+                              let deferredPrompt;
+                              window.addEventListener('beforeinstallprompt', (e) => {
+                                e.preventDefault();
+                                deferredPrompt = e;
+                                
+                                // Show install button or banner
+                                const installBtn = document.createElement('button');
+                                installBtn.textContent = 'Zainstaluj aplikację';
+                                installBtn.style.cssText = \`
+                                  position: fixed;
+                                  bottom: 20px;
+                                  right: 20px;
+                                  background: #000;
+                                  color: #fff;
+                                  border: none;
+                                  padding: 12px 24px;
+                                  border-radius: 8px;
+                                  font-weight: 600;
+                                  cursor: pointer;
+                                  z-index: 1000;
+                                  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                                \`;
+                                
+                                installBtn.addEventListener('click', () => {
+                                  deferredPrompt.prompt();
+                                  deferredPrompt.userChoice.then((choiceResult) => {
+                                    if (choiceResult.outcome === 'accepted') {
+                                      console.log('User accepted the install prompt');
+                                    }
+                                    deferredPrompt = null;
+                                    installBtn.remove();
+                                  });
+                                });
+                                
+                                document.body.appendChild(installBtn);
+                              });
+                            `,
+                          }}
+                        />
               </body>
             </html>
           );

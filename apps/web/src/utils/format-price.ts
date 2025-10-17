@@ -1,13 +1,19 @@
 /**
  * Formatuje cenę w formacie PLN (wejście w złotówkach)
  */
-export function formatPrice(price: number): string {
+export function formatPrice(price: number | string): string {
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  
+  if (isNaN(numPrice)) {
+    return '0,00 zł';
+  }
+  
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(price);
+  }).format(numPrice);
 }
 
 /**
