@@ -163,7 +163,7 @@ function SearchResultsContent() {
           {/* Mobile filter toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="lg:hidden flex items-center space-x-2 text-gray-700 hover:text-black transition-colors"
+            className="lg:hidden flex items-center space-x-2 bg-gradient-to-r from-gray-800 to-black text-white px-4 py-2 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
           >
             <Filter className="w-4 h-4" />
             <span>Filtry</span>
@@ -290,16 +290,9 @@ function SearchResultsContent() {
             </div>
           </div>
 
-          {/* Loading State */}
-          {isLoading && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-              <p className="text-gray-600">Wyszukiwanie produktów...</p>
-            </div>
-          )}
 
           {/* Results Grid */}
-          {!isLoading && searchResults.length > 0 && (
+          {searchResults.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
               {searchResults.map((product) => (
                 <Link key={product.id} href={`/produkt/${product.slug}`}>
@@ -394,7 +387,7 @@ function SearchResultsContent() {
           )}
 
           {/* No Results */}
-          {!isLoading && searchResults.length === 0 && totalResults === 0 && (
+          {searchResults.length === 0 && totalResults === 0 && (
             <div className="text-center py-12">
               <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -413,7 +406,7 @@ function SearchResultsContent() {
           )}
 
           {/* Pagination */}
-          {!isLoading && totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="flex items-center justify-center mt-8">
               <div className="flex space-x-2">
                 <button

@@ -19,44 +19,11 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const [categories, setCategories] = useState<Array<{ id: number; name: string; slug: string; count?: number; parent?: number }>>([]);
   const [attributes, setAttributes] = useState<Record<string, Array<{ id: number | string; name: string; slug: string }>>>({});
   const [selectedCat, setSelectedCat] = useState<number | null>(null);
-  const [headerTop, setHeaderTop] = useState<number>(0);
-  const [containerPx, setContainerPx] = useState<number | null>(null);
-  const [containerLeftPx, setContainerLeftPx] = useState<number>(0);
-  const [containerRightPx, setContainerRightPx] = useState<number>(0);
-  const [headerHeightPx, setHeaderHeightPx] = useState<number>(0);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const [panelHeightPx, setPanelHeightPx] = useState<number>(0);
 
   useEffect(() => {
     if (!open) return;
     let mounted = true;
-    // Measure header height and container width to align overlay exactly
-    const measure = () => {
-      try {
-        const headerEl = document.querySelector('header');
-        const topBarEl = document.querySelector('[data-topbar]');
-        if (headerEl) {
-          // Ustaw overlay tuż pod top-bar + header
-          const rect = (headerEl as HTMLElement).getBoundingClientRect();
-          const topRect = (topBarEl as HTMLElement | null)?.getBoundingClientRect();
-          const headerH = Math.round(rect.height);
-          const topH = topRect ? Math.round(topRect.height) : 0;
-          const correctionPx =  -2; // minimalna korekta na border/shadow
-          if (mounted) setHeaderTop(headerH + topH + correctionPx);
-          if (mounted) setHeaderHeightPx(headerH);
-          // Try to match inner container width
-          const inner = headerEl.querySelector('div.max-w-\[95vw\]');
-          const innerRect = (inner as HTMLElement | null)?.getBoundingClientRect();
-          if (innerRect && mounted) {
-            setContainerPx(Math.round(innerRect.width));
-            setContainerLeftPx(Math.round(innerRect.left));
-            setContainerRightPx(Math.round(innerRect.right));
-          }
-        }
-      } catch {}
-    };
-    measure();
-    window.addEventListener('resize', measure);
     const load = async () => {
       try {
         // Sprawdź cache w sessionStorage (5 minut)
@@ -107,13 +74,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
       }
     };
     load();
-    // Observe panel height to draw combined rounded highlight (header+panel)
-    const ro = new ResizeObserver(() => {
-      if (panelRef.current) setPanelHeightPx(panelRef.current.offsetHeight);
-    });
-    if (panelRef.current) ro.observe(panelRef.current);
-    if (panelRef.current) setPanelHeightPx(panelRef.current.offsetHeight);
-    return () => { mounted = false; ro.disconnect(); };
+    return () => { mounted = false; };
   }, [open]);
 
   const mainCategories = useMemo(() => categories.filter(c => (c.parent || 0) === 0), [categories]);
@@ -131,44 +92,23 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   return (
     <AnimatePresence>
       {open && (
-        <> 
-          <motion.div
-            className="fixed inset-0 bg-black/65 backdrop-blur-[2px] z-40"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            aria-hidden="true"
-          />
-
-          {/* Zaokrąglone tło obejmujące header + panel; header pozostaje ponad tym tłem */}
-          <div
-            className="fixed left-0 right-0 z-[45]"
-            style={{ top: headerTop - headerHeightPx }}
-            aria-hidden
-          >
-              <div className="bg-white rounded-b-2xl shadow-xl" style={{ height: headerHeightPx + panelHeightPx }} />
-          </div>
-
-          <motion.div
-            id="shop-explore-panel"
-            role="dialog"
-            aria-modal="true"
-            className="fixed left-0 right-0 z-50"
-            style={{ top: headerTop }}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            onMouseEnter={() => {}} // Keep modal open when hovering over it
-            onMouseLeave={() => onClose()} // Close when leaving modal area
-          >
-            <div className="mx-auto px-4 sm:px-6 pb-8 sm:pb-12" style={containerPx ? { width: containerPx } : { maxWidth: '95vw' }}>
-              <div className="relative">
-
-                <div ref={panelRef} className="relative overflow-hidden z-50 pt-6 sm:pt-8">
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-5 sm:p-6">
+        <motion.div
+          id="shop-explore-panel"
+          role="dialog"
+          aria-modal="false"
+          className="absolute top-full left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50 rounded-b-2xl"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2 }}
+          onMouseEnter={() => {}} // Keep dropdown open when hovering over it
+          onMouseLeave={() => {
+            // Close dropdown when leaving the dropdown area
+            onClose();
+          }}
+        >
+            <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-6">
+              <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {/* Kategorie główne */}
                   <div>
                     <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Kategorie</h3>
@@ -245,12 +185,9 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       </div>
                     </div>
                   </div>
-                </div>
-                </div>
               </div>
             </div>
-          </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );

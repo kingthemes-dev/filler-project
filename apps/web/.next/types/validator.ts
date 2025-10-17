@@ -149,10 +149,28 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies RouteHandlerConfig<"/api/cache/purge">
 }
 
+// Validate ../../src/app/api/cache/warm/route.ts
+{
+  const handler = {} as typeof import("../../src/app/api/cache/warm/route.js")
+  handler satisfies RouteHandlerConfig<"/api/cache/warm">
+}
+
 // Validate ../../src/app/api/cart-proxy/route.ts
 {
   const handler = {} as typeof import("../../src/app/api/cart-proxy/route.js")
   handler satisfies RouteHandlerConfig<"/api/cart-proxy">
+}
+
+// Validate ../../src/app/api/edge/analytics/route.ts
+{
+  const handler = {} as typeof import("../../src/app/api/edge/analytics/route.js")
+  handler satisfies RouteHandlerConfig<"/api/edge/analytics">
+}
+
+// Validate ../../src/app/api/edge/geolocation/route.ts
+{
+  const handler = {} as typeof import("../../src/app/api/edge/geolocation/route.js")
+  handler satisfies RouteHandlerConfig<"/api/edge/geolocation">
 }
 
 // Validate ../../src/app/api/favorites/route.ts
@@ -165,6 +183,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   const handler = {} as typeof import("../../src/app/api/favorites/sync/route.js")
   handler satisfies RouteHandlerConfig<"/api/favorites/sync">
+}
+
+// Validate ../../src/app/api/health/route.ts
+{
+  const handler = {} as typeof import("../../src/app/api/health/route.js")
+  handler satisfies RouteHandlerConfig<"/api/health">
 }
 
 // Validate ../../src/app/api/home-feed/route.ts

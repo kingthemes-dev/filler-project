@@ -222,7 +222,7 @@ export default function Header() {
 
   return (
     <>
-      <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50 will-change-transform overflow-visible`}>
+      <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50 will-change-transform overflow-visible relative`}>
         <div className={`max-w-[95vw] mx-auto px-4 sm:px-8`}>
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
           {/* Logo */}
@@ -246,7 +246,11 @@ export default function Header() {
           <nav
             className="hidden lg:flex items-center gap-6 flex-none"
           >
-            <Link href="/" className="text-gray-700 hover:text-black transition-colors font-medium">
+            <Link 
+              href="/" 
+              className="text-gray-700 hover:text-black transition-colors font-medium"
+              onMouseEnter={() => setIsShopOpen(false)}
+            >
               Strona główna
             </Link>
             <div 
@@ -260,17 +264,6 @@ export default function Header() {
                 // Open dropdown immediately on hover
                 setIsShopOpen(true);
               }}
-              onMouseLeave={() => {
-                // Clear any existing timeout
-                if (shopHoverTimeout) {
-                  clearTimeout(shopHoverTimeout);
-                }
-                // Set delay before closing (200ms)
-                const timeout = setTimeout(() => {
-                  setIsShopOpen(false);
-                }, 200);
-                setShopHoverTimeout(timeout);
-              }}
             >
               <Link 
                 href="/sklep"
@@ -282,13 +275,19 @@ export default function Header() {
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopOpen ? 'rotate-180' : ''}`} />
               </Link>
               
-              {/* Shop Dropdown - rendered inside container */}
-              <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
             </div>
-            <a href="/o-nas" className="text-gray-700 hover:text-black transition-colors font-medium">
+            <a 
+              href="/o-nas" 
+              className="text-gray-700 hover:text-black transition-colors font-medium"
+              onMouseEnter={() => setIsShopOpen(false)}
+            >
               O nas
             </a>
-            <a href="/kontakt" className="text-gray-700 hover:text-black transition-colors font-medium">
+            <a 
+              href="/kontakt" 
+              className="text-gray-700 hover:text-black transition-colors font-medium"
+              onMouseEnter={() => setIsShopOpen(false)}
+            >
               Kontakt
             </a>
           </nav>
@@ -297,6 +296,7 @@ export default function Header() {
           <div
             className="hidden lg:flex mx-4 lg:mx-0 min-w-0 lg:flex-1 w-full max-w-none lg:px-[var(--search-pad)]"
             style={{ ['--search-pad' as any]: `${UI_SPACING.SEARCH_SIDE_PADDING_DESKTOP}px` }}
+            onMouseEnter={() => setIsShopOpen(false)}
           >
             <SearchBar 
               placeholder="Szukaj produktów..."
@@ -377,7 +377,10 @@ export default function Header() {
           </div>
 
           {/* Desktop icons - hidden on mobile */}
-          <div className="hidden lg:flex items-center space-x-6 justify-end pr-2 overflow-visible">
+          <div 
+            className="hidden lg:flex items-center space-x-6 justify-end pr-2 overflow-visible"
+            onMouseEnter={() => setIsShopOpen(false)}
+          >
             {/* Email Notification Center - Admin Only */}
             {isAuthenticated && user?.role === 'admin' && (
               <button 
@@ -415,7 +418,7 @@ export default function Header() {
                       />
                       
                       {/* Dropdown */}
-                      <motion.div
+                    <motion.div
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -587,7 +590,7 @@ export default function Header() {
             </motion.div>
           )}
         </AnimatePresence>
-
+        
         {/* Mobile Menu with Tabs */}
         <AnimatePresence>
           {isMobileMenuOpen && (
@@ -631,7 +634,7 @@ export default function Header() {
                   >
                     Konto
                   </button>
-                </div>
+              </div>
 
                 {/* Tab Content */}
                 <div className="flex-1 overflow-y-auto">
@@ -639,48 +642,48 @@ export default function Header() {
                   {mobileMenuTab === 'main' && (
                     <div className="px-6 py-6">
                       {/* Main Navigation Links */}
-                      <nav className="space-y-4">
-                      <Link 
-                        href="/" 
+                <nav className="space-y-4">
+                  <Link 
+                    href="/" 
                         className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setIsMobileSearchOpen(false);
-                        }}
-                      >
-                        Strona główna
-                      </Link>
-                      <a 
-                        href="/sklep" 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsMobileSearchOpen(false);
+                    }}
+                  >
+                    Strona główna
+                  </Link>
+                  <a 
+                    href="/sklep" 
                         className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setIsMobileSearchOpen(false);
-                        }}
-                      >
-                        Sklep
-                      </a>
-                      <a 
-                        href="/o-nas" 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsMobileSearchOpen(false);
+                    }}
+                  >
+                    Sklep
+                  </a>
+                  <a 
+                    href="/o-nas" 
                         className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setIsMobileSearchOpen(false);
-                        }}
-                      >
-                        O nas
-                      </a>
-                        <a 
-                          href="/kontakt" 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsMobileSearchOpen(false);
+                    }}
+                  >
+                    O nas
+                  </a>
+                  <a 
+                    href="/kontakt" 
                           className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsMobileSearchOpen(false);
-                          }}
-                        >
-                          Kontakt
-                        </a>
-                      </nav>
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsMobileSearchOpen(false);
+                    }}
+                  >
+                    Kontakt
+                  </a>
+                </nav>
                     </div>
                   )}
 
@@ -810,14 +813,14 @@ export default function Header() {
                         </Link>
                         
                         {/* Moje zamówienia */}
-                        <Link
-                          href="/moje-zamowienia"
+                  <Link
+                    href="/moje-zamowienia"
                           className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                           <Package className="w-5 h-5" />
-                          <span className="text-sm font-medium">Moje zamówienia</span>
-                        </Link>
+                    <span className="text-sm font-medium">Moje zamówienia</span>
+                  </Link>
                         
                         {/* Ulubione */}
                         <button
@@ -850,16 +853,16 @@ export default function Header() {
                         <div className="border-t border-gray-100 my-3" />
                         
                         {/* Wyloguj się */}
-                        <button
-                          onClick={() => {
-                            logout();
-                            setIsMobileMenuOpen(false);
-                          }}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
                           className="flex items-center space-x-3 text-red-600 hover:text-red-700 transition-colors py-3 w-full text-left"
-                        >
+                  >
                           <LogOut className="w-5 h-5" />
-                          <span className="text-sm font-medium">Wyloguj się</span>
-                        </button>
+                    <span className="text-sm font-medium">Wyloguj się</span>
+                  </button>
                       </div>
                     ) : (
                       /* Not logged in - show login option */
@@ -914,6 +917,9 @@ export default function Header() {
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {/* Shop Dropdown - rendered outside container for full width */}
+        <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       </header>
       
       {/* Email Notification Center */}
@@ -954,14 +960,7 @@ function AttributeTerms({ attributeId, onClose }: { attributeId: number; onClose
   }, [attributeId]);
 
   if (isLoading) {
-    return (
-      <div className="border-t border-gray-100 bg-gray-50 p-4">
-        <div className="animate-pulse space-y-2">
-          <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

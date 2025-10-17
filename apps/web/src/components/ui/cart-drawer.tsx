@@ -124,7 +124,7 @@ export default function CartDrawer() {
                   </p>
                   <button
                     onClick={closeCart}
-                    className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                    className="bg-gradient-to-r from-gray-800 to-black text-white px-6 py-3 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
                   >
                     Przejdź do sklepu
                   </button>
@@ -224,7 +224,7 @@ export default function CartDrawer() {
                   <div className="flex space-x-3">
                     <Link
                       href="/koszyk"
-                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-black hover:text-white transition-colors flex items-center justify-center"
+                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-gradient-to-r hover:from-gray-800 hover:to-black hover:text-white hover:scale-105 transition-all duration-300 flex items-center justify-center"
                       onClick={closeCart}
                     >
                       <span>Zobacz koszyk</span>
@@ -232,7 +232,7 @@ export default function CartDrawer() {
 
                     <Link
                       href="/checkout"
-                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-black hover:text-white transition-colors flex items-center justify-center space-x-2"
+                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-gradient-to-r hover:from-gray-800 hover:to-black hover:text-white hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2"
                       onClick={closeCart}
                     >
                       <span>Kasa</span>

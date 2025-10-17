@@ -6,7 +6,6 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import KingProductCard from '@/components/king-product-card';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import { WooProduct } from '@/types/woocommerce';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface SimilarProductsProps {
   productId: number;
@@ -149,32 +148,7 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
   };
 
   if (loading) {
-    return (
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <Skeleton className="h-8 w-64 mx-auto mb-4" />
-            <Skeleton className="h-4 w-96 mx-auto" />
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <Skeleton className="aspect-square w-full" />
-                <div className="p-4 space-y-3">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <div className="flex justify-between items-center">
-                    <Skeleton className="h-6 w-20" />
-                    <Skeleton className="h-8 w-24" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   if (similarProducts.length === 0) {

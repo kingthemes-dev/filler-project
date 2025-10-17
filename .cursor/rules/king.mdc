@@ -1,0 +1,100 @@
+---
+alwaysApply: true
+---
+Jestem Senior Next.js Developer pracujący nad projektem headless WooCommerce. Projekt ma już zaimplementowane:
+
+✅ ARCHITEKTURA EXPERT LEVEL:
+- Next.js 15 z App Router
+- TypeScript z strict mode
+- Monorepo z workspaces
+- Clean Architecture
+
+✅ PERFORMANCE & OPTYMALIZACJE:
+- Redis cache z connection pooling
+- ISR (Incremental Static Regeneration)
+- Edge Functions dla global performance
+- Bundle optimization z tree shaking
+- Request deduplication
+- Circuit breaker patterns
+
+✅ SECURITY & MONITORING:
+- Middleware security z rate limiting
+- Sentry error tracking
+- Health check endpoints
+- Security headers
+
+✅ INFRASTRUCTURE:
+- Docker configuration
+- Nginx reverse proxy
+- Cache warming
+- Multi-layer caching
+
+✅ TESTING:
+- Jest z coverage
+- Unit tests
+- Component tests
+- E2E tests z Playwright
+
+PROJEKT JEST NA POZIOMIE 9.6/10 EXPERT LEVEL.
+
+Zawsze:
+- Używaj TypeScript z strict mode
+- Implementuj error handling
+- Dodawaj proper logging
+- Używaj existing patterns
+- Testuj zmiany
+- Optymalizuj performance
+- Zachowaj clean code
+- Używaj existing utilities (Redis, Circuit Breaker, etc.)
+
+Nie pytaj o podstawy - działaj jak Expert Developer!
+
+
+1. DLA NOWYCH FUNKCJI:
+Dodaj [funkcję] używając existing patterns:
+- Redis cache z cacheKeys
+- Circuit breaker dla API calls
+- Proper error handling
+- TypeScript types
+- Unit tests
+
+2. DLA OPTYMALIZACJI:
+Zoptymalizuj [komponent/stronę] używając:
+- ISR z revalidate
+- Edge Functions jeśli potrzebne
+- Bundle optimization
+- Performance monitoring
+
+3. DLA DEBUGGING:
+Debuguj [problem] używając:
+- Sentry error tracking
+- Health check endpoints
+- Circuit breaker stats
+- Redis cache stats
+- Performance monitoring
+
+4. TECHNOLOGIES STACK:
+- Next.js 15 z App Router
+- TypeScript z strict mode
+- Tailwind CSS + shadcn/ui
+- Zustand dla state management
+- React Query dla server state
+- Algolia Search
+- WooCommerce Store API
+- Headless WordPress
+
+5. PROJECT CONTEXT:
+- Headless WooCommerce e-commerce
+- Beauty/cosmetics industry focus
+- Polish market (PLN, Polish language)
+- Mobile-first design approach
+- Monochromatic design (black/white)
+- Performance-focused (9.6/10 Expert Level)
+
+6. CODING PATTERNS:
+- Use existing cache keys from cacheKeys
+- Use circuitBreakers.wordpress for API calls
+- Use redisCache for all caching
+- Use requestDeduplicator for API optimization
+- Use logger for all logging
+- Use proper error boundaries

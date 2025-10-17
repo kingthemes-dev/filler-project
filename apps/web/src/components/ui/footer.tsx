@@ -4,7 +4,7 @@ import { Facebook, Instagram, Mail, Phone, MapPin, Clock, Award, Truck, Shield, 
 
 export default function Footer() {
   return (
-    <footer className="relative bg-black text-white py-16 sm:py-20 mt-16 sm:mt-20">
+    <footer className="relative bg-black text-white py-16 sm:py-20 mt-16 sm:mt-20 rounded-t-3xl">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20"></div>

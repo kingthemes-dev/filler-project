@@ -5,9 +5,8 @@ import ProductClient from './product-client';
 import { Metadata } from 'next';
 
 // PRO: Static generation with ISR for better performance
+export const revalidate = 600; // 10 minutes
 export const dynamic = 'force-static';
-export const revalidate = 3600; // 1 hour
-export const dynamicParams = true;
 
 // Generate static params for popular products
 export async function generateStaticParams() {

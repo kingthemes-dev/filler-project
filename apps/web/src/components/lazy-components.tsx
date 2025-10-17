@@ -3,7 +3,6 @@
  */
 
 import { lazy, Suspense } from 'react';
-import { LoadingSpinner } from '@/components/ui/loading-states';
 
 // Lazy load heavy components
 export const LazyProductModal = lazy(() => import('@/components/ui/quick-view-modal'));
@@ -30,11 +29,7 @@ export const LazySearchBar = lazy(() => import('@/components/ui/search/search-ba
 // Lazy wrapper with loading fallback
 export function LazyWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center py-8">
-        <LoadingSpinner size="lg" />
-      </div>
-    }>
+    <Suspense fallback={<div />}>
       {children}
     </Suspense>
   );
@@ -43,14 +38,7 @@ export function LazyWrapper({ children }: { children: React.ReactNode }) {
 // Specific lazy wrappers for different use cases
 export function ProductModalWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-2 text-sm text-gray-600">Ładowanie produktu...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<div />}>
       {children}
     </Suspense>
   );
@@ -58,14 +46,7 @@ export function ProductModalWrapper({ children }: { children: React.ReactNode })
 
 export function PageWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-2 text-sm text-gray-600">Ładowanie strony...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<div />}>
       {children}
     </Suspense>
   );
@@ -73,11 +54,7 @@ export function PageWrapper({ children }: { children: React.ReactNode }) {
 
 export function ComponentWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center py-4">
-        <LoadingSpinner size="sm" />
-      </div>
-    }>
+    <Suspense fallback={<div />}>
       {children}
     </Suspense>
   );

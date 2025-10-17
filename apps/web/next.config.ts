@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -45,6 +49,11 @@ const nextConfig: NextConfig = {
     return config;
   },
   transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+  
+  // Output configuration for Docker
+  output: 'standalone',
+  
+  // Sentry configuration will be handled by sentry config files
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

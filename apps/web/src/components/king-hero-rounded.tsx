@@ -79,7 +79,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           {/* Background Image - optimized for LCP - native img for fastest load */}
           <div className="absolute inset-0 z-0">
             <img
-              src="/images/hero/home.webp"
+              src="/images/hero/1 01.11.26.webp"
               alt="Hero background"
               loading="eager"
               fetchPriority="high"
@@ -117,9 +117,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
 
             {/* Bottom Section - Product Card */}
             <div className="hidden md:flex justify-center lg:justify-end absolute bottom-4 right-4 lg:bottom-6 lg:right-6">
-              {isLoading ? (
-                <div className="w-45 md:w-51 h-58 md:h-64 bg-white/10 rounded-2xl animate-pulse" />
-              ) : featuredProduct ? (
+              {featuredProduct ? (
                 <Link href={`/produkt/${featuredProduct.slug}`} className="group block">
                 <Card className="w-45 md:w-51 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 group-hover:-translate-y-0.5">
                   <CardContent className="px-4 md:px-6 pt-1 pb-1">

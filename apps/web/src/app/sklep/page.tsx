@@ -4,9 +4,8 @@ import wooCommerceService from '@/services/woocommerce-optimized';
 import { Metadata } from 'next';
 
 // PRO: Static generation with ISR for better performance
+export const revalidate = 300; // 5 minutes
 export const dynamic = 'force-static';
-export const revalidate = 1800; // 30 minutes
-export const dynamicParams = true;
 
 // Generate metadata for shop pages
 export async function generateMetadata({ searchParams }: { searchParams?: Promise<Record<string, string>> }): Promise<Metadata> {

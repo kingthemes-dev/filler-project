@@ -198,7 +198,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
               <div className="space-y-4">
                 <button
                   onClick={handleClose}
-                  className="w-full bg-black text-white py-4 px-6 rounded-lg font-semibold text-base hover:bg-gray-800 transition-colors"
+                  className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-4 px-6 rounded-lg font-semibold text-base hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
                 >
                   Rozumiem
                 </button>
@@ -265,16 +265,9 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-3 px-6 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
               >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Wysyłanie...
-                  </>
-                ) : (
-                  'Wyślij link resetujący'
-                )}
+                Wyślij link resetujący
               </button>
 
               {/* Back to Login */}

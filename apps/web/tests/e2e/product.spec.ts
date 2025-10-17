@@ -16,7 +16,7 @@ test.describe('Product Page E2E Tests', () => {
     const capacitySelect = page.locator('#capacity-select');
     if (await capacitySelect.isVisible()) {
       await capacitySelect.selectOption({ index: 1 }); // Select the second option
-      await expect(capacitySelect).toHaveValue(await capacitySelect.evaluate(el => el.options[1].value));
+      await expect(capacitySelect).toHaveValue(await capacitySelect.evaluate(el => (el as HTMLSelectElement).options[1].value));
     }
 
     // Click "Dodaj do koszyka" button
@@ -95,7 +95,7 @@ test.describe('Product Page E2E Tests', () => {
       const options = await capacitySelect.locator('option').count();
       if (options > 1) {
         await capacitySelect.selectOption({ index: 1 });
-        await expect(capacitySelect).toHaveValue(await capacitySelect.evaluate(el => el.options[1].value));
+        await expect(capacitySelect).toHaveValue(await capacitySelect.evaluate(el => (el as HTMLSelectElement).options[1].value));
       }
     } else if (await variationRadios.first().isVisible()) {
       // Test radio button selection

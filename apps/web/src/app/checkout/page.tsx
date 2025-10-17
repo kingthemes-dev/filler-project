@@ -811,7 +811,7 @@ function CheckoutPageInner() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/"
-                className="bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                className="bg-gradient-to-r from-gray-800 to-black text-white px-8 py-3 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
               >
                 Wróć do sklepu
               </Link>
@@ -1285,7 +1285,7 @@ function CheckoutPageInner() {
                             setCurrentStep(2);
                           }
                         }}
-                        className="w-full bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                        className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-3 px-6 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
                       >
                         Kontynuuj - dostawa i płatność
                       </button>
@@ -1308,13 +1308,7 @@ function CheckoutPageInner() {
                         Metoda dostawy
                       </h3>
                       
-                      {isLoadingShipping ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
-                          <span className="ml-3 text-gray-600">Ładowanie metod dostawy...</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
+                      <div className="space-y-3">
                           {shippingMethods.map((method) => (
                             <label key={method.id} className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                               <input
@@ -1353,7 +1347,6 @@ function CheckoutPageInner() {
                             </label>
                           ))}
                         </div>
-                      )}
                     </div>
 
                     {/* Payment Methods Section */}
@@ -1447,7 +1440,7 @@ function CheckoutPageInner() {
                       <button
                         type="submit"
                         disabled={loading || !form.acceptTerms}
-                        className="flex-1 bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white py-3 px-6 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                       >
                         {loading ? (
                           <>
@@ -1491,7 +1484,7 @@ function CheckoutPageInner() {
                       type="button"
                       onClick={handleApplyDiscount}
                       disabled={!discountCode.trim() || discountLoading}
-                      className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-gradient-to-r from-gray-800 to-black text-white text-sm font-medium rounded-lg hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
                     >
                       {discountLoading ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

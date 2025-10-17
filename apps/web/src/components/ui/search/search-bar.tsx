@@ -374,15 +374,9 @@ export default function SearchBar({
             transition={{ duration: 0.2 }}
           >
             {/* Loading State */}
-            {isLoading && (
-              <div className="p-4 text-center text-gray-500">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black mx-auto"></div>
-                <p className="mt-2">Wyszukiwanie...</p>
-              </div>
-            )}
 
             {/* Search Results */}
-            {!isLoading && hasResults && searchResults.length > 0 && (
+            {hasResults && searchResults.length > 0 && (
               <div className="border-b border-gray-100">
                 <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide">
                   Produkty ({searchResults.length})

@@ -157,7 +157,7 @@ export default function ShopFilters({
       <div className="lg:hidden mb-4">
         <button
           onClick={onToggleFilters}
-          className="w-full flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-800 to-black text-white border border-gray-200 rounded-xl hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
           aria-expanded={showFilters}
           aria-controls="filters-panel"
         >
@@ -169,10 +169,22 @@ export default function ShopFilters({
         </button>
       </div>
 
+      {/* Mobile Sidebar Overlay */}
+      {showFilters && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={onToggleFilters}
+        />
+      )}
+
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
         <div
-          className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 shadow-sm"
+          className={`bg-white border border-gray-200 p-4 sm:p-6 shadow-sm lg:block ${
+            showFilters 
+              ? 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform translate-x-0 transition-transform duration-300 ease-in-out rounded-r-2xl lg:relative lg:inset-auto lg:w-auto lg:max-w-none lg:transform-none lg:transition-none lg:rounded-2xl' 
+              : 'hidden lg:block'
+          }`}
           id="filters-panel"
           role="region"
           aria-labelledby="filters-heading"
@@ -195,13 +207,14 @@ export default function ShopFilters({
                       Wyczyść
                     </button>
                   )}
+                  {/* Mobile Close Button */}
                   <button
                     onClick={onToggleFilters}
-                    className="lg:hidden p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="lg:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                     aria-label="Zamknij filtry"
                     ref={closeBtnRef}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
