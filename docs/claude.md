@@ -1,5 +1,20 @@
 # Headless WooCommerce E-commerce Platform
 
+## 🎯 **PROJECT RULES & GUIDELINES**
+
+**⚠️ IMPORTANT:** This project follows strict development rules defined in `.cursor/rules/king.mdc` - **ALWAYS READ AND FOLLOW THESE RULES!**
+
+**🚨 CRITICAL GIT WORKFLOW RULE:**
+```bash
+# MANDATORY: Po każdej udanej implementacji funkcji/feature
+1. git add .
+2. git commit -m "✨ [Feature Name] - Brief description"
+3. git push origin main
+
+# NIGDY nie rób wielu zmian bez commit!
+# ZAWSZE commit po każdej funkcji/komponencie/bugu!
+```
+
 ## 🏗️ Architecture Overview
 
 **Expert Level (9.6/10)** headless WooCommerce e-commerce platform built with Next.js 15, designed for beauty/cosmetics industry with Polish market focus.
