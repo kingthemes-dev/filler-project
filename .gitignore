@@ -159,3 +159,4 @@ temp-ai/
 # Local env backups
 .env.local.backup
 .env.local
+apps/web/.next/
