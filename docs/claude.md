@@ -207,6 +207,33 @@ interface AuthState {
 5. Styles
 ```
 
+### Git Workflow - CRITICAL RULE
+```bash
+# MANDATORY: Po każdej udanej implementacji funkcji/feature
+1. git add .
+2. git commit -m "✨ [Feature Name] - Brief description"
+3. git push origin main
+
+# NIGDY nie rób wielu zmian bez commit!
+# ZAWSZE commit po każdej funkcji/komponencie/bugu!
+# To zapewnia śledzenie zmian i możliwość rollback!
+```
+
+### Development Workflow
+```typescript
+// 1. Implement feature
+// 2. Test locally
+// 3. Git commit (MANDATORY!)
+// 4. Push to remote
+// 5. Deploy to Vercel
+
+// Example commit messages:
+"✨ Add product search functionality"
+"🔧 Fix cart calculation bug"
+"🎨 Update mobile responsive design"
+"⚡ Optimize API response caching"
+```
+
 ### Error Handling
 ```typescript
 // Circuit Breaker pattern
