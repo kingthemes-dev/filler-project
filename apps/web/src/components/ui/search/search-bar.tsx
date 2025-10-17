@@ -5,27 +5,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Star } from 'lucide-react';
 import { WooCommerceService } from '@/services/woocommerce-optimized';
 import { formatPrice } from '@/utils/format-price';
+import { WooProduct } from '@/types/woocommerce';
+import SearchErrorBoundary from './search-error-boundary';
 import Image from 'next/image';
+
+// Google Analytics gtag type declaration
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
 
 interface SearchBarProps {
   placeholder?: string;
   className?: string;
   onSearch?: (query: string) => void;
-}
-
-interface WooProduct {
-  id: number;
-  name: string;
-  description: string;
-  price: string;
-  sale_price: string;
-  images: Array<{ src: string; alt: string }>;
-  categories: Array<{ name: string; slug: string }>;
-  tags: Array<{ name: string; slug: string }>;
-  stock_status: string;
-  average_rating: string;
-  rating_count: number;
-  slug: string;
 }
 
 export default function SearchBar({ 
@@ -43,6 +37,37 @@ export default function SearchBar({
   const [wooService, setWooService] = useState<WooCommerceService | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasResults, setHasResults] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  
+  // Analytics tracking functions
+  const trackSearchQuery = useCallback((query: string, resultsCount: number) => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'search', {
+        search_term: query,
+        results_count: resultsCount,
+        event_category: 'Search',
+        event_label: 'SearchBar'
+      });
+    }
+    
+    // Console log for development
+    console.log(`🔍 Search tracked: "${query}" - ${resultsCount} results`);
+  }, []);
+
+  const trackSearchResultClick = useCallback((product: WooProduct, query: string) => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'select_content', {
+        content_type: 'product',
+        item_id: product.id.toString(),
+        item_name: product.name,
+        search_term: query,
+        event_category: 'Search',
+        event_label: 'SearchResultClick'
+      });
+    }
+    
+    console.log(`🛒 Search result clicked: "${product.name}" from query: "${query}"`);
+  }, []);
   
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +84,55 @@ export default function SearchBar({
       console.error('Error initializing WooCommerceService:', error);
     }
   }, []);
+
+  // Memoized position update function
+  const updatePosition = useCallback(() => {
+    if (!inputRef.current) return;
+    
+    const rect = inputRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    // Calculate position
+    let top = rect.bottom + window.scrollY + 8;
+    let left = rect.left + window.scrollX;
+    let width = rect.width;
+    
+    // Ensure dropdown doesn't go below viewport
+    if (top + 400 > window.scrollY + viewportHeight) {
+      top = rect.top + window.scrollY - 8; // Show above input instead
+    }
+    
+    // Ensure dropdown doesn't go outside viewport horizontally
+    if (left + width > viewportWidth) {
+      left = viewportWidth - width - 16; // 16px margin from edge
+    }
+    if (left < 16) {
+      left = 16; // 16px margin from left edge
+    }
+    
+    setDropdownPosition({
+      top,
+      left,
+      width
+    });
+  }, []);
+
+  // Calculate dropdown position when opening and on resize/scroll
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition();
+
+      // Update position on scroll and resize
+      window.addEventListener('scroll', updatePosition, { passive: true });
+      window.addEventListener('resize', updatePosition, { passive: true });
+
+      return () => {
+        window.removeEventListener('scroll', updatePosition);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [isOpen, updatePosition]);
 
   // Close search on outside click
   useEffect(() => {
@@ -142,11 +216,14 @@ export default function SearchBar({
           return;
         }
 
-        const results = await wooService.getProducts({ search: value, per_page: 8 });
+        const results = await wooService.getProducts({ search: value, per_page: 15 });
         const items = results.data || [];
         cacheRef.current.set(value, items);
         setSearchResults(items);
         setHasResults(items.length > 0);
+        
+        // Track search query
+        trackSearchQuery(value, items.length);
       } catch (error) {
         console.error('Search error:', error);
         setSearchResults([]);
@@ -173,6 +250,41 @@ export default function SearchBar({
     }
   };
 
+  // Handle recent search click
+  const handleRecentSearchClick = (recentQuery: string) => {
+    // Track recent search click
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'select_content', {
+        content_type: 'recent_search',
+        item_name: recentQuery,
+        event_category: 'Search',
+        event_label: 'RecentSearchClick'
+      });
+    }
+    
+    console.log(`🕒 Recent search clicked: "${recentQuery}"`);
+    
+    setQuery(recentQuery);
+    setIsOpen(false);
+    
+    if (onSearch) {
+      onSearch(recentQuery);
+    } else {
+      // Default behavior - navigate to search page
+      window.location.href = `/wyszukiwanie?q=${encodeURIComponent(recentQuery)}`;
+    }
+  };
+
+  // Clear recent searches
+  const clearRecentSearches = () => {
+    try {
+      localStorage.removeItem('filler_recent_searches');
+      setRecentSearches([]);
+    } catch (error) {
+      console.error('Error clearing recent searches:', error);
+    }
+  };
+
   // Handle suggestion click
   // const handleSuggestionClick = (suggestion: string) => {
   //   handleSearch(suggestion);
@@ -180,6 +292,9 @@ export default function SearchBar({
 
   // Handle result click
   const handleResultClick = (product: WooProduct) => {
+    // Track search result click
+    trackSearchResultClick(product, query);
+    
     saveRecentSearch(query);
     setIsOpen(false);
     setQuery('');
@@ -207,9 +322,10 @@ export default function SearchBar({
   };
 
   return (
-    <div className={`relative ${className}`} ref={searchRef}>
-      {/* Search Input */}
-      <div className="relative">
+    <SearchErrorBoundary>
+      <div className={`relative ${className}`} ref={searchRef} style={{ position: 'relative' }}>
+        {/* Search Input */}
+        <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-5 w-5 text-gray-400" />
         </div>
@@ -221,7 +337,10 @@ export default function SearchBar({
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyPress}
           onFocus={() => {
-            if (query.length >= 2 || suggestions.length > 0 || popularSearches.length > 0) {
+            // Show recent searches when focusing on empty search
+            if (query.length === 0 && recentSearches.length > 0) {
+              setIsOpen(true);
+            } else if (query.length >= 2 || suggestions.length > 0 || popularSearches.length > 0) {
               setIsOpen(true);
             }
           }}
@@ -243,7 +362,12 @@ export default function SearchBar({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="absolute z-50 w-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden"
+            className="fixed z-[60] bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden max-h-[80vh] sm:max-h-[70vh] will-change-transform"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width
+            }}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -263,7 +387,7 @@ export default function SearchBar({
                 <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide">
                   Produkty ({searchResults.length})
                 </div>
-                <div className="max-h-64 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto">
                   {searchResults.map((product) => (
                     <div
                       key={product.id}
@@ -289,7 +413,7 @@ export default function SearchBar({
                           {product.name}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
-                          {product.categories && product.categories.length > 0 ? product.categories[0].name : 'Produkt'}
+                          {product.categories && product.categories.length > 0 ? (product.categories[0].name || 'Produkt') : 'Produkt'}
                         </p>
                         <div className="flex items-center mt-1">
                           <div className="flex items-center">
@@ -321,7 +445,46 @@ export default function SearchBar({
               </div>
             )}
 
-            {/* No suggestions / popular sections (removed mockups) */}
+            {/* Recent Searches */}
+            {!isLoading && query.length === 0 && recentSearches.length > 0 && (
+              <div className="border-b border-gray-100">
+                <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide flex items-center justify-between">
+                  <span>Ostatnio wyszukiwane</span>
+                  <button
+                    onClick={clearRecentSearches}
+                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                    title="Wyczyść historię"
+                  >
+                    Wyczyść
+                  </button>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {recentSearches.slice(0, 12).map((recentQuery, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleRecentSearchClick(recentQuery)}
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors group"
+                    >
+                      <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full mr-3 flex items-center justify-center">
+                        <Search className="w-4 h-4 text-gray-500" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-black">
+                          {recentQuery}
+                        </p>
+                      </div>
+                      
+                      <div className="flex-shrink-0 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* No Results */}
             {!isLoading && query.length >= 2 && !hasResults && suggestions.length === 0 && (
@@ -342,6 +505,7 @@ export default function SearchBar({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </SearchErrorBoundary>
   );
 }

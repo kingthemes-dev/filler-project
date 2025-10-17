@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { UI_SPACING } from '@/config/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, FileText } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
@@ -23,6 +23,19 @@ export default function Header() {
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [mobileMenuTab, setMobileMenuTab] = useState<'main' | 'filters' | 'account'>('main');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  
+  // Prawdziwe dane z WooCommerce
+  const [categories, setCategories] = useState<any[]>([]);
+  const [attributes, setAttributes] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  
+  // Hierarchia kategorii
+  const [mainCategories, setMainCategories] = useState<any[]>([]);
+  const [subCategories, setSubCategories] = useState<{[key: number]: any[]}>({});
   
   // Safely access stores with error handling
   let itemCount = 0, openCart = () => {}, user = null, isAuthenticated = false, logout = () => {};
@@ -64,6 +77,70 @@ export default function Header() {
     setFavoritesCount(getFavoritesCount());
   }, [getFavoritesCount]);
 
+  // Pobierz prawdziwe dane z WooCommerce - kategorie i atrybuty
+  useEffect(() => {
+    const fetchWooCommerceData = async () => {
+      if (mobileMenuTab !== 'filters') return;
+      
+      setIsLoadingData(true);
+      try {
+        // Pobierz kategorie i zbuduj hierarchię
+        const categoriesResponse = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/categories&per_page=100`);
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json();
+          console.log('📂 All categories loaded:', categoriesData);
+          
+          const allCategories = Array.isArray(categoriesData) ? categoriesData : [];
+          
+          // Buduj hierarchię: główne kategorie (parent = 0) i podkategorie
+          const mainCats = allCategories.filter(cat => cat.parent === 0 && cat.name !== 'Wszystkie kategorie');
+          const subCats: {[key: number]: any[]} = {};
+          
+          // Grupuj podkategorie według parent_id
+          allCategories.forEach(cat => {
+            if (cat.parent !== 0) {
+              if (!subCats[cat.parent]) {
+                subCats[cat.parent] = [];
+              }
+              subCats[cat.parent].push(cat);
+            }
+          });
+          
+          console.log('📂 Main categories:', mainCats);
+          console.log('📂 Subcategories:', subCats);
+          
+          setMainCategories(mainCats);
+          setSubCategories(subCats);
+          setCategories(allCategories);
+        }
+
+        // Pobierz atrybuty (bez pojemności)
+        const attributesResponse = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/attributes&per_page=100`);
+        if (attributesResponse.ok) {
+          const attributesData = await attributesResponse.json();
+          console.log('🏷️ Attributes loaded:', attributesData);
+          
+          // Filtruj atrybuty - usuń pojemność
+          const filteredAttributes = Array.isArray(attributesData) 
+            ? attributesData.filter(attr => 
+                attr.slug !== 'pojemnosc' && 
+                attr.slug !== 'capacity' && 
+                !attr.name.toLowerCase().includes('pojemność')
+              ) 
+            : [];
+          
+          setAttributes(filteredAttributes);
+        }
+      } catch (error) {
+        console.error('❌ Error loading WooCommerce data:', error);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchWooCommerceData();
+  }, [mobileMenuTab]);
+
   // Update favorites count when favorites array changes
   useEffect(() => {
     if (isMounted) {
@@ -86,18 +163,75 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
 
+  // Close mobile search when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobileSearchOpen) {
+        const target = event.target as HTMLElement;
+        // Check if click is outside mobile search container
+        if (!target.closest('.mobile-search-container')) {
+          setIsMobileSearchOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileSearchOpen]);
+
+  // Close shop dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isShopOpen) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.shop-dropdown-container')) {
+          setIsShopOpen(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isShopOpen]);
+
+  // Close shop dropdown on escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isShopOpen) {
+        setIsShopOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isShopOpen]);
+
+  // Cleanup hover timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (shopHoverTimeout) {
+        clearTimeout(shopHoverTimeout);
+      }
+    };
+  }, [shopHoverTimeout]);
+
+  // Reset mobile menu tab when menu closes
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      setMobileMenuTab('main');
+    }
+  }, [isMobileMenuOpen]);
+
   return (
     <>
-      <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50`}>
+      <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50 will-change-transform overflow-visible`}>
         <div className={`max-w-[95vw] mx-auto px-4 sm:px-8`}>
-          <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-x-hidden">
+          <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
           {/* Logo */}
-          <div className="flex items-center flex-none">
+          <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity">
             <div className="w-7 h-7 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
               <span className="text-white text-sm sm:text-lg font-bold">F</span>
             </div>
             <span className="text-lg sm:text-xl font-bold text-black">FILLER</span>
-          </div>
+          </Link>
 
           {/* Desktop spacer between logo and nav (exact 75px) */}
           <div
@@ -106,7 +240,7 @@ export default function Header() {
           />
 
           {/* Spacer / Middle column for mobile to allow shrink without overflow */}
-          <div className="min-w-0 md:hidden col-start-2" />
+          <div className="min-w-0 lg:hidden col-start-2" />
 
           {/* Navigation - desktop only */}
           <nav
@@ -116,16 +250,40 @@ export default function Header() {
               Strona główna
             </Link>
             <div 
-              className="relative"
-              onMouseEnter={() => setIsShopOpen(true)}
+              className="relative overflow-visible shop-dropdown-container"
+              onMouseEnter={() => {
+                // Clear any existing timeout
+                if (shopHoverTimeout) {
+                  clearTimeout(shopHoverTimeout);
+                  setShopHoverTimeout(null);
+                }
+                // Open dropdown immediately on hover
+                setIsShopOpen(true);
+              }}
+              onMouseLeave={() => {
+                // Clear any existing timeout
+                if (shopHoverTimeout) {
+                  clearTimeout(shopHoverTimeout);
+                }
+                // Set delay before closing (200ms)
+                const timeout = setTimeout(() => {
+                  setIsShopOpen(false);
+                }, 200);
+                setShopHoverTimeout(timeout);
+              }}
             >
               <Link 
                 href="/sklep"
-                className="text-gray-900 hover:text-black transition-colors font-medium inline-flex items-center gap-1"
+                className="text-gray-900 hover:text-black transition-colors font-medium inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 rounded-md px-2 py-1"
+                aria-expanded={isShopOpen}
+                aria-haspopup="true"
               >
                 Sklep
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopOpen ? 'rotate-180' : ''}`} />
               </Link>
+              
+              {/* Shop Dropdown - rendered inside container */}
+              <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
             </div>
             <a href="/o-nas" className="text-gray-700 hover:text-black transition-colors font-medium">
               O nas
@@ -137,7 +295,7 @@ export default function Header() {
 
           {/* Search Bar - desktop only (flex-1 on desktop) */}
           <div
-            className="hidden md:flex mx-4 lg:mx-0 min-w-0 lg:flex-1 w-full max-w-none lg:px-[var(--search-pad)]"
+            className="hidden lg:flex mx-4 lg:mx-0 min-w-0 lg:flex-1 w-full max-w-none lg:px-[var(--search-pad)]"
             style={{ ['--search-pad' as any]: `${UI_SPACING.SEARCH_SIDE_PADDING_DESKTOP}px` }}
           >
             <SearchBar 
@@ -147,48 +305,44 @@ export default function Header() {
           </div>
 
           {/* Mobile Icons with Labels */}
-          <div className="md:hidden col-start-3 flex items-center gap-3 justify-end min-w-0">
+          <div className="lg:hidden col-start-3 flex items-center gap-3 justify-end min-w-0 flex-shrink-0">
             {/* Mobile Search Icon */}
             <button 
-              className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors mobile-search-container"
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
               aria-label="Szukaj produktów"
             >
               <Search className="w-6 h-6" />
-              <span className="hidden sm:block text-[11px] font-medium">Szukaj</span>
             </button>
 
             {/* Mobile User Icon */}
             {isAuthenticated ? (
               <Link
                 href="/moje-konto"
-                className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+                className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
                 aria-label="Moje konto"
               >
                 <User className="w-6 h-6" />
-                <span className="hidden sm:block text-[11px] font-medium">Konto</span>
               </Link>
             ) : (
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
-                className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+                className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
                 aria-label="Zaloguj się"
               >
                 <User className="w-6 h-6" />
-                <span className="hidden sm:block text-[11px] font-medium">Konto</span>
               </button>
             )}
 
             {/* Mobile Favorites Icon */}
             <button
               onClick={() => openFavoritesModal()}
-              className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
+              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors relative"
               aria-label="Ulubione"
             >
               <Heart className="w-6 h-6" />
-              <span className="hidden sm:block text-[11px] font-medium">Ulubione</span>
               {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-red-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center">
                   {favoritesCount}
                 </span>
               )}
@@ -197,13 +351,12 @@ export default function Header() {
             {/* Mobile Cart Icon */}
             <button
               onClick={openCart}
-              className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors relative"
+              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors relative"
               aria-label="Koszyk"
             >
               <ShoppingCart className="w-6 h-6" />
-              <span className="hidden sm:block text-[11px] font-medium">Koszyk</span>
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-blue-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
@@ -212,7 +365,7 @@ export default function Header() {
             {/* Mobile Menu Icon */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="shrink-0 flex flex-col items-center space-y-1 text-gray-700 hover:text-black transition-colors"
+              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
               aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
             >
               {isMobileMenuOpen ? (
@@ -220,12 +373,11 @@ export default function Header() {
               ) : (
                 <Menu className="w-6 h-6" />
               )}
-              <span className="hidden sm:block text-[11px] font-medium">Menu</span>
             </button>
           </div>
 
           {/* Desktop icons - hidden on mobile */}
-          <div className="hidden md:flex items-center space-x-6 justify-end">
+          <div className="hidden lg:flex items-center space-x-6 justify-end pr-2 overflow-visible">
             {/* Email Notification Center - Admin Only */}
             {isAuthenticated && user?.role === 'admin' && (
               <button 
@@ -240,7 +392,7 @@ export default function Header() {
 
             {/* User Menu */}
             {isAuthenticated ? (
-              <div className="relative user-menu-container">
+              <div className="relative user-menu-container overflow-visible">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center space-x-2"
@@ -255,12 +407,25 @@ export default function Header() {
                 {/* User Dropdown Menu */}
                 <AnimatePresence>
                   {showUserMenu && (
-                    <motion.div
+                    <>
+                      {/* Backdrop */}
+                      <div 
+                        className="fixed inset-0 z-[65] bg-black/20"
+                        onClick={() => setShowUserMenu(false)}
+                      />
+                      
+                      {/* Dropdown */}
+                      <motion.div
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+                      className="fixed bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-[70]"
+                      style={{
+                        top: '80px', // Below header
+                        right: '20px', // Right side of screen
+                        width: '280px'
+                      }}
                     >
                                     {/* User Info */}
                                     <div className="px-4 py-3 border-b border-gray-100">
@@ -338,6 +503,7 @@ export default function Header() {
                                       </button>
                                     </div>
                                   </motion.div>
+                                  </>
                                 )}
                               </AnimatePresence>
                             </div>
@@ -372,7 +538,7 @@ export default function Header() {
             >
               <Heart className="w-6 h-6 group-hover:text-red-500 transition-colors" />
               {isMounted && favoritesCount > 0 && (
-                <span className="pointer-events-none absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white animate-pulse">
+                <span className="pointer-events-none absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-red-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center ring-1 ring-white">
                   {favoritesCount}
                 </span>
               )}
@@ -390,26 +556,14 @@ export default function Header() {
               title="Koszyk"
               aria-label="Koszyk zakupowy"
             >
-              <ShoppingCart className="w-6 h-6 group-hover:text-green-600 transition-colors" />
+              <ShoppingCart className="w-6 h-6 group-hover:text-blue-600 transition-colors" />
               {itemCount > 0 && (
-                <span className="pointer-events-none absolute -top-2 -right-2 bg-green-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-white animate-bounce">
+                <span className="pointer-events-none absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-blue-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center ring-1 ring-white animate-bounce">
                   {itemCount}
                 </span>
               )}
             </button>
 
-            {/* Burger Menu - medium screens (md to lg) */}
-            <button
-              className="hidden md:flex lg:hidden items-center justify-center w-8 h-8 text-gray-700 hover:text-black transition-colors"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
           </div>
           </div>
         </div>
@@ -418,7 +572,7 @@ export default function Header() {
         <AnimatePresence>
           {isMobileSearchOpen && (
             <motion.div
-              className="md:hidden bg-white border-t border-gray-200 shadow-lg"
+              className="lg:hidden bg-white border-t border-gray-200 shadow-lg mobile-search-container"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -433,132 +587,329 @@ export default function Header() {
             </motion.div>
           )}
         </AnimatePresence>
-        
-        {/* Medium Screen Menu (md to lg) */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              className="hidden md:block lg:hidden bg-white border-t border-gray-200 shadow-lg"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-            >
-              <div className="px-6 py-4">
-                <nav className="flex flex-col space-y-4">
-                  <Link 
-                    href="/" 
-                    className="text-lg font-medium text-gray-700 hover:text-black transition-colors py-2"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Strona główna
-                  </Link>
-                  <Link
-                    href="/sklep"
-                    className="text-left text-lg font-medium text-gray-900 hover:text-black transition-colors py-2 inline-flex items-center gap-2"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Sklep
-                    <ChevronDown className="w-4 h-4" />
-                  </Link>
-                  <a 
-                    href="/o-nas" 
-                    className="text-lg font-medium text-gray-700 hover:text-black transition-colors py-2"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    O nas
-                  </a>
-                  <a 
-                    href="/kontakt" 
-                    className="text-lg font-medium text-gray-700 hover:text-black transition-colors py-2"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Kontakt
-                  </a>
-                </nav>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu with Tabs */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="md:hidden lg:hidden bg-white border-t border-gray-200 shadow-lg"
+              className="lg:hidden bg-white border-t border-gray-200 shadow-lg"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
-              <div className="px-6 py-6 space-y-6">
-                {/* Mobile Navigation Links */}
-                <nav className="space-y-4">
-                  <Link 
-                    href="/" 
-                    className="block text-lg font-medium text-gray-700 hover:text-black transition-colors py-3 border-b border-gray-100"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsMobileSearchOpen(false);
-                    }}
+              <div className="flex flex-col h-[80vh]">
+                {/* Tab Headers - Klikalne karty */}
+                <div className="flex border-b border-gray-200">
+                  <button
+                    onClick={() => setMobileMenuTab('main')}
+                    className={`flex-1 px-4 py-4 text-center font-medium transition-colors text-sm ${
+                      mobileMenuTab === 'main'
+                        ? 'bg-gray-50 text-black border-b-2 border-black'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
                   >
-                    Strona główna
-                  </Link>
-                  <a 
-                    href="/sklep" 
-                    className="block text-lg font-medium text-gray-700 hover:text-black transition-colors py-3 border-b border-gray-100"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsMobileSearchOpen(false);
-                    }}
+                    Menu
+                  </button>
+                  <button
+                    onClick={() => setMobileMenuTab('filters')}
+                    className={`flex-1 px-4 py-4 text-center font-medium transition-colors text-sm ${
+                      mobileMenuTab === 'filters'
+                        ? 'bg-gray-50 text-black border-b-2 border-black'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
                   >
                     Sklep
-                  </a>
-                  <a 
-                    href="/o-nas" 
-                    className="block text-lg font-medium text-gray-700 hover:text-black transition-colors py-3 border-b border-gray-100"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsMobileSearchOpen(false);
-                    }}
-                  >
-                    O nas
-                  </a>
-                  <a 
-                    href="/kontakt" 
-                    className="block text-lg font-medium text-gray-700 hover:text-black transition-colors py-3 border-b border-gray-100"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsMobileSearchOpen(false);
-                    }}
-                  >
-                    Kontakt
-                  </a>
-                </nav>
-                
-              {/* Mobile Menu Actions - tylko dla zalogowanych */}
-              {isAuthenticated && (
-                <div className="pt-4 border-t border-gray-100">
-                  <Link
-                    href="/moje-zamowienia"
-                    className="flex items-center space-x-2 text-gray-700 hover:text-black transition-colors py-3"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Package className="w-6 h-6" />
-                    <span className="text-sm font-medium">Moje zamówienia</span>
-                  </Link>
+                  </button>
                   <button
-                    onClick={() => {
-                      logout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors py-3 w-full text-left"
+                    onClick={() => setMobileMenuTab('account')}
+                    className={`flex-1 px-4 py-4 text-center font-medium transition-colors text-sm ${
+                      mobileMenuTab === 'account'
+                        ? 'bg-gray-50 text-black border-b-2 border-black'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
                   >
-                    <LogOut className="w-6 h-6" />
-                    <span className="text-sm font-medium">Wyloguj się</span>
+                    Konto
                   </button>
                 </div>
-              )}
+
+                {/* Tab Content */}
+                <div className="flex-1 overflow-y-auto">
+                  {/* Main Navigation Tab */}
+                  {mobileMenuTab === 'main' && (
+                    <div className="px-6 py-6">
+                      {/* Main Navigation Links */}
+                      <nav className="space-y-4">
+                      <Link 
+                        href="/" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsMobileSearchOpen(false);
+                        }}
+                      >
+                        Strona główna
+                      </Link>
+                      <a 
+                        href="/sklep" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsMobileSearchOpen(false);
+                        }}
+                      >
+                        Sklep
+                      </a>
+                      <a 
+                        href="/o-nas" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsMobileSearchOpen(false);
+                        }}
+                      >
+                        O nas
+                      </a>
+                        <a 
+                          href="/kontakt" 
+                          className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsMobileSearchOpen(false);
+                          }}
+                        >
+                          Kontakt
+                        </a>
+                      </nav>
+                    </div>
+                  )}
+
+                  {/* Filters Tab */}
+                  {mobileMenuTab === 'filters' && (
+                    <div className="px-6 py-6">
+                      <div className="space-y-4">
+                        {/* 1. HIERARCHICZNE KATEGORIE - PRAWDZIWE DANE Z WOOCOMMERCE */}
+                        <div className="space-y-1">
+                          <h3 className="text-base font-medium text-gray-900 mb-3 uppercase tracking-wide">Kategorie</h3>
+                          
+                          {isLoadingData ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-4">
+                              <div className="animate-pulse flex items-center space-x-3">
+                                <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                <div className="h-4 bg-gray-200 rounded flex-1"></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Wszystkie kategorie na górze */}
+                              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                <Link
+                                  href="/sklep"
+                                  className="w-full flex items-center justify-between py-3 px-4 hover:bg-gray-50 transition-colors"
+                                  onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                  <span className="text-sm font-medium text-gray-900">
+                                    Wszystkie kategorie <span className="text-sm text-gray-500">({categories.reduce((total, cat) => total + (cat.count || 0), 0)})</span>
+                                  </span>
+                                </Link>
+                              </div>
+                              
+                              {mainCategories.map((category) => (
+                                <div key={category.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                {/* Główna kategoria - TYLKO rozwijanie */}
+                                <div className="flex items-center">
+                                  <button
+                                    className="flex-1 flex items-center justify-between py-3 px-4 hover:bg-gray-50 transition-colors"
+                                    onClick={() => setExpandedCategory(expandedCategory === `cat-${category.id}` ? null : `cat-${category.id}`)}
+                                  >
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {category.name} <span className="text-sm text-gray-500">({category.count || 0})</span>
+                                    </span>
+                                  </button>
+                                  
+                                  {/* Przycisk rozwijania podkategorii */}
+                                  {subCategories[category.id] && subCategories[category.id].length > 0 && (
+                                    <button
+                                      className="p-3 hover:bg-gray-50 transition-colors"
+                                      onClick={() => setExpandedCategory(expandedCategory === `cat-${category.id}` ? null : `cat-${category.id}`)}
+                                    >
+                                      {expandedCategory === `cat-${category.id}` ? (
+                                        <ChevronDown className="w-4 h-4 text-gray-600" />
+                                      ) : (
+                                        <ChevronRight className="w-4 h-4 text-gray-600" />
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+                                
+                                {/* Podkategorie */}
+                                {expandedCategory === `cat-${category.id}` && subCategories[category.id] && (
+                                  <div className="border-t border-gray-100 bg-gray-50">
+                                    <div className="py-2 space-y-1">
+                                      {subCategories[category.id].map((subCategory) => (
+                                        <Link
+                                          key={subCategory.id}
+                                          href={`/sklep?category=${subCategory.slug}`}
+                                          className="block w-full text-left py-2 px-6 hover:bg-gray-100 transition-colors text-sm font-medium text-gray-700"
+                                          onClick={() => setIsMobileMenuOpen(false)}
+                                        >
+                                          {subCategory.name} {subCategory.count && <span className="text-gray-500">({subCategory.count})</span>}
+                                        </Link>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                </div>
+                              ))}
+                            </>
+                          )}
+                        </div>
+
+                        {/* 2. ATRYBUTY - PRAWDZIWE DANE Z WOOCOMMERCE */}
+                        {attributes.map((attribute) => (
+                          <div key={attribute.id} className="space-y-1">
+                            <h3 className="text-base font-medium text-gray-900 mb-3 uppercase tracking-wide">{attribute.name}</h3>
+                            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                              <button
+                                className="w-full flex items-center justify-between py-3 px-4 hover:bg-gray-50 transition-colors"
+                                onClick={() => setExpandedSection(expandedSection === `attr-${attribute.id}` ? null : `attr-${attribute.id}`)}
+                              >
+                                <span className="text-sm font-medium text-gray-900">{attribute.name}</span>
+                                {expandedSection === `attr-${attribute.id}` ? (
+                                  <ChevronDown className="w-4 h-4 text-gray-600" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-gray-600" />
+                                )}
+                              </button>
+                              
+                              {expandedSection === `attr-${attribute.id}` && (
+                                <AttributeTerms attributeId={attribute.id} onClose={() => setIsMobileMenuOpen(false)} />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Account Tab */}
+                  {mobileMenuTab === 'account' && (
+                    <div className="px-6 py-6">
+                      {/* Account Options */}
+                    {isAuthenticated ? (
+                      <div className="space-y-3">
+                        {/* Moje konto */}
+                        <Link
+                          href="/moje-konto"
+                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Settings className="w-5 h-5" />
+                          <span className="text-sm font-medium">Moje konto</span>
+                        </Link>
+                        
+                        {/* Moje zamówienia */}
+                        <Link
+                          href="/moje-zamowienia"
+                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Package className="w-5 h-5" />
+                          <span className="text-sm font-medium">Moje zamówienia</span>
+                        </Link>
+                        
+                        {/* Ulubione */}
+                        <button
+                          onClick={() => {
+                            openFavoritesModal();
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
+                        >
+                          <Heart className="w-5 h-5" />
+                          <span className="text-sm font-medium">Ulubione</span>
+                          {favoritesCount > 0 && (
+                            <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              {favoritesCount}
+                            </span>
+                          )}
+                        </button>
+                        
+                        {/* Faktury */}
+                        <Link
+                          href="/moje-faktury"
+                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <FileText className="w-5 h-5" />
+                          <span className="text-sm font-medium">Faktury</span>
+                        </Link>
+                        
+                        {/* Separator */}
+                        <div className="border-t border-gray-100 my-3" />
+                        
+                        {/* Wyloguj się */}
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="flex items-center space-x-3 text-red-600 hover:text-red-700 transition-colors py-3 w-full text-left"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          <span className="text-sm font-medium">Wyloguj się</span>
+                        </button>
+                      </div>
+                    ) : (
+                      /* Not logged in - show login option */
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('openLogin'));
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
+                        >
+                          <User className="w-5 h-5" />
+                          <span className="text-sm font-medium">Zaloguj się</span>
+                        </button>
+                      </div>
+                    )}
+                    </div>
+                  )}
+                  
+                  {/* Footer - Numer telefonu i Social Media */}
+                  <div className="border-t border-gray-200 mt-6 pt-6 px-6 pb-6">
+                    <div className="space-y-4">
+                      {/* Ikony kontaktowe - do lewej z marginesami */}
+                      <div className="flex items-center space-x-4">
+                        <a 
+                          href="tel:+48535956932" 
+                          className="text-gray-600 hover:text-black transition-colors"
+                        >
+                          <Phone className="w-5 h-5" />
+                        </a>
+                        <a 
+                          href="https://facebook.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-blue-600 transition-colors"
+                        >
+                          <Facebook className="w-5 h-5" />
+                        </a>
+                        <a 
+                          href="https://instagram.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-pink-600 transition-colors"
+                        >
+                          <Instagram className="w-5 h-5" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
@@ -571,10 +922,62 @@ export default function Header() {
         onClose={() => setIsEmailCenterOpen(false)}
       />
       
-      {/* Shop Explore Panel */}
-      <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       
       {/* Favorites Modal */}
     </>
+  );
+}
+
+// Komponent do ładowania terminów atrybutów
+function AttributeTerms({ attributeId, onClose }: { attributeId: number; onClose: () => void }) {
+  const [terms, setTerms] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchTerms = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/attributes/${attributeId}/terms&per_page=100`);
+        if (response.ok) {
+          const termsData = await response.json();
+          console.log(`🏷️ Terms for attribute ${attributeId}:`, termsData);
+          setTerms(Array.isArray(termsData) ? termsData : []);
+        }
+      } catch (error) {
+        console.error(`❌ Error loading terms for attribute ${attributeId}:`, error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTerms();
+  }, [attributeId]);
+
+  if (isLoading) {
+    return (
+      <div className="border-t border-gray-100 bg-gray-50 p-4">
+        <div className="animate-pulse space-y-2">
+          <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-t border-gray-100 bg-gray-50">
+      <div className="py-2 space-y-1">
+        {terms.map((term) => (
+          <Link
+            key={term.id}
+            href={`/sklep?attribute=${term.slug}`}
+            className="block w-full text-left py-2 px-6 hover:bg-gray-100 transition-colors text-sm font-medium text-gray-700"
+            onClick={onClose}
+          >
+            {term.name} {term.count && <span className="text-gray-500">({term.count})</span>}
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
