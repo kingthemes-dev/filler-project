@@ -53,6 +53,11 @@ export default function ShopFilters({
 }: ShopFiltersProps) {
   const [loading, setLoading] = useState(false);
   
+  console.log('🚀 ShopFilters - categories:', categories);
+  console.log('🚀 ShopFilters - categories type:', typeof categories);
+  console.log('🚀 ShopFilters - Array.isArray(categories):', Array.isArray(categories));
+  console.log('🚀 ShopFilters - categories?.length:', categories?.length);
+  
   const [expandedSections, setExpandedSections] = useState({
     categories: true, // ZAWSZE true domyślnie
     attributes: true,
