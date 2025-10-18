@@ -104,24 +104,20 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
   console.log('🔍 ShopExplorePanel render - open:', open, 'AnimatePresence should render:', open);
   
+  if (!open) return null;
+  
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          id="shop-explore-panel"
-          role="dialog"
-          aria-modal="false"
-          className="absolute top-full left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50 rounded-b-2xl"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-          onMouseEnter={() => {}} // Keep dropdown open when hovering over it
-          onMouseLeave={() => {
-            // Close dropdown when leaving the dropdown area
-            onClose();
-          }}
-        >
+    <div
+      id="shop-explore-panel"
+      role="dialog"
+      aria-modal="false"
+      className="absolute top-full left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50 rounded-b-2xl"
+      onMouseEnter={() => {}} // Keep dropdown open when hovering over it
+      onMouseLeave={() => {
+        // Close dropdown when leaving the dropdown area
+        onClose();
+      }}
+    >
             <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-6">
               <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {/* Kategorie główne */}
@@ -202,9 +198,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   </div>
               </div>
             </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </div>
   );
 }
 
