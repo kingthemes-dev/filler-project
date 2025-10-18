@@ -124,14 +124,27 @@ export default function Header() {
           const attributesData = await attributesResponse.json();
           console.log('🏷️ Attributes loaded:', attributesData);
           
-          // Filtruj atrybuty - usuń pojemność
-          const filteredAttributes = Array.isArray(attributesData) 
-            ? attributesData.filter(attr => 
-                attr.slug !== 'pojemnosc' && 
-                attr.slug !== 'capacity' && 
-                !attr.name.toLowerCase().includes('pojemność')
-              ) 
-            : [];
+          // Handle both array format and {success: true, attributes: {...}} format
+          let allAttributes = [];
+          if (Array.isArray(attributesData)) {
+            allAttributes = attributesData;
+          } else if (attributesData?.attributes) {
+            // Convert {marka: {...}, zastosowanie: {...}} to array format
+            allAttributes = Object.values(attributesData.attributes).map(attr => ({
+              id: attr.id,
+              name: attr.name,
+              slug: attr.slug,
+              type: attr.type,
+              order_by: attr.order_by,
+              has_archives: attr.has_archives,
+              terms: attr.terms || []
+            }));
+          }
+          
+          // Filtruj atrybuty - usuń pojemność, zostaw tylko marka i zastosowanie
+          const filteredAttributes = allAttributes.filter(attr => 
+            attr.slug === 'marka' || attr.slug === 'zastosowanie'
+          );
           
           setAttributes(filteredAttributes);
         }
@@ -923,7 +936,6 @@ export default function Header() {
         </AnimatePresence>
         
         {/* Shop Dropdown - rendered outside container for full width */}
-        {console.log('🔍 Header - isShopOpen:', isShopOpen)}
         <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       </header>
       
