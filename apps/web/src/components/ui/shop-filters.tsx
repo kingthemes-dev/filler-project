@@ -106,13 +106,9 @@ export default function ShopFilters({
     return expandedCategories.has(categoryId);
   };
   
-  // Memoized hierarchical categories - tylko główne kategorie (parent = 0, bez "Wszystkie kategorie")
+  // Memoized hierarchical categories
   const hierarchicalCategories = useMemo(() => {
-    const allCategories = categories || [];
-    // Najpierw zbuduj pełną hierarchię ze wszystkich kategorii
-    const fullHierarchy = buildCategoryHierarchy(allCategories);
-    // Potem przefiltruj tylko główne kategorie (parent = 0) i wyklucz "Wszystkie kategorie"
-    return fullHierarchy.filter(cat => cat.parent === 0 && cat.name !== 'Wszystkie kategorie');
+    return buildCategoryHierarchy(categories || []);
   }, [categories]);
   
   // Render function for categories
