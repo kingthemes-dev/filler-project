@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         ...(product.categories?.map(cat => typeof cat === 'string' ? cat : cat.name) || [])
       ],
       url: `/produkt/${slug}`,
-      type: 'product',
+      type: 'website',
       price: price,
       availability: availability,
       brand: brand,
