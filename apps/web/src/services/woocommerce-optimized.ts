@@ -110,7 +110,7 @@ class WooCommerceService {
       
           // Use local API route instead of direct call (aggregated response)
           // Use absolute URL for server-side calls
-          const baseUrl = typeof window === 'undefined' ? 'http://localhost:3002' : '';
+          const baseUrl = typeof window === 'undefined' ? 'http://localhost:3000' : '';
           const response = await fetch(`${baseUrl}/api/woocommerce?${params.toString()}`);
       
       if (!response.ok) {
