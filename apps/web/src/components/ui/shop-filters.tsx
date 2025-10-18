@@ -60,29 +60,20 @@ export default function ShopFilters({
     availability: true,
   });
   
-  // DEBUG: Sprawdź kategorie
-  console.log('🔍 ShopFilters - categories prop:', categories);
-  console.log('🔍 ShopFilters - categories length:', categories?.length);
-  console.log('🔍 ShopFilters - categories type:', typeof categories);
-  console.log('🔍 ShopFilters - categories isArray:', Array.isArray(categories));
-  console.log('🔍 ShopFilters - expandedSections:', expandedSections);
-  console.log('🔍 ShopFilters - categories expanded:', expandedSections.categories);
   
-  // Sprawdź czy kategorie to obiekt z właściwością categories
-  if (categories && typeof categories === 'object' && !Array.isArray(categories)) {
-    console.log('🔍 ShopFilters - categories object keys:', Object.keys(categories));
-    if (categories.categories) {
-      console.log('🔍 ShopFilters - categories.categories:', categories.categories);
-      console.log('🔍 ShopFilters - categories.categories length:', categories.categories.length);
-    }
-  }
-  // Restore expanded state from localStorage
+  // Restore expanded state from localStorage with fallback to defaults
   React.useEffect(() => {
     try {
       const saved = localStorage.getItem('shopFiltersExpanded');
       if (saved) {
         const parsed = JSON.parse(saved);
-        setExpandedSections((prev) => ({ ...prev, ...parsed }));
+        // Ensure categories is always true on first load if not explicitly set to false
+        setExpandedSections((prev) => ({ 
+          ...prev, 
+          ...parsed,
+          // Keep categories expanded by default
+          categories: parsed.categories !== false ? true : false
+        }));
       }
     } catch {}
   }, []);
@@ -289,12 +280,6 @@ export default function ShopFilters({
                       {/* HIERARCHICAL CATEGORIES: Render with expand/collapse */}
                       <div className="space-y-2">
                         {(() => {
-                          console.log('🔍 Categories render check:', {
-                            categoriesLength: categories?.length,
-                            categoriesType: typeof categories,
-                            isArray: Array.isArray(categories),
-                            categories: categories
-                          });
                           return categories?.length > 0;
                         })() ? (
                           (() => {

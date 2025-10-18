@@ -46,30 +46,20 @@ interface ShopClientProps {
 }
 
 export default function ShopClient({ initialShopData }: ShopClientProps) {
-  console.log('🔍 ShopClient render - wooCommerceService:', !!wooCommerceService, typeof wooCommerceService);
-  console.log('🔍 ShopClient render - initialShopData:', initialShopData);
-  console.log('🔍 ShopClient render - initialShopData.categories:', initialShopData?.categories);
-  console.log('🔍 ShopClient render - products count:', initialShopData?.products?.length);
   
   const [products, setProducts] = useState<WooProduct[]>(initialShopData?.products || []);
   const [allCategories, setAllCategories] = useState<Category[]>(initialShopData?.categories || []);
   
-  // Debug allCategories changes
-  useEffect(() => {
-    console.log('🔍 allCategories updated:', allCategories.length, allCategories);
-  }, [allCategories]);
   
   // INSTANT LOADING: If no initial data, fetch categories immediately
   useEffect(() => {
     if (!initialShopData?.categories || initialShopData.categories.length === 0) {
-      console.log('🚀 INSTANT LOADING: Fetching categories immediately...');
       wooCommerceService.getCategories().then(response => {
         if (response.success && response.categories) {
-          console.log('✅ INSTANT LOADING: Categories loaded:', response.categories.length);
           setAllCategories(response.categories);
         }
       }).catch(error => {
-        console.error('❌ INSTANT LOADING: Error fetching categories:', error);
+        console.error('Error fetching categories:', error);
       });
     }
   }, [initialShopData]);
@@ -94,7 +84,6 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     sortOrder: 'desc'
   });
   
-  console.log('🔍 ShopClient filters state:', filters);
   const router = useRouter();
   const nextSearchParams = useNextSearchParams();
   // Sync filters with URL query params (category, brands, dynamic attrs)
@@ -170,13 +159,10 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   // React Query for products with SSR hydration
   const queryKey = ['shop','products',{ page: currentPage, perPage: productsPerPage, filters: JSON.stringify(filters) }];
-  console.log('🔍 shopQuery queryKey:', queryKey);
-  console.log('🔍 shopQuery filters:', filters);
   
   const shopQuery = useQuery({
     queryKey,
     queryFn: async () => {
-      console.log('🔍 shopQuery queryFn called with filters:', filters);
       const params = new URLSearchParams();
       params.append('endpoint', 'shop');
       params.append('page', currentPage.toString());
@@ -206,7 +192,6 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         categories: data.categories?.length || 0, 
         attributes: Object.keys(data.attributes || {}).length 
       });
-      console.log('🔍 Shop data categories:', data.categories);
       
       return data;
     },
@@ -217,11 +202,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   // Update products and total from shopQuery data
   useEffect(() => {
-    console.log('🔍 useEffect shopQuery.data:', shopQuery.data);
     if (shopQuery.data) {
-      console.log('🔍 Setting products:', shopQuery.data.products?.length);
-      console.log('🔍 Setting totalProducts:', shopQuery.data.total);
-      console.log('🔍 Setting categories from shopQuery:', shopQuery.data.categories?.length);
       setProducts(shopQuery.data.products || []);
       setTotalProducts(shopQuery.data.total || 0);
       setAllCategories(shopQuery.data.categories || []);
@@ -235,33 +216,17 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const categoriesQuery = useQuery({
     queryKey: ['shop','categories'],
     queryFn: async () => {
-      console.log('🔍 categoriesQuery - fetching categories...');
       const res = await wooCommerceService.getCategories();
-      console.log('🔍 categoriesQuery - response:', res);
       return res;
     },
     staleTime: 30 * 60_000,
     enabled: allCategories.length === 0,
   });
   
-  console.log('🔍 categoriesQuery status:', {
-    isLoading: categoriesQuery.isLoading,
-    isFetching: categoriesQuery.isFetching,
-    isSuccess: categoriesQuery.isSuccess,
-    data: categoriesQuery.data,
-    enabled: allCategories.length === 0
-  });
 
 
   useEffect(() => {
-    console.log('🔍 categoriesQuery useEffect triggered:', {
-      hasData: !!categoriesQuery.data,
-      dataData: categoriesQuery.data?.data,
-      allCategoriesLength: allCategories.length,
-      condition: categoriesQuery.data?.data && allCategories.length === 0
-    });
     if (categoriesQuery.data?.data && allCategories.length === 0) {
-      console.log('🔍 Setting allCategories from categoriesQuery:', categoriesQuery.data.data);
       setAllCategories(categoriesQuery.data.data as any);
     }
   }, [categoriesQuery.data, allCategories.length]);

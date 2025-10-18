@@ -128,11 +128,6 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     const shopData = qc.getQueryData(['shop','products',{ page: 1, perPage: 12, filters: initialFilters }]);
     const categoriesData = qc.getQueryData(['shop','categories']);
     
-    // Debug categories data
-    console.log('🔍 SSR Categories Data:', categoriesData);
-    console.log('🔍 SSR Categories Data.data[0]:', categoriesData?.data?.[0]);
-    console.log('🔍 SSR Categories Data.data length:', categoriesData?.data?.length);
-    console.log('🔍 SSR Categories Data.categories:', categoriesData?.categories);
     
     const dehydratedState = dehydrate(qc);
 
