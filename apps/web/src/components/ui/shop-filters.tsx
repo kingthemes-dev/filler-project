@@ -60,6 +60,9 @@ export default function ShopFilters({
     availability: true,
   });
   
+  // Debug log
+  console.log('🔍 ShopFilters - expandedSections.categories:', expandedSections.categories);
+  
   // Initialize from localStorage on mount (client-side only)
   const [isInitialized, setIsInitialized] = useState(false);
   
