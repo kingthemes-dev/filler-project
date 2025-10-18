@@ -267,7 +267,7 @@ export default function ShopFilters({
                 </button>
                 
                 {/* Kategorie są ZAWSZE wyświetlane */}
-                {expandedSections.categories && (
+                {expandedSections.categories && categories && categories.length > 0 ? (
                   <div className="space-y-2">
                         {(() => {
                           // Build category hierarchy
@@ -319,6 +319,10 @@ export default function ShopFilters({
                             const hierarchicalCategories = buildCategoryHierarchy(categories);
                             return hierarchicalCategories.map(category => renderCategory(category));
                           })()}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 mt-2">
+                    {loading ? 'Ładowanie kategorii...' : 'Brak kategorii'}
                   </div>
                 )}
               </div>
