@@ -124,11 +124,15 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       retryDelay: 500,
     });
 
+    // Get the prefetched data
+    const shopData = qc.getQueryData(['shop','products',{ page: 1, perPage: 12, filters: initialFilters }]);
+    const categoriesData = qc.getQueryData(['shop','categories']);
+    
     const dehydratedState = dehydrate(qc);
 
     return (
       <HydrationBoundary state={dehydratedState}>
-        <ShopClient initialShopData={shopData} />
+        <ShopClient initialShopData={shopData ? { ...shopData, categories: categoriesData?.categories || [] } : null} />
       </HydrationBoundary>
     );
   } catch (error) {
@@ -139,6 +143,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     
     return (
       <HydrationBoundary state={dehydratedState}>
+        <ShopClient initialShopData={null} />
         <div className="min-h-screen bg-white flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
