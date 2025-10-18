@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 class KingShopAPI {
     
-    private $cache_duration = 24 * 60 * 60; // 24 hours
+    private $cache_duration = 2 * 60 * 60; // 2 hours - OPTIMIZED for better performance
     private $redis_available = false;
     
     public function __construct() {
@@ -677,7 +677,8 @@ class KingShopAPI {
             'on_sale' => $product->is_on_sale(),
             'featured' => $product->is_featured(),
             'image' => $image_url,
-            'images' => array($image_url), // For compatibility
+            // OPTIMIZED: Remove heavy fields for shop listing
+            // 'images' => array($image_url), // Removed - only main image needed
             'categories' => wp_get_post_terms($product->get_id(), 'product_cat', array('fields' => 'names')),
             'stock_status' => $product->get_stock_status(),
             'type' => $product->get_type(),
@@ -1005,7 +1006,7 @@ class KingShopAPI {
             return new WP_Error('categories_error', 'Failed to get categories', array('status' => 500));
         }
         
-        // Format categories
+        // Format categories - OPTIMIZED: Minimal fields only
         $formatted_categories = array();
         foreach ($categories as $cat) {
             $formatted_categories[] = array(
@@ -1013,9 +1014,8 @@ class KingShopAPI {
                 'name' => $cat->name,
                 'slug' => $cat->slug,
                 'count' => $cat->count,
-                'parent' => $cat->parent,
-                'description' => $cat->description,
-                'image' => $this->get_category_image($cat->term_id)
+                'parent' => $cat->parent
+                // OPTIMIZED: Removed description, image - not needed for filters
             );
         }
         

@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 class KingOptimizedAPI {
     
-    private $cache_duration = 24 * 60 * 60; // 24 hours
+    private $cache_duration = 1 * 60 * 60; // 1 hour - OPTIMIZED for product pages
     private $redis_available = false;
     
     public function __construct() {
@@ -50,31 +50,8 @@ class KingOptimizedAPI {
             )
         ));
         
-        // Shop data - optimized product list
-        register_rest_route('king-optimized/v1', '/shop', array(
-            'methods' => 'GET',
-            'callback' => array($this, 'get_shop_data'),
-            'permission_callback' => '__return_true',
-            'args' => array(
-                'page' => array(
-                    'required' => false,
-                    'type' => 'integer',
-                    'default' => 1,
-                    'description' => 'Page number'
-                ),
-                'per_page' => array(
-                    'required' => false,
-                    'type' => 'integer',
-                    'default' => 12,
-                    'description' => 'Products per page'
-                ),
-                'category' => array(
-                    'required' => false,
-                    'type' => 'string',
-                    'description' => 'Category slug'
-                )
-            )
-        ));
+        // REMOVED: Shop data endpoint - now handled by king-shop-api.php
+        // This eliminates duplicate endpoints and improves performance
         
         // Product data - single product with variations
         register_rest_route('king-optimized/v1', '/product/(?P<id>\d+)', array(
@@ -122,54 +99,8 @@ class KingOptimizedAPI {
         return $data;
     }
     
-    /**
-     * Get shop data - optimized product list
-     */
-    public function get_shop_data($request) {
-        $page = $request->get_param('page');
-        $per_page = $request->get_param('per_page');
-        $category = $request->get_param('category');
-        
-        $cache_key = 'king_shop_data_' . $page . '_' . $per_page . '_' . $category;
-        
-        // Try to get from cache
-        $cached_data = wp_cache_get($cache_key, 'king_optimized');
-        if ($cached_data !== false) {
-            return $cached_data;
-        }
-        
-        // Get products from WooCommerce
-        $args = array(
-            'status' => 'publish',
-            'per_page' => $per_page,
-            'page' => $page,
-            'orderby' => 'date',
-            'order' => 'desc'
-        );
-        
-        if ($category) {
-            $args['category'] = $category;
-        }
-        
-        $products = wc_get_products($args);
-        $formatted_products = array();
-        
-        foreach ($products as $product) {
-            $formatted_products[] = $this->format_product($product);
-        }
-        
-        $data = array(
-            'products' => $formatted_products,
-            'total' => wp_count_posts('product')->publish,
-            'page' => $page,
-            'per_page' => $per_page
-        );
-        
-        // Cache for 24 hours
-        wp_cache_set($cache_key, $data, 'king_optimized', $this->cache_duration);
-        
-        return $data;
-    }
+    // REMOVED: get_shop_data function - now handled by king-shop-api.php
+    // This eliminates duplicate code and improves maintainability
     
     /**
      * Get single product data
