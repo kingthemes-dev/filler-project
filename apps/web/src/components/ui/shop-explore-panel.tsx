@@ -22,10 +22,12 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    console.log('🔍 ShopExplorePanel useEffect - open:', open);
     if (!open) return;
     let mounted = true;
     const load = async () => {
       try {
+        console.log('🔍 ShopExplorePanel - starting to load data...');
         // Sprawdź cache w sessionStorage (5 minut)
         const cacheKey = 'shop-explore-data';
         const cached = sessionStorage.getItem(cacheKey);
@@ -43,11 +45,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
         // 1) pełne kategorie (z parent) do kolumny 1 i 2
         const baseUrl = typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000';
+        console.log('🔍 ShopExplorePanel - fetching categories from:', `${baseUrl}/api/woocommerce?endpoint=products/categories&per_page=100`);
         const catsRes = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/categories&per_page=100`, { cache: 'no-store' });
         const catsData = catsRes.ok ? await catsRes.json() : {};
+        console.log('🔍 ShopExplorePanel - categories response:', catsData);
         
         // Handle both array format and {success: true, categories: [...]} format
         const cats = Array.isArray(catsData) ? catsData : (catsData?.categories || []);
+        console.log('🔍 ShopExplorePanel - processed categories:', cats.length, cats);
         
         // 2) szybkie metadane z shop (liczniki/atrybuty)
         const shop = await woo.getShopData(1, 1);

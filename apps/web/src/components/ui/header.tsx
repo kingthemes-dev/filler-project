@@ -273,12 +273,14 @@ export default function Header() {
             <div 
               className="relative overflow-visible shop-dropdown-container"
               onMouseEnter={() => {
+                console.log('🔍 Header - Sklep hover detected');
                 // Clear any existing timeout
                 if (shopHoverTimeout) {
                   clearTimeout(shopHoverTimeout);
                   setShopHoverTimeout(null);
                 }
                 // Open dropdown immediately on hover
+                console.log('🔍 Header - Setting isShopOpen to true');
                 setIsShopOpen(true);
               }}
             >
@@ -936,6 +938,7 @@ export default function Header() {
         </AnimatePresence>
         
         {/* Shop Dropdown - rendered outside container for full width */}
+        {console.log('🔍 Header - Rendering ShopExplorePanel with isShopOpen:', isShopOpen)}
         <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       </header>
       
