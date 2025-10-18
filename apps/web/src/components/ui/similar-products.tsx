@@ -42,7 +42,8 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
           console.log('🚀 Batch fetching similar products:', allIds);
           try {
             // Use batch endpoint if available, otherwise fall back to individual calls
-            const batchResponse = await fetch(`/api/woocommerce?endpoint=products&include=${allIds.join(',')}&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count`);
+            const baseUrl = typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000';
+            const batchResponse = await fetch(`${baseUrl}/api/woocommerce?endpoint=products&include=${allIds.join(',')}&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count`);
             
             if (batchResponse.ok) {
               const batchData = await batchResponse.json();

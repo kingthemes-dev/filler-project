@@ -86,7 +86,8 @@ export default function DynamicAttributeFilters({
           }
         });
       }
-      const res = await fetch(`/api/woocommerce?${params.toString()}`, { cache: 'no-store' });
+      const baseUrl = typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000';
+      const res = await fetch(`${baseUrl}/api/woocommerce?${params.toString()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },

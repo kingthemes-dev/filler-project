@@ -19,7 +19,7 @@ class WooCommerceService {
    */
   async getPaymentGateways(): Promise<{ success: boolean; gateways?: Array<{ id: string; title: string; description?: string; enabled: boolean }>; error?: string }>{
     try {
-      const r = await fetch(`/api/woocommerce?endpoint=payment_gateways`, { headers: { Accept: 'application/json' } });
+      const r = await fetch(`${this.baseUrl}?endpoint=payment_gateways`, { headers: { Accept: 'application/json' } });
       if (!r.ok) {
         const e = await r.json();
         throw new Error(e.error || 'Nie udało się pobrać metod płatności');
@@ -829,7 +829,7 @@ class WooCommerceService {
         _fields: 'id,method_id,title,cost,settings,zone_id,zone_name'
       });
 
-      const response = await fetch(`/api/woocommerce?${params.toString()}`);
+      const response = await fetch(`${this.baseUrl}?${params.toString()}`);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -949,7 +949,7 @@ class WooCommerceService {
   async getProductVariations(productId: number): Promise<{ success: boolean; variations?: Array<{ id: number; attributes?: Array<{ slug: string; option: string }>; price: string; regular_price: string; sale_price: string; name: string; menu_order: number }>; error?: string }> {
     try {
       // PERFORMANCE FIX: Add _fields to reduce payload size
-      const response = await fetch(`/api/woocommerce?endpoint=products/${productId}/variations&_fields=id,attributes,price,regular_price,sale_price,name,menu_order`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}/variations&_fields=id,attributes,price,regular_price,sale_price,name,menu_order`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -964,7 +964,7 @@ class WooCommerceService {
   async getProductAttributes(): Promise<{ success: boolean; attributes?: Array<{ id: number; name: string; slug: string; type: string; order_by: string; has_archives: boolean }>; error?: string }> {
     try {
       // PERFORMANCE FIX: Add _fields to reduce payload size
-      const response = await fetch(`/api/woocommerce?endpoint=products/attributes&_fields=id,name,slug,type,order_by,has_archives`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes&_fields=id,name,slug,type,order_by,has_archives`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
