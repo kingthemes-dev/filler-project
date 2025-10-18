@@ -81,7 +81,6 @@ export default function Header() {
   useEffect(() => {
     const fetchWooCommerceData = async () => {
       // Pobierz dane zawsze, nie tylko dla mobile menu
-      
       setIsLoadingData(true);
       try {
         // Pobierz kategorie i zbuduj hierarchię
@@ -89,7 +88,6 @@ export default function Header() {
         const categoriesResponse = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/categories&per_page=100`);
         if (categoriesResponse.ok) {
           const categoriesData = await categoriesResponse.json();
-          console.log('📂 All categories loaded:', categoriesData);
           
           // Handle both array format and {success: true, categories: [...]} format
           const allCategories = Array.isArray(categoriesData) 
@@ -109,9 +107,6 @@ export default function Header() {
               subCats[cat.parent].push(cat);
             }
           });
-          
-          console.log('📂 Main categories:', mainCats);
-          console.log('📂 Subcategories:', subCats);
           
           setMainCategories(mainCats);
           setSubCategories(subCats);
@@ -936,7 +931,6 @@ export default function Header() {
         </AnimatePresence>
         
         {/* Shop Dropdown - rendered outside container for full width */}
-        {console.log('🔍 Header - Rendering ShopExplorePanel with isShopOpen:', isShopOpen)}
         <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       </header>
       
