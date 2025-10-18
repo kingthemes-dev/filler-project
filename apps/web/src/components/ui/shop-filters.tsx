@@ -53,6 +53,13 @@ export default function ShopFilters({
 }: ShopFiltersProps) {
   const [loading, setLoading] = useState(false);
   
+  const [expandedSections, setExpandedSections] = useState({
+    categories: true,
+    attributes: true,
+    price: true,
+    availability: true,
+  });
+  
   // DEBUG: Sprawdź kategorie
   console.log('🔍 ShopFilters - categories prop:', categories);
   console.log('🔍 ShopFilters - categories length:', categories?.length);
@@ -69,13 +76,6 @@ export default function ShopFilters({
       console.log('🔍 ShopFilters - categories.categories length:', categories.categories.length);
     }
   }
-  const [expandedSections, setExpandedSections] = useState({
-    categories: true,
-    attributes: true,
-    price: true,
-    availability: true,
-  });
-
   // Restore expanded state from localStorage
   React.useEffect(() => {
     try {
