@@ -102,6 +102,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  console.log('🔍 ShopExplorePanel render - open:', open, 'AnimatePresence should render:', open);
+  
   return (
     <AnimatePresence>
       {open && (
