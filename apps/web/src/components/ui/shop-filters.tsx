@@ -86,7 +86,25 @@ export default function ShopFilters({
     availability: true,
   });
   
+  // Stan dla rozwijanych kategorii głównych
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   
+  // Funkcje do zarządzania rozwijaniem kategorii
+  const toggleCategory = (categoryId: number) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+  
+  const isCategoryExpanded = (categoryId: number) => {
+    return expandedCategories.has(categoryId);
+  };
   
   // Memoized hierarchical categories
   const hierarchicalCategories = useMemo(() => {
@@ -329,12 +347,81 @@ export default function ShopFilters({
                   )}
                 </button>
                 
-                {/* Kategorie z hierarchią */}
-                {expandedSections.categories && (
-                  <div className="space-y-1">
-                    {hierarchicalCategories.map(category => renderCategory(category))}
-                  </div>
-                )}
+                {/* Kategorie z hierarchią - podobnie jak atrybuty */}
+                <AnimatePresence>
+                  {expandedSections.categories && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div className="space-y-4">
+                        {hierarchicalCategories.map(category => (
+                          <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
+                            {/* Nagłówek kategorii głównej */}
+                            <div className="bg-gray-50">
+                              <button
+                                onClick={() => toggleCategory(category.id)}
+                                className="flex items-center justify-between w-full p-3 hover:bg-gray-100 transition-colors"
+                              >
+                                <div className="flex items-center">
+                                  <span className="text-sm font-semibold text-gray-800">{category.name}</span>
+                                  <span className="ml-2 text-xs text-gray-500">({category.count || 0})</span>
+                                </div>
+                                {isCategoryExpanded(category.id) ? (
+                                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Podkategorie */}
+                            <AnimatePresence>
+                              {isCategoryExpanded(category.id) && category.children && category.children.length > 0 && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                  className="overflow-hidden bg-white"
+                                >
+                                  <div className="border-t border-gray-100">
+                                    {category.children.map((subcategory: any) => (
+                                      <label 
+                                        key={subcategory.id} 
+                                        className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                                          onChange={(e) => {
+                                            const categoryId = String(subcategory.id);
+                                            if (e.target.checked) {
+                                              onFilterChange('categories', categoryId);
+                                            } else {
+                                              const currentCategories = filters.categories || [];
+                                              const newCategories = currentCategories.filter(id => id !== categoryId);
+                                              onFilterChange('categories', newCategories);
+                                            }
+                                          }}
+                                          checked={filters.categories?.includes(String(subcategory.id)) || false}
+                                        />
+                                        <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{subcategory.name}</span>
+                                        <span className="ml-auto text-xs text-gray-500">({subcategory.count || 0})</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
 
