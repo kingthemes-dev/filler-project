@@ -272,6 +272,7 @@ export default function ShopFilters({
                 {expandedSections.categories && Array.isArray(categories) && categories.length > 0 && (
                   <div className="space-y-2">
                         {(() => {
+                          console.log('🔍 ShopFilters - building category hierarchy with:', categories);
                           // Build category hierarchy
                           const buildCategoryHierarchy = (categories: Category[]) => {
                               const categoryMap = new Map();
