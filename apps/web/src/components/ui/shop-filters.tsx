@@ -351,7 +351,7 @@ export default function ShopFilters({
                   )}
                 </button>
                 
-                {/* Kategorie z hierarchią - podobnie jak atrybuty */}
+                {/* Kategorie - płaska lista głównych kategorii z rozwijaniem podkategorii */}
                 <AnimatePresence>
                   {expandedSections.categories && (
                     <motion.div
@@ -360,28 +360,30 @@ export default function ShopFilters({
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="space-y-4">
+                      <div className="space-y-1">
                         {hierarchicalCategories.map(category => (
                           <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
-                            {/* Nagłówek kategorii głównej */}
-                            <div className="bg-gray-50">
-                              <button
-                                onClick={() => toggleCategory(category.id)}
-                                className="flex items-center justify-between w-full p-3 hover:bg-gray-100 transition-colors"
-                              >
-                                <div className="flex items-center">
-                                  <span className="text-sm font-semibold text-gray-800">{category.name}</span>
-                                  <span className="ml-2 text-xs text-gray-500">({category.count || 0})</span>
-                                </div>
-                                {isCategoryExpanded(category.id) ? (
+                            {/* Główna kategoria - klikalna do rozwijania */}
+                            <button
+                              onClick={() => toggleCategory(category.id)}
+                              className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10"
+                            >
+                              <div className="flex items-center">
+                                <span className="text-sm font-medium text-gray-900">{category.name}</span>
+                                <span className="ml-2 inline-flex h-5 items-center rounded-full bg-gray-100 px-2 text-xs text-gray-600">
+                                  {category.count || 0}
+                                </span>
+                              </div>
+                              {category.children && category.children.length > 0 && (
+                                isCategoryExpanded(category.id) ? (
                                   <ChevronUp className="w-4 h-4 text-gray-500" />
                                 ) : (
                                   <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
-                              </button>
-                            </div>
+                                )
+                              )}
+                            </button>
 
-                            {/* Podkategorie */}
+                            {/* Podkategorie - rozwijane po kliknięciu */}
                             <AnimatePresence>
                               {isCategoryExpanded(category.id) && category.children && category.children.length > 0 && (
                                 <motion.div
@@ -389,13 +391,13 @@ export default function ShopFilters({
                                   animate={{ height: 'auto', opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
                                   transition={{ duration: 0.3, ease: 'easeInOut' }}
-                                  className="overflow-hidden bg-white"
+                                  className="overflow-hidden bg-gray-50 border-t border-gray-100"
                                 >
-                                  <div className="border-t border-gray-100">
+                                  <div className="p-2 space-y-1">
                                     {category.children.map((subcategory: any) => (
                                       <label 
                                         key={subcategory.id} 
-                                        className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
+                                        className="flex items-center px-3 py-2 hover:bg-white cursor-pointer transition-colors rounded-md"
                                       >
                                         <input
                                           type="checkbox"
@@ -412,7 +414,7 @@ export default function ShopFilters({
                                           }}
                                           checked={filters.categories?.includes(String(subcategory.id)) || false}
                                         />
-                                        <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{subcategory.name}</span>
+                                        <span className="ml-3 text-xs font-medium text-gray-700">{subcategory.name}</span>
                                         <span className="ml-auto text-xs text-gray-500">({subcategory.count || 0})</span>
                                       </label>
                                     ))}
