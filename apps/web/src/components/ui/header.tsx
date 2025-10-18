@@ -116,7 +116,6 @@ export default function Header() {
         }
 
         // Pobierz atrybuty (bez pojemności)
-        const baseUrl = typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000';
         const attributesResponse = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/attributes&per_page=100`);
         if (attributesResponse.ok) {
           const attributesData = await attributesResponse.json();
