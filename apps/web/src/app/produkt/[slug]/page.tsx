@@ -3,6 +3,7 @@ import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { wooCommerceOptimized } from '@/services/woocommerce-optimized';
 import ProductClient from './product-client';
 import { Metadata } from 'next';
+import { generateEnhancedMetadata, generateEnhancedProductStructuredData, generateEnhancedBreadcrumbStructuredData } from '@/utils/seo-enhanced';
 
 // PRO: Static generation with ISR for better performance
 export const revalidate = 600; // 10 minutes
@@ -15,7 +16,7 @@ export async function generateStaticParams() {
   return [];
 }
 
-// Generate metadata for product pages
+// Generate enhanced metadata for product pages
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   
@@ -23,47 +24,39 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const product = await wooCommerceOptimized.getProductBySlug(slug);
     
     if (!product) {
-      return {
-        title: 'Produkt nie znaleziony - FILLER',
+      return generateEnhancedMetadata({
+        title: 'Produkt nie znaleziony',
         description: 'Szukany produkt nie został znaleziony w naszej hurtowni medycyny estetycznej.',
-      };
+        noindex: true
+      });
     }
 
     const price = product.sale_price || product.price;
     const description = product.short_description || product.description?.replace(/<[^>]*>/g, '').substring(0, 160) || '';
+    const category = product.categories?.[0] ? (typeof product.categories[0] === 'string' ? product.categories[0] : product.categories[0].name) : '';
+    const brand = product.brand || 'FILLER';
+    const availability = product.stock_status === 'instock' ? 'instock' : 'outofstock';
 
-    return {
-      title: `${product.name} - ${price} zł | FILLER`,
+    return generateEnhancedMetadata({
+      title: `${product.name} - ${price} zł`,
       description: description,
       keywords: [
         product.name,
+        category,
+        brand,
         'medycyna estetyczna',
         'hurtownia',
         'filler',
         ...(product.categories?.map(cat => typeof cat === 'string' ? cat : cat.name) || [])
       ],
-      openGraph: {
-        title: `${product.name} - ${price} zł`,
-        description: description,
-        type: 'website',
-        images: product.images?.map(img => ({
-          url: img.src,
-          width: 800,
-          height: 600,
-          alt: product.name,
-        })) || [],
-        siteName: 'FILLER',
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: `${product.name} - ${price} zł`,
-        description: description,
-        images: product.images?.[0]?.src || [],
-      },
-      alternates: {
-        canonical: `/produkt/${slug}`,
-      },
-    };
+      url: `/produkt/${slug}`,
+      type: 'product',
+      price: price,
+      availability: availability,
+      brand: brand,
+      category: category,
+      image: product.images?.[0]?.src
+    });
   } catch (error) {
     console.error('Error generating metadata for product:', error);
     return {

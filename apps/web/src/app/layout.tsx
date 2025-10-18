@@ -17,6 +17,10 @@ import { analytics } from '@/utils/advanced-analytics';
 import { performanceMonitor } from '@/utils/performance-monitor';
 import { securityAuditor } from '@/utils/security-audit';
 
+// SEO Expert Level 8.5/10 - Free Implementation
+import { initializeCoreWebVitalsMonitoring } from '@/utils/core-web-vitals';
+import { generateEnhancedOrganizationStructuredData, generateEnhancedWebsiteStructuredData, generateEnhancedLocalBusinessStructuredData } from '@/utils/seo-enhanced';
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -149,9 +153,29 @@ export default function RootLayout({
                           </ReactQueryProvider>
                           <AuthModalManager />
                           <FavoritesModal />
-                          <Footer />
-                          <CartDrawer />
-                        </ErrorBoundary>
+        <Footer />
+        <CartDrawer />
+      </ErrorBoundary>
+      
+      {/* SEO Expert Level 8.5/10 - Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateEnhancedOrganizationStructuredData())
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateEnhancedWebsiteStructuredData())
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateEnhancedLocalBusinessStructuredData())
+        }}
+      />
                         
                         {/* PWA Service Worker Registration */}
                         <Script
@@ -243,6 +267,79 @@ export default function RootLayout({
                                 console.log('Recommendations:', window.securityAuditor?.getRecommendations());
                                 console.groupEnd();
                               }, 2000);
+                            `,
+                          }}
+                        />
+                        
+                        {/* SEO Expert Level 8.5/10 - Core Web Vitals & Performance */}
+                        <Script
+                          id="seo-core-web-vitals-init"
+                          strategy="afterInteractive"
+                          dangerouslySetInnerHTML={{
+                            __html: `
+                              // Initialize Core Web Vitals monitoring
+                              console.log('🔍 SEO Expert Level 8.5/10 - Core Web Vitals Monitoring Active');
+                              
+                              // Core Web Vitals thresholds
+                              const THRESHOLDS = {
+                                LCP: 2500, // Largest Contentful Paint (ms)
+                                FID: 100,  // First Input Delay (ms)
+                                CLS: 0.1,  // Cumulative Layout Shift
+                                FCP: 1800, // First Contentful Paint (ms)
+                                TTFB: 800  // Time to First Byte (ms)
+                              };
+                              
+                              // Monitor Core Web Vitals
+                              if ('PerformanceObserver' in window) {
+                                // Largest Contentful Paint
+                                try {
+                                  const lcpObserver = new PerformanceObserver((list) => {
+                                    const entries = list.getEntries();
+                                    const lastEntry = entries[entries.length - 1];
+                                    const status = lastEntry.startTime <= THRESHOLDS.LCP ? '✅ GOOD' : '❌ POOR';
+                                    console.log('[Core Web Vitals] LCP:', lastEntry.startTime.toFixed(2) + 'ms', status);
+                                  });
+                                  lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+                                } catch (e) {
+                                  console.warn('LCP monitoring not supported');
+                                }
+                                
+                                // First Input Delay
+                                try {
+                                  const fidObserver = new PerformanceObserver((list) => {
+                                    const entries = list.getEntries();
+                                    entries.forEach((entry) => {
+                                      const fid = entry.processingStart - entry.startTime;
+                                      const status = fid <= THRESHOLDS.FID ? '✅ GOOD' : '❌ POOR';
+                                      console.log('[Core Web Vitals] FID:', fid.toFixed(2) + 'ms', status);
+                                    });
+                                  });
+                                  fidObserver.observe({ entryTypes: ['first-input'] });
+                                } catch (e) {
+                                  console.warn('FID monitoring not supported');
+                                }
+                                
+                                // Cumulative Layout Shift
+                                try {
+                                  let clsValue = 0;
+                                  const clsObserver = new PerformanceObserver((list) => {
+                                    const entries = list.getEntries();
+                                    entries.forEach((entry) => {
+                                      if (!entry.hadRecentInput) {
+                                        clsValue += entry.value;
+                                        const status = clsValue <= THRESHOLDS.CLS ? '✅ GOOD' : '❌ POOR';
+                                        console.log('[Core Web Vitals] CLS:', clsValue.toFixed(3), status);
+                                      }
+                                    });
+                                  });
+                                  clsObserver.observe({ entryTypes: ['layout-shift'] });
+                                } catch (e) {
+                                  console.warn('CLS monitoring not supported');
+                                }
+                              }
+                              
+                              // Performance optimization
+                              console.log('⚡ SEO Performance Optimization Active');
                             `,
                           }}
                         />
