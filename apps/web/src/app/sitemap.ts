@@ -47,8 +47,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // Get all products
-    const products = await wooCommerceOptimized.getProducts({ per_page: 100 });
-    const productPages: MetadataRoute.Sitemap = products.map((product) => ({
+    const productsResponse = await wooCommerceOptimized.getProducts({ per_page: 100 });
+    const productPages: MetadataRoute.Sitemap = productsResponse.data.map((product) => ({
       url: `${baseUrl}/produkt/${product.slug}`,
       lastModified: product.date_modified || currentDate,
       changeFrequency: 'weekly',
@@ -56,8 +56,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     // Get all categories
-    const categories = await wooCommerceOptimized.getCategories();
-    const categoryPages: MetadataRoute.Sitemap = categories.map((category) => ({
+    const categoriesResponse = await wooCommerceOptimized.getCategories();
+    const categoryPages: MetadataRoute.Sitemap = categoriesResponse.data.map((category) => ({
       url: `${baseUrl}/kategoria/${category.slug}`,
       lastModified: currentDate,
       changeFrequency: 'weekly',

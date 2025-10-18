@@ -34,7 +34,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const price = product.sale_price || product.price;
     const description = product.short_description || product.description?.replace(/<[^>]*>/g, '').substring(0, 160) || '';
     const category = product.categories?.[0] ? (typeof product.categories[0] === 'string' ? product.categories[0] : product.categories[0].name) : '';
-    const brand = product.brand || 'FILLER';
+    
+    // Get brand from attributes
+    const getBrand = (): string => {
+      if (!product.attributes) return 'FILLER';
+      const brandAttr = product.attributes.find((attr: { name: string; options: string[] }) => 
+        attr.name.toLowerCase().includes('marka')
+      );
+      if (!brandAttr) return 'FILLER';
+      const first = brandAttr.options?.[0];
+      if (!first) return 'FILLER';
+      return typeof first === 'string' ? first : (first as any)?.name || (first as any)?.slug || String(first);
+    };
+    const brand = getBrand();
     const availability = product.stock_status === 'instock' ? 'instock' : 'outofstock';
 
     return generateEnhancedMetadata({

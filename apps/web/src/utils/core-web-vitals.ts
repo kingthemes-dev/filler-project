@@ -142,8 +142,8 @@ export class CoreWebVitalsOptimizer {
     console.log(`[Core Web Vitals] ${name}: ${value.toFixed(2)}ms ${status}`);
     
     // Send to analytics
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'core_web_vitals', {
+    if (typeof (window as any).gtag !== 'undefined') {
+      (window as any).gtag('event', 'core_web_vitals', {
         metric_name: name,
         metric_value: value,
         metric_rating: value <= threshold ? 'good' : 'poor'

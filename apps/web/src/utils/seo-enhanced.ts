@@ -162,7 +162,16 @@ export function generateEnhancedProductStructuredData(product: {
     image: product.images || [product.image],
     brand: {
       '@type': 'Brand',
-      name: product.brand || 'FILLER'
+      name: (() => {
+        if (!product.attributes) return 'FILLER';
+        const brandAttr = product.attributes.find((attr: { name: string; options: string[] }) => 
+          attr.name.toLowerCase().includes('marka')
+        );
+        if (!brandAttr) return 'FILLER';
+        const first = brandAttr.options?.[0];
+        if (!first) return 'FILLER';
+        return typeof first === 'string' ? first : (first as any)?.name || (first as any)?.slug || String(first);
+      })()
     },
     sku: product.sku || product.id.toString(),
     category: product.category,
