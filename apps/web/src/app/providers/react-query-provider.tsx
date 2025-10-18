@@ -3,17 +3,18 @@
 import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
-import { analytics } from '@headless-woo/shared';
+// import { analytics } from '@headless-woo/shared';
 
 export default function ReactQueryProvider({ children }: { children: React.ReactNode }) {
   const [client] = React.useState(() => new QueryClient({
     queryCache: new QueryCache({
       onError: (error, query) => {
         try {
-          analytics.track('api_error', {
-            message: error instanceof Error ? error.message : String(error),
-            queryKey: JSON.stringify(query.queryKey),
-          });
+          console.error('Query error:', error, query.queryKey);
+          // analytics.track('api_error', {
+          //   message: error instanceof Error ? error.message : String(error),
+          //   queryKey: JSON.stringify(query.queryKey),
+          // });
         } catch {}
       },
     }),

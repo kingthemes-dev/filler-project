@@ -45,25 +45,32 @@ const OPTIONAL_ENV_VARS = [
 
 // Validate environment variables
 function validateEnv(): EnvConfig {
-  const missing: string[] = [];
-  
   // Check if we're on client-side (browser) or server-side
   const isClient = typeof window !== 'undefined';
   
-  // Only validate client-side accessible variables on client-side
+  // Skip validation on client-side to avoid hydration issues
   if (isClient) {
-    // Only check NEXT_PUBLIC_ variables on client-side
-    for (const varName of REQUIRED_CLIENT_ENV_VARS) {
-      if (!process.env[varName]) {
-        missing.push(varName);
-      }
-    }
-  } else {
-    // On server-side, check all required variables
-    for (const varName of [...REQUIRED_SERVER_ENV_VARS, ...REQUIRED_CLIENT_ENV_VARS]) {
-      if (!process.env[varName]) {
-        missing.push(varName);
-      }
+    // Return safe defaults for client-side
+    return {
+      WOOCOMMERCE_API_URL: '',
+      WOOCOMMERCE_CONSUMER_KEY: '',
+      WOOCOMMERCE_CONSUMER_SECRET: '',
+      NEXT_PUBLIC_WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL || '',
+      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || '',
+      SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,
+      SENDINBLUE_LIST_ID: process.env.SENDINBLUE_LIST_ID,
+      NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,
+      NODE_ENV: (process.env.NODE_ENV as EnvConfig['NODE_ENV']) || 'development'
+    };
+  }
+  
+  // Server-side validation
+  const missing: string[] = [];
+  
+  // Check all required variables on server-side
+  for (const varName of [...REQUIRED_SERVER_ENV_VARS, ...REQUIRED_CLIENT_ENV_VARS]) {
+    if (!process.env[varName]) {
+      missing.push(varName);
     }
   }
   
