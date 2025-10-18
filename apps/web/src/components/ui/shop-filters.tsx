@@ -67,12 +67,11 @@ export default function ShopFilters({
       const saved = localStorage.getItem('shopFiltersExpanded');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure categories is always true on first load if not explicitly set to false
+        // Kategorie ZAWSZE rozwinięte, inne sekcje z localStorage
         setExpandedSections((prev) => ({ 
           ...prev, 
           ...parsed,
-          // Keep categories expanded by default
-          categories: parsed.categories !== false ? true : false
+          categories: true // ZAWSZE true - ignoruj localStorage
         }));
       }
     } catch {}
@@ -263,14 +262,7 @@ export default function ShopFilters({
                 </button>
                 
                 <AnimatePresence>
-                  {(() => {
-                    console.log('🔍 Categories section expanded check:', {
-                      expandedSections,
-                      categoriesExpanded: expandedSections.categories,
-                      categoriesLength: categories?.length
-                    });
-                    return expandedSections.categories;
-                  })() && (
+                  {expandedSections.categories && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -280,6 +272,7 @@ export default function ShopFilters({
                       {/* HIERARCHICAL CATEGORIES: Render with expand/collapse */}
                       <div className="space-y-2">
                         {(() => {
+                          // Kategorie ZAWSZE wyświetlane jeśli są dostępne
                           return categories?.length > 0;
                         })() ? (
                           (() => {
