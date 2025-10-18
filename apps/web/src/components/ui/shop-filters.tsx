@@ -265,16 +265,9 @@ export default function ShopFilters({
                   )}
                 </button>
                 
-                <AnimatePresence>
-                  {expandedSections.categories && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {/* HIERARCHICAL CATEGORIES: Render with expand/collapse */}
-                      <div className="space-y-2">
+                {/* USUNĄŁEM AnimatePresence - powodowało problemy z renderowaniem */}
+                {expandedSections.categories && (
+                  <div className="space-y-2">
                         {(() => {
                           console.log('🔍 ShopFilters - categories in render:', categories);
                           console.log('🔍 ShopFilters - categories length:', categories?.length);
@@ -338,9 +331,8 @@ export default function ShopFilters({
                           </div>
                         )}
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  </div>
+                )}
               </div>
 
 
