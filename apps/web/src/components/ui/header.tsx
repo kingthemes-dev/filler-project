@@ -923,6 +923,7 @@ export default function Header() {
         </AnimatePresence>
         
         {/* Shop Dropdown - rendered outside container for full width */}
+        {console.log('🔍 Header - isShopOpen:', isShopOpen)}
         <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       </header>
       
