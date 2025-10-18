@@ -104,7 +104,12 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
   console.log('🔍 ShopExplorePanel render - open:', open, 'AnimatePresence should render:', open);
   
-  if (!open) return null;
+  if (!open) {
+    console.log('🔍 ShopExplorePanel - NOT RENDERING because open is false');
+    return null;
+  }
+  
+  console.log('🔍 ShopExplorePanel - RENDERING because open is true');
   
   return (
     <div
