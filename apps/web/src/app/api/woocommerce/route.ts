@@ -1310,24 +1310,24 @@ export async function GET(req: NextRequest) {
     return handleCoupons(req);
   }
   
-  // Special handling for attributes endpoint - use King Enterprise API
+  // Special handling for attributes endpoint - use King Shop API
   if (endpoint === "attributes") {
-    return handleEnterpriseEndpoint(req);
+    return handleAttributesEndpoint(req);
   }
   
-  // Special handling for shop endpoint - use King Enterprise API
+  // Special handling for shop endpoint - use King Shop API
   if (endpoint === "shop") {
-    return handleEnterpriseEndpoint(req);
+    return handleShopEndpoint(req);
   }
   
-  // Special handling for categories endpoint - use King Enterprise API
+  // Special handling for categories endpoint - use King Shop API
   if (endpoint === "products/categories") {
-    return handleEnterpriseEndpoint(req);
+    return handleCategoriesEndpoint(req);
   }
   
-  // Special handling for attributes endpoint - use King Enterprise API
+  // Special handling for attributes endpoint - use King Shop API
   if (endpoint === "products/attributes") {
-    return handleEnterpriseEndpoint(req);
+    return handleAttributesEndpoint(req);
   }
   
   if (!WC_URL || !CK || !CS) {
