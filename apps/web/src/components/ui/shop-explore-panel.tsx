@@ -21,6 +21,9 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const [selectedCat, setSelectedCat] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
+  // Debug
+  console.log('🔍 ShopExplorePanel render - open:', open, 'categories:', categories.length);
+
   useEffect(() => {
     if (!open) return;
     let mounted = true;
@@ -49,6 +52,9 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         // Handle both array format and {success: true, categories: [...]} format
         const cats = Array.isArray(catsData) ? catsData : (catsData?.categories || []);
         
+        console.log('🔍 ShopExplorePanel - catsData:', catsData);
+        console.log('🔍 ShopExplorePanel - cats:', cats.length);
+        
         // 2) szybkie metadane z shop (liczniki/atrybuty)
         const shop = await woo.getShopData(1, 1);
         if (!mounted) return;
@@ -57,6 +63,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         const normCats = Array.isArray(cats)
           ? cats.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug, parent: c.parent || 0, count: counters[c.id] ?? c.count }))
           : [];
+        
+        console.log('🔍 ShopExplorePanel - normCats:', normCats.length);
         const selectedCatId = (normCats.find(c => (c.parent || 0) === 0)?.id) || null;
         const attrs = {
           capacities: shop.attributes?.capacities || [],
