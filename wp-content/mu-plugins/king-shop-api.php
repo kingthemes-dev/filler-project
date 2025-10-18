@@ -547,6 +547,9 @@ class KingShopAPI {
         
         $formatted_categories = array();
         foreach ($categories as $cat) {
+            // Debug: sprawdź co zwraca get_terms
+            error_log('King Shop API - Category debug: ID=' . $cat->term_id . ', Name=' . $cat->name . ', Parent=' . $cat->parent);
+            
             $formatted_categories[] = array(
                 'id' => $cat->term_id,
                 'name' => $cat->name,
