@@ -54,7 +54,7 @@ export default function ShopFilters({
   const [loading, setLoading] = useState(false);
   
   const [expandedSections, setExpandedSections] = useState({
-    categories: true,
+    categories: true, // ZAWSZE true domyślnie
     attributes: true,
     price: true,
     availability: true,
@@ -272,6 +272,9 @@ export default function ShopFilters({
                       {/* HIERARCHICAL CATEGORIES: Render with expand/collapse */}
                       <div className="space-y-2">
                         {(() => {
+                          console.log('🔍 ShopFilters - categories in render:', categories);
+                          console.log('🔍 ShopFilters - categories length:', categories?.length);
+                          console.log('🔍 ShopFilters - expandedSections.categories:', expandedSections.categories);
                           // Kategorie ZAWSZE wyświetlane jeśli są dostępne
                           return categories?.length > 0;
                         })() ? (

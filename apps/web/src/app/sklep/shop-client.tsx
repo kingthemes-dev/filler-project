@@ -406,7 +406,11 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters sidebar */}
           <ShopFilters
-            categories={Array.isArray(allCategories) ? allCategories.map(c => ({ ...c, count: c.count || 0 })) : []}
+            categories={(() => {
+              console.log('🔍 ShopClient - allCategories:', allCategories);
+              console.log('🔍 ShopClient - allCategories length:', allCategories?.length);
+              return Array.isArray(allCategories) ? allCategories.map(c => ({ ...c, count: c.count || 0 })) : [];
+            })()}
             filters={filters}
             onFilterChange={handleFilterChange}
             onCategoryChange={handleCategoryChange}
