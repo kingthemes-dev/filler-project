@@ -8,4 +8,4 @@ export * from './performance';
 export * from './accessibility';
 export * from './analytics';
 export * from './backup';
-export * from './test-helpers';
+// export * from './test-helpers'; // Removed to prevent HMR issues
