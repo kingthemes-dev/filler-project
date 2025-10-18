@@ -679,6 +679,64 @@ async function handleAttributesEndpoint(req: NextRequest) {
   }
 }
 
+// Handle categories endpoint - PRO Architecture: WordPress robi całe filtrowanie
+async function handleCategoriesEndpoint(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  
+  if (!WC_URL || !CK || !CS) {
+    return NextResponse.json(
+      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    // PRO Architecture: WordPress robi całe filtrowanie kategorii
+    // Next.js tylko przekazuje parametry i cache'uje odpowiedź
+    const categoriesUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-shop/v1/categories?${searchParams.toString()}`;
+    
+    console.log('🏷️ Categories endpoint - calling King Shop API:', categoriesUrl);
+    
+    const response = await fetch(categoriesUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Filler-Store/1.0'
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    console.log('✅ Categories data received from WordPress:', {
+      categories: data.categories?.length || 0,
+      total: data.total || 0
+    });
+
+    // WordPress zrobił całe filtrowanie - zwracamy dane jak są
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "Cache-Control": "public, max-age=300, s-maxage=600, stale-while-revalidate=1800",
+        "X-Cache": "MISS",
+      },
+    });
+
+  } catch (error) {
+    console.error('❌ Categories endpoint error:', error);
+    return NextResponse.json(
+      { error: 'Nie udało się pobrać kategorii', details: error instanceof Error ? error.message : 'Nieznany błąd' },
+      { status: 500 }
+    );
+  }
+}
+
 // Handle shop endpoint - PRO Architecture: WordPress robi całe filtrowanie
 async function handleShopEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -1155,6 +1213,11 @@ export async function GET(req: NextRequest) {
   // Special handling for shop endpoint - use new King Shop API
   if (endpoint === "shop") {
     return handleShopEndpoint(req);
+  }
+  
+  // Special handling for categories endpoint - use King Shop API
+  if (endpoint === "products/categories") {
+    return handleCategoriesEndpoint(req);
   }
   
   if (!WC_URL || !CK || !CS) {

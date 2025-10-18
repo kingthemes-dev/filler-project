@@ -132,6 +132,44 @@ class KingShopAPI {
                 )
             )
         ));
+        
+        // Categories endpoint - optimized for categories only
+        register_rest_route('king-shop/v1', '/categories', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_categories'),
+            'permission_callback' => '__return_true',
+            'args' => array(
+                'per_page' => array(
+                    'required' => false,
+                    'type' => 'integer',
+                    'default' => 100,
+                    'description' => 'Categories per page'
+                ),
+                'parent' => array(
+                    'required' => false,
+                    'type' => 'integer',
+                    'description' => 'Parent category ID'
+                ),
+                'hide_empty' => array(
+                    'required' => false,
+                    'type' => 'boolean',
+                    'default' => true,
+                    'description' => 'Hide empty categories'
+                ),
+                'orderby' => array(
+                    'required' => false,
+                    'type' => 'string',
+                    'default' => 'name',
+                    'description' => 'Order by field'
+                ),
+                'order' => array(
+                    'required' => false,
+                    'type' => 'string',
+                    'default' => 'ASC',
+                    'description' => 'Order direction'
+                )
+            )
+        ));
     }
     
     /**
@@ -926,6 +964,85 @@ class KingShopAPI {
                 // Ignore Redis errors
             }
         }
+    }
+    
+    /**
+     * Get categories - optimized endpoint for categories only
+     */
+    public function get_categories($request) {
+        $per_page = $request->get_param('per_page') ?: 100;
+        $parent = $request->get_param('parent');
+        $hide_empty = $request->get_param('hide_empty') !== false;
+        $orderby = $request->get_param('orderby') ?: 'name';
+        $order = $request->get_param('order') ?: 'ASC';
+        
+        // Check cache first
+        $cache_key = 'king_shop_categories_' . md5(serialize($request->get_params()));
+        $cached_data = $this->get_cache($cache_key);
+        
+        if ($cached_data !== false) {
+            error_log('King Shop API - Categories cache HIT');
+            return $cached_data;
+        }
+        
+        // Build query args
+        $args = array(
+            'taxonomy' => 'product_cat',
+            'hide_empty' => $hide_empty,
+            'orderby' => $orderby,
+            'order' => $order,
+            'number' => $per_page
+        );
+        
+        if ($parent !== null) {
+            $args['parent'] = $parent;
+        }
+        
+        // Get categories
+        $categories = get_terms($args);
+        
+        if (is_wp_error($categories)) {
+            return new WP_Error('categories_error', 'Failed to get categories', array('status' => 500));
+        }
+        
+        // Format categories
+        $formatted_categories = array();
+        foreach ($categories as $cat) {
+            $formatted_categories[] = array(
+                'id' => $cat->term_id,
+                'name' => $cat->name,
+                'slug' => $cat->slug,
+                'count' => $cat->count,
+                'parent' => $cat->parent,
+                'description' => $cat->description,
+                'image' => $this->get_category_image($cat->term_id)
+            );
+        }
+        
+        $response_data = array(
+            'success' => true,
+            'categories' => $formatted_categories,
+            'total' => count($formatted_categories)
+        );
+        
+        // Cache the response
+        $this->set_cache($cache_key, $response_data, $this->cache_duration);
+        
+        error_log('King Shop API - Categories data generated: ' . count($formatted_categories) . ' categories');
+        
+        return $response_data;
+    }
+    
+    /**
+     * Get category image
+     */
+    private function get_category_image($category_id) {
+        $thumbnail_id = get_term_meta($category_id, 'thumbnail_id', true);
+        if ($thumbnail_id) {
+            $image_url = wp_get_attachment_image_url($thumbnail_id, 'medium');
+            return $image_url ?: '';
+        }
+        return '';
     }
 }
 
