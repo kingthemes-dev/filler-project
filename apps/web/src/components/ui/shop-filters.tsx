@@ -109,10 +109,17 @@ export default function ShopFilters({
   // Memoized hierarchical categories - tylko główne kategorie (parent = 0, bez "Wszystkie kategorie")
   const hierarchicalCategories = useMemo(() => {
     const allCategories = categories || [];
+    console.log('🔧 ShopFilters - allCategories:', allCategories);
+    
     // Najpierw zbuduj pełną hierarchię ze wszystkich kategorii
     const fullHierarchy = buildCategoryHierarchy(allCategories);
+    console.log('🔧 ShopFilters - fullHierarchy:', fullHierarchy);
+    
     // Potem przefiltruj tylko główne kategorie (parent = 0) i wyklucz "Wszystkie kategorie"
-    return fullHierarchy.filter(cat => cat.parent === 0 && cat.name !== 'Wszystkie kategorie');
+    const filtered = fullHierarchy.filter(cat => cat.parent === 0 && cat.name !== 'Wszystkie kategorie');
+    console.log('🔧 ShopFilters - filtered categories:', filtered);
+    
+    return filtered;
   }, [categories]);
   
   // Render function for categories
