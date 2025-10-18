@@ -79,7 +79,17 @@ class DynamicCategoriesService {
       }
       
       const data = await response.json();
-      return Array.isArray(data) ? data : (data.categories || []);
+      // Enterprise API zwraca dane w formacie { categories: { all: [...] } }
+      if (Array.isArray(data)) {
+        return data;
+      } else if (data.categories && Array.isArray(data.categories)) {
+        return data.categories;
+      } else if (data.categories && data.categories.all && Array.isArray(data.categories.all)) {
+        return data.categories.all;
+      } else {
+        console.warn('DynamicCategoriesService: Unexpected categories format:', data);
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
       return [];
@@ -98,7 +108,17 @@ class DynamicCategoriesService {
       }
       
       const data = await response.json();
-      return Array.isArray(data) ? data : (data.attributes || []);
+      // Enterprise API zwraca dane w formacie { attributes: { all: [...] } }
+      if (Array.isArray(data)) {
+        return data;
+      } else if (data.attributes && Array.isArray(data.attributes)) {
+        return data.attributes;
+      } else if (data.attributes && data.attributes.all && Array.isArray(data.attributes.all)) {
+        return data.attributes.all;
+      } else {
+        console.warn('DynamicCategoriesService: Unexpected attributes format:', data);
+        return [];
+      }
     } catch (error) {
       console.error('Error fetching attributes:', error);
       return [];
@@ -128,6 +148,12 @@ class DynamicCategoriesService {
    * Buduje hierarchiczną strukturę kategorii
    */
   buildCategoryHierarchy(categories: WooCategory[]): HierarchicalCategory[] {
+    // Sprawdź czy categories jest tablicą
+    if (!Array.isArray(categories)) {
+      console.warn('DynamicCategoriesService: categories is not an array:', categories);
+      return [];
+    }
+    
     // Sortuj kategorie według parent i id
     const sortedCategories = categories.sort((a, b) => {
       if (a.parent !== b.parent) {

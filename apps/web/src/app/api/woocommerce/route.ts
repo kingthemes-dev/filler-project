@@ -744,16 +744,20 @@ async function handleEnterpriseEndpoint(req: NextRequest) {
     // Map response based on endpoint
     let responseData = data;
     if (endpoint === 'products/categories') {
+      // Return categories in WooCommerce format
       responseData = data.categories?.all || [];
     } else if (endpoint === 'products/attributes' || endpoint === 'attributes') {
+      // Return attributes in WooCommerce format
       responseData = data.attributes?.all || [];
     } else if (endpoint === 'shop') {
+      // Return shop data in WooCommerce format
       responseData = {
         products: data.products || [],
         total: data.total || 0,
         total_pages: data.total_pages || 0,
         current_page: data.current_page || 1,
         per_page: data.per_page || 12,
+        // Include categories and attributes for filters
         categories: data.categories?.all || [],
         attributes: data.attributes?.all || []
       };

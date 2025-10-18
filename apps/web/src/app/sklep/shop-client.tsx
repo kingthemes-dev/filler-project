@@ -401,7 +401,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters sidebar */}
           <ShopFilters
-            categories={allCategories.map(c => ({ ...c, count: c.count || 0 }))}
+            categories={Array.isArray(allCategories) ? allCategories.map(c => ({ ...c, count: c.count || 0 })) : []}
             filters={filters}
             onFilterChange={handleFilterChange}
             onCategoryChange={handleCategoryChange}
@@ -410,13 +410,13 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             onToggleFilters={() => setShowFilters(!showFilters)}
             totalProducts={totalProducts}
             attributesLoading={false}
-            wooCommerceCategories={allCategories.map(c => ({ 
+            wooCommerceCategories={Array.isArray(allCategories) ? allCategories.map(c => ({ 
               id: c.id, 
               name: c.name, 
               slug: c.slug, 
               parent: 0, // For now, assume all are top-level
               count: c.count || 0 
-            }))}
+            })) : []}
             products={products}
           />
           
