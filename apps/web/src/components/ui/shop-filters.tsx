@@ -73,8 +73,24 @@ export default function ShopFilters({
           ...parsed,
           categories: true // ZAWSZE true - ignoruj localStorage
         }));
+      } else {
+        // Jeśli nie ma localStorage, ustaw domyślne wartości
+        setExpandedSections({
+          categories: true,
+          attributes: true,
+          price: true,
+          availability: true,
+        });
       }
-    } catch {}
+    } catch {
+      // W przypadku błędu, ustaw domyślne wartości
+      setExpandedSections({
+        categories: true,
+        attributes: true,
+        price: true,
+        availability: true,
+      });
+    }
   }, []);
 
   // Persist expanded state
