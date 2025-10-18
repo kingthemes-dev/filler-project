@@ -130,6 +130,9 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     
     // Debug categories data
     console.log('🔍 SSR Categories Data:', categoriesData);
+    console.log('🔍 SSR Categories Data.data[0]:', categoriesData?.data?.[0]);
+    console.log('🔍 SSR Categories Data.categories:', categoriesData?.categories);
+    console.log('🔍 SSR Categories Data.categories length:', categoriesData?.categories?.length);
     
     const dehydratedState = dehydrate(qc);
 
@@ -137,7 +140,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       <HydrationBoundary state={dehydratedState}>
         <ShopClient initialShopData={shopData ? { 
           ...shopData, 
-          categories: categoriesData?.categories || categoriesData?.data?.categories || [] 
+          categories: categoriesData?.categories || [] 
         } : null} />
       </HydrationBoundary>
     );

@@ -52,6 +52,23 @@ export default function ShopFilters({
   products = []
 }: ShopFiltersProps) {
   const [loading, setLoading] = useState(false);
+  
+  // DEBUG: Sprawdź kategorie
+  console.log('🔍 ShopFilters - categories prop:', categories);
+  console.log('🔍 ShopFilters - categories length:', categories?.length);
+  console.log('🔍 ShopFilters - categories type:', typeof categories);
+  console.log('🔍 ShopFilters - categories isArray:', Array.isArray(categories));
+  console.log('🔍 ShopFilters - expandedSections:', expandedSections);
+  console.log('🔍 ShopFilters - categories expanded:', expandedSections.categories);
+  
+  // Sprawdź czy kategorie to obiekt z właściwością categories
+  if (categories && typeof categories === 'object' && !Array.isArray(categories)) {
+    console.log('🔍 ShopFilters - categories object keys:', Object.keys(categories));
+    if (categories.categories) {
+      console.log('🔍 ShopFilters - categories.categories:', categories.categories);
+      console.log('🔍 ShopFilters - categories.categories length:', categories.categories.length);
+    }
+  }
   const [expandedSections, setExpandedSections] = useState({
     categories: true,
     attributes: true,
@@ -255,7 +272,14 @@ export default function ShopFilters({
                 </button>
                 
                 <AnimatePresence>
-                  {expandedSections.categories && (
+                  {(() => {
+                    console.log('🔍 Categories section expanded check:', {
+                      expandedSections,
+                      categoriesExpanded: expandedSections.categories,
+                      categoriesLength: categories?.length
+                    });
+                    return expandedSections.categories;
+                  })() && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
@@ -264,7 +288,15 @@ export default function ShopFilters({
                     >
                       {/* HIERARCHICAL CATEGORIES: Render with expand/collapse */}
                       <div className="space-y-2">
-                        {categories.length > 0 ? (
+                        {(() => {
+                          console.log('🔍 Categories render check:', {
+                            categoriesLength: categories?.length,
+                            categoriesType: typeof categories,
+                            isArray: Array.isArray(categories),
+                            categories: categories
+                          });
+                          return categories?.length > 0;
+                        })() ? (
                           (() => {
                             // Build category hierarchy
                             const buildCategoryHierarchy = (categories: Category[]) => {

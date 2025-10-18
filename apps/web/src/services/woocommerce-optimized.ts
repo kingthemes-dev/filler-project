@@ -206,9 +206,13 @@ class WooCommerceService {
       }
       
       const data = await response.json();
+      
+      // Handle different response formats
+      const categories = data.categories || (Array.isArray(data) ? data : [data]);
+      
       return {
-        data: Array.isArray(data) ? data : [data],
-        total: Array.isArray(data) ? data.length : 1,
+        data: categories,
+        total: data.total || categories.length,
         totalPages: 1,
         currentPage: 1,
         perPage: 100,
