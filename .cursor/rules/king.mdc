@@ -97,14 +97,105 @@ Debuguj [problem] używając:
 - Headless WooCommerce e-commerce
 - Beauty/cosmetics industry focus
 - Polish market (PLN, Polish language)
-- Mobile-first design approach
-- Monochromatic design (black/white)
+- Mobile-first design approach (375px → 768px → 1024px+)
+- Monochromatic design (black/white, elegant, minimalist)
 - Performance-focused (9.6/10 Expert Level)
 
-6. CODING PATTERNS:
+6. PROJECT RULES - CORE PRINCIPLES:
+- **Store API** - używamy WooCommerce Store API dla wszystkich funkcjonalności
+- **Headless WooCommerce** - frontend Next.js, backend WordPress
+- **`king-` mu-plugins** - tworzymy wtyczki z prefiksem "king-" dla brakujących endpointów
+- **Mobile-first** - projektujemy od mobile (375px) → tablet (768px) → desktop (1024px+)
+- **Monochromatyczny design** - czarno-biały, elegancki, minimalistyczny
+- **Lokalizacja** - polski język, ceny w PLN (zł)
+- **Żadnych mocków danych** - realne API tylko (mock tylko w dev gdy potrzebne)
+- **Kolejność prac** - Fundamenty → Core → Enhancements → Polish (Mobile-first)
+
+7. CODING PATTERNS:
 - Use existing cache keys from cacheKeys
 - Use circuitBreakers.wordpress for API calls
 - Use redisCache for all caching
 - Use requestDeduplicator for API optimization
 - Use logger for all logging
 - Use proper error boundaries
+
+8. MONOREPO ARCHITECTURE:
+- `apps/web/` - Next.js 15 + App Router (main app)
+- `apps/mobile/` - React Native/Expo (mobile app)
+- `packages/shared/` - shared: types, services, utils, stores
+- `root/` - original files (backward compatibility)
+- Commands: `npm run dev:web`, `npm run dev:mobile`, `npm run build:web`
+- Import: `import { Product } from '@headless-woo/shared';`
+
+9. HEADLESS BEST PRACTICES:
+- ❌ NEVER use WooCommerce default emails in headless
+- ✅ ALWAYS use custom email system with MJML templates
+- ✅ Custom REST API endpoints instead of direct WooCommerce calls
+- ✅ API Gateway pattern with Redis caching
+- ✅ Dynamic categories/attributes via single service
+- ✅ Mobile-first responsive design
+- ✅ Performance-first approach (ISR + Edge caching)
+
+10. EMAIL SYSTEM:
+- Custom MJML templates (order-confirmation, shipped, welcome, etc.)
+- Headless native email service via REST API
+- Mailtrap for testing, production email service for live
+- Professional templates with FILLER branding
+- Mobile-responsive with inline CSS
+
+11. ENDPOINT OPTIMIZATION:
+- Consolidate overlapping functionality
+- Remove duplicates (found: product-slug endpoint)
+- Standardize namespaces (king-* pattern)
+- Add Redis cache to missing endpoints
+- Document all REST endpoints
+- Performance monitoring for all API calls
+
+12. GIT WORKFLOW - MANDATORY:
+- ZAWSZE po każdej implementacji: git add . && git commit -m "✨ [Feature] - Description" && git push
+- NIGDY nie rób wielu zmian bez commit!
+- Format commitów: [emoji] [Type] - [Description]
+- Emoji guide: ✨ feature, 🔧 fix, 🎨 style, ⚡ perf, 🛡️ security, 🧪 test
+- To zapewnia śledzenie zmian i możliwość rollback!
+
+13. EXPERT LEVEL STANDARDS:
+- TypeScript strict mode ZAWSZE
+- Error handling ZAWSZE z try/catch
+- Logging ZAWSZE z logger
+- Performance ZAWSZE optymalizuj
+- Security ZAWSZE waliduj input
+- Testing ZAWSZE testuj zmiany
+- Documentation ZAWSZE aktualizuj
+
+14. SUCCESS CRITERIA - TARGETS:
+- Lighthouse Score: 98-99/100
+- Core Web Vitals: All green
+- Load Time: < 2.5s
+- Bundle Size: < 200KB
+- Testing Coverage: >80%
+- Error Rate: <0.1%
+- Uptime: >99.9%
+
+15. DEVELOPMENT WORKFLOW:
+- Implement feature → Test locally → Git commit → Push → Deploy
+- Bug fix → Identify → Fix → Test → Commit → Push
+- Optimization → Identify bottleneck → Implement → Test → Deploy
+
+16. NEVER DO - RED FLAGS:
+- ❌ Skip git commits
+- ❌ Ignore error handling
+- ❌ Skip testing
+- ❌ Skip performance optimization
+- ❌ Skip security validation
+- ❌ Break existing patterns
+
+17. ALWAYS DO - GREEN FLAGS:
+- ✅ Commit after each feature
+- ✅ Handle all errors
+- ✅ Test all changes
+- ✅ Optimize performance
+- ✅ Validate security
+- ✅ Follow existing patterns
+- ✅ Use TypeScript strict mode
+- ✅ Update documentation
+
