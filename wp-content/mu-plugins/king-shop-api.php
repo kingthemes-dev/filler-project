@@ -1044,6 +1044,58 @@ class KingShopAPI {
         }
         return '';
     }
+    
+    /**
+     * Get cache data
+     */
+    private function get_cache($key) {
+        if ($this->redis_available) {
+            return $this->get_redis_cache($key);
+        } else {
+            return wp_cache_get($key, 'king_shop');
+        }
+    }
+    
+    /**
+     * Set cache data
+     */
+    private function set_cache($key, $data, $duration) {
+        if ($this->redis_available) {
+            $this->set_redis_cache($key, $data, $duration);
+        } else {
+            wp_cache_set($key, $data, 'king_shop', $duration);
+        }
+    }
+    
+    /**
+     * Get Redis cache
+     */
+    private function get_redis_cache($key) {
+        try {
+            $redis = new Redis();
+            $redis->connect('127.0.0.1', 6379);
+            $data = $redis->get($key);
+            $redis->close();
+            return $data ? json_decode($data, true) : false;
+        } catch (Exception $e) {
+            error_log('Redis cache error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Set Redis cache
+     */
+    private function set_redis_cache($key, $data, $duration) {
+        try {
+            $redis = new Redis();
+            $redis->connect('127.0.0.1', 6379);
+            $redis->setex($key, $duration, json_encode($data));
+            $redis->close();
+        } catch (Exception $e) {
+            error_log('Redis cache error: ' . $e->getMessage());
+        }
+    }
 }
 
 // Initialize the shop API
