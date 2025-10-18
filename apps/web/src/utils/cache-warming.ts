@@ -69,8 +69,8 @@ class CacheWarmer {
    */
   private async warmCategories(): Promise<void> {
     try {
-      const categoriesUrl = '/api/woocommerce?endpoint=products/categories';
-      const response = await fetch(`${process.env.WP_BASE_URL}${categoriesUrl}`);
+      const categoriesUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/woocommerce?endpoint=products/categories`;
+      const response = await fetch(categoriesUrl);
       
       if (response.ok) {
         const categories = await response.json();

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -76,13 +76,6 @@ export const metadata: Metadata = {
     google: process.env.NEXT_PUBLIC_GA_ID?.replace('G-', ''),
   },
   manifest: '/manifest.json',
-  themeColor: '#000000',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -93,6 +86,14 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#000000',
 };
 
 export default function RootLayout({
@@ -144,18 +145,18 @@ export default function RootLayout({
                         {/* Google Tag Manager (noscript) */}
                         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TJSTQLNM" height="0" width="0" style={{display:'none',visibility:'hidden'}}></iframe></noscript>
                         <ErrorBoundary>
-                          <TopBar />
-                          <Header />
                           <ReactQueryProvider>
+                            <TopBar />
+                            <Header />
                             <main>
                               {children}
                             </main>
+                            <AuthModalManager />
+                            <FavoritesModal />
+                            <Footer />
+                            <CartDrawer />
                           </ReactQueryProvider>
-                          <AuthModalManager />
-                          <FavoritesModal />
-        <Footer />
-        <CartDrawer />
-      </ErrorBoundary>
+                        </ErrorBoundary>
       
       {/* SEO Expert Level 8.5/10 - Structured Data */}
       <script
