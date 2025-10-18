@@ -273,14 +273,12 @@ export default function Header() {
             <div 
               className="relative overflow-visible shop-dropdown-container"
               onMouseEnter={() => {
-                console.log('🔍 Header - Sklep hover detected');
                 // Clear any existing timeout
                 if (shopHoverTimeout) {
                   clearTimeout(shopHoverTimeout);
                   setShopHoverTimeout(null);
                 }
                 // Open dropdown immediately on hover
-                console.log('🔍 Header - Setting isShopOpen to true');
                 setIsShopOpen(true);
               }}
             >

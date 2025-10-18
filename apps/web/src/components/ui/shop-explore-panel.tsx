@@ -22,12 +22,10 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    console.log('🔍 ShopExplorePanel useEffect - open:', open);
     if (!open) return;
     let mounted = true;
     const load = async () => {
       try {
-        console.log('🔍 ShopExplorePanel - starting to load data...');
         // Sprawdź cache w sessionStorage (5 minut)
         const cacheKey = 'shop-explore-data';
         const cached = sessionStorage.getItem(cacheKey);
