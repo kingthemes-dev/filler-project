@@ -50,12 +50,20 @@ function validateEnv(): EnvConfig {
   // Check if we're on client-side (browser) or server-side
   const isClient = typeof window !== 'undefined';
   
-  // Check required variables based on environment
-  const requiredVars = isClient ? REQUIRED_CLIENT_ENV_VARS : [...REQUIRED_SERVER_ENV_VARS, ...REQUIRED_CLIENT_ENV_VARS];
-  
-  for (const varName of requiredVars) {
-    if (!process.env[varName]) {
-      missing.push(varName);
+  // Only validate client-side accessible variables on client-side
+  if (isClient) {
+    // Only check NEXT_PUBLIC_ variables on client-side
+    for (const varName of REQUIRED_CLIENT_ENV_VARS) {
+      if (!process.env[varName]) {
+        missing.push(varName);
+      }
+    }
+  } else {
+    // On server-side, check all required variables
+    for (const varName of [...REQUIRED_SERVER_ENV_VARS, ...REQUIRED_CLIENT_ENV_VARS]) {
+      if (!process.env[varName]) {
+        missing.push(varName);
+      }
     }
   }
   
