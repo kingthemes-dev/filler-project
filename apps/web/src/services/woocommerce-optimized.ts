@@ -9,8 +9,8 @@ class WooCommerceService {
   private baseUrl: string;
 
   constructor() {
-    // Use relative URL for Vercel deployment
-    this.baseUrl = '/api/woocommerce';
+    // Use relative URL for client-side, full URL for server-side
+    this.baseUrl = typeof window !== 'undefined' ? '/api/woocommerce' : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/woocommerce`;
     console.log('🚀 WooCommerce Optimized Service initialized');
   }
 
@@ -172,18 +172,27 @@ class WooCommerceService {
   // =========================================
   async getProductBySlug(slug: string): Promise<WooProduct | null> {
     try {
+      console.log(`🔍 Fetching product by slug: ${slug}`);
       // Use cache=off to ensure fresh data for product pages
       const response = await fetch(`${this.baseUrl}?endpoint=products&slug=${slug}&cache=off`);
       
+      console.log(`📡 Response status: ${response.status}`);
+      
       if (!response.ok) {
+        console.error(`❌ HTTP error! status: ${response.status}`);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log(`📦 Data received:`, data);
+      
       // WooCommerce API zwraca array, więc bierzemy pierwszy element
-      return Array.isArray(data) && data.length > 0 ? data[0] : null;
+      const product = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      console.log(`✅ Product found:`, product ? product.name : 'null');
+      
+      return product;
     } catch (error) {
-      console.error('Error fetching product by slug:', error);
+      console.error('❌ Error fetching product by slug:', error);
       throw error;
     }
   }

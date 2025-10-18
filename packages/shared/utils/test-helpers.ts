@@ -20,6 +20,14 @@ export const mockEnv = {
 
 // Mock fetch for API testing
 export function mockFetch(response: any, status: number = 200) {
+  if (typeof jest === 'undefined') {
+    return () => Promise.resolve({
+      ok: status >= 200 && status < 300,
+      status,
+      json: () => Promise.resolve(response),
+      text: () => Promise.resolve(JSON.stringify(response))
+    });
+  }
   return jest.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
     status,
@@ -32,15 +40,17 @@ export function mockFetch(response: any, status: number = 200) {
 export function mockLocalStorage() {
   const store: Record<string, string> = {};
   
+  const mockFn = typeof jest !== 'undefined' ? jest.fn : () => {};
+  
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: mockFn((key: string) => store[key] || null),
+    setItem: mockFn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: mockFn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: mockFn(() => {
       Object.keys(store).forEach(key => delete store[key]);
     })
   };
@@ -50,15 +60,17 @@ export function mockLocalStorage() {
 export function mockSessionStorage() {
   const store: Record<string, string> = {};
   
+  const mockFn = typeof jest !== 'undefined' ? jest.fn : () => {};
+  
   return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
+    getItem: mockFn((key: string) => store[key] || null),
+    setItem: mockFn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key: string) => {
+    removeItem: mockFn((key: string) => {
       delete store[key];
     }),
-    clear: jest.fn(() => {
+    clear: mockFn(() => {
       Object.keys(store).forEach(key => delete store[key]);
     })
   };
@@ -208,8 +220,9 @@ export function renderWithProviders(
 
 // Test utilities for forms
 export function createMockFormEvent(values: Record<string, any>) {
+  const mockFn = typeof jest !== 'undefined' ? jest.fn : () => {};
   return {
-    preventDefault: jest.fn(),
+    preventDefault: mockFn(),
     target: {
       elements: Object.keys(values).reduce((acc, key) => {
         acc[key] = { value: values[key] };
@@ -236,24 +249,42 @@ export function createMockError(error: Error) {
 
 // Mock IntersectionObserver
 export function mockIntersectionObserver() {
-  const mockIntersectionObserver = jest.fn();
-  mockIntersectionObserver.mockReturnValue({
-    observe: () => null,
-    unobserve: () => null,
-    disconnect: () => null
-  });
+  const mockFn = typeof jest !== 'undefined' ? jest.fn : () => {};
+  const mockIntersectionObserver = mockFn();
+  if (typeof jest !== 'undefined') {
+    mockIntersectionObserver.mockReturnValue({
+      observe: () => null,
+      unobserve: () => null,
+      disconnect: () => null
+    });
+  } else {
+    Object.assign(mockIntersectionObserver, {
+      observe: () => null,
+      unobserve: () => null,
+      disconnect: () => null
+    });
+  }
   window.IntersectionObserver = mockIntersectionObserver;
   return mockIntersectionObserver;
 }
 
 // Mock ResizeObserver
 export function mockResizeObserver() {
-  const mockResizeObserver = jest.fn();
-  mockResizeObserver.mockReturnValue({
-    observe: () => null,
-    unobserve: () => null,
-    disconnect: () => null
-  });
+  const mockFn = typeof jest !== 'undefined' ? jest.fn : () => {};
+  const mockResizeObserver = mockFn();
+  if (typeof jest !== 'undefined') {
+    mockResizeObserver.mockReturnValue({
+      observe: () => null,
+      unobserve: () => null,
+      disconnect: () => null
+    });
+  } else {
+    Object.assign(mockResizeObserver, {
+      observe: () => null,
+      unobserve: () => null,
+      disconnect: () => null
+    });
+  }
   window.ResizeObserver = mockResizeObserver;
   return mockResizeObserver;
 }
@@ -306,13 +337,14 @@ export const mockApiResponses = {
 };
 
 // Mock router
+const mockFn = typeof jest !== 'undefined' ? jest.fn : () => {};
 export const mockRouter = {
-  push: jest.fn(),
-  replace: jest.fn(),
-  back: jest.fn(),
-  forward: jest.fn(),
-  refresh: jest.fn(),
-  prefetch: jest.fn(),
+  push: mockFn(),
+  replace: mockFn(),
+  back: mockFn(),
+  forward: mockFn(),
+  refresh: mockFn(),
+  prefetch: mockFn(),
   pathname: '/',
   query: {},
   asPath: '/'

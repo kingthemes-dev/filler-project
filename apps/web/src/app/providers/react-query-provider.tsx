@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
-import { analytics } from '@headless-woo/shared/utils/analytics';
+import { analytics } from '@headless-woo/shared';
 
 export default function ReactQueryProvider({ children }: { children: React.ReactNode }) {
   const [client] = React.useState(() => new QueryClient({

@@ -12,10 +12,7 @@ import ErrorBoundary from '@/components/error-boundary';
 import ReactQueryProvider from './providers/react-query-provider';
 
 // Expert Level 9.6/10 - Free Implementation
-import { errorTracker } from '@/utils/error-tracker';
-import { analytics } from '@/utils/advanced-analytics';
-import { performanceMonitor } from '@/utils/performance-monitor';
-import { securityAuditor } from '@/utils/security-audit';
+import { errorTracker, analytics, performanceMonitor } from '@headless-woo/shared';
 
 
 const geistSans = Geist({

@@ -13,9 +13,9 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
-    // Fix for Node.js v18 compatibility
-    serverComponentsExternalPackages: ['ioredis', 'nodemailer'],
   },
+  // Fix for Node.js v18 compatibility - moved to top level
+  serverExternalPackages: ['ioredis', 'nodemailer'],
   // Production optimizations
   ...(process.env.NODE_ENV === 'production' && {
     compress: true,
