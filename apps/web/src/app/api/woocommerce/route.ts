@@ -692,7 +692,29 @@ async function handleEnterpriseEndpoint(req: NextRequest) {
 
   try {
     // ENTERPRISE: Single endpoint for everything
-    const enterpriseUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-enterprise/v1/data?${searchParams.toString()}`;
+    // Map endpoint to appropriate parameters
+    const endpoint = searchParams.get('endpoint');
+    let enterpriseParams = new URLSearchParams(searchParams);
+    
+    // Map old endpoints to new enterprise parameters
+    if (endpoint === 'products/categories') {
+      enterpriseParams.set('include_categories', 'true');
+      enterpriseParams.set('include_products', 'false');
+      enterpriseParams.set('include_attributes', 'false');
+    } else if (endpoint === 'products/attributes' || endpoint === 'attributes') {
+      enterpriseParams.set('include_attributes', 'true');
+      enterpriseParams.set('include_products', 'false');
+      enterpriseParams.set('include_categories', 'false');
+    } else if (endpoint === 'shop') {
+      enterpriseParams.set('include_products', 'true');
+      enterpriseParams.set('include_categories', 'true');
+      enterpriseParams.set('include_attributes', 'true');
+    }
+    
+    // Remove old endpoint parameter
+    enterpriseParams.delete('endpoint');
+    
+    const enterpriseUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-enterprise/v1/data?${enterpriseParams.toString()}`;
     
     console.log('🏢 Enterprise endpoint - calling King Enterprise API:', enterpriseUrl);
     
@@ -719,8 +741,26 @@ async function handleEnterpriseEndpoint(req: NextRequest) {
       performance: data.performance?.total_ms || 0
     });
 
+    // Map response based on endpoint
+    let responseData = data;
+    if (endpoint === 'products/categories') {
+      responseData = data.categories?.all || [];
+    } else if (endpoint === 'products/attributes' || endpoint === 'attributes') {
+      responseData = data.attributes?.all || [];
+    } else if (endpoint === 'shop') {
+      responseData = {
+        products: data.products || [],
+        total: data.total || 0,
+        total_pages: data.total_pages || 0,
+        current_page: data.current_page || 1,
+        per_page: data.per_page || 12,
+        categories: data.categories?.all || [],
+        attributes: data.attributes?.all || []
+      };
+    }
+
     // Return data with enterprise headers
-    return NextResponse.json(data, {
+    return NextResponse.json(responseData, {
       status: 200,
       headers: {
         "content-type": "application/json",
@@ -1266,14 +1306,14 @@ export async function GET(req: NextRequest) {
     return handleCoupons(req);
   }
   
-  // Special handling for attributes endpoint - PRO Architecture
+  // Special handling for attributes endpoint - use King Enterprise API
   if (endpoint === "attributes") {
-    return handleAttributesEndpoint(req);
+    return handleEnterpriseEndpoint(req);
   }
   
-  // Special handling for shop endpoint - use new King Shop API
+  // Special handling for shop endpoint - use King Enterprise API
   if (endpoint === "shop") {
-    return handleShopEndpoint(req);
+    return handleEnterpriseEndpoint(req);
   }
   
   // Special handling for categories endpoint - use King Enterprise API
@@ -1283,11 +1323,6 @@ export async function GET(req: NextRequest) {
   
   // Special handling for attributes endpoint - use King Enterprise API
   if (endpoint === "products/attributes") {
-    return handleEnterpriseEndpoint(req);
-  }
-  
-  // Special handling for shop endpoint - use King Enterprise API
-  if (endpoint === "shop") {
     return handleEnterpriseEndpoint(req);
   }
   
