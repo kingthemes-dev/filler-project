@@ -10,33 +10,26 @@ import DynamicAttributeFilters from './dynamic-attribute-filters';
 
 // Funkcje pomocnicze poza komponentem
 const buildCategoryHierarchy = (categories: any[]) => {
-  console.log('🔧 buildCategoryHierarchy - input categories:', categories);
   const categoryMap = new Map();
   const rootCategories: any[] = [];
   
   // Stwórz mapę wszystkich kategorii
   categories.forEach(cat => {
-    console.log('🔧 Processing category:', cat);
     categoryMap.set(cat.id, { ...cat, children: [] });
   });
   
   // Zbuduj hierarchię
   categories.forEach(cat => {
     if (cat.parent === 0) {
-      console.log('🔧 Adding root category:', cat.name);
       rootCategories.push(categoryMap.get(cat.id));
     } else {
       const parent = categoryMap.get(cat.parent);
       if (parent) {
-        console.log('🔧 Adding child category:', cat.name, 'to parent:', parent.name);
         parent.children.push(categoryMap.get(cat.id));
-      } else {
-        console.log('🔧 Parent not found for category:', cat.name, 'parent ID:', cat.parent);
       }
     }
   });
   
-  console.log('🔧 buildCategoryHierarchy - result rootCategories:', rootCategories);
   return rootCategories;
 };
 
@@ -97,11 +90,7 @@ export default function ShopFilters({
   
   // Memoized hierarchical categories
   const hierarchicalCategories = useMemo(() => {
-    console.log('🔧 ShopFilters - categories prop:', categories);
-    console.log('🔧 ShopFilters - categories length:', categories?.length);
-    const hierarchy = buildCategoryHierarchy(categories || []);
-    console.log('🔧 ShopFilters - hierarchicalCategories:', hierarchy);
-    return hierarchy;
+    return buildCategoryHierarchy(categories || []);
   }, [categories]);
   
   // Render function for categories

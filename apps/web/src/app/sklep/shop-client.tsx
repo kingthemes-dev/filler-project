@@ -51,11 +51,6 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const [products, setProducts] = useState<WooProduct[]>(initialShopData?.products || []);
   const [allCategories, setAllCategories] = useState<Category[]>(initialShopData?.categories || []);
   
-  // Debug log for allCategories
-  useEffect(() => {
-    console.log('🔧 ShopClient - allCategories updated:', allCategories);
-  }, [allCategories]);
-  
   
   // INSTANT LOADING: If no initial data, fetch categories immediately
   useEffect(() => {
@@ -209,7 +204,6 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   // Update products and total from shopQuery data
   useEffect(() => {
     if (shopQuery.data) {
-      console.log('🔧 ShopClient - shopQuery.data.categories:', shopQuery.data.categories);
       setProducts(shopQuery.data.products || []);
       setTotalProducts(shopQuery.data.total || 0);
       setAllCategories(shopQuery.data.categories || []);
@@ -419,7 +413,13 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters sidebar */}
           <ShopFilters
-            categories={Array.isArray(allCategories) ? allCategories.map(c => ({ ...c, count: c.count || 0 })) : []}
+            categories={Array.isArray(allCategories) ? allCategories.map(c => ({ 
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
+              count: c.count || 0,
+              parent: (c as any).parent || 0 // Zachowaj parent dla hierarchii
+            })) : []}
             filters={filters}
             onFilterChange={handleFilterChange}
             onCategoryChange={handleCategoryChange}
