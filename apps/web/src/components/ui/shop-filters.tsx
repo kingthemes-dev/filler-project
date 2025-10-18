@@ -347,9 +347,11 @@ export default function ShopFilters({
                 </button>
                 
                 {/* Kategorie z hierarchią */}
-                <div className="space-y-1">
-                  {hierarchicalCategories.map(category => renderCategory(category))}
-                </div>
+                {expandedSections.categories && (
+                  <div className="space-y-1">
+                    {hierarchicalCategories.map(category => renderCategory(category))}
+                  </div>
+                )}
               </div>
 
 
