@@ -9,8 +9,8 @@ class WooCommerceService {
   private baseUrl: string;
 
   constructor() {
-    // Use relative URL for Vercel deployment
-    this.baseUrl = '/api/woocommerce';
+    // Use absolute URL for server-side calls, relative for client-side
+    this.baseUrl = typeof window === 'undefined' ? 'http://localhost:3000/api/woocommerce' : '/api/woocommerce';
     console.log('🚀 WooCommerce Optimized Service initialized');
   }
 
