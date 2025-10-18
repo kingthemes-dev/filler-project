@@ -542,7 +542,8 @@ class KingShopAPI {
             'hide_empty' => true,
             'orderby' => 'name',
             'order' => 'ASC',
-            'number' => 50 // Limit for performance
+            'number' => 50, // Limit for performance
+            'fields' => 'all' // Include all fields including parent
         ));
         
         $formatted_categories = array();
