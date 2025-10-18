@@ -551,12 +551,18 @@ class KingShopAPI {
             // Debug: sprawdź co zwraca get_terms
             error_log('King Shop API - Category debug: ID=' . $cat->term_id . ', Name=' . $cat->name . ', Parent=' . $cat->parent);
             
+            // Pobierz pełne dane kategorii z parent
+            $full_cat = get_term($cat->term_id, 'product_cat');
+            $parent_id = $full_cat ? $full_cat->parent : 0;
+            
+            error_log('King Shop API - Full category debug: ID=' . $cat->term_id . ', Parent from get_term=' . $parent_id);
+            
             $formatted_categories[] = array(
                 'id' => $cat->term_id,
                 'name' => $cat->name,
                 'slug' => $cat->slug,
                 'count' => $cat->count,
-                'parent' => $cat->parent
+                'parent' => $parent_id
             );
         }
         
