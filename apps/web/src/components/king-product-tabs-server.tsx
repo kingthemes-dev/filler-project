@@ -149,7 +149,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
           <div className="mt-6 md:hidden">
             <Link
               href="/sklep"
-              className="block w-full bg-transparent border-2 border-gray-300 text-gray-700 hover:border-black hover:text-black transition-all duration-300 text-center py-3 px-4 rounded-xl font-medium"
+              className="block w-full bg-transparent border-2 border-gray-300 text-gray-700 hover:border-black hover:text-black transition-all duration-300 text-center py-3 px-4 rounded-2xl font-medium"
             >
               Wszystkie produkty
             </Link>
