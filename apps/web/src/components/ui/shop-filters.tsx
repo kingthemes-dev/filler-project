@@ -330,7 +330,6 @@ export default function ShopFilters({
                             {loading ? 'Ładowanie kategorii...' : 'Brak kategorii do wyświetlenia'}
                           </div>
                         )}
-                      </div>
                   </div>
                 )}
               </div>
