@@ -23,11 +23,15 @@ interface EnvConfig {
   NEXT_PUBLIC_BASE_URL: string;
 }
 
-// Required environment variables
-const REQUIRED_ENV_VARS = [
+// Required environment variables (server-side only)
+const REQUIRED_SERVER_ENV_VARS = [
   'WOOCOMMERCE_API_URL',
   'WOOCOMMERCE_CONSUMER_KEY',
-  'WOOCOMMERCE_CONSUMER_SECRET',
+  'WOOCOMMERCE_CONSUMER_SECRET'
+] as const;
+
+// Required environment variables (client-side)
+const REQUIRED_CLIENT_ENV_VARS = [
   'NEXT_PUBLIC_WORDPRESS_URL',
   'NEXT_PUBLIC_BASE_URL'
 ] as const;
@@ -43,8 +47,13 @@ const OPTIONAL_ENV_VARS = [
 function validateEnv(): EnvConfig {
   const missing: string[] = [];
   
-  // Check required variables
-  for (const varName of REQUIRED_ENV_VARS) {
+  // Check if we're on client-side (browser) or server-side
+  const isClient = typeof window !== 'undefined';
+  
+  // Check required variables based on environment
+  const requiredVars = isClient ? REQUIRED_CLIENT_ENV_VARS : [...REQUIRED_SERVER_ENV_VARS, ...REQUIRED_CLIENT_ENV_VARS];
+  
+  for (const varName of requiredVars) {
     if (!process.env[varName]) {
       missing.push(varName);
     }
@@ -57,7 +66,7 @@ function validateEnv(): EnvConfig {
     );
   }
   
-  // Validate URLs
+  // Validate URLs (only client-side accessible ones)
   const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
   
@@ -74,10 +83,11 @@ function validateEnv(): EnvConfig {
     throw new Error('NODE_ENV must be development, production, or test');
   }
   
+  // Return config with safe defaults for client-side
   return {
-    WOOCOMMERCE_API_URL: process.env.WOOCOMMERCE_API_URL!,
-    WOOCOMMERCE_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY!,
-    WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET!,
+    WOOCOMMERCE_API_URL: process.env.WOOCOMMERCE_API_URL || '',
+    WOOCOMMERCE_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY || '',
+    WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET || '',
     NEXT_PUBLIC_WORDPRESS_URL: wordpressUrl,
     NEXT_PUBLIC_BASE_URL: baseUrl,
     SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,
