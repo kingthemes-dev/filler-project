@@ -206,6 +206,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     if (shopQuery.data) {
       setProducts(shopQuery.data.products || []);
       setTotalProducts(shopQuery.data.total || 0);
+      console.log('🔧 ShopClient - shopQuery.data.categories:', shopQuery.data.categories);
       setAllCategories(shopQuery.data.categories || []);
     }
     setLoading(shopQuery.isLoading);
