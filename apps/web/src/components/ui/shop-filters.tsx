@@ -1,12 +1,37 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DynamicCategoryFilters from './dynamic-category-filters';
 import DynamicAttributeFilters from './dynamic-attribute-filters';
+
+// Funkcje pomocnicze poza komponentem
+const buildCategoryHierarchy = (categories: any[]) => {
+  const categoryMap = new Map();
+  const rootCategories: any[] = [];
+  
+  // Stwórz mapę wszystkich kategorii
+  categories.forEach(cat => {
+    categoryMap.set(cat.id, { ...cat, children: [] });
+  });
+  
+  // Zbuduj hierarchię
+  categories.forEach(cat => {
+    if (cat.parent === 0) {
+      rootCategories.push(categoryMap.get(cat.id));
+    } else {
+      const parent = categoryMap.get(cat.parent);
+      if (parent) {
+        parent.children.push(categoryMap.get(cat.id));
+      }
+    }
+  });
+  
+  return rootCategories;
+};
 
 interface Category {
   id: number;
@@ -63,6 +88,61 @@ export default function ShopFilters({
   
   // Initialize from localStorage on mount (client-side only)
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Memoized hierarchical categories
+  const hierarchicalCategories = useMemo(() => {
+    return buildCategoryHierarchy(categories || []);
+  }, [categories]);
+  
+  // Render function for categories
+  const renderCategory = (category: any, level = 0) => {
+    const hasChildren = category.children && category.children.length > 0;
+    const indentClass = level > 0 ? `ml-${level * 4}` : '';
+    
+    return (
+      <div key={category.id} className={`${indentClass}`}>
+        <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 rounded px-2 py-1">
+          <input
+            type="checkbox"
+            className="rounded border-gray-300 text-black focus:ring-black"
+            onChange={(e) => {
+              const newFilters = { ...filters };
+              if (e.target.checked) {
+                newFilters.categories = [...(newFilters.categories || []), category.id];
+              } else {
+                newFilters.categories = (newFilters.categories || []).filter(id => id !== category.id);
+              }
+              onFilterChange(newFilters);
+            }}
+            checked={filters.categories?.includes(category.id) || false}
+          />
+          <span className="text-sm text-gray-700 flex-1">
+            {hasChildren && (
+              <span className="inline-block w-4 h-4 mr-1">
+                ▼
+              </span>
+            )}
+            {!hasChildren && level > 0 && (
+              <span className="inline-block w-4 h-4 mr-1">
+                •
+              </span>
+            )}
+            {category.name}
+          </span>
+          <span className="text-xs text-gray-500">
+            ({category.count || 0})
+          </span>
+        </label>
+        
+        {/* Renderuj podkategorie */}
+        {hasChildren && (
+          <div className="ml-4 mt-1 space-y-1">
+            {category.children.map((child: any) => renderCategory(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
   
   React.useEffect(() => {
     if (!isInitialized) {
@@ -268,85 +348,7 @@ export default function ShopFilters({
                 
                 {/* Kategorie z hierarchią */}
                 <div className="space-y-1">
-                  {(() => {
-                    // Buduj hierarchię kategorii
-                    const buildCategoryHierarchy = (categories: any[]) => {
-                      const categoryMap = new Map();
-                      const rootCategories: any[] = [];
-                      
-                      // Stwórz mapę wszystkich kategorii
-                      categories.forEach(cat => {
-                        categoryMap.set(cat.id, { ...cat, children: [] });
-                      });
-                      
-                      // Zbuduj hierarchię
-                      categories.forEach(cat => {
-                        if (cat.parent === 0) {
-                          rootCategories.push(categoryMap.get(cat.id));
-                        } else {
-                          const parent = categoryMap.get(cat.parent);
-                          if (parent) {
-                            parent.children.push(categoryMap.get(cat.id));
-                          }
-                        }
-                      });
-                      
-                      return rootCategories;
-                    };
-                    
-                    const renderCategory = (category: any, level = 0) => {
-                      const hasChildren = category.children && category.children.length > 0;
-                      const indentClass = level > 0 ? `ml-${level * 4}` : '';
-                      
-                      return (
-                        <div key={category.id} className={`${indentClass}`}>
-                          <label className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 rounded px-2 py-1">
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300 text-black focus:ring-black"
-                              onChange={(e) => {
-                                const newFilters = { ...filters };
-                                if (e.target.checked) {
-                                  newFilters.categories = [...(newFilters.categories || []), category.id];
-                                } else {
-                                  newFilters.categories = (newFilters.categories || []).filter(id => id !== category.id);
-                                }
-                                onFilterChange(newFilters);
-                              }}
-                              checked={filters.categories?.includes(category.id) || false}
-                            />
-                            <span className="text-sm text-gray-700 flex-1">
-                              {hasChildren && (
-                                <span className="inline-block w-4 h-4 mr-1">
-                                  ▼
-                                </span>
-                              )}
-                              {!hasChildren && level > 0 && (
-                                <span className="inline-block w-4 h-4 mr-1">
-                                  •
-                                </span>
-                              )}
-                              {category.name}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              ({category.count || 0})
-                            </span>
-                          </label>
-                          
-                          {/* Renderuj podkategorie */}
-                          {hasChildren && (
-                            <div className="ml-4 mt-1 space-y-1">
-                              {category.children.map((child: any) => renderCategory(child, level + 1))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    };
-                    
-                    const hierarchicalCategories = buildCategoryHierarchy(categories || []);
-                    
-                    return hierarchicalCategories.map(category => renderCategory(category));
-                  })()}
+                  {hierarchicalCategories.map(category => renderCategory(category))}
                 </div>
               </div>
 
