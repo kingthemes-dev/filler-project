@@ -52,6 +52,21 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   
   const [products, setProducts] = useState<WooProduct[]>(initialShopData?.products || []);
   const [allCategories, setAllCategories] = useState<Category[]>(initialShopData?.categories || []);
+  
+  // INSTANT LOADING: If no initial data, fetch categories immediately
+  useEffect(() => {
+    if (!initialShopData?.categories || initialShopData.categories.length === 0) {
+      console.log('🚀 INSTANT LOADING: Fetching categories immediately...');
+      wooCommerceService.getCategories().then(response => {
+        if (response.success && response.categories) {
+          console.log('✅ INSTANT LOADING: Categories loaded:', response.categories.length);
+          setAllCategories(response.categories);
+        }
+      }).catch(error => {
+        console.error('❌ INSTANT LOADING: Error fetching categories:', error);
+      });
+    }
+  }, [initialShopData]);
   const [loading, setLoading] = useState(false);
   const [totalProducts, setTotalProducts] = useState(initialShopData?.total || 0);
   

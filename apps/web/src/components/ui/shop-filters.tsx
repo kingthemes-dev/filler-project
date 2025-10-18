@@ -50,6 +50,7 @@ export default function ShopFilters({
   wooCommerceCategories,
   products = []
 }: ShopFiltersProps) {
+  const [loading, setLoading] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     categories: true,
     attributes: true,
@@ -260,11 +261,28 @@ export default function ShopFilters({
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <DynamicCategoryFilters
-                        onCategoryChange={onCategoryChange}
-                        selectedCategories={filters.categories}
-                        totalProducts={totalProducts}
-                      />
+                      {/* INSTANT LOADING: Render categories directly */}
+                      <div className="space-y-2">
+                        {categories.length > 0 ? (
+                          categories.map((category) => (
+                            <label key={category.id} className="flex items-center space-x-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={filters.categories.includes(category.slug)}
+                                onChange={() => onCategoryChange(category.slug)}
+                                className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                              />
+                              <span className="text-sm text-gray-700">
+                                {category.name} ({category.count || 0})
+                              </span>
+                            </label>
+                          ))
+                        ) : (
+                          <div className="text-sm text-gray-500">
+                            {loading ? 'Ładowanie kategorii...' : 'Brak kategorii do wyświetlenia'}
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

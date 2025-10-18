@@ -128,7 +128,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
 
     return (
       <HydrationBoundary state={dehydratedState}>
-        <ShopClient />
+        <ShopClient initialShopData={shopData} />
       </HydrationBoundary>
     );
   } catch (error) {
