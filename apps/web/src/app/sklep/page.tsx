@@ -128,11 +128,17 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     const shopData = qc.getQueryData(['shop','products',{ page: 1, perPage: 12, filters: initialFilters }]);
     const categoriesData = qc.getQueryData(['shop','categories']);
     
+    // Debug categories data
+    console.log('🔍 SSR Categories Data:', categoriesData);
+    
     const dehydratedState = dehydrate(qc);
 
     return (
       <HydrationBoundary state={dehydratedState}>
-        <ShopClient initialShopData={shopData ? { ...shopData, categories: categoriesData?.categories || [] } : null} />
+        <ShopClient initialShopData={shopData ? { 
+          ...shopData, 
+          categories: categoriesData?.categories || categoriesData?.data?.categories || [] 
+        } : null} />
       </HydrationBoundary>
     );
   } catch (error) {

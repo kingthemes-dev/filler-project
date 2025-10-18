@@ -91,7 +91,10 @@ export default function Header() {
           const categoriesData = await categoriesResponse.json();
           console.log('📂 All categories loaded:', categoriesData);
           
-          const allCategories = Array.isArray(categoriesData) ? categoriesData : [];
+          // Handle both array format and {success: true, categories: [...]} format
+          const allCategories = Array.isArray(categoriesData) 
+            ? categoriesData 
+            : (categoriesData?.categories || []);
           
           // Buduj hierarchię: główne kategorie (parent = 0) i podkategorie
           const mainCats = allCategories.filter(cat => cat.parent === 0 && cat.name !== 'Wszystkie kategorie');
