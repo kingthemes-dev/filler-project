@@ -555,7 +555,9 @@ class KingShopAPI {
             $full_cat = get_term($cat->term_id, 'product_cat');
             $parent_id = $full_cat ? $full_cat->parent : 0;
             
+            // Debug: sprawdź wszystkie właściwości kategorii
             error_log('King Shop API - Full category debug: ID=' . $cat->term_id . ', Parent from get_term=' . $parent_id);
+            error_log('King Shop API - Full category object: ' . print_r($full_cat, true));
             
             $formatted_categories[] = array(
                 'id' => $cat->term_id,
