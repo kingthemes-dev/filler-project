@@ -269,13 +269,7 @@ export default function ShopFilters({
                 </button>
                 
                 {/* Kategorie są wyświetlane gdy sekcja jest rozwinięta */}
-                {(() => {
-                  console.log('🔍 ShopFilters - expandedSections.categories:', expandedSections.categories);
-                  console.log('🔍 ShopFilters - categories?.length:', categories?.length);
-                  console.log('🔍 ShopFilters - categories?.length > 0:', categories?.length > 0);
-                  console.log('🔍 ShopFilters - condition result:', expandedSections.categories && categories?.length > 0);
-                  return expandedSections.categories && categories?.length > 0;
-                })() && (
+                {expandedSections.categories && Array.isArray(categories) && categories.length > 0 && (
                   <div className="space-y-2">
                         {(() => {
                           // Build category hierarchy
