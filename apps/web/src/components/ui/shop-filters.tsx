@@ -13,6 +13,7 @@ interface Category {
   name: string;
   slug: string;
   count: number;
+  parent: number;
 }
 
 interface ShopFiltersProps {
@@ -261,22 +262,59 @@ export default function ShopFilters({
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {/* INSTANT LOADING: Render categories directly */}
+                      {/* HIERARCHICAL CATEGORIES: Render with expand/collapse */}
                       <div className="space-y-2">
                         {categories.length > 0 ? (
-                          categories.map((category) => (
-                            <label key={category.id} className="flex items-center space-x-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={filters.categories.includes(category.slug)}
-                                onChange={() => onCategoryChange(category.slug)}
-                                className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-                              />
-                              <span className="text-sm text-gray-700">
-                                {category.name} ({category.count || 0})
-                              </span>
-                            </label>
-                          ))
+                          (() => {
+                            // Build category hierarchy
+                            const buildCategoryHierarchy = (categories: Category[]) => {
+                              const categoryMap = new Map();
+                              const rootCategories: Category[] = [];
+                              
+                              // Create map of all categories
+                              categories.forEach(cat => {
+                                categoryMap.set(cat.id, { ...cat, children: [] });
+                              });
+                              
+                              // Build hierarchy
+                              categories.forEach(cat => {
+                                if (cat.parent === 0) {
+                                  rootCategories.push(categoryMap.get(cat.id));
+                                } else {
+                                  const parent = categoryMap.get(cat.parent);
+                                  if (parent) {
+                                    parent.children.push(categoryMap.get(cat.id));
+                                  }
+                                }
+                              });
+                              
+                              return rootCategories;
+                            };
+                            
+                            const renderCategory = (category: any, level = 0) => (
+                              <div key={category.id} className={`${level > 0 ? 'ml-4' : ''}`}>
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={filters.categories.includes(category.slug)}
+                                    onChange={() => onCategoryChange(category.slug)}
+                                    className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                                  />
+                                  <span className="text-sm text-gray-700">
+                                    {category.name} ({category.count || 0})
+                                  </span>
+                                </label>
+                                {category.children && category.children.length > 0 && (
+                                  <div className="mt-1 space-y-1">
+                                    {category.children.map((child: any) => renderCategory(child, level + 1))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                            
+                            const hierarchicalCategories = buildCategoryHierarchy(categories);
+                            return hierarchicalCategories.map(category => renderCategory(category));
+                          })()
                         ) : (
                           <div className="text-sm text-gray-500">
                             {loading ? 'Ładowanie kategorii...' : 'Brak kategorii do wyświetlenia'}

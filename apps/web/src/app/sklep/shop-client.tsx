@@ -429,7 +429,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
               id: c.id, 
               name: c.name, 
               slug: c.slug, 
-              parent: 0, // For now, assume all are top-level
+              parent: c.parent || 0, // Use real parent data from API
               count: c.count || 0 
             })) : []}
             products={products}
