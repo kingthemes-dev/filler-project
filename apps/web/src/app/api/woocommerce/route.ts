@@ -679,6 +679,67 @@ async function handleAttributesEndpoint(req: NextRequest) {
   }
 }
 
+// Handle enterprise endpoint - SINGLE CONSOLIDATED API
+async function handleEnterpriseEndpoint(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  
+  if (!WC_URL || !CK || !CS) {
+    return NextResponse.json(
+      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    // ENTERPRISE: Single endpoint for everything
+    const enterpriseUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-enterprise/v1/data?${searchParams.toString()}`;
+    
+    console.log('🏢 Enterprise endpoint - calling King Enterprise API:', enterpriseUrl);
+    
+    const response = await fetch(enterpriseUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Filler-Store/2.0'
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    console.log('✅ Enterprise data received:', {
+      products: data.products?.length || 0,
+      categories: data.categories?.total || 0,
+      attributes: data.attributes?.total || 0,
+      performance: data.performance?.total_ms || 0
+    });
+
+    // Return data with enterprise headers
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "Cache-Control": "public, max-age=300, s-maxage=600, stale-while-revalidate=1800",
+        "X-Cache": "MISS",
+        "X-Enterprise-API": "2.0.0",
+        "X-Performance-Total": data.performance?.total_ms || 0
+      },
+    });
+
+  } catch (error) {
+    console.error('❌ Enterprise endpoint error:', error);
+    return NextResponse.json(
+      { error: 'Nie udało się pobrać danych enterprise', details: error instanceof Error ? error.message : 'Nieznany błąd' },
+      { status: 500 }
+    );
+  }
+}
+
 // Handle categories endpoint - PRO Architecture: WordPress robi całe filtrowanie
 async function handleCategoriesEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -1215,9 +1276,19 @@ export async function GET(req: NextRequest) {
     return handleShopEndpoint(req);
   }
   
-  // Special handling for categories endpoint - use King Shop API
+  // Special handling for categories endpoint - use King Enterprise API
   if (endpoint === "products/categories") {
-    return handleCategoriesEndpoint(req);
+    return handleEnterpriseEndpoint(req);
+  }
+  
+  // Special handling for attributes endpoint - use King Enterprise API
+  if (endpoint === "products/attributes") {
+    return handleEnterpriseEndpoint(req);
+  }
+  
+  // Special handling for shop endpoint - use King Enterprise API
+  if (endpoint === "shop") {
+    return handleEnterpriseEndpoint(req);
   }
   
   if (!WC_URL || !CK || !CS) {

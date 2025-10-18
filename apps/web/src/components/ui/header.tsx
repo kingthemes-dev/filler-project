@@ -85,7 +85,7 @@ export default function Header() {
       setIsLoadingData(true);
       try {
         // Pobierz kategorie i zbuduj hierarchię
-        const categoriesResponse = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/categories&per_page=100`);
+        const categoriesResponse = await fetch(`${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/api/woocommerce?endpoint=products/categories&per_page=100`);
         if (categoriesResponse.ok) {
           const categoriesData = await categoriesResponse.json();
           console.log('📂 All categories loaded:', categoriesData);
@@ -115,7 +115,7 @@ export default function Header() {
         }
 
         // Pobierz atrybuty (bez pojemności)
-        const attributesResponse = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/attributes&per_page=100`);
+        const attributesResponse = await fetch(`${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/api/woocommerce?endpoint=products/attributes&per_page=100`);
         if (attributesResponse.ok) {
           const attributesData = await attributesResponse.json();
           console.log('🏷️ Attributes loaded:', attributesData);
@@ -943,7 +943,7 @@ function AttributeTerms({ attributeId, onClose }: { attributeId: number; onClose
     const fetchTerms = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/attributes/${attributeId}/terms&per_page=100`);
+        const response = await fetch(`${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/api/woocommerce?endpoint=products/attributes/${attributeId}/terms&per_page=100`);
         if (response.ok) {
           const termsData = await response.json();
           console.log(`🏷️ Terms for attribute ${attributeId}:`, termsData);
