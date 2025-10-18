@@ -551,7 +551,8 @@ class KingShopAPI {
                 'id' => $cat->term_id,
                 'name' => $cat->name,
                 'slug' => $cat->slug,
-                'count' => $cat->count
+                'count' => $cat->count,
+                'parent' => $cat->parent
             );
         }
         
