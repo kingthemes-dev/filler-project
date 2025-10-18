@@ -42,7 +42,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         }
 
         // 1) pełne kategorie (z parent) do kolumny 1 i 2
-        const catsRes = await fetch(`${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/api/woocommerce?endpoint=products/categories&per_page=100`, { cache: 'no-store' });
+        const baseUrl = typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:3000';
+        const catsRes = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/categories&per_page=100`, { cache: 'no-store' });
         const cats = catsRes.ok ? await catsRes.json() : [];
         // 2) szybkie metadane z shop (liczniki/atrybuty)
         const shop = await woo.getShopData(1, 1);
