@@ -90,7 +90,11 @@ export default function ShopFilters({
   
   // Memoized hierarchical categories
   const hierarchicalCategories = useMemo(() => {
-    return buildCategoryHierarchy(categories || []);
+    console.log('🔧 ShopFilters - categories prop:', categories);
+    console.log('🔧 ShopFilters - categories length:', categories?.length);
+    const hierarchy = buildCategoryHierarchy(categories || []);
+    console.log('🔧 ShopFilters - hierarchicalCategories:', hierarchy);
+    return hierarchy;
   }, [categories]);
   
   // Render function for categories
