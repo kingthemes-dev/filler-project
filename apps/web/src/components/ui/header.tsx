@@ -22,7 +22,7 @@ export default function Header() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
-  const [isShopOpen, setIsShopOpen] = useState(true); // DEBUG: Force open for testing
+  const [isShopOpen, setIsShopOpen] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [mobileMenuTab, setMobileMenuTab] = useState<'main' | 'filters' | 'account'>('main');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
