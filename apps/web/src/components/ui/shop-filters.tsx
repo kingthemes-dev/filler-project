@@ -53,11 +53,6 @@ export default function ShopFilters({
 }: ShopFiltersProps) {
   const [loading, setLoading] = useState(false);
   
-  console.log('🚀 ShopFilters - categories:', categories);
-  console.log('🚀 ShopFilters - categories type:', typeof categories);
-  console.log('🚀 ShopFilters - Array.isArray(categories):', Array.isArray(categories));
-  console.log('🚀 ShopFilters - categories?.length:', categories?.length);
-  
   const [expandedSections, setExpandedSections] = useState({
     categories: true, // ZAWSZE true domyślnie
     attributes: true,
@@ -272,7 +267,7 @@ export default function ShopFilters({
                 </button>
                 
                 {/* Kategorie są ZAWSZE wyświetlane */}
-                {expandedSections.categories && categories && categories.length > 0 ? (
+                {expandedSections.categories && Array.isArray(categories) && categories.length > 0 ? (
                   <div className="space-y-2">
                         {(() => {
                           // Build category hierarchy
