@@ -77,10 +77,10 @@ export default function Header() {
     setFavoritesCount(getFavoritesCount());
   }, [getFavoritesCount]);
 
-  // Pobierz prawdziwe dane z WooCommerce - kategorie i atrybuty
+  // INSTANT LOADING: Pobierz kategorie i atrybuty natychmiast
   useEffect(() => {
     const fetchWooCommerceData = async () => {
-      if (mobileMenuTab !== 'filters') return;
+      // Pobierz dane zawsze, nie tylko dla mobile menu
       
       setIsLoadingData(true);
       try {
