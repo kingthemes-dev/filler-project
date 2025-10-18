@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
+    // Fix for Node.js v18 compatibility
+    serverComponentsExternalPackages: ['ioredis', 'nodemailer'],
   },
   // Production optimizations
   ...(process.env.NODE_ENV === 'production' && {
@@ -41,11 +43,29 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    // Fix for Next.js 15.5.2 compatibility issues
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+      };
+    }
+    
     config.module.rules.push({
       test: /\.svg$/,
       use: ['@svgr/webpack'],
     });
+    
+    // Fix for undefined 'call' errors
+    config.optimization = {
+      ...config.optimization,
+      sideEffects: false,
+    };
+    
     return config;
   },
   transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
