@@ -60,38 +60,26 @@ export default function ShopFilters({
     availability: true,
   });
   
+  // Initialize from localStorage on mount (client-side only)
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // Restore expanded state from localStorage with fallback to defaults
   React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem('shopFiltersExpanded');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Kategorie ZAWSZE rozwinięte, inne sekcje z localStorage
-        setExpandedSections((prev) => ({ 
-          ...prev, 
-          ...parsed,
-          categories: true // ZAWSZE true - ignoruj localStorage
-        }));
-      } else {
-        // Jeśli nie ma localStorage, ustaw domyślne wartości
-        setExpandedSections({
-          categories: true,
-          attributes: true,
-          price: true,
-          availability: true,
-        });
+    if (!isInitialized) {
+      try {
+        const saved = localStorage.getItem('shopFiltersExpanded');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setExpandedSections({
+            ...parsed,
+            categories: true, // ZAWSZE true - ignoruj localStorage
+          });
+        }
+      } catch {
+        // Ignore errors
       }
-    } catch {
-      // W przypadku błędu, ustaw domyślne wartości
-      setExpandedSections({
-        categories: true,
-        attributes: true,
-        price: true,
-        availability: true,
-      });
+      setIsInitialized(true);
     }
-  }, []);
+  }, [isInitialized]);
 
   // Persist expanded state
   React.useEffect(() => {
