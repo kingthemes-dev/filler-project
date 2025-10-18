@@ -45,6 +45,7 @@ interface ShopFiltersProps {
   categories: Category[];
   filters: {
     categories: string[];
+    brands: string[];
     search: string;
     minPrice: number;
     maxPrice: number;
@@ -52,7 +53,7 @@ interface ShopFiltersProps {
     onSale: boolean;
     [key: string]: string[] | string | number | boolean; // Dynamiczne atrybuty
   };
-  onFilterChange: (key: string, value: string | number | boolean) => void;
+  onFilterChange: (key: string, value: string | number | boolean | string[]) => void;
   onCategoryChange: (categoryId: string, subcategoryId?: string) => void;
   onClearFilters: () => void;
   showFilters: boolean;
@@ -86,8 +87,6 @@ export default function ShopFilters({
   });
   
   
-  // Initialize from localStorage on mount (client-side only)
-  const [isInitialized, setIsInitialized] = useState(false);
   
   // Memoized hierarchical categories
   const hierarchicalCategories = useMemo(() => {
@@ -106,15 +105,16 @@ export default function ShopFilters({
             type="checkbox"
             className="rounded border-gray-300 text-black focus:ring-black"
             onChange={(e) => {
-              const newFilters = { ...filters };
+              const categoryId = String(category.id);
               if (e.target.checked) {
-                newFilters.categories = [...(newFilters.categories || []), category.id];
+                onFilterChange('categories', categoryId);
               } else {
-                newFilters.categories = (newFilters.categories || []).filter(id => id !== category.id);
+                const currentCategories = filters.categories || [];
+                const newCategories = currentCategories.filter(id => id !== categoryId);
+                onFilterChange('categories', newCategories);
               }
-              onFilterChange(newFilters);
             }}
-            checked={filters.categories?.includes(category.id) || false}
+            checked={filters.categories?.includes(String(category.id)) || false}
           />
           <span className="text-sm text-gray-700 flex-1">
             {hasChildren && (
@@ -144,23 +144,6 @@ export default function ShopFilters({
     );
   };
   
-  React.useEffect(() => {
-    if (!isInitialized) {
-      try {
-        const saved = localStorage.getItem('shopFiltersExpanded');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          setExpandedSections({
-            ...parsed,
-            categories: true, // ZAWSZE true - ignoruj localStorage
-          });
-        }
-      } catch {
-        // Ignore errors
-      }
-      setIsInitialized(true);
-    }
-  }, [isInitialized]);
 
   // Persist expanded state
   React.useEffect(() => {

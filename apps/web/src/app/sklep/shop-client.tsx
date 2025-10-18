@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 interface FilterState {
   search: string;
   categories: string[];
+  brands: string[];
   minPrice: number;
   maxPrice: number;
   inStock: boolean;
@@ -236,17 +237,23 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     setCurrentPage(1);
   }, [filters]);
 
-  const handleFilterChange = (key: string, value: string | number | boolean) => {
+  const handleFilterChange = (key: string, value: string | number | boolean | string[]) => {
     console.log('🔧 handleFilterChange called:', { key, value, type: typeof value });
     
     if (key === 'categories' || key === 'brands') {
       // Handle array filters (checkboxes)
       setFilters(prev => {
-        const currentArray = prev[key] as string[];
-        const newArray = currentArray.includes(value as string) 
-          ? currentArray.filter(item => item !== value)
-          : [...currentArray, value as string];
-        return { ...prev, [key]: newArray };
+        if (Array.isArray(value)) {
+          // If value is already an array, replace the entire array
+          return { ...prev, [key]: value };
+        } else {
+          // If value is a single item, toggle it in the array
+          const currentArray = prev[key] as string[];
+          const newArray = currentArray.includes(value as string) 
+            ? currentArray.filter(item => item !== value)
+            : [...currentArray, value as string];
+          return { ...prev, [key]: newArray };
+        }
       });
     } else if (key.startsWith('pa_')) {
       // Handle dynamic attribute filters (comma-separated values)
