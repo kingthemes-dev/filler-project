@@ -267,7 +267,14 @@ export default function ShopFilters({
                 </button>
                 
                 {/* Kategorie są ZAWSZE wyświetlane */}
-                {expandedSections.categories && Array.isArray(categories) && categories.length > 0 ? (
+                {(() => {
+                  console.log('🚀 RENDER CHECK - expandedSections.categories:', expandedSections.categories);
+                  console.log('🚀 RENDER CHECK - categories:', categories);
+                  console.log('🚀 RENDER CHECK - Array.isArray(categories):', Array.isArray(categories));
+                  console.log('🚀 RENDER CHECK - categories?.length:', categories?.length);
+                  console.log('🚀 RENDER CHECK - condition result:', expandedSections.categories && Array.isArray(categories) && categories.length > 0);
+                  return expandedSections.categories && Array.isArray(categories) && categories.length > 0;
+                })() ? (
                   <div className="space-y-2">
                         {(() => {
                           // Build category hierarchy
