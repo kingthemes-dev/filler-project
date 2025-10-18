@@ -265,19 +265,12 @@ export default function ShopFilters({
                   )}
                 </button>
                 
-                {/* USUNĄŁEM AnimatePresence - powodowało problemy z renderowaniem */}
-                {expandedSections.categories && (
+                {/* Kategorie są wyświetlane gdy sekcja jest rozwinięta */}
+                {expandedSections.categories && categories?.length > 0 && (
                   <div className="space-y-2">
                         {(() => {
-                          console.log('🔍 ShopFilters - categories in render:', categories);
-                          console.log('🔍 ShopFilters - categories length:', categories?.length);
-                          console.log('🔍 ShopFilters - expandedSections.categories:', expandedSections.categories);
-                          // Kategorie ZAWSZE wyświetlane jeśli są dostępne
-                          return categories?.length > 0;
-                        })() ? (
-                          (() => {
-                            // Build category hierarchy
-                            const buildCategoryHierarchy = (categories: Category[]) => {
+                          // Build category hierarchy
+                          const buildCategoryHierarchy = (categories: Category[]) => {
                               const categoryMap = new Map();
                               const rootCategories: Category[] = [];
                               
@@ -324,12 +317,7 @@ export default function ShopFilters({
                             
                             const hierarchicalCategories = buildCategoryHierarchy(categories);
                             return hierarchicalCategories.map(category => renderCategory(category));
-                          })()
-                        ) : (
-                          <div className="text-sm text-gray-500">
-                            {loading ? 'Ładowanie kategorii...' : 'Brak kategorii do wyświetlenia'}
-                          </div>
-                        )}
+                          })()}
                   </div>
                 )}
               </div>
