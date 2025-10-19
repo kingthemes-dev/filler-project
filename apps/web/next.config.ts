@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
+    reactCompiler: true, // React 19 Compiler for automatic optimizations
+    // ppr: true, // Partial Prerendering - disabled for stable build
   },
   // Fix for Node.js v18 compatibility - moved to top level
   serverExternalPackages: ['ioredis', 'nodemailer'],

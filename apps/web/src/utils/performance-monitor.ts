@@ -123,13 +123,16 @@ class PerformanceMonitor {
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
+          const lcpEntry = entry as PerformanceEntry & { element?: Element; url?: string; size?: number };
           this.recordMetric({
             name: 'LCP',
             value: entry.startTime,
+            timestamp: Date.now().toString(),
+            url: window.location.href,
             metadata: {
-              element: entry.element?.tagName,
-              url: entry.url,
-              size: entry.size,
+              element: lcpEntry.element?.tagName,
+              url: lcpEntry.url,
+              size: lcpEntry.size,
             },
           });
         }
@@ -143,13 +146,16 @@ class PerformanceMonitor {
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          const fid = entry.processingStart - entry.startTime;
+          const fidEntry = entry as PerformanceEventTiming;
+          const fid = fidEntry.processingStart - fidEntry.startTime;
           this.recordMetric({
             name: 'FID',
             value: fid,
+            timestamp: Date.now().toString(),
+            url: window.location.href,
             metadata: {
               eventType: entry.name,
-              target: entry.target?.tagName,
+              target: (fidEntry.target as Element)?.tagName,
             },
           });
         }
@@ -169,6 +175,8 @@ class PerformanceMonitor {
             this.recordMetric({
               name: 'CLS',
               value: clsValue,
+              timestamp: Date.now().toString(),
+              url: window.location.href,
               metadata: {
                 sources: (entry as any).sources,
               },
@@ -189,6 +197,8 @@ class PerformanceMonitor {
       this.recordMetric({
         name: 'PageLoad',
         value: loadTime,
+        timestamp: Date.now().toString(),
+        url: window.location.href,
         metadata: {
           domContentLoaded: performance.timing?.domContentLoadedEventEnd - performance.timing?.domContentLoadedEventStart,
           loadComplete: performance.timing?.loadEventEnd - performance.timing?.loadEventStart,
@@ -202,6 +212,8 @@ class PerformanceMonitor {
       this.recordMetric({
         name: 'DOMContentLoaded',
         value: domTime,
+        timestamp: Date.now().toString(),
+        url: window.location.href,
       });
     });
 
@@ -211,6 +223,8 @@ class PerformanceMonitor {
       this.recordMetric({
         name: 'TTFB',
         value: ttfb,
+        timestamp: Date.now().toString(),
+        url: window.location.href,
       });
     }
   }
@@ -226,6 +240,8 @@ class PerformanceMonitor {
         this.recordMetric({
           name: 'APIResponse',
           value: endTime - startTime,
+          timestamp: Date.now().toString(),
+          url: window.location.href,
           metadata: {
             url: args[0],
             status: response.status,
@@ -240,9 +256,11 @@ class PerformanceMonitor {
         this.recordMetric({
           name: 'APIError',
           value: endTime - startTime,
+          timestamp: Date.now().toString(),
+          url: window.location.href,
           metadata: {
             url: args[0],
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
           },
         });
         throw error;
@@ -261,6 +279,8 @@ class PerformanceMonitor {
         this.recordMetric({
           name: 'BundleSize',
           value: (script as any).transferSize || 0,
+          timestamp: Date.now().toString(),
+          url: window.location.href,
           metadata: {
             url: script.name,
             type: 'javascript',
@@ -279,6 +299,8 @@ class PerformanceMonitor {
         this.recordMetric({
           name: 'MemoryUsage',
           value: memory.usedJSHeapSize,
+          timestamp: Date.now().toString(),
+          url: window.location.href,
           metadata: {
             totalJSHeapSize: memory.totalJSHeapSize,
             jsHeapSizeLimit: memory.jsHeapSizeLimit,
@@ -296,6 +318,8 @@ class PerformanceMonitor {
       this.recordMetric({
         name: 'NetworkConnection',
         value: connection.effectiveType === '4g' ? 1 : connection.effectiveType === '3g' ? 2 : 3,
+        timestamp: Date.now().toString(),
+        url: window.location.href,
         metadata: {
           effectiveType: connection.effectiveType,
           downlink: connection.downlink,
@@ -314,9 +338,11 @@ class PerformanceMonitor {
               this.recordMetric({
                 name: 'ResourceLoad',
                 value: entry.duration,
+                timestamp: Date.now().toString(),
+                url: window.location.href,
                 metadata: {
                   name: entry.name,
-                  type: entry.initiatorType,
+                  type: (entry as any).initiatorType,
                   size: (entry as any).transferSize,
                 },
               });

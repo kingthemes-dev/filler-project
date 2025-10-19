@@ -10,6 +10,8 @@ import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
 import FavoritesModal from '@/components/ui/favorites-modal';
 import ErrorBoundary from '@/components/error-boundary';
 import ReactQueryProvider from './providers/react-query-provider';
+import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
+import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analytics';
 
 // Expert Level 9.6/10 - Free Implementation
 import { errorTracker, analytics, performanceMonitor } from '@headless-woo/shared';
@@ -105,21 +107,90 @@ export default function RootLayout({
         <Script
           id="Cookiebot"
           src="https://consent.cookiebot.com/uc.js"
-          data-cbid="fa168711-f44f-4971-91cf-f37e7337d834"
+          data-cbid={process.env.NEXT_PUBLIC_COOKIEBOT_ID || "fa168711-f44f-4971-91cf-f37e7337d834"}
           data-blockingmode="auto"
           strategy="beforeInteractive"
+          integrity="sha384-..."
+          crossOrigin="anonymous"
         />
         {/* Google Tag Manager */}
-        <Script id="gtm" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
-          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-          })(window,document,'script','dataLayer','GTM-TJSTQLNM');
-        `}} />
+        {process.env.NEXT_PUBLIC_GTM_ID && (
+          <Script id="gtm" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
+          `}} />
+        )}
+            {/* Google Analytics 4 + Search Console */}
+            {process.env.NEXT_PUBLIC_GA4_ID && (
+              <>
+                <Script
+                  src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}`}
+                  strategy="afterInteractive"
+                />
+                <Script id="ga4" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${process.env.NEXT_PUBLIC_GA4_ID}', {
+                    // Enhanced measurement for Search Console integration
+                    enhanced_measurements: {
+                      scrolls: true,
+                      outbound_clicks: true,
+                      site_search: true,
+                      video_engagement: true,
+                      file_downloads: true
+                    },
+                    // Search Console integration
+                    custom_map: {
+                      'custom_parameter_1': 'search_term',
+                      'custom_parameter_2': 'search_engine'
+                    }
+                  });
+                  
+                  // Track search queries from URL parameters
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const searchQuery = urlParams.get('q') || urlParams.get('search') || urlParams.get('s');
+                  if (searchQuery) {
+                    gtag('event', 'search', {
+                      search_term: searchQuery,
+                      search_engine: 'site_search'
+                    });
+                  }
+                `}} />
+              </>
+            )}
+            
+            {/* Initialize Search Console Analytics */}
+            {process.env.NEXT_PUBLIC_GA4_ID && (
+              <Script id="search-console-init" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+                // Initialize Search Console Analytics after GA4
+                setTimeout(() => {
+                  if (typeof window !== 'undefined') {
+                    import('/src/utils/search-console-analytics.js').then(module => {
+                      const analytics = module.initializeSearchConsoleAnalytics('${process.env.NEXT_PUBLIC_GA4_ID}');
+                      analytics.trackScrollDepth();
+                    }).catch(console.warn);
+                  }
+                }, 1000);
+              `}} />
+            )}
         {/* Preconnect to WordPress for faster API calls */}
         <link rel="preconnect" href="https://qvwltjhdjw.cfolks.pl" crossOrigin="" />
         <link rel="dns-prefetch" href="https://qvwltjhdjw.cfolks.pl" />
+        {/* Preconnect to external services for better performance */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
+        <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="" />
+        <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://consent.cookiebot.com" />
         {/* Preload hero image for faster LCP - highest priority */}
         <link rel="preload" as="image" href="/images/hero/home.webp" type="image/webp" fetchPriority="high" imageSrcSet="/images/hero/home.webp 1920w" imageSizes="100vw" />
         {/* Preload critical CSS inline */}
@@ -129,6 +200,25 @@ export default function RootLayout({
           .leading-tight{line-height:1.25}
           @font-face{font-family:'Geist';font-style:normal;font-weight:400;font-display:swap;src:local('Geist')}
         `}} />
+        {/* Structured Data - Organization */}
+        <Script
+          id="organization-structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(generateOrganizationStructuredData(DEFAULT_ORGANIZATION))
+          }}
+        />
+        {/* Structured Data - Website */}
+        <Script
+          id="website-structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(generateWebsiteStructuredData(
+              process.env.NEXT_PUBLIC_BASE_URL || 'https://filler.pl',
+              'FILLER - Hurtownia Medycyny Estetycznej'
+            ))
+          }}
+        />
       </head>
                         <body
                     className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}

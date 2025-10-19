@@ -1,0 +1,11 @@
+Contact: security@filler.pl
+Expires: 2026-01-01T00:00:00.000Z
+Encryption: https://filler.pl/pgp-key.txt
+Preferred-Languages: pl, en
+Canonical: https://filler.pl/.well-known/security.txt
+Policy: https://filler.pl/polityka-prywatnosci
+Hiring: https://filler.pl/o-nas#kariera
+
+# Security Policy
+# If you discover a security vulnerability, please report it to security@filler.pl
+# We appreciate responsible disclosure and will work with you to resolve any issues

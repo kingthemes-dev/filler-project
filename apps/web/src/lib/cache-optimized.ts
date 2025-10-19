@@ -10,11 +10,18 @@ let redis: any = null;
 
 // Initialize Redis if available
 try {
-  if (env.NODE_ENV === 'production') {
-    // TODO: Add Redis client initialization
-    // const Redis = require('ioredis');
-    // redis = new Redis(process.env.REDIS_URL);
+  if (env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+    const Redis = require('ioredis');
+    redis = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 3,
+      lazyConnect: true,
+      keepAlive: 30000,
+      connectTimeout: 10000,
+      commandTimeout: 5000,
+    });
     logger.info('Redis cache initialized');
+  } else {
+    logger.info('Redis not configured, using in-memory cache');
   }
 } catch (error) {
   logger.warn('Redis not available, using in-memory cache', { error });

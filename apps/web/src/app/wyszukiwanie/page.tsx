@@ -11,6 +11,7 @@ import { WooProduct } from '@/types/woocommerce';
 import { useCartStore } from '@/stores/cart-store';
 import Image from 'next/image';
 import Link from 'next/link';
+import SearchTracking from '@/components/seo/search-tracking';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();
@@ -149,6 +150,11 @@ function SearchResultsContent() {
 
   return (
     <PageContainer className="py-8">
+      <SearchTracking 
+        searchQuery={query} 
+        resultsCount={totalResults}
+        searchEngine="site_search"
+      />
       {/* Search Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">

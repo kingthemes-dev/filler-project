@@ -128,12 +128,13 @@ class ErrorTracker {
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
             if (entry.entryType === 'largest-contentful-paint') {
+              const lcpEntry = entry as PerformanceEntry & { element?: Element; url?: string };
               this.capturePerformance({
                 name: 'LCP',
                 value: entry.startTime,
                 metadata: {
-                  element: entry.element?.tagName,
-                  url: entry.url,
+                  element: lcpEntry.element?.tagName,
+                  url: lcpEntry.url,
                 },
               });
             }
@@ -148,9 +149,10 @@ class ErrorTracker {
       try {
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
+            const fidEntry = entry as PerformanceEventTiming;
             this.capturePerformance({
               name: 'FID',
-              value: entry.processingStart - entry.startTime,
+              value: fidEntry.processingStart - fidEntry.startTime,
               metadata: {
                 eventType: entry.name,
               },
@@ -223,7 +225,7 @@ class ErrorTracker {
           value: endTime - startTime,
           metadata: {
             url: args[0],
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
           },
         });
         throw error;

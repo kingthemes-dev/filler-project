@@ -2,8 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 import { WooShippingMethod } from '@/types/woocommerce';
 
-// Redis is optional - will be undefined if not available
-const redis: unknown = undefined;
+// Redis client (optional)
+let redis: any = null;
+
+// Initialize Redis if available
+try {
+  if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+    const Redis = require('ioredis');
+    redis = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 3,
+      lazyConnect: true,
+      keepAlive: 30000,
+      connectTimeout: 10000,
+      commandTimeout: 5000,
+    });
+  }
+} catch (error) {
+  console.warn('Redis not available, using in-memory cache', error);
+}
 
 const WC_URL = process.env.WOOCOMMERCE_API_URL;
 const SITE_BASE = WC_URL ? WC_URL.replace(/\/wp-json\/wc\/v3.*/, '') : '';
@@ -25,7 +41,7 @@ async function handlePasswordReset(body: { email: string }) {
     console.log('🔄 Password reset request for:', email);
     
     // Użyj custom mu-plugin endpoint
-    const customUrl = 'https://qvwltjhdjw.cfolks.pl/wp-json/custom/v1/password-reset';
+    const customUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/password-reset`;
     
     const response = await fetch(customUrl, {
       method: 'POST',
@@ -54,8 +70,8 @@ async function handlePasswordReset(body: { email: string }) {
       console.log('❌ Custom endpoint error response:', errorText);
       
       // Fallback: Sprawdź czy użytkownik istnieje przez WooCommerce API
-      const wcUrl = 'https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3/customers';
-      const auth = 'Basic ' + Buffer.from('ck_deb61eadd7300ebfc5f8074ce7c53c6668eb725d:cs_0de18ed0e013f96aebfb51c77f506bb94e416cb8').toString('base64');
+      const wcUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/customers`;
+      const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
       
       const wcResponse = await fetch(`${wcUrl}?email=${encodeURIComponent(email)}`, {
         method: 'GET',
@@ -108,7 +124,7 @@ async function handlePasswordResetConfirm(body: { key: string; login: string; pa
     console.log('🔄 Password reset confirm for user:', login);
     
     // Użyj custom mu-plugin endpoint
-    const customUrl = 'https://qvwltjhdjw.cfolks.pl/wp-json/custom/v1/reset-password';
+    const customUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/reset-password`;
     
     console.log('🔄 Attempting password reset with:', { key: key.substring(0, 10) + '...', login, passwordLength: password.length });
     
@@ -169,7 +185,7 @@ async function handleCustomerInvoices(req: NextRequest) {
     console.log('🔄 Fetching invoices for customer:', customerId);
     
     // Call WordPress custom API
-    const invoicesUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/custom/v1/invoices?customer_id=${customerId}`;
+    const invoicesUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/invoices?customer_id=${customerId}`;
     
     const response = await fetch(invoicesUrl, {
       method: 'GET',
@@ -235,7 +251,7 @@ async function handleOrderTracking(req: NextRequest) {
     console.log('🔄 Fetching tracking for order:', orderId);
     
     // Call WordPress custom API
-    const trackingUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/custom/v1/tracking/${orderId}`;
+    const trackingUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/tracking/${orderId}`;
     
     const response = await fetch(trackingUrl, {
       method: 'GET',
@@ -291,7 +307,7 @@ async function handleCustomerProfileUpdate(body: any) {
     // 1) Update via custom WP endpoint (best-effort)
     let customerFromCustom: any = null;
     try {
-      const updateUrl = 'https://qvwltjhdjw.cfolks.pl/wp-json/custom/v1/customer/update-profile';
+      const updateUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/customer/update-profile`;
       const response = await fetch(updateUrl, {
         method: 'POST',
         headers: {
@@ -409,7 +425,7 @@ async function handleCustomerPasswordChange(body: any) {
     console.log('🔄 Changing customer password:', customer_id);
     
     // Call WordPress custom API
-    const changePasswordUrl = 'https://qvwltjhdjw.cfolks.pl/wp-json/custom/v1/customer/change-password';
+    const changePasswordUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/customer/change-password`;
     
     const response = await fetch(changePasswordUrl, {
       method: 'POST',
@@ -635,7 +651,7 @@ async function handleAttributesEndpoint(req: NextRequest) {
 
   try {
     // PRO Architecture: WordPress robi całe filtrowanie atrybutów
-    const attributesUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-shop/v1/attributes?${searchParams.toString()}`;
+    const attributesUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/attributes?${searchParams.toString()}`;
     
     console.log('🏷️ Attributes endpoint - calling King Shop API:', attributesUrl);
     
@@ -693,7 +709,7 @@ async function handleShopEndpoint(req: NextRequest) {
   try {
     // PRO Architecture: WordPress robi całe filtrowanie
     // Next.js tylko przekazuje parametry i cache'uje odpowiedź
-    const shopUrl = `https://qvwltjhdjw.cfolks.pl/wp-json/king-shop/v1/data?${searchParams.toString()}`;
+    const shopUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/data?${searchParams.toString()}`;
     
     console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
     
@@ -1412,7 +1428,7 @@ export async function POST(req: NextRequest) {
     console.log('🔄 Using standard WooCommerce endpoint:', endpoint);
 
 
-    const url = new URL(`${WC_URL?.replace(/\/$/, "") || 'https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3'}/${endpoint}`);
+    const url = new URL(`${WC_URL?.replace(/\/$/, "") || `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3`}/${endpoint}`);
     url.searchParams.set("consumer_key", CK || '');
     url.searchParams.set("consumer_secret", CS || '');
     

@@ -188,9 +188,10 @@ class AdvancedAnalytics {
       try {
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
+            const fidEntry = entry as PerformanceEventTiming;
             this.trackEvent('web_vitals', {
               metric_name: 'FID',
-              metric_value: Math.round(entry.processingStart - entry.startTime),
+              metric_value: Math.round(fidEntry.processingStart - fidEntry.startTime),
               page_location: window.location.href,
             });
           }
@@ -243,7 +244,7 @@ class AdvancedAnalytics {
         this.trackEvent('api_error', {
           api_url: args[0],
           response_time: Math.round(endTime - startTime),
-          error_message: error.message,
+          error_message: error instanceof Error ? error.message : String(error),
         });
         throw error;
       }
@@ -350,14 +351,14 @@ class AdvancedAnalytics {
 
   private sendToGA4(eventName: string, parameters: Record<string, any>): void {
     // Send to Google Analytics 4 if gtag is available
-    if (typeof gtag !== 'undefined') {
-      gtag('event', eventName, parameters);
+    if (typeof window !== 'undefined' && 'gtag' in window) {
+      (window as any).gtag('event', eventName, parameters);
     }
   }
 
   private sendEcommerceToGA4(event: EcommerceEvent): void {
-    if (typeof gtag !== 'undefined') {
-      gtag('event', event.event_name, {
+    if (typeof window !== 'undefined' && 'gtag' in window) {
+      (window as any).gtag('event', event.event_name, {
         transaction_id: event.ecommerce.transaction_id,
         value: event.ecommerce.value,
         currency: event.ecommerce.currency || 'PLN',
@@ -402,8 +403,8 @@ class AdvancedAnalytics {
     localStorage.setItem('user_id', userId);
     
     // Send to GA4
-    if (typeof gtag !== 'undefined') {
-      gtag('config', 'GA_MEASUREMENT_ID', {
+    if (typeof window !== 'undefined' && 'gtag' in window && process.env.NEXT_PUBLIC_GA4_ID) {
+      (window as any).gtag('config', process.env.NEXT_PUBLIC_GA4_ID, {
         user_id: userId,
       });
     }
