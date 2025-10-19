@@ -58,6 +58,8 @@ export default function SettingsPage() {
 
   const [showSecrets, setShowSecrets] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [nodeVersion, setNodeVersion] = useState('');
+  const [platform, setPlatform] = useState('');
 
   // Load environment variables after hydration
   useEffect(() => {
@@ -83,6 +85,10 @@ export default function SettingsPage() {
         corsEnabled: true
       }
     });
+    
+    // Set Node.js version and platform after hydration
+    setNodeVersion(process.version);
+    setPlatform(process.platform);
   }, []);
 
   const handleSave = async () => {
@@ -394,11 +400,11 @@ export default function SettingsPage() {
             </div>
             <div>
               <Label>Node.js Version</Label>
-              <div className="text-sm text-gray-600">{process.version}</div>
+              <div className="text-sm text-gray-600">{nodeVersion || 'Loading...'}</div>
             </div>
             <div>
               <Label>Platform</Label>
-              <div className="text-sm text-gray-600">{process.platform}</div>
+              <div className="text-sm text-gray-600">{platform || 'Loading...'}</div>
             </div>
           </div>
         </CardContent>
