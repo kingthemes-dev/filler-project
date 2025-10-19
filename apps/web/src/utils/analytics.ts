@@ -484,13 +484,37 @@ export class ErrorTracker {
   }
 
   private sendToErrorService(errorData: any) {
-    // TODO: Implement external error tracking service (Sentry, LogRocket, etc.)
-    // Example:
-    // fetch('/api/errors', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(errorData)
-    // });
+    // Send to Sentry if available
+    if (typeof window !== 'undefined' && (window as any).Sentry) {
+      (window as any).Sentry.captureException(new Error(errorData.message), {
+        tags: {
+          component: errorData.component,
+          type: errorData.type,
+          severity: this.getErrorSeverity(errorData)
+        },
+        extra: {
+          stack: errorData.stack,
+          url: errorData.url,
+          userAgent: errorData.user_agent,
+          timestamp: errorData.timestamp
+        }
+      });
+    }
+
+    // Send to custom error tracking endpoint
+    if (process.env.NODE_ENV === 'production') {
+      fetch('/api/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...errorData,
+          service: 'headless-woo',
+          version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'
+        })
+      }).catch(() => {
+        // Ignore errors in error reporting
+      });
+    }
   }
 }
 

@@ -1,472 +1,472 @@
 /**
- * Advanced Analytics System (Free Implementation)
- * Enhanced GA4 tracking with custom events and metrics
+ * Advanced Analytics with Custom Dashboards
+ * Free analytics implementation with detailed insights
  */
 
-interface AnalyticsEvent {
-  event_name: string;
-  parameters: Record<string, any>;
-  timestamp: string;
-  user_id?: string;
-  session_id: string;
-}
+import { logger } from './logger';
+import { telemetry } from './telemetry';
 
-interface EcommerceEvent {
-  event_name: 'purchase' | 'add_to_cart' | 'remove_from_cart' | 'view_item' | 'begin_checkout';
-  ecommerce: {
-    transaction_id?: string;
-    value?: number;
-    currency?: string;
-    items: Array<{
-      item_id: string;
-      item_name: string;
-      item_category: string;
-      quantity?: number;
-      price?: number;
-    }>;
-  };
-  parameters?: Record<string, any>;
-}
+// Analytics configuration
+export const ADVANCED_ANALYTICS_CONFIG = {
+  enabled: true,
+  sessionTimeout: 30 * 60 * 1000, // 30 minutes
+  maxEventsPerSession: 1000,
+  batchSize: 10,
+  flushInterval: 5000 // 5 seconds
+};
 
-interface PerformanceEvent {
-  event_name: 'web_vitals' | 'page_load' | 'api_response';
-  metrics: {
-    lcp?: number;
-    fid?: number;
-    cls?: number;
-    page_load_time?: number;
-    api_response_time?: number;
-  };
-  parameters?: Record<string, any>;
-}
+// Event types for advanced tracking
+export const ADVANCED_EVENT_TYPES = {
+  // E-commerce events
+  PRODUCT_VIEW: 'product_view',
+  PRODUCT_CLICK: 'product_click',
+  ADD_TO_CART: 'add_to_cart',
+  REMOVE_FROM_CART: 'remove_from_cart',
+  CART_ABANDONMENT: 'cart_abandonment',
+  CHECKOUT_START: 'checkout_start',
+  CHECKOUT_STEP: 'checkout_step',
+  CHECKOUT_COMPLETE: 'checkout_complete',
+  PAYMENT_METHOD_SELECTED: 'payment_method_selected',
+  SHIPPING_METHOD_SELECTED: 'shipping_method_selected',
+  
+  // User behavior events
+  SEARCH_PERFORMED: 'search_performed',
+  FILTER_APPLIED: 'filter_applied',
+  SORT_CHANGED: 'sort_changed',
+  PAGE_SCROLL: 'page_scroll',
+  TIME_ON_PAGE: 'time_on_page',
+  EXIT_INTENT: 'exit_intent',
+  
+  // Performance events
+  PAGE_LOAD_TIME: 'page_load_time',
+  API_RESPONSE_TIME: 'api_response_time',
+  IMAGE_LOAD_TIME: 'image_load_time',
+  BUNDLE_SIZE: 'bundle_size',
+  
+  // Error events
+  JAVASCRIPT_ERROR: 'javascript_error',
+  API_ERROR: 'api_error',
+  NETWORK_ERROR: 'network_error',
+  
+  // Business events
+  NEWSLETTER_SIGNUP: 'newsletter_signup',
+  CONTACT_FORM_SUBMIT: 'contact_form_submit',
+  REVIEW_SUBMITTED: 'review_submitted',
+  WISHLIST_ADD: 'wishlist_add',
+  WISHLIST_REMOVE: 'wishlist_remove'
+} as const;
 
-class AdvancedAnalytics {
+// Advanced Analytics class
+export class AdvancedAnalytics {
+  private events: any[] = [];
   private sessionId: string;
+  private sessionStart: number;
+  private lastActivity: number;
   private userId?: string;
-  private eventQueue: AnalyticsEvent[] = [];
-  private maxQueueSize = 20;
-  private flushInterval = 10000; // 10 seconds
+  private userProperties: Record<string, any> = {};
+  private customDimensions: Record<string, any> = {};
+  private isInitialized: boolean = false;
 
   constructor() {
     this.sessionId = this.generateSessionId();
-    this.setupAutomaticTracking();
-    this.startPeriodicFlush();
-    this.setupUserIdentification();
+    this.sessionStart = Date.now();
+    this.lastActivity = Date.now();
+    this.initialize();
   }
 
-  private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
+  private initialize() {
+    if (!ADVANCED_ANALYTICS_CONFIG.enabled) return;
 
-  private setupAutomaticTracking(): void {
-    // Page view tracking
-    this.trackPageView();
+    // Track session start
+    this.trackEvent(ADVANCED_EVENT_TYPES.PAGE_VIEW, {
+      page_path: window.location.pathname,
+      page_title: document.title,
+      referrer: document.referrer,
+      session_id: this.sessionId
+    });
+
+    // Setup event batching
+    this.setupEventBatching();
     
-    // User interaction tracking
-    this.setupInteractionTracking();
+    // Setup session tracking
+    this.setupSessionTracking();
     
-    // Performance tracking
+    // Setup performance tracking
     this.setupPerformanceTracking();
     
-    // Error tracking integration
+    // Setup error tracking
     this.setupErrorTracking();
+
+    this.isInitialized = true;
+    logger.info('Advanced Analytics initialized', { sessionId: this.sessionId });
   }
 
-  private trackPageView(): void {
-    // Track initial page view
-    this.trackEvent('page_view', {
-      page_title: document.title,
-      page_location: window.location.href,
-      page_path: window.location.pathname,
-      referrer: document.referrer,
-    });
+  // Track custom event
+  trackEvent(eventType: string, properties: Record<string, any> = {}) {
+    if (!this.isInitialized) return;
 
-    // Track page views on navigation (for SPA)
-    let lastUrl = window.location.href;
-    const observer = new MutationObserver(() => {
-      if (window.location.href !== lastUrl) {
-        this.trackEvent('page_view', {
-          page_title: document.title,
-          page_location: window.location.href,
-          page_path: window.location.pathname,
-          referrer: lastUrl,
-        });
-        lastUrl = window.location.href;
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-  private setupInteractionTracking(): void {
-    // Button clicks
-    document.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
-      const button = target.closest('button, a[href], [role="button"]');
-      
-      if (button) {
-        const buttonText = button.textContent?.trim() || '';
-        const buttonId = button.id || '';
-        const buttonClass = button.className || '';
-        
-        this.trackEvent('click', {
-          element_type: button.tagName.toLowerCase(),
-          element_text: buttonText,
-          element_id: buttonId,
-          element_class: buttonClass,
-          page_location: window.location.href,
-        });
-      }
-    });
-
-    // Form submissions
-    document.addEventListener('submit', (event) => {
-      const form = event.target as HTMLFormElement;
-      const formId = form.id || '';
-      const formClass = form.className || '';
-      
-      this.trackEvent('form_submit', {
-        form_id: formId,
-        form_class: formClass,
-        page_location: window.location.href,
-      });
-    });
-
-    // Search queries
-    document.addEventListener('input', (event) => {
-      const target = event.target as HTMLInputElement;
-      if (target.type === 'search' || target.placeholder?.toLowerCase().includes('search')) {
-        const searchTerm = target.value;
-        if (searchTerm.length > 2) {
-          this.trackEvent('search', {
-            search_term: searchTerm,
-            page_location: window.location.href,
-          });
-        }
-      }
-    });
-  }
-
-  private setupPerformanceTracking(): void {
-    // Web Vitals tracking
-    this.trackWebVitals();
-    
-    // Page load time
-    window.addEventListener('load', () => {
-      const loadTime = performance.now();
-      this.trackEvent('page_load_time', {
-        load_time: Math.round(loadTime),
-        page_location: window.location.href,
-      });
-    });
-
-    // API response times
-    this.trackApiPerformance();
-  }
-
-  private trackWebVitals(): void {
-    // Largest Contentful Paint
-    if ('PerformanceObserver' in window) {
-      try {
-        const observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (entry.entryType === 'largest-contentful-paint') {
-              this.trackEvent('web_vitals', {
-                metric_name: 'LCP',
-                metric_value: Math.round(entry.startTime),
-                page_location: window.location.href,
-              });
-            }
-          }
-        });
-        observer.observe({ entryTypes: ['largest-contentful-paint'] });
-      } catch (error) {
-        console.warn('LCP tracking not supported:', error);
-      }
-
-      // First Input Delay
-      try {
-        const observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            const fidEntry = entry as PerformanceEventTiming;
-            this.trackEvent('web_vitals', {
-              metric_name: 'FID',
-              metric_value: Math.round(fidEntry.processingStart - fidEntry.startTime),
-              page_location: window.location.href,
-            });
-          }
-        });
-        observer.observe({ entryTypes: ['first-input'] });
-      } catch (error) {
-        console.warn('FID tracking not supported:', error);
-      }
-
-      // Cumulative Layout Shift
-      try {
-        let clsValue = 0;
-        const observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (!(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
-            }
-          }
-          this.trackEvent('web_vitals', {
-            metric_name: 'CLS',
-            metric_value: Math.round(clsValue * 1000) / 1000,
-            page_location: window.location.href,
-          });
-        });
-        observer.observe({ entryTypes: ['layout-shift'] });
-      } catch (error) {
-        console.warn('CLS tracking not supported:', error);
-      }
-    }
-  }
-
-  private trackApiPerformance(): void {
-    const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
-      const startTime = performance.now();
-      try {
-        const response = await originalFetch(...args);
-        const endTime = performance.now();
-        
-        this.trackEvent('api_response', {
-          api_url: args[0],
-          response_time: Math.round(endTime - startTime),
-          status_code: response.status,
-          method: args[1]?.method || 'GET',
-        });
-        
-        return response;
-      } catch (error) {
-        const endTime = performance.now();
-        this.trackEvent('api_error', {
-          api_url: args[0],
-          response_time: Math.round(endTime - startTime),
-          error_message: error instanceof Error ? error.message : String(error),
-        });
-        throw error;
+    const event = {
+      event_type: eventType,
+      properties: {
+        ...properties,
+        session_id: this.sessionId,
+        user_id: this.userId,
+        timestamp: new Date().toISOString(),
+        page_path: window.location.pathname,
+        user_agent: navigator.userAgent,
+        screen_resolution: `${screen.width}x${screen.height}`,
+        viewport_size: `${window.innerWidth}x${window.innerHeight}`,
+        ...this.customDimensions
       }
     };
+
+    this.events.push(event);
+    this.lastActivity = Date.now();
+
+    // Track in telemetry
+    telemetry.trackMetric(`analytics.${eventType}`, 1, {
+      session_id: this.sessionId,
+      ...properties
+    });
+
+    logger.info('Advanced event tracked', { eventType, properties });
   }
 
-  private setupErrorTracking(): void {
-    // Integration with error tracker
+  // E-commerce tracking
+  trackProductView(product: {
+    id: string;
+    name: string;
+    category: string;
+    price: number;
+    currency: string;
+    brand?: string;
+    position?: number;
+  }) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.PRODUCT_VIEW, {
+      product_id: product.id,
+      product_name: product.name,
+      product_category: product.category,
+      product_price: product.price,
+      product_currency: product.currency,
+      product_brand: product.brand,
+      product_position: product.position
+    });
+  }
+
+  trackAddToCart(item: {
+    product_id: string;
+    product_name: string;
+    category: string;
+    price: number;
+    currency: string;
+    quantity: number;
+    cart_total?: number;
+  }) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.ADD_TO_CART, {
+      product_id: item.product_id,
+      product_name: item.product_name,
+      product_category: item.category,
+      product_price: item.price,
+      product_currency: item.currency,
+      quantity: item.quantity,
+      cart_total: item.cart_total,
+      value: item.price * item.quantity
+    });
+  }
+
+  trackCheckoutStep(step: number, stepName: string, value?: number) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.CHECKOUT_STEP, {
+      step_number: step,
+      step_name: stepName,
+      value: value
+    });
+  }
+
+  trackPurchase(transaction: {
+    transaction_id: string;
+    value: number;
+    currency: string;
+    items: Array<{
+      product_id: string;
+      product_name: string;
+      category: string;
+      price: number;
+      quantity: number;
+    }>;
+    payment_method?: string;
+    shipping_method?: string;
+  }) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.CHECKOUT_COMPLETE, {
+      transaction_id: transaction.transaction_id,
+      value: transaction.value,
+      currency: transaction.currency,
+      items: transaction.items,
+      payment_method: transaction.payment_method,
+      shipping_method: transaction.shipping_method,
+      item_count: transaction.items.length
+    });
+  }
+
+  // User behavior tracking
+  trackSearch(query: string, resultsCount: number, filters?: Record<string, any>) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.SEARCH_PERFORMED, {
+      search_query: query,
+      results_count: resultsCount,
+      filters: filters
+    });
+  }
+
+  trackFilterApplied(filterType: string, filterValue: any, resultsCount: number) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.FILTER_APPLIED, {
+      filter_type: filterType,
+      filter_value: filterValue,
+      results_count: resultsCount
+    });
+  }
+
+  trackSortChanged(sortBy: string, sortOrder: string, resultsCount: number) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.SORT_CHANGED, {
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      results_count: resultsCount
+    });
+  }
+
+  // Performance tracking
+  trackPageLoadTime(loadTime: number, page: string) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.PAGE_LOAD_TIME, {
+      load_time: loadTime,
+      page: page
+    });
+  }
+
+  trackApiResponseTime(endpoint: string, responseTime: number, statusCode: number) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.API_RESPONSE_TIME, {
+      endpoint: endpoint,
+      response_time: responseTime,
+      status_code: statusCode
+    });
+  }
+
+  trackImageLoadTime(imageUrl: string, loadTime: number) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.IMAGE_LOAD_TIME, {
+      image_url: imageUrl,
+      load_time: loadTime
+    });
+  }
+
+  // Error tracking
+  trackError(error: Error, context: Record<string, any> = {}) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.JAVASCRIPT_ERROR, {
+      error_message: error.message,
+      error_stack: error.stack,
+      error_type: error.constructor.name,
+      ...context
+    });
+  }
+
+  trackApiError(endpoint: string, statusCode: number, errorMessage: string) {
+    this.trackEvent(ADVANCED_EVENT_TYPES.API_ERROR, {
+      endpoint: endpoint,
+      status_code: statusCode,
+      error_message: errorMessage
+    });
+  }
+
+  // User identification
+  setUserId(userId: string) {
+    this.userId = userId;
+    this.trackEvent('user_identified', {
+      user_id: userId
+    });
+  }
+
+  setUserProperties(properties: Record<string, any>) {
+    this.userProperties = { ...this.userProperties, ...properties };
+    this.trackEvent('user_properties_updated', {
+      properties: properties
+    });
+  }
+
+  setCustomDimension(key: string, value: any) {
+    this.customDimensions[key] = value;
+  }
+
+  // Session management
+  private setupSessionTracking() {
+    // Track session timeout
+    setInterval(() => {
+      if (Date.now() - this.lastActivity > ADVANCED_ANALYTICS_CONFIG.sessionTimeout) {
+        this.endSession();
+        this.startNewSession();
+      }
+    }, 60000); // Check every minute
+
+    // Track page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.trackEvent('page_hidden', {
+          time_on_page: Date.now() - this.sessionStart
+        });
+      } else {
+        this.trackEvent('page_visible', {
+          time_away: Date.now() - this.lastActivity
+        });
+        this.lastActivity = Date.now();
+      }
+    });
+
+    // Track beforeunload
+    window.addEventListener('beforeunload', () => {
+      this.endSession();
+    });
+  }
+
+  private startNewSession() {
+    this.sessionId = this.generateSessionId();
+    this.sessionStart = Date.now();
+    this.lastActivity = Date.now();
+    this.events = [];
+    
+    this.trackEvent('session_start', {
+      session_id: this.sessionId
+    });
+  }
+
+  private endSession() {
+    const sessionDuration = Date.now() - this.sessionStart;
+    
+    this.trackEvent('session_end', {
+      session_id: this.sessionId,
+      session_duration: sessionDuration,
+      events_count: this.events.length,
+      page_views: this.events.filter(e => e.event_type === ADVANCED_EVENT_TYPES.PAGE_VIEW).length
+    });
+
+    // Flush remaining events
+    this.flushEvents();
+  }
+
+  // Performance tracking setup
+  private setupPerformanceTracking() {
+    // Track page load performance
+    window.addEventListener('load', () => {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      
+      this.trackPageLoadTime(
+        navigation.loadEventEnd - navigation.fetchStart,
+        window.location.pathname
+      );
+    });
+
+    // Track image load performance
+    const images = document.querySelectorAll('img');
+    images.forEach(img => {
+      img.addEventListener('load', () => {
+        const loadTime = performance.now();
+        this.trackImageLoadTime(img.src, loadTime);
+      });
+    });
+  }
+
+  // Error tracking setup
+  private setupErrorTracking() {
     window.addEventListener('error', (event) => {
-      this.trackEvent('javascript_error', {
-        error_message: event.message,
-        error_filename: event.filename,
-        error_lineno: event.lineno,
-        error_colno: event.colno,
-        page_location: window.location.href,
+      this.trackError(event.error, {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
       });
     });
 
     window.addEventListener('unhandledrejection', (event) => {
-      this.trackEvent('promise_rejection', {
-        error_reason: event.reason,
-        page_location: window.location.href,
+      this.trackError(new Error(event.reason), {
+        type: 'unhandled_promise_rejection'
       });
     });
   }
 
-  private setupUserIdentification(): void {
-    // Try to get user ID from various sources
-    const userId = this.getUserId();
-    if (userId) {
-      this.setUserId(userId);
-    }
-  }
-
-  private getUserId(): string | null {
-    // Check localStorage
-    const storedUserId = localStorage.getItem('user_id');
-    if (storedUserId) return storedUserId;
-
-    // Check sessionStorage
-    const sessionUserId = sessionStorage.getItem('user_id');
-    if (sessionUserId) return sessionUserId;
-
-    // Check for authentication tokens
-    const authToken = localStorage.getItem('auth_token');
-    if (authToken) {
-      try {
-        const payload = JSON.parse(atob(authToken.split('.')[1]));
-        return payload.user_id || payload.sub || null;
-      } catch (error) {
-        console.warn('Failed to parse auth token:', error);
-      }
-    }
-
-    return null;
-  }
-
-  public trackEvent(eventName: string, parameters: Record<string, any> = {}): void {
-    const event: AnalyticsEvent = {
-      event_name: eventName,
-      parameters: {
-        ...parameters,
-        session_id: this.sessionId,
-        timestamp: new Date().toISOString(),
-      },
-      timestamp: new Date().toISOString(),
-      user_id: this.userId,
-      session_id: this.sessionId,
-    };
-
-    // Add to queue
-    this.eventQueue.push(event);
-
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Analytics] ${eventName}:`, parameters);
-    }
-
-    // Flush if queue is full
-    if (this.eventQueue.length >= this.maxQueueSize) {
+  // Event batching
+  private setupEventBatching() {
+    setInterval(() => {
       this.flushEvents();
-    }
-
-    // Send to GA4 if available
-    this.sendToGA4(eventName, parameters);
+    }, ADVANCED_ANALYTICS_CONFIG.flushInterval);
   }
 
-  public trackEcommerce(event: EcommerceEvent): void {
-    this.trackEvent(event.event_name, {
-      ...event.parameters,
-      ecommerce: event.ecommerce,
-    });
+  private flushEvents() {
+    if (this.events.length === 0) return;
 
-    // Send to GA4 ecommerce
-    this.sendEcommerceToGA4(event);
+    const eventsToFlush = this.events.splice(0, ADVANCED_ANALYTICS_CONFIG.batchSize);
+    
+    // Send events to analytics endpoint
+    this.sendEvents(eventsToFlush);
   }
 
-  public trackPerformance(event: PerformanceEvent): void {
-    this.trackEvent(event.event_name, {
-      ...event.parameters,
-      metrics: event.metrics,
-    });
-  }
-
-  private sendToGA4(eventName: string, parameters: Record<string, any>): void {
-    // Send to Google Analytics 4 if gtag is available
-    if (typeof window !== 'undefined' && 'gtag' in window) {
-      (window as any).gtag('event', eventName, parameters);
-    }
-  }
-
-  private sendEcommerceToGA4(event: EcommerceEvent): void {
-    if (typeof window !== 'undefined' && 'gtag' in window) {
-      (window as any).gtag('event', event.event_name, {
-        transaction_id: event.ecommerce.transaction_id,
-        value: event.ecommerce.value,
-        currency: event.ecommerce.currency || 'PLN',
-        items: event.ecommerce.items,
-        ...event.parameters,
-      });
-    }
-  }
-
-  private async flushEvents(): Promise<void> {
-    if (this.eventQueue.length === 0) return;
-
-    const events = [...this.eventQueue];
-    this.eventQueue = [];
-
+  private async sendEvents(events: any[]) {
     try {
       await fetch('/api/analytics', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          type: 'events',
-          data: events,
-        }),
+          events: events,
+          session_id: this.sessionId,
+          user_id: this.userId,
+          timestamp: new Date().toISOString()
+        })
       });
     } catch (error) {
-      console.warn('Failed to flush analytics events:', error);
+      logger.error('Failed to send analytics events', { error });
       // Re-add events to queue for retry
-      this.eventQueue.unshift(...events);
+      this.events.unshift(...events);
     }
   }
 
-  private startPeriodicFlush(): void {
-    setInterval(() => {
-      this.flushEvents();
-    }, this.flushInterval);
+  // Utility methods
+  private generateSessionId(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   }
 
-  public setUserId(userId: string): void {
-    this.userId = userId;
-    localStorage.setItem('user_id', userId);
-    
-    // Send to GA4
-    if (typeof window !== 'undefined' && 'gtag' in window && process.env.NEXT_PUBLIC_GA4_ID) {
-      (window as any).gtag('config', process.env.NEXT_PUBLIC_GA4_ID, {
-        user_id: userId,
-      });
-    }
-  }
-
-  public getSessionId(): string {
-    return this.sessionId;
-  }
-
-  public getStats(): { events: number; sessionId: string; userId?: string } {
+  // Get analytics data
+  getAnalyticsData() {
     return {
-      events: this.eventQueue.length,
       sessionId: this.sessionId,
+      sessionStart: this.sessionStart,
+      lastActivity: this.lastActivity,
       userId: this.userId,
+      eventsCount: this.events.length,
+      userProperties: this.userProperties,
+      customDimensions: this.customDimensions
     };
   }
 
-  // Ecommerce helpers
-  public trackPurchase(transactionId: string, value: number, items: any[], currency = 'PLN'): void {
-    this.trackEcommerce({
-      event_name: 'purchase',
-      ecommerce: {
-        transaction_id: transactionId,
-        value,
-        currency,
-        items,
-      },
-    });
-  }
-
-  public trackAddToCart(itemId: string, itemName: string, itemCategory: string, price: number, quantity = 1): void {
-    this.trackEcommerce({
-      event_name: 'add_to_cart',
-      ecommerce: {
-        items: [{
-          item_id: itemId,
-          item_name: itemName,
-          item_category: itemCategory,
-          price,
-          quantity,
-        }],
-      },
-    });
-  }
-
-  public trackViewItem(itemId: string, itemName: string, itemCategory: string, price: number): void {
-    this.trackEcommerce({
-      event_name: 'view_item',
-      ecommerce: {
-        items: [{
-          item_id: itemId,
-          item_name: itemName,
-          item_category: itemCategory,
-          price,
-        }],
-      },
-    });
+  // Export analytics data
+  exportAnalyticsData() {
+    return {
+      session: this.getAnalyticsData(),
+      events: this.events,
+      timestamp: new Date().toISOString()
+    };
   }
 }
 
-// Create global instance
-export const analytics = new AdvancedAnalytics();
+// Create singleton instance
+export const advancedAnalytics = new AdvancedAnalytics();
 
-// Export for manual usage
-export { AdvancedAnalytics };
+// React hooks for analytics
+export function useAnalytics() {
+  return {
+    trackEvent: advancedAnalytics.trackEvent.bind(advancedAnalytics),
+    trackProductView: advancedAnalytics.trackProductView.bind(advancedAnalytics),
+    trackAddToCart: advancedAnalytics.trackAddToCart.bind(advancedAnalytics),
+    trackSearch: advancedAnalytics.trackSearch.bind(advancedAnalytics),
+    trackFilterApplied: advancedAnalytics.trackFilterApplied.bind(advancedAnalytics),
+    trackError: advancedAnalytics.trackError.bind(advancedAnalytics),
+    setUserId: advancedAnalytics.setUserId.bind(advancedAnalytics),
+    setUserProperties: advancedAnalytics.setUserProperties.bind(advancedAnalytics),
+    setCustomDimension: advancedAnalytics.setCustomDimension.bind(advancedAnalytics)
+  };
+}
+
+export default advancedAnalytics;
