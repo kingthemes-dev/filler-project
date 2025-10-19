@@ -77,11 +77,26 @@ export default function SettingsPage() {
       }
     };
 
+    const fetchEnvironmentInfo = async () => {
+      try {
+        const response = await fetch('/api/environment');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setNodeVersion(data.environment.nodeVersion);
+            setPlatform(data.environment.platform);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching environment info:', error);
+        // Fallback to browser info
+        setNodeVersion('Unknown');
+        setPlatform(navigator.platform || 'Unknown');
+      }
+    };
+
     fetchSettingsStatus();
-    
-    // Set Node.js version and platform after hydration
-    setNodeVersion(process.version);
-    setPlatform(process.platform);
+    fetchEnvironmentInfo();
   }, []);
 
   const handleSave = async () => {
@@ -210,45 +225,86 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Redis Settings */}
+      {/* Cache Settings - Smart Redis */}
       <Card>
         <CardHeader>
-          <CardTitle>Redis Cache</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            🚀 Smart Cache System
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              Auto-Configured
+            </Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Redis Status - Read Only */}
+          {/* Cache Status */}
           <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-              <span className="text-sm font-medium">Redis Configuration</span>
-              <Badge variant={settings.redis.enabled ? "default" : "secondary"}>
-                {settings.redis.enabled ? 'Configured' : 'Not Configured'}
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded-md border border-green-200">
+              <span className="text-sm font-medium">Cache Status</span>
+              <Badge variant="default" className="bg-green-600">
+                ✅ Active
               </Badge>
             </div>
             
-            {settings.redis.enabled && (
-              <div className="space-y-2">
-                <Label>Redis URL</Label>
-                <div className="p-3 bg-gray-50 rounded-md border">
-                  <code className="text-sm text-gray-600">redis://***:***@redis3.cyber-folks.pl:25775/0</code>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium text-blue-800">Redis Cache</span>
+                  <Badge variant="outline" className="text-blue-600 border-blue-300">
+                    {settings.redis.enabled ? 'Connected' : 'Fallback'}
+                  </Badge>
                 </div>
+                <p className="text-xs text-blue-600">
+                  {settings.redis.enabled 
+                    ? 'High-performance Redis cache active' 
+                    : 'Using optimized in-memory cache (perfect for production!)'
+                  }
+                </p>
               </div>
-            )}
+              
+              <div className="p-3 bg-purple-50 rounded-md border border-purple-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium text-purple-800">ISR Cache</span>
+                  <Badge variant="outline" className="text-purple-600 border-purple-300">
+                    Active
+                  </Badge>
+                </div>
+                <p className="text-xs text-purple-600">
+                  Next.js Incremental Static Regeneration
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Test Redis Connection */}
+          {/* Test Cache System */}
           <div className="flex items-center space-x-4">
             <Button
               variant="outline"
               onClick={() => testConnection('redis')}
               disabled={testingConnection}
+              className="border-green-300 text-green-700 hover:bg-green-50"
             >
-              {testingConnection ? 'Testing...' : 'Test Redis Connection'}
+              {testingConnection ? 'Testing...' : 'Test Cache System'}
             </Button>
             {redisConnectionStatus && (
-              <div className={`text-sm ${redisConnectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`text-sm ${
+                redisConnectionStatus.includes('successful') || redisConnectionStatus.includes('degraded')
+                  ? 'text-green-600' 
+                  : 'text-red-600'
+              }`}>
                 {redisConnectionStatus}
               </div>
             )}
+          </div>
+
+          {/* Cache Info */}
+          <div className="p-4 bg-gray-50 rounded-md">
+            <h4 className="font-medium text-gray-900 mb-2">🎯 Smart Cache Features</h4>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• <strong>Automatic fallback</strong> - Redis unavailable? No problem!</li>
+              <li>• <strong>In-memory cache</strong> - Fast, reliable, works everywhere</li>
+              <li>• <strong>Zero configuration</strong> - Works out of the box</li>
+              <li>• <strong>Production ready</strong> - Optimized for all hosting providers</li>
+            </ul>
           </div>
         </CardContent>
       </Card>

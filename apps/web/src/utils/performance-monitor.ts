@@ -117,7 +117,7 @@ class PerformanceMonitor {
   }
 
   private setupWebVitalsMonitoring(): void {
-    if (!('PerformanceObserver' in window)) return;
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
 
     // Largest Contentful Paint
     try {
@@ -191,6 +191,8 @@ class PerformanceMonitor {
   }
 
   private setupPageLoadMonitoring(): void {
+    if (typeof window === 'undefined') return;
+    
     // Page load time
     window.addEventListener('load', () => {
       const loadTime = performance.now();
@@ -230,6 +232,8 @@ class PerformanceMonitor {
   }
 
   private setupApiMonitoring(): void {
+    if (typeof window === 'undefined') return;
+    
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       const startTime = performance.now();
@@ -269,6 +273,8 @@ class PerformanceMonitor {
   }
 
   private setupBundleSizeMonitoring(): void {
+    if (typeof window === 'undefined') return;
+    
     // Monitor JavaScript bundle sizes
     if (performance.getEntriesByType) {
       const scripts = performance.getEntriesByType('resource').filter(
@@ -291,6 +297,8 @@ class PerformanceMonitor {
   }
 
   private setupMemoryMonitoring(): void {
+    if (typeof window === 'undefined') return;
+    
     // Memory usage monitoring (if available)
     if ('memory' in performance) {
       const memory = (performance as any).memory;
@@ -311,6 +319,8 @@ class PerformanceMonitor {
   }
 
   private setupNetworkMonitoring(): void {
+    if (typeof window === 'undefined') return;
+    
     // Network connection monitoring
     if ('connection' in navigator) {
       const connection = (navigator as any).connection;
@@ -358,7 +368,7 @@ class PerformanceMonitor {
 
   private recordMetric(metric: PerformanceMetric): void {
     // Add URL and timestamp if not provided
-    metric.url = metric.url || window.location.href;
+    metric.url = metric.url || (typeof window !== 'undefined' ? window.location.href : 'server');
     metric.timestamp = metric.timestamp || new Date().toISOString();
 
     // Add to metrics array
@@ -444,7 +454,7 @@ class PerformanceMonitor {
 
   public generateReport(): PerformanceReport {
     const timestamp = new Date().toISOString();
-    const url = window.location.href;
+    const url = typeof window !== 'undefined' ? window.location.href : 'server';
     
     // Check budgets against recent metrics
     const budgetResults = this.budgets.map(budget => {
