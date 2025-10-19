@@ -41,6 +41,7 @@ export async function csrfMiddleware(request: NextRequest) {
     '/api/error-tracking',
     '/api/cache/',
     '/api/revalidate',
+    '/api/webhooks', // WooCommerce webhooks
   ];
 
   if (skipPaths.some(path => pathname.startsWith(path))) {

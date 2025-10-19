@@ -10,7 +10,4 @@ export * from './analytics';
 export * from './backup';
 // export * from './test-helpers'; // Removed to prevent HMR issues
 
-// Only export test-helpers in test environment
-if (process.env.NODE_ENV === 'test') {
-  export * from './test-helpers';
-}
+// Test helpers are conditionally imported in test files

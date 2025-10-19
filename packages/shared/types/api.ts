@@ -187,9 +187,17 @@ export interface CartItem {
   id: number;
   name: string;
   price: number;
+  regular_price?: number;
+  sale_price?: number;
   quantity: number;
   image?: string;
-  variation?: Record<string, any>;
+  permalink?: string;
+  attributes?: Record<string, string>;
+  variant?: {
+    id: number;
+    name: string;
+    value: string;
+  };
 }
 
 export interface CartResponse {

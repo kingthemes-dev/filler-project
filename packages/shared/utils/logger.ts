@@ -3,6 +3,7 @@
  */
 
 import { env } from '@/config/env';
+import { measurePerformance } from './performance';
 
 export enum LogLevel {
   ERROR = 0,
@@ -197,26 +198,7 @@ export const logger = new Logger();
 // Convenience exports
 export const { error, warn, info, debug, apiCall, userAction, performance, security } = logger;
 
-// Performance measurement helper
-export function measurePerformance<T>(
-  operation: string,
-  fn: () => Promise<T>
-): Promise<T> {
-  const start = Date.now();
-  
-  return fn().then(
-    (result) => {
-      const duration = Date.now() - start;
-      logger.performance(operation, duration);
-      return result;
-    },
-    (error) => {
-      const duration = Date.now() - start;
-      logger.error(`Performance error: ${operation}`, { duration, error: error.message });
-      throw error;
-    }
-  );
-}
+// measurePerformance is now imported from performance.ts to avoid duplication
 
 // API call wrapper with logging
 export async function loggedApiCall<T>(

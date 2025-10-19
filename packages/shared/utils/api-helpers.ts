@@ -5,6 +5,7 @@
 import { env } from '@/config/env';
 import { CustomError, ERROR_CODES, handleNetworkRequest } from './error-handler';
 import { RequestConfig, ApiResponse } from '@/types/api';
+import { formatPrice } from './format-price';
 
 // Base API configuration
 const API_CONFIG = {
@@ -231,12 +232,7 @@ export class SendinBlueAPI {
 }
 
 // Utility functions
-export function formatPrice(price: number, currency: string = 'PLN'): string {
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: currency
-  }).format(price / 100);
-}
+// formatPrice is now imported from format-price.ts to avoid duplication
 
 export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('pl-PL', {

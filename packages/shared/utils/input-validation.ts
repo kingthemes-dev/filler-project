@@ -3,6 +3,7 @@
  */
 
 import { CustomError, ERROR_CODES } from './error-handler';
+import { ValidationResult, validateEmail, validateNIP, validatePassword, validatePhone, validatePostalCode } from './validation';
 
 export interface ValidationRule {
   required?: boolean;
@@ -17,11 +18,7 @@ export interface ValidationSchema {
   [key: string]: ValidationRule;
 }
 
-export interface ValidationResult {
-  isValid: boolean;
-  errors: Record<string, string>;
-  sanitizedData: any;
-}
+// ValidationResult is now imported from validation.ts to avoid duplication
 
 // Common validation patterns
 export const PATTERNS = {
@@ -53,40 +50,15 @@ export function sanitizeNIP(input: string): string {
 }
 
 // Validation functions
-export function validateEmail(email: string): boolean {
-  return PATTERNS.EMAIL.test(email);
-}
+// validateEmail is now imported from validation.ts to avoid duplication
 
-export function validatePhone(phone: string): boolean {
-  const clean = sanitizePhone(phone);
-  return PATTERNS.PHONE_PL.test(clean);
-}
+// validatePhone is now imported from validation.ts to avoid duplication
 
-export function validateNIP(nip: string): boolean {
-  const clean = sanitizeNIP(nip);
-  if (!PATTERNS.NIP.test(clean)) return false;
-  
-  // NIP checksum validation
-  const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];
-  let sum = 0;
-  
-  for (let i = 0; i < 9; i++) {
-    sum += parseInt(clean[i]) * weights[i];
-  }
-  
-  const checksum = sum % 11;
-  const lastDigit = parseInt(clean[9]);
-  
-  return checksum === lastDigit;
-}
+// validateNIP is now imported from validation.ts to avoid duplication
 
-export function validatePostalCode(postcode: string): boolean {
-  return PATTERNS.POSTAL_CODE_PL.test(sanitizeString(postcode));
-}
+// validatePostalCode is now imported from validation.ts to avoid duplication
 
-export function validatePassword(password: string): boolean {
-  return PATTERNS.PASSWORD.test(password);
-}
+// validatePassword is now imported from validation.ts to avoid duplication
 
 export function validateNoHTML(input: string): boolean {
   return PATTERNS.NO_HTML.test(input);

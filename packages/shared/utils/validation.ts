@@ -3,6 +3,8 @@
 export interface ValidationResult {
   isValid: boolean;
   message?: string;
+  errors?: Record<string, string>;
+  sanitizedData?: any;
 }
 
 // NIP validation (Polish Tax Identification Number)

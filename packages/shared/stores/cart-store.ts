@@ -2,24 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import { calculatePriceWithVAT } from '@/utils/format-price';
-
-// Types
-export interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  regular_price?: number;
-  sale_price?: number;
-  quantity: number;
-  image?: string;
-  permalink?: string;
-  attributes?: Record<string, string>;
-  variant?: {
-    id: number;
-    name: string;
-    value: string;
-  };
-}
+import { CartItem } from '../types/api';
 
 export interface CartState {
   items: CartItem[];
