@@ -67,7 +67,7 @@ function validateEnv(): EnvConfig {
   
   // Validate URLs
   const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
   
   if (wordpressUrl && baseUrl) {
     try {

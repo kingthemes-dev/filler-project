@@ -45,7 +45,7 @@ const SECURITY_HEADERS = {
   ].join(', '),
 
   // Strict transport security (only in production with HTTPS)
-  ...(env.NODE_ENV === 'production' && {
+  ...(process.env.NODE_ENV === 'production' && {
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
   })
 };
@@ -85,11 +85,11 @@ export function securityMiddleware(request: NextRequest): NextResponse | null {
       return new NextResponse('Too Many Requests', { status: 429 });
     }
 
-    // IP filtering in development
-    if (env.NODE_ENV === 'development' && !ALLOWED_IPS.includes(clientIp)) {
-      logger.warn('Blocked IP in development', { ip: clientIp });
-      return new NextResponse('Forbidden', { status: 403 });
-    }
+  // IP filtering in development
+  if (process.env.NODE_ENV === 'development' && !ALLOWED_IPS.includes(clientIp)) {
+    logger.warn('Blocked IP in development', { ip: clientIp });
+    return new NextResponse('Forbidden', { status: 403 });
+  }
 
     // Log suspicious activity
     logSuspiciousActivity(request);
@@ -221,7 +221,7 @@ export function validateApiInput(data: any): any {
 
 // CORS configuration
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': env.NEXT_PUBLIC_BASE_URL,
+  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_BASE_URL || 'https://www.filler.pl',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
   'Access-Control-Max-Age': '86400',
