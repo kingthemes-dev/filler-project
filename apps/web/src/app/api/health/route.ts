@@ -1,77 +1,276 @@
-import { NextResponse } from 'next/server';
+/**
+ * Health Check Endpoint
+ * System health monitoring and diagnostics
+ */
 
-export async function GET() {
-  try {
-    // Basic health check
-    const healthData = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV,
-      version: process.env.npm_package_version || '1.0.0',
-      memory: {
-        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-        external: Math.round(process.memoryUsage().external / 1024 / 1024),
-      },
-      // Check external dependencies
-      dependencies: {
-        wordpress: await checkWordPressHealth(),
-        redis: await checkRedisHealth(),
-      }
+import { NextRequest, NextResponse } from 'next/server';
+import { Redis } from 'ioredis';
+
+interface HealthStatus {
+  status: 'ok' | 'degraded' | 'error';
+  timestamp: string;
+  uptime: number;
+  services: {
+    redis: ServiceStatus;
+    wordpress: ServiceStatus;
+    database: ServiceStatus;
+  };
+  performance: {
+    memory: {
+      used: number;
+      total: number;
+      percentage: number;
     };
+    cpu: {
+      load: number;
+    };
+  };
+  version: string;
+  environment: string;
+}
 
-    return NextResponse.json(healthData, { 
-      status: 200,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+interface ServiceStatus {
+  status: 'ok' | 'error' | 'unknown';
+  responseTime?: number;
+  lastCheck: string;
+  error?: string;
+}
+
+class HealthChecker {
+  private redis: Redis | null = null;
+  private startTime: number = Date.now();
+
+  constructor() {
+    this.initializeRedis();
+  }
+
+  private initializeRedis(): void {
+    try {
+      if (process.env.REDIS_URL) {
+        this.redis = new Redis(process.env.REDIS_URL, {
+          maxRetriesPerRequest: 1,
+          lazyConnect: true,
+          connectTimeout: 5000,
+          commandTimeout: 3000,
+        });
       }
-    });
+    } catch (error) {
+      console.warn('Health check: Redis not available', error);
+    }
+  }
+
+  /**
+   * Check Redis connection
+   */
+  private async checkRedis(): Promise<ServiceStatus> {
+    if (!this.redis) {
+      return {
+        status: 'unknown',
+        lastCheck: new Date().toISOString(),
+        error: 'Redis not configured',
+      };
+    }
+
+    try {
+      const startTime = Date.now();
+      await this.redis.ping();
+      const responseTime = Date.now() - startTime;
+
+      return {
+        status: 'ok',
+        responseTime,
+        lastCheck: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        lastCheck: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Check WordPress API
+   */
+  private async checkWordPress(): Promise<ServiceStatus> {
+    try {
+      const startTime = Date.now();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wp/v2/posts?per_page=1`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+
+      const responseTime = Date.now() - startTime;
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return {
+        status: 'ok',
+        responseTime,
+        lastCheck: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        lastCheck: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Check database (WooCommerce API)
+   */
+  private async checkDatabase(): Promise<ServiceStatus> {
+    try {
+      const startTime = Date.now();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_WC_URL}/products?per_page=1`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${Buffer.from(
+              `${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`
+            ).toString('base64')}`,
+          },
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+
+      const responseTime = Date.now() - startTime;
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return {
+        status: 'ok',
+        responseTime,
+        lastCheck: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        lastCheck: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Get memory usage
+   */
+  private getMemoryUsage(): { used: number; total: number; percentage: number } {
+    if (typeof process !== 'undefined' && process.memoryUsage) {
+      const memory = process.memoryUsage();
+      const used = memory.heapUsed;
+      const total = memory.heapTotal;
+      const percentage = Math.round((used / total) * 100);
+
+      return { used, total, percentage };
+    }
+
+    return { used: 0, total: 0, percentage: 0 };
+  }
+
+  /**
+   * Get CPU load (simplified)
+   */
+  private getCpuLoad(): { load: number } {
+    // In a real implementation, you'd use a library like 'os' or 'systeminformation'
+    // For now, return a placeholder
+    return { load: 0 };
+  }
+
+  /**
+   * Perform comprehensive health check
+   */
+  async checkHealth(): Promise<HealthStatus> {
+    const [redisStatus, wordpressStatus, databaseStatus] = await Promise.all([
+      this.checkRedis(),
+      this.checkWordPress(),
+      this.checkDatabase(),
+    ]);
+
+    const memory = this.getMemoryUsage();
+    const cpu = this.getCpuLoad();
+
+    // Determine overall status
+    const serviceStatuses = [redisStatus, wordpressStatus, databaseStatus];
+    const errorCount = serviceStatuses.filter(s => s.status === 'error').length;
+    const unknownCount = serviceStatuses.filter(s => s.status === 'unknown').length;
+
+    let overallStatus: 'ok' | 'degraded' | 'error';
+    if (errorCount === 0) {
+      overallStatus = 'ok';
+    } else if (errorCount === 1 || unknownCount > 0) {
+      overallStatus = 'degraded';
+    } else {
+      overallStatus = 'error';
+    }
+
+    return {
+      status: overallStatus,
+      timestamp: new Date().toISOString(),
+      uptime: Date.now() - this.startTime,
+      services: {
+        redis: redisStatus,
+        wordpress: wordpressStatus,
+        database: databaseStatus,
+      },
+      performance: {
+        memory,
+        cpu,
+      },
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+    };
+  }
+}
+
+const healthChecker = new HealthChecker();
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    const health = await healthChecker.checkHealth();
+    
+    const statusCode = health.status === 'ok' ? 200 : 
+                      health.status === 'degraded' ? 200 : 503;
+
+    return NextResponse.json(health, { status: statusCode });
   } catch (error) {
+    console.error('Health check failed:', error);
+    
     return NextResponse.json(
-      { 
-        status: 'error', 
-        message: 'Health check failed',
+      {
+        status: 'error',
         timestamp: new Date().toISOString(),
-        error: process.env.NODE_ENV === 'development' ? error : undefined
-      }, 
-      { status: 500 }
+        error: 'Health check failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 503 }
     );
   }
 }
 
-async function checkWordPressHealth(): Promise<{ status: string; responseTime?: number }> {
+export async function HEAD(request: NextRequest): Promise<NextResponse> {
+  // Simple health check for load balancers
   try {
-    const start = Date.now();
-    const response = await fetch(`${process.env.WP_BASE_URL}/wp-json/wp/v2/posts?per_page=1`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Filler-Health-Check/1.0'
-      },
-      signal: AbortSignal.timeout(5000) // 5s timeout
-    });
+    const health = await healthChecker.checkHealth();
+    const statusCode = health.status === 'ok' ? 200 : 503;
     
-    const responseTime = Date.now() - start;
-    
-    if (response.ok) {
-      return { status: 'ok', responseTime };
-    } else {
-      return { status: 'error', responseTime };
-    }
+    return new NextResponse(null, { status: statusCode });
   } catch (error) {
-    return { status: 'error' };
+    return new NextResponse(null, { status: 503 });
   }
 }
-
-async function checkRedisHealth(): Promise<{ status: string }> {
-  try {
-    // TODO: Implement Redis health check when Redis is added
-    return { status: 'not_configured' };
-  } catch (error) {
-    return { status: 'error' };
-  }
-}
-

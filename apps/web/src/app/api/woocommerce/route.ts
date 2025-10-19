@@ -21,10 +21,10 @@ try {
   console.warn('Redis not available, using in-memory cache', error);
 }
 
-const WC_URL = process.env.WOOCOMMERCE_API_URL;
+const WC_URL = process.env.NEXT_PUBLIC_WC_URL;
 const SITE_BASE = WC_URL ? WC_URL.replace(/\/wp-json\/wc\/v3.*/, '') : '';
-const CK = process.env.WOOCOMMERCE_CONSUMER_KEY;
-const CS = process.env.WOOCOMMERCE_CONSUMER_SECRET;
+const CK = process.env.WC_CONSUMER_KEY;
+const CS = process.env.WC_CONSUMER_SECRET;
 
 // Handle password reset using WordPress REST API
 async function handlePasswordReset(body: { email: string }) {

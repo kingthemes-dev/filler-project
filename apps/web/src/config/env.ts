@@ -4,9 +4,9 @@
 
 interface EnvConfig {
   // WooCommerce
-  WOOCOMMERCE_API_URL: string;
-  WOOCOMMERCE_CONSUMER_KEY: string;
-  WOOCOMMERCE_CONSUMER_SECRET: string;
+  NEXT_PUBLIC_WC_URL: string;
+  WC_CONSUMER_KEY: string;
+  WC_CONSUMER_SECRET: string;
   
   // WordPress
   NEXT_PUBLIC_WORDPRESS_URL: string;
@@ -32,9 +32,9 @@ const REQUIRED_ENV_VARS = isBrowser
       'NEXT_PUBLIC_BASE_URL'
     ] as const
   : [
-      'WOOCOMMERCE_API_URL',
-      'WOOCOMMERCE_CONSUMER_KEY',
-      'WOOCOMMERCE_CONSUMER_SECRET',
+      'NEXT_PUBLIC_WC_URL',
+      'WC_CONSUMER_KEY',
+      'WC_CONSUMER_SECRET',
       'NEXT_PUBLIC_WORDPRESS_URL',
       'NEXT_PUBLIC_BASE_URL'
     ] as const;
@@ -89,9 +89,9 @@ function validateEnv(): EnvConfig {
   }
   
   return {
-    WOOCOMMERCE_API_URL: process.env.WOOCOMMERCE_API_URL || 'https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3',
-    WOOCOMMERCE_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY || 'ck_deb61eadd7301ebfc5f8074ce7c53c6668eb725d',
-    WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET || 'cs_0de18ed0e013f96aebfb51c77f506bb94e416cb8',
+    NEXT_PUBLIC_WC_URL: process.env.NEXT_PUBLIC_WC_URL || 'https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3',
+    WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY || 'ck_deb61eadd7301ebfc5f8074ce7c53c6668eb725d',
+    WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET || 'cs_0de18ed0e013f96aebfb51c77f506bb94e416cb8',
     NEXT_PUBLIC_WORDPRESS_URL: wordpressUrl || 'https://qvwltjhdjw.cfolks.pl',
     NEXT_PUBLIC_BASE_URL: baseUrl || 'https://www.filler.pl',
     SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,

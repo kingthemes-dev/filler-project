@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { securityMiddleware } from '@/middleware/security';
 import { csrfMiddleware } from '@/middleware/csrf';
+import { applyCDNCache, shouldBypassCDNCache } from '@/middleware/cdn-cache';
 
 export async function middleware(request: NextRequest) {
   // Apply CSRF protection first
@@ -9,8 +10,15 @@ export async function middleware(request: NextRequest) {
     return csrfResponse;
   }
   
-  // Then apply security middleware
-  return securityMiddleware(request);
+  // Apply security middleware
+  const securityResponse = securityMiddleware(request);
+  
+  // Apply CDN cache strategy
+  if (!shouldBypassCDNCache(request)) {
+    return applyCDNCache(request, securityResponse);
+  }
+  
+  return securityResponse;
 }
 
 export const config = {
