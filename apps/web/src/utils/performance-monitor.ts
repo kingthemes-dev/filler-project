@@ -429,7 +429,7 @@ class PerformanceMonitor {
     this.metrics = [];
 
     try {
-      await fetch(this.endpoint, {
+      await fetch(window.location.origin + this.endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

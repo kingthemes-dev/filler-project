@@ -48,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   
   try {
     // Fetch products
-    const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/products?per_page=100&status=publish`, {
+    const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl'}/wp-json/wc/v3/products?per_page=100&status=publish`, {
       headers: {
         'Authorization': `Basic ${Buffer.from(`${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`).toString('base64')}`,
       },
@@ -70,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Fetch categories
   try {
-    const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/products/categories?per_page=100&hide_empty=true`, {
+    const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl'}/wp-json/wc/v3/products/categories?per_page=100&hide_empty=true`, {
       headers: {
         'Authorization': `Basic ${Buffer.from(`${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`).toString('base64')}`,
       },
