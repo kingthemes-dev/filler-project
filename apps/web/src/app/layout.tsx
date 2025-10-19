@@ -10,6 +10,7 @@ import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
 import FavoritesModal from '@/components/ui/favorites-modal';
 import ErrorBoundary from '@/components/error-boundary';
 import ReactQueryProvider from './providers/react-query-provider';
+import PerformanceTracker from '@/components/PerformanceTracker';
 import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
 import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analytics';
 
@@ -227,6 +228,7 @@ export default function RootLayout({
                         {/* Google Tag Manager (noscript) */}
                         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TJSTQLNM" height="0" width="0" style={{display:'none',visibility:'hidden'}}></iframe></noscript>
                         <ErrorBoundary>
+                          <PerformanceTracker />
                           <TopBar />
                           <Header />
                           <ReactQueryProvider>
