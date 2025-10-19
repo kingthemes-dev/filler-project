@@ -12,12 +12,29 @@ export default function PerformanceTracker() {
     // Only run on client side
     if (typeof window === 'undefined') return;
 
+    // Function to send metrics to server
+    const sendMetricToServer = async (metric: any) => {
+      try {
+        await fetch('/api/performance/metrics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            metrics: [metric]
+          }),
+        });
+      } catch (error) {
+        console.warn('Failed to send metric to server:', error);
+      }
+    };
+
     // Initialize client-side performance monitoring
     const initializeClientMetrics = () => {
       // Track page load performance
       const trackPageLoad = () => {
         const loadTime = performance.now();
-        performanceMonitor.recordMetric({
+        const metric = {
           name: 'PageLoad',
           value: loadTime,
           timestamp: Date.now().toString(),
@@ -26,7 +43,10 @@ export default function PerformanceTracker() {
             domContentLoaded: performance.timing?.domContentLoadedEventEnd - performance.timing?.domContentLoadedEventStart,
             loadComplete: performance.timing?.loadEventEnd - performance.timing?.loadEventStart,
           },
-        });
+        };
+        
+        // Send to server
+        sendMetricToServer(metric);
       };
 
       // Track First Contentful Paint
@@ -36,7 +56,7 @@ export default function PerformanceTracker() {
             const observer = new PerformanceObserver((list) => {
               for (const entry of list.getEntries()) {
                 if (entry.name === 'first-contentful-paint') {
-                  performanceMonitor.recordMetric({
+                  const metric = {
                     name: 'FCP',
                     value: entry.startTime,
                     timestamp: Date.now().toString(),
@@ -44,7 +64,8 @@ export default function PerformanceTracker() {
                     metadata: {
                       entryType: entry.entryType,
                     },
-                  });
+                  };
+                  sendMetricToServer(metric);
                 }
               }
             });
@@ -62,7 +83,7 @@ export default function PerformanceTracker() {
             const observer = new PerformanceObserver((list) => {
               for (const entry of list.getEntries()) {
                 const lcpEntry = entry as PerformanceEntry & { element?: Element; url?: string; size?: number };
-                performanceMonitor.recordMetric({
+                const metric = {
                   name: 'LCP',
                   value: entry.startTime,
                   timestamp: Date.now().toString(),
@@ -72,7 +93,8 @@ export default function PerformanceTracker() {
                     url: lcpEntry.url,
                     size: lcpEntry.size,
                   },
-                });
+                };
+                sendMetricToServer(metric);
               }
             });
             observer.observe({ entryTypes: ['largest-contentful-paint'] });
@@ -90,7 +112,7 @@ export default function PerformanceTracker() {
               for (const entry of list.getEntries()) {
                 const fidEntry = entry as PerformanceEventTiming;
                 const fid = fidEntry.processingStart - fidEntry.startTime;
-                performanceMonitor.recordMetric({
+                const metric = {
                   name: 'FID',
                   value: fid,
                   timestamp: Date.now().toString(),
@@ -99,7 +121,8 @@ export default function PerformanceTracker() {
                     eventType: entry.name,
                     target: (fidEntry.target as Element)?.tagName,
                   },
-                });
+                };
+                sendMetricToServer(metric);
               }
             });
             observer.observe({ entryTypes: ['first-input'] });
@@ -118,7 +141,7 @@ export default function PerformanceTracker() {
               for (const entry of list.getEntries()) {
                 if (!(entry as any).hadRecentInput) {
                   clsValue += (entry as any).value;
-                  performanceMonitor.recordMetric({
+                  const metric = {
                     name: 'CLS',
                     value: clsValue,
                     timestamp: Date.now().toString(),
@@ -126,7 +149,8 @@ export default function PerformanceTracker() {
                     metadata: {
                       sources: (entry as any).sources,
                     },
-                  });
+                  };
+                  sendMetricToServer(metric);
                 }
               }
             });
@@ -141,12 +165,13 @@ export default function PerformanceTracker() {
       const trackTTFB = () => {
         if (performance.timing) {
           const ttfb = performance.timing.responseStart - performance.timing.navigationStart;
-          performanceMonitor.recordMetric({
+          const metric = {
             name: 'TTFB',
             value: ttfb,
             timestamp: Date.now().toString(),
             url: window.location.href,
-          });
+          };
+          sendMetricToServer(metric);
         }
       };
 
