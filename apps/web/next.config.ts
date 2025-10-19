@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
-// const withBundleAnalyzer = require('@next/bundle-analyzer')({
-//   enabled: process.env.ANALYZE === 'true',
-// });
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
   eslint: {
@@ -16,8 +16,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Senior Level 10/10 Optimizations - Restored
     optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
-    // reactCompiler: true, // React 19 Compiler - will enable next
-    // ppr: true, // Partial Prerendering - will enable next
+    reactCompiler: true, // React 19 Compiler - Senior Level 10/10
+    // ppr: true, // Partial Prerendering - requires Next.js canary
   },
   // Fix for Node.js v18 compatibility - moved to top level
   serverExternalPackages: ['ioredis', 'nodemailer'],
@@ -115,4 +115,4 @@ const nextConfig: NextConfig = {
   // Sentry configuration will be handled by sentry config files
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);
