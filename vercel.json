@@ -1,9 +1,9 @@
 {
-  "buildCommand": "cd apps/web && pnpm run build",
+  "buildCommand": "pnpm run build:web",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs",
   "installCommand": "pnpm install",
-  "devCommand": "pnpm run dev",
+  "devCommand": "pnpm run dev:web",
   "rootDirectory": "apps/web",
   "build": {
     "env": {
@@ -11,7 +11,7 @@
     }
   },
   "functions": {
-    "src/app/api/**/*.ts": {
+    "apps/web/src/app/api/**/*.ts": {
       "maxDuration": 30
     }
   },
