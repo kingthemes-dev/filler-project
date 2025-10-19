@@ -12,7 +12,7 @@ export function LogoutButton() {
     document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     
     // Redirect to login page
-    router.push('/admin/login');
+    router.push('/admin/king');
   };
 
   return (

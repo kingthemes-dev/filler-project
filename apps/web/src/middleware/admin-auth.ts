@@ -16,7 +16,7 @@ export function adminAuthMiddleware(request: NextRequest) {
   }
 
   // Skip admin login page itself
-  if (pathname === '/admin/login') {
+  if (pathname === '/admin/king') {
     console.log('⏭️ Skipping login page:', pathname);
     return NextResponse.next();
   }
@@ -33,7 +33,7 @@ export function adminAuthMiddleware(request: NextRequest) {
   if (!adminToken || adminToken !== validToken) {
     console.log('❌ Invalid or missing token, redirecting to login');
     // Redirect to admin login page
-    const loginUrl = new URL('/admin/login', request.url);
+    const loginUrl = new URL('/admin/king', request.url);
     return NextResponse.redirect(loginUrl, { status: 302 });
   }
 
