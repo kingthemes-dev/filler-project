@@ -47,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let dynamicPages: MetadataRoute.Sitemap = []
   
   try {
-    // Fetch products
+    // Fetch products with better error handling
     const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl'}/wp-json/wc/v3/products?per_page=100&status=publish`, {
       headers: {
         'Authorization': `Basic ${Buffer.from(`${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`).toString('base64')}`,
@@ -56,27 +56,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
     
     if (productsResponse.ok) {
-      const responseText = await productsResponse.text()
-      try {
-        const products = JSON.parse(responseText)
-        if (Array.isArray(products)) {
-          dynamicPages = products.map((product: any) => ({
-            url: `${baseUrl}/produkt/${product.slug}`,
-            lastModified: new Date(product.date_modified || product.date_created),
-            changeFrequency: 'weekly' as const,
-            priority: 0.7,
-          }))
+      const contentType = productsResponse.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        const responseText = await productsResponse.text()
+        try {
+          const products = JSON.parse(responseText)
+          if (Array.isArray(products)) {
+            dynamicPages = products.map((product: any) => ({
+              url: `${baseUrl}/produkt/${product.slug}`,
+              lastModified: new Date(product.date_modified || product.date_created),
+              changeFrequency: 'weekly' as const,
+              priority: 0.7,
+            }))
+          }
+        } catch (jsonError) {
+          console.error('Error parsing products JSON:', jsonError)
+          console.error('Response text preview:', responseText.substring(0, 500))
+          // Fallback: return static pages only
         }
-      } catch (jsonError) {
-        console.error('Error parsing products JSON:', jsonError)
-        console.error('Response text:', responseText.substring(0, 500))
+      } else {
+        console.error('Products API returned non-JSON response:', contentType)
+        // Fallback: return static pages only
       }
+    } else {
+      console.error('Products API request failed:', productsResponse.status, productsResponse.statusText)
+      // Fallback: return static pages only
     }
   } catch (error) {
     console.error('Error fetching products for sitemap:', error)
+    // Fallback: return static pages only
   }
 
-  // Fetch categories
+  // Fetch categories with better error handling
   try {
     const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl'}/wp-json/wc/v3/products/categories?per_page=100&hide_empty=true`, {
       headers: {
@@ -86,25 +97,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
     
     if (categoriesResponse.ok) {
-      const responseText = await categoriesResponse.text()
-      try {
-        const categories = JSON.parse(responseText)
-        if (Array.isArray(categories)) {
-          const categoryPages = categories.map((category: any) => ({
-            url: `${baseUrl}/sklep?kategoria=${category.slug}`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly' as const,
-            priority: 0.6,
-          }))
-          dynamicPages = [...dynamicPages, ...categoryPages]
+      const contentType = categoriesResponse.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        const responseText = await categoriesResponse.text()
+        try {
+          const categories = JSON.parse(responseText)
+          if (Array.isArray(categories)) {
+            const categoryPages = categories.map((category: any) => ({
+              url: `${baseUrl}/sklep?kategoria=${category.slug}`,
+              lastModified: new Date(),
+              changeFrequency: 'weekly' as const,
+              priority: 0.6,
+            }))
+            dynamicPages = [...dynamicPages, ...categoryPages]
+          }
+        } catch (jsonError) {
+          console.error('Error parsing categories JSON:', jsonError)
+          console.error('Response text preview:', responseText.substring(0, 500))
+          // Continue with existing dynamicPages (products)
         }
-      } catch (jsonError) {
-        console.error('Error parsing categories JSON:', jsonError)
-        console.error('Response text:', responseText.substring(0, 500))
+      } else {
+        console.error('Categories API returned non-JSON response:', contentType)
+        // Continue with existing dynamicPages (products)
       }
+    } else {
+      console.error('Categories API request failed:', categoriesResponse.status, categoriesResponse.statusText)
+      // Continue with existing dynamicPages (products)
     }
   } catch (error) {
     console.error('Error fetching categories for sitemap:', error)
+    // Continue with existing dynamicPages (products)
   }
 
   return [...staticPages, ...dynamicPages]
