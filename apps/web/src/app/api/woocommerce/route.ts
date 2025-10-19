@@ -1129,6 +1129,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
   }
+
+  // King Reviews API endpoint
+  if (endpoint === 'reviews') {
+    const productId = searchParams.get('product_id');
+    const url = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-reviews/v1/reviews${productId ? `?product_id=${productId}` : ''}`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/json' },
+        cache: bypassCache ? 'no-store' : 'default'
+      });
+      
+      if (!response.ok) {
+        return NextResponse.json({ success: false, error: 'Reviews not found' }, { status: response.status });
+      }
+      
+      const data = await response.json();
+      return NextResponse.json(data);
+    } catch (error: any) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+  }
   
   // Customer profile endpoint
   if (endpoint.startsWith('customers/')) {
