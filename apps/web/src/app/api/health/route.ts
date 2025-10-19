@@ -193,13 +193,57 @@ class HealthChecker {
   }
 
   /**
+   * Check Circuit Breakers
+   */
+  private async checkCircuitBreakers(): Promise<any> {
+    try {
+      const { circuitBreakers } = await import('@/utils/circuit-breaker');
+      return {
+        wordpress: circuitBreakers.wordpress.getStats(),
+        api: circuitBreakers.api.getStats(),
+        external: circuitBreakers.external.getStats()
+      };
+    } catch (error) {
+      console.warn('Circuit breaker stats not available:', error);
+      return {
+        wordpress: { state: 'UNKNOWN', failureRate: 0 },
+        api: { state: 'UNKNOWN', failureRate: 0 },
+        external: { state: 'UNKNOWN', failureRate: 0 }
+      };
+    }
+  }
+
+  /**
+   * Check Cache Status
+   */
+  private async checkCache(): Promise<any> {
+    try {
+      const { cache } = await import('@/lib/cache');
+      const stats = cache.getStats();
+      return {
+        status: 'ok',
+        ...stats
+      };
+    } catch (error) {
+      console.warn('Cache stats not available:', error);
+      return {
+        status: 'error',
+        size: 0,
+        entries: 0
+      };
+    }
+  }
+
+  /**
    * Perform comprehensive health check
    */
   async checkHealth(): Promise<HealthStatus> {
-    const [redisStatus, wordpressStatus, databaseStatus] = await Promise.all([
+    const [redisStatus, wordpressStatus, databaseStatus, circuitBreakers, cacheStatus] = await Promise.all([
       this.checkRedis(),
       this.checkWordPress(),
       this.checkDatabase(),
+      this.checkCircuitBreakers(),
+      this.checkCache(),
     ]);
 
     const memory = this.getMemoryUsage();
@@ -222,7 +266,7 @@ class HealthChecker {
     return {
       status: overallStatus,
       timestamp: new Date().toISOString(),
-      uptime: Date.now() - this.startTime,
+      uptime: process.uptime(),
       services: {
         redis: redisStatus,
         wordpress: wordpressStatus,
@@ -232,6 +276,8 @@ class HealthChecker {
         memory,
         cpu,
       },
+      circuitBreakers,
+      cache: cacheStatus,
       version: process.env.npm_package_version || '1.0.0',
       environment: process.env.NODE_ENV || 'development',
     };

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 import { WooShippingMethod } from '@/types/woocommerce';
+import { sentryMetrics } from '@/utils/sentry-metrics';
 
 // Redis client (optional)
 let redis: any = null;
@@ -1251,23 +1252,31 @@ export async function GET(req: NextRequest) {
     let cached = null;
     
     if (!bypassCache) {
+      const cacheStart = Date.now();
       cached = await cache.get(cacheKey);
-    }
-    
-    if (cached) {
-      return new NextResponse(cached.body, {
-        status: 200,
-        headers: {
-          "content-type": "application/json",
-          "Cache-Control": `public, max-age=30, s-maxage=60`,
-          "ETag": cached.etag,
-          "X-Cache": "HIT",
-          "X-RateLimit-Limit": "100",
-          "X-RateLimit-Remaining": rateLimit.remaining.toString(),
-          "X-RateLimit-Reset": rateLimit.resetAt.toString(),
-          ...cached.headers
-        },
-      });
+      const cacheTime = Date.now() - cacheStart;
+      
+      if (cached) {
+        // Record cache hit
+        sentryMetrics.recordCacheOperation('hit', cacheKey, cacheTime, { endpoint });
+        
+        return new NextResponse(cached.body, {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "Cache-Control": `public, max-age=30, s-maxage=60`,
+            "ETag": cached.etag,
+            "X-Cache": "HIT",
+            "X-RateLimit-Limit": "100",
+            "X-RateLimit-Remaining": rateLimit.remaining.toString(),
+            "X-RateLimit-Reset": rateLimit.resetAt.toString(),
+            ...cached.headers
+          },
+        });
+      } else {
+        // Record cache miss
+        sentryMetrics.recordCacheOperation('miss', cacheKey, cacheTime, { endpoint });
+      }
     }
 
     // Retry logic for better reliability
@@ -1276,6 +1285,7 @@ export async function GET(req: NextRequest) {
       try {
         console.log(`🔄 Attempt ${attempt} for ${url.toString()}`);
         
+        const startTime = Date.now();
         const r = await fetch(url.toString(), {
           headers: { 
             Accept: "application/json",
@@ -1283,6 +1293,16 @@ export async function GET(req: NextRequest) {
           },
           cache: "no-store",
         });
+        const responseTime = Date.now() - startTime;
+        
+        // Record API metrics
+        sentryMetrics.recordApiResponse(
+          endpoint,
+          'GET',
+          responseTime,
+          r.status,
+          { attempt: attempt.toString() }
+        );
 
         const text = await r.text();
         if (!r.ok) {
@@ -1355,12 +1375,25 @@ export async function GET(req: NextRequest) {
         
         console.log(`✅ Success on attempt ${attempt}`);
         
+        // Record successful WooCommerce operation
+        sentryMetrics.recordWooCommerceOperation(
+          endpoint,
+          responseTime,
+          true,
+          { attempt: attempt.toString(), status_code: r.status.toString() }
+        );
+        
         // Populate cache (skip if bypass)
         if (!bypassCache) {
+          const cacheSetStart = Date.now();
           await cache.set(cacheKey, text, 60000, {
             'X-Response-Time': `${Date.now() - Date.now()}ms`,
             'X-Attempt': attempt.toString()
           });
+          const cacheSetTime = Date.now() - cacheSetStart;
+          
+          // Record cache set
+          sentryMetrics.recordCacheOperation('set', cacheKey, cacheSetTime, { endpoint });
         }
         
         const etag = cache.generateETag(text);
@@ -1379,6 +1412,17 @@ export async function GET(req: NextRequest) {
       } catch (error) {
         lastError = error as Error;
         console.log(`❌ Attempt ${attempt} failed:`, error);
+        
+        // Record failed WooCommerce operation
+        sentryMetrics.recordWooCommerceOperation(
+          endpoint,
+          responseTime || 0,
+          false,
+          { 
+            attempt: attempt.toString(), 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          }
+        );
         
         if (attempt < 3) {
           // Wait before retry (exponential backoff)
