@@ -496,7 +496,14 @@ class PerformanceMonitor {
     if (totalBudgets === 0) return 100;
     
     const budgetScore = (passed_budgets / totalBudgets) * 70; // 70% weight for budgets
-    const metricScore = Math.min(total_metrics, 10) * 3; // 30% weight for metrics (max 30 points)
+    
+    // If no client-side metrics, give bonus points for server-side performance
+    let metricScore = Math.min(total_metrics, 10) * 3; // 30% weight for metrics (max 30 points)
+    
+    // Server-side bonus: if no client metrics, assume good performance
+    if (total_metrics === 0 && typeof window === 'undefined') {
+      metricScore = 25; // Give 25/30 points for server-side (assume good client performance)
+    }
     
     return Math.round(budgetScore + metricScore);
   }
