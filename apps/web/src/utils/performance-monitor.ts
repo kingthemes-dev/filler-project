@@ -429,6 +429,9 @@ class PerformanceMonitor {
     this.metrics = [];
 
     try {
+      // Check if we're in browser environment
+      if (typeof window === 'undefined') return;
+      
       await fetch(window.location.origin + this.endpoint, {
         method: 'POST',
         headers: {
