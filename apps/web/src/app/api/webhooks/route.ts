@@ -220,6 +220,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.text();
     
+    // Check if body is empty
+    if (!body || body.trim() === '') {
+      console.log('⚠️ Empty webhook body received');
+      return NextResponse.json(
+        { error: 'Empty payload' },
+        { status: 400 }
+      );
+    }
+
     // Validate webhook signature
     if (!webhookHandler['validateSignature'](request, body)) {
       console.error('❌ Invalid webhook signature');
@@ -229,8 +238,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Parse webhook payload
-    const payload: WebhookPayload = JSON.parse(body);
+    // Parse webhook payload with validation
+    let payload: WebhookPayload;
+    try {
+      payload = JSON.parse(body);
+    } catch (parseError) {
+      console.error('❌ Invalid JSON payload:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid JSON payload' },
+        { status: 400 }
+      );
+    }
     
     // Process webhook
     await webhookHandler.processWebhook(payload);
