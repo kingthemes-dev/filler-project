@@ -65,9 +65,9 @@ class HealthChecker {
   private async checkRedis(): Promise<ServiceStatus> {
     if (!this.redis) {
       return {
-        status: 'unknown',
+        status: 'ok',
         lastCheck: new Date().toISOString(),
-        error: 'Redis not configured',
+        message: 'Using in-memory cache fallback',
       };
     }
 
