@@ -56,13 +56,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
     
     if (productsResponse.ok) {
-      const products = await productsResponse.json()
-      dynamicPages = products.map((product: any) => ({
-        url: `${baseUrl}/produkt/${product.slug}`,
-        lastModified: new Date(product.date_modified || product.date_created),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      }))
+      const responseText = await productsResponse.text()
+      try {
+        const products = JSON.parse(responseText)
+        if (Array.isArray(products)) {
+          dynamicPages = products.map((product: any) => ({
+            url: `${baseUrl}/produkt/${product.slug}`,
+            lastModified: new Date(product.date_modified || product.date_created),
+            changeFrequency: 'weekly' as const,
+            priority: 0.7,
+          }))
+        }
+      } catch (jsonError) {
+        console.error('Error parsing products JSON:', jsonError)
+        console.error('Response text:', responseText.substring(0, 500))
+      }
     }
   } catch (error) {
     console.error('Error fetching products for sitemap:', error)
@@ -78,14 +86,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
     
     if (categoriesResponse.ok) {
-      const categories = await categoriesResponse.json()
-      const categoryPages = categories.map((category: any) => ({
-        url: `${baseUrl}/sklep?kategoria=${category.slug}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.6,
-      }))
-      dynamicPages = [...dynamicPages, ...categoryPages]
+      const responseText = await categoriesResponse.text()
+      try {
+        const categories = JSON.parse(responseText)
+        if (Array.isArray(categories)) {
+          const categoryPages = categories.map((category: any) => ({
+            url: `${baseUrl}/sklep?kategoria=${category.slug}`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly' as const,
+            priority: 0.6,
+          }))
+          dynamicPages = [...dynamicPages, ...categoryPages]
+        }
+      } catch (jsonError) {
+        console.error('Error parsing categories JSON:', jsonError)
+        console.error('Response text:', responseText.substring(0, 500))
+      }
     }
   } catch (error) {
     console.error('Error fetching categories for sitemap:', error)
