@@ -56,7 +56,6 @@ export default function SettingsPage() {
     }
   });
 
-  const [showSecrets, setShowSecrets] = useState(false);
   const [saving, setSaving] = useState(false);
   const [nodeVersion, setNodeVersion] = useState('');
   const [platform, setPlatform] = useState('');
@@ -106,15 +105,7 @@ export default function SettingsPage() {
     }
   };
 
-  const updateSetting = (section: keyof Settings, key: string, value: any) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [key]: value
-      }
-    }));
-  };
+  // Settings are now read-only - no updateSetting needed
 
   const testConnection = async (type: 'woocommerce' | 'redis') => {
     setTestingConnection(true);
@@ -166,97 +157,52 @@ export default function SettingsPage() {
           <CardTitle>WooCommerce Integration</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="wc-url">API URL</Label>
-              <Input
-                id="wc-url"
-                value={settings.woocommerce.url}
-                onChange={(e) => updateSetting('woocommerce', 'url', e.target.value)}
-                placeholder="https://your-site.com/wp-json/wc/v3"
-              />
-            </div>
-            <div className="flex items-end">
-              <Button
-                variant="outline"
-                onClick={() => testConnection('woocommerce')}
-                disabled={testingConnection}
-                className="w-full"
-              >
-                {testingConnection ? 'Testing...' : 'Test Connection'}
-              </Button>
-              {connectionStatus && (
-                <div className={`text-sm mt-2 ${connectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
-                  {connectionStatus}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="wc-key">Consumer Key</Label>
-              <div className="relative">
-                <Input
-                  id="wc-key"
-                  type={showSecrets ? 'text' : 'password'}
-                  value={settings.woocommerce.consumerKey}
-                  onChange={(e) => updateSetting('woocommerce', 'consumerKey', e.target.value)}
-                  placeholder="ck_..."
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3"
-                  onClick={() => setShowSecrets(!showSecrets)}
-                >
-                  {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="wc-secret">Consumer Secret</Label>
-              <div className="relative">
-                <Input
-                  id="wc-secret"
-                  type={showSecrets ? 'text' : 'password'}
-                  value={settings.woocommerce.consumerSecret}
-                  onChange={(e) => updateSetting('woocommerce', 'consumerSecret', e.target.value)}
-                  placeholder="cs_..."
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3"
-                  onClick={() => setShowSecrets(!showSecrets)}
-                >
-                  {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
+          {/* API URL - Read Only */}
+          <div className="space-y-2">
+            <Label>API URL</Label>
+            <div className="p-3 bg-gray-50 rounded-md border">
+              <code className="text-sm">{settings.woocommerce.url}</code>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="wc-webhook">Webhook Secret</Label>
-            <div className="relative">
-              <Input
-                id="wc-webhook"
-                type={showSecrets ? 'text' : 'password'}
-                value={settings.woocommerce.webhookSecret}
-                onChange={(e) => updateSetting('woocommerce', 'webhookSecret', e.target.value)}
-                placeholder="wc_wh_..."
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3"
-                onClick={() => setShowSecrets(!showSecrets)}
-              >
-                {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
+          {/* Test Connection */}
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => testConnection('woocommerce')}
+              disabled={testingConnection}
+            >
+              {testingConnection ? 'Testing...' : 'Test Connection'}
+            </Button>
+            {connectionStatus && (
+              <div className={`text-sm ${connectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
+                {connectionStatus}
+              </div>
+            )}
+          </div>
+          
+          {/* Configuration Status - Read Only */}
+          <div className="space-y-3">
+            <h4 className="font-medium text-gray-900">Configuration Status</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                <span className="text-sm font-medium">Consumer Key</span>
+                <Badge variant={settings.woocommerce.consumerKey ? "default" : "secondary"}>
+                  {settings.woocommerce.consumerKey ? 'Set' : 'Not Set'}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                <span className="text-sm font-medium">Consumer Secret</span>
+                <Badge variant={settings.woocommerce.consumerSecret ? "default" : "secondary"}>
+                  {settings.woocommerce.consumerSecret ? 'Set' : 'Not Set'}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+                <span className="text-sm font-medium">Webhook Secret</span>
+                <Badge variant={settings.woocommerce.webhookSecret ? "default" : "secondary"}>
+                  {settings.woocommerce.webhookSecret ? 'Set' : 'Not Set'}
+                </Badge>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -268,40 +214,40 @@ export default function SettingsPage() {
           <CardTitle>Redis Cache</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="redis-enabled">Enable Redis</Label>
-              <p className="text-sm text-gray-600">Use Redis for caching</p>
+          {/* Redis Status - Read Only */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
+              <span className="text-sm font-medium">Redis Configuration</span>
+              <Badge variant={settings.redis.enabled ? "default" : "secondary"}>
+                {settings.redis.enabled ? 'Configured' : 'Not Configured'}
+              </Badge>
             </div>
-            <input
-              id="redis-enabled"
-              type="checkbox"
-              checked={settings.redis.enabled}
-              onChange={(e) => updateSetting('redis', 'enabled', e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-          </div>
-          
-          {settings.redis.enabled && (
-            <div>
-              <Label htmlFor="redis-url">Redis URL</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="redis-url"
-                  type={showSecrets ? 'text' : 'password'}
-                  value={settings.redis.url}
-                  onChange={(e) => updateSetting('redis', 'url', e.target.value)}
-                  placeholder="redis://localhost:6379"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => testConnection('redis')}
-                >
-                  Test
-                </Button>
+            
+            {settings.redis.enabled && (
+              <div className="space-y-2">
+                <Label>Redis URL</Label>
+                <div className="p-3 bg-gray-50 rounded-md border">
+                  <code className="text-sm text-gray-600">redis://***:***@redis3.cyber-folks.pl:25775/0</code>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Test Redis Connection */}
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => testConnection('redis')}
+              disabled={testingConnection}
+            >
+              {testingConnection ? 'Testing...' : 'Test Redis Connection'}
+            </Button>
+            {connectionStatus && (
+              <div className={`text-sm ${connectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
+                {connectionStatus}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
