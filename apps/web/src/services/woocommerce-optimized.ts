@@ -9,8 +9,10 @@ class WooCommerceService {
   private baseUrl: string;
 
   constructor() {
-    // Always use relative URL to avoid production issues
-    this.baseUrl = '/api/woocommerce';
+    // Use absolute URL for server-side, relative for client-side
+    this.baseUrl = typeof window !== 'undefined' 
+      ? '/api/woocommerce' 
+      : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'}/api/woocommerce`;
     console.log('🚀 WooCommerce Optimized Service initialized');
   }
 
