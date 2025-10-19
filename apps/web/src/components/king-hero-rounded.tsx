@@ -79,7 +79,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           {/* Background Image - optimized for LCP - native img for fastest load */}
           <div className="absolute inset-0 z-0">
             <img
-              src="/images/hero/1 01.11.26.webp"
+              src="/images/hero/hero-bg.webp"
               alt="Hero background"
               loading="eager"
               fetchPriority="high"
