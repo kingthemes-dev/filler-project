@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ExternalLink, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
+import { RefreshCw, ExternalLink, CheckCircle, XCircle, AlertTriangle, Clock, ShoppingCart, Users, Package, Webhook } from 'lucide-react';
 
 interface WooCommerceStatus {
   api: {
@@ -31,6 +30,12 @@ interface WooCommerceStatus {
     status: string;
     count: number;
   };
+  integration: {
+    url: string;
+    consumerKey: string;
+    consumerSecret: string;
+    webhookSecret: string;
+  };
 }
 
 export default function WooCommerceStatus() {
@@ -41,57 +46,16 @@ export default function WooCommerceStatus() {
     try {
       setLoading(true);
       
-      // Fetch WooCommerce API status
-      const apiResponse = await fetch('/api/woocommerce?endpoint=system_status');
-      const apiData = await apiResponse.json();
-      
-      // Fetch products count
-      const productsResponse = await fetch('/api/woocommerce?endpoint=products&per_page=1');
-      const productsData = await productsResponse.json();
-      
-      // Fetch orders count
-      const ordersResponse = await fetch('/api/woocommerce?endpoint=orders&per_page=1');
-      const ordersData = await ordersResponse.json();
-      
-      // Fetch customers count
-      const customersResponse = await fetch('/api/woocommerce?endpoint=customers&per_page=1');
-      const customersData = await customersResponse.json();
-
-      setStatus({
-        api: {
-          status: apiResponse.ok ? 'ok' : 'error',
-          responseTime: Date.now() - Date.now(), // Placeholder
-          lastCheck: new Date().toISOString(),
-          version: apiData?.version || 'Unknown'
-        },
-        products: {
-          total: productsData?.total || 0,
-          published: productsData?.published || 0,
-          featured: productsData?.featured || 0
-        },
-        orders: {
-          total: ordersData?.total || 0,
-          pending: ordersData?.pending || 0,
-          completed: ordersData?.completed || 0
-        },
-        customers: {
-          total: customersData?.total || 0,
-          active: customersData?.active || 0
-        },
-        webhooks: {
-          status: 'ok', // Placeholder
-          count: 1
-        }
-      });
+      // Fetch WooCommerce status from dedicated endpoint
+      const response = await fetch('/api/woocommerce-status');
+      if (response.ok) {
+        const data = await response.json();
+        setStatus(data);
+      } else {
+        console.error('Failed to fetch WooCommerce status:', response.status);
+      }
     } catch (error) {
       console.error('Error fetching WooCommerce status:', error);
-      setStatus({
-        api: { status: 'error', responseTime: 0, lastCheck: new Date().toISOString() },
-        products: { total: 0, published: 0, featured: 0 },
-        orders: { total: 0, pending: 0, completed: 0 },
-        customers: { total: 0, active: 0 },
-        webhooks: { status: 'error', count: 0 }
-      });
     } finally {
       setLoading(false);
     }
@@ -102,44 +66,40 @@ export default function WooCommerceStatus() {
   }, []);
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'ok':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'error':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-    }
+    if (status === 'ok' || status === 'active') return <CheckCircle className="h-4 w-4 text-green-500" />;
+    if (status === 'degraded' || status === 'warning') return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+    return <XCircle className="h-4 w-4 text-red-500" />;
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ok':
-        return <Badge variant="default" className="bg-green-500">Connected</Badge>;
-      case 'error':
-        return <Badge variant="destructive">Disconnected</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
+  const handleTestConnection = async () => {
+    await fetchWooCommerceStatus();
+  };
+
+  const handleSyncProducts = async () => {
+    // TODO: Implement product sync
+    console.log('Syncing products...');
+  };
+
+  const handleViewLogs = () => {
+    // TODO: Navigate to logs
+    console.log('Viewing logs...');
   };
 
   if (loading && !status) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <RefreshCw className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading WooCommerce status...</span>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+        <p className="ml-3 text-lg">Loading WooCommerce status...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">WooCommerce Integration</h1>
+          <h1 className="text-2xl font-bold">WooCommerce Integration</h1>
           <p className="text-gray-600">Backend API status and data overview</p>
         </div>
         <Button onClick={fetchWooCommerceStatus} disabled={loading}>
@@ -148,155 +108,156 @@ export default function WooCommerceStatus() {
         </Button>
       </div>
 
-      {/* API Status */}
       {status && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
+        <>
+          {/* API Connection Status */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg">API Connection</CardTitle>
               {getStatusIcon(status.api.status)}
-              <span className="ml-2">API Connection</span>
-              {getStatusBadge(status.api.status)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <div className="text-sm text-gray-600">Response Time</div>
-                <div className="text-lg font-semibold">{status.api.responseTime}ms</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">WooCommerce Version</div>
-                <div className="text-lg font-semibold">{status.api.version}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Last Check</div>
-                <div className="text-lg font-semibold">
-                  {new Date(status.api.lastCheck).toLocaleTimeString()}
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Status:</span>
+                  <span className={`text-sm font-bold ${status.api.status === 'ok' ? 'text-green-600' : 'text-red-600'}`}>
+                    {status.api.status === 'ok' ? 'Connected' : 'Disconnected'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Response Time:</span>
+                  <span className="text-sm">{status.api.responseTime}ms</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">WooCommerce Version:</span>
+                  <span className="text-sm">{status.api.version || 'Unknown'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Last Check:</span>
+                  <span className="text-sm">{new Date(status.api.lastCheck).toLocaleTimeString()}</span>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Data Overview */}
-      {status && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Products</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{status.products.total}</div>
-              <div className="text-xs text-muted-foreground">
-                {status.products.published} published, {status.products.featured} featured
-              </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Orders</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{status.orders.total}</div>
-              <div className="text-xs text-muted-foreground">
-                {status.orders.pending} pending, {status.orders.completed} completed
-              </div>
-            </CardContent>
-          </Card>
+          {/* Data Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Products</CardTitle>
+                <Clock className="h-4 w-4 text-gray-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{status.products.total}</div>
+                <p className="text-xs text-gray-500">{status.products.published} published, {status.products.featured} featured</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Customers</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{status.customers.total}</div>
-              <div className="text-xs text-muted-foreground">
-                {status.customers.active} active
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Orders</CardTitle>
+                <CheckCircle className="h-4 w-4 text-gray-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{status.orders.total}</div>
+                <p className="text-xs text-gray-500">{status.orders.pending} pending, {status.orders.completed} completed</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Webhooks</CardTitle>
-              <ExternalLink className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{status.webhooks.count}</div>
-              <div className="text-xs text-muted-foreground">
-                {status.webhooks.status === 'ok' ? 'Active' : 'Inactive'}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Customers</CardTitle>
+                <Users className="h-4 w-4 text-gray-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{status.customers.total}</div>
+                <p className="text-xs text-gray-500">{status.customers.active} active</p>
+              </CardContent>
+            </Card>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex flex-col">
-              <ExternalLink className="h-6 w-6 mb-2" />
-              <span className="text-sm">WooCommerce Admin</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col">
-              <CheckCircle className="h-6 w-6 mb-2" />
-              <span className="text-sm">Test API Connection</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col">
-              <RefreshCw className="h-6 w-6 mb-2" />
-              <span className="text-sm">Sync Products</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col">
-              <AlertTriangle className="h-6 w-6 mb-2" />
-              <span className="text-sm">View Logs</span>
-            </Button>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Webhooks</CardTitle>
+                <Webhook className="h-4 w-4 text-gray-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{status.webhooks.count}</div>
+                <p className="text-xs text-gray-500 capitalize">{status.webhooks.status}</p>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Integration Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Integration Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">WooCommerce URL</span>
-              <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                {process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3
-              </code>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Consumer Key</span>
-              <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                {process.env.WC_CONSUMER_KEY ? 'Set' : 'Not Set'}
-              </code>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Consumer Secret</span>
-              <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                {process.env.WC_CONSUMER_SECRET ? 'Set' : 'Not Set'}
-              </code>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Webhook Secret</span>
-              <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                {process.env.WOOCOMMERCE_WEBHOOK_SECRET ? 'Set' : 'Not Set'}
-              </code>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-admin`, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  WooCommerce Admin
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleTestConnection}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Test API Connection
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleSyncProducts}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Sync Products
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleViewLogs}
+                >
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  View Logs
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Integration Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Integration Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">WooCommerce URL:</span>
+                  <span className="text-sm font-mono text-gray-600">{status.integration.url}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Consumer Key:</span>
+                  <span className="text-sm font-mono text-gray-600">{status.integration.consumerKey}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Consumer Secret:</span>
+                  <span className="text-sm font-mono text-gray-600">{status.integration.consumerSecret}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Webhook Secret:</span>
+                  <span className="text-sm font-mono text-gray-600">{status.integration.webhookSecret}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
