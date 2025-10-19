@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+// import { Alert, AlertDescription } from '@/components/ui/alert'; // Component not available
 import { Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 
 export default function AdminLogin() {
@@ -66,10 +66,10 @@ export default function AdminLogin() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+                <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start">
+                  <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 mr-2" />
+                  <div className="text-sm text-red-700">{error}</div>
+                </div>
               )}
 
               <div>

@@ -5,9 +5,14 @@ import { applyCDNCache, shouldBypassCDNCache } from '@/middleware/cdn-cache';
 import { adminAuthMiddleware } from '@/middleware/admin-auth';
 
 export async function middleware(request: NextRequest) {
+  console.log('🚀 Main middleware called for:', request.nextUrl.pathname);
+  
   // Apply admin authentication for admin routes
   const adminResponse = adminAuthMiddleware(request);
-  if (adminResponse.status !== 200) {
+  console.log('🔍 Admin response status:', adminResponse?.status);
+  
+  if (adminResponse && adminResponse.status !== 200) {
+    console.log('🔄 Returning admin response');
     return adminResponse;
   }
 
