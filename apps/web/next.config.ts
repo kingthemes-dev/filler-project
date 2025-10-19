@@ -14,13 +14,13 @@ const nextConfig: NextConfig = {
   // Fix for Vercel routes-manifest issue with Next.js 15
   distDir: '.next',
   experimental: {
-    // Temporarily disabled for Vercel deployment compatibility
-    // optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
-    // reactCompiler: true, // React 19 Compiler
-    // ppr: true, // Partial Prerendering
+    // Senior Level 10/10 Optimizations - Restored
+    optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
+    // reactCompiler: true, // React 19 Compiler - will enable next
+    // ppr: true, // Partial Prerendering - will enable next
   },
   // Fix for Node.js v18 compatibility - moved to top level
-  // serverExternalPackages: ['ioredis', 'nodemailer'], // Temporarily disabled for routes-manifest
+  serverExternalPackages: ['ioredis', 'nodemailer'],
   // Production optimizations
   ...(process.env.NODE_ENV === 'production' && {
     compress: true,
@@ -107,7 +107,7 @@ const nextConfig: NextConfig = {
     
     return config;
   },
-  // transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'], // Temporarily disabled for routes-manifest
+  transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
   
   // Output configuration for Docker
   // output: 'standalone', // Disabled for Vercel deployment
