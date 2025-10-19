@@ -209,7 +209,7 @@ class WooCommerceService {
     perPage: number;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=categories`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/categories`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -974,7 +974,7 @@ class WooCommerceService {
   async getProductAttributes(): Promise<{ success: boolean; attributes?: Array<{ id: number; name: string; slug: string; type: string; order_by: string; has_archives: boolean }>; error?: string }> {
     try {
       // PERFORMANCE FIX: Add _fields to reduce payload size
-      const response = await fetch(`${this.baseUrl}?endpoint=attributes&_fields=id,name,slug,type,order_by,has_archives`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes&_fields=id,name,slug,type,order_by,has_archives`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
