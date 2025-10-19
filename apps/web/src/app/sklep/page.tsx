@@ -86,7 +86,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
         params.append('page', '1');
         params.append('per_page', '12');
         if (defaultCategory) params.append('category', defaultCategory);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/woocommerce?${params.toString()}`, { 
+        const res = await fetch(`/api/woocommerce?${params.toString()}`, { 
           next: { revalidate: 30 },
           signal: AbortSignal.timeout(10000) // 10s timeout
         });
@@ -112,7 +112,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
         const params = new URLSearchParams();
         params.append('endpoint', 'attributes');
         if (defaultCategory) params.append('category', defaultCategory);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/woocommerce?${params.toString()}`, { 
+        const res = await fetch(`/api/woocommerce?${params.toString()}`, { 
           next: { revalidate: 600 },
           signal: AbortSignal.timeout(10000) // 10s timeout
         });

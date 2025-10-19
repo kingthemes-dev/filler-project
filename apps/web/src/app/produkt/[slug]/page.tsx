@@ -6,12 +6,12 @@ import { Metadata } from 'next';
 
 // PRO: Static generation with ISR for better performance
 export const revalidate = 600; // 10 minutes
-export const dynamic = 'force-static';
+export const dynamic = 'auto'; // Allow dynamic rendering when needed
 
 // Generate static params for popular products
 export async function generateStaticParams() {
-  // Skip static generation during build to avoid API issues
-  // Pages will be generated on-demand
+  // Skip static generation during build to avoid timeout issues
+  // Pages will be generated on-demand (ISR)
   return [];
 }
 
@@ -97,21 +97,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     const productId: number = product.id || 0;
 
     if (productId) {
-      // Prefetch dependent data in parallel with error handling
-      await Promise.allSettled([
-        queryClient.prefetchQuery({
-          queryKey: ['product', slug, 'variations'],
-          queryFn: () => wooCommerceOptimized.getProductVariations(productId),
-          retry: 1,
-          retryDelay: 500,
-        }),
-        queryClient.prefetchQuery({
-          queryKey: ['product', slug, 'reviews'],
-          queryFn: () => wooCommerceOptimized.getProductReviews(productId),
-          retry: 1,
-          retryDelay: 500,
-        }),
-      ]);
+      // Prefetch variations only (reviews endpoint returns 404)
+      await queryClient.prefetchQuery({
+        queryKey: ['product', slug, 'variations'],
+        queryFn: () => wooCommerceOptimized.getProductVariations(productId),
+        retry: 1,
+        retryDelay: 500,
+      });
     }
 
     const dehydratedState = dehydrate(queryClient);

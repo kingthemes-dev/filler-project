@@ -9,8 +9,8 @@ class WooCommerceService {
   private baseUrl: string;
 
   constructor() {
-    // Use relative URL for client-side, full URL for server-side
-    this.baseUrl = typeof window !== 'undefined' ? '/api/woocommerce' : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/woocommerce`;
+    // Always use relative URL to avoid production issues
+    this.baseUrl = '/api/woocommerce';
     console.log('🚀 WooCommerce Optimized Service initialized');
   }
 
@@ -109,9 +109,8 @@ class WooCommerceService {
       if (options?.brands && options.brands.length > 0) params.append('brands', options.brands.join(','));
       
           // Use local API route instead of direct call (aggregated response)
-          // Use absolute URL for server-side calls
-          const baseUrl = typeof window === 'undefined' ? 'http://localhost:3002' : '';
-          const response = await fetch(`${baseUrl}/api/woocommerce?${params.toString()}`);
+          // Use relative URL for all calls
+          const response = await fetch(`/api/woocommerce?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
