@@ -82,10 +82,11 @@ class HealthChecker {
         lastCheck: new Date().toISOString(),
       };
     } catch (error) {
+      // Redis is not available - return degraded instead of error
       return {
-        status: 'error',
+        status: 'degraded',
         lastCheck: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Redis connection failed - using memory cache fallback',
       };
     }
   }

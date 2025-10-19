@@ -60,7 +60,8 @@ export default function SettingsPage() {
   const [nodeVersion, setNodeVersion] = useState('');
   const [platform, setPlatform] = useState('');
   const [testingConnection, setTestingConnection] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
+  const [wooConnectionStatus, setWooConnectionStatus] = useState<string | null>(null);
+  const [redisConnectionStatus, setRedisConnectionStatus] = useState<string | null>(null);
 
   // Load settings status from API
   useEffect(() => {
@@ -100,29 +101,39 @@ export default function SettingsPage() {
 
   const testConnection = async (type: 'woocommerce' | 'redis') => {
     setTestingConnection(true);
-    setConnectionStatus(null);
+    
+    if (type === 'woocommerce') {
+      setWooConnectionStatus(null);
+    } else {
+      setRedisConnectionStatus(null);
+    }
     
     try {
-      let isConnected = false;
+      const response = await fetch('/api/health');
+      const data = await response.json();
       
       if (type === 'woocommerce') {
-        const response = await fetch('/api/health');
-        const data = await response.json();
-        isConnected = data.services.database.status === 'ok';
+        const isConnected = data.services.database.status === 'ok';
+        setWooConnectionStatus(isConnected ? 'Connection successful!' : 'Connection failed!');
+        setTimeout(() => setWooConnectionStatus(null), 3000);
       } else {
-        const response = await fetch('/api/health');
-        const data = await response.json();
-        isConnected = data.services.redis.status === 'ok';
+        // Redis can be 'ok' or 'degraded' (using memory cache fallback)
+        const isConnected = data.services.redis.status === 'ok' || data.services.redis.status === 'degraded';
+        const statusMessage = data.services.redis.status === 'ok' 
+          ? 'Connection successful!' 
+          : 'Connection degraded (using memory cache)';
+        setRedisConnectionStatus(isConnected ? statusMessage : 'Connection failed!');
+        setTimeout(() => setRedisConnectionStatus(null), 3000);
       }
       
-      setConnectionStatus(isConnected ? 'Connection successful!' : 'Connection failed!');
-      
-      // Clear status after 3 seconds
-      setTimeout(() => setConnectionStatus(null), 3000);
-      
     } catch (error) {
-      setConnectionStatus('Connection failed!');
-      setTimeout(() => setConnectionStatus(null), 3000);
+      if (type === 'woocommerce') {
+        setWooConnectionStatus('Connection failed!');
+        setTimeout(() => setWooConnectionStatus(null), 3000);
+      } else {
+        setRedisConnectionStatus('Connection failed!');
+        setTimeout(() => setRedisConnectionStatus(null), 3000);
+      }
     } finally {
       setTestingConnection(false);
     }
@@ -165,9 +176,9 @@ export default function SettingsPage() {
             >
               {testingConnection ? 'Testing...' : 'Test Connection'}
             </Button>
-            {connectionStatus && (
-              <div className={`text-sm ${connectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
-                {connectionStatus}
+            {wooConnectionStatus && (
+              <div className={`text-sm ${wooConnectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
+                {wooConnectionStatus}
               </div>
             )}
           </div>
@@ -233,9 +244,9 @@ export default function SettingsPage() {
             >
               {testingConnection ? 'Testing...' : 'Test Redis Connection'}
             </Button>
-            {connectionStatus && (
-              <div className={`text-sm ${connectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
-                {connectionStatus}
+            {redisConnectionStatus && (
+              <div className={`text-sm ${redisConnectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
+                {redisConnectionStatus}
               </div>
             )}
           </div>
