@@ -91,7 +91,7 @@ function validateEnv(): EnvConfig {
     WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY || 'ck_deb61eadd7301ebfc5f8074ce7c53c6668eb725d',
     WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET || 'cs_0de18ed0e013f96aebfb51c77f506bb94e416cb8',
     NEXT_PUBLIC_WORDPRESS_URL: wordpressUrl || 'https://qvwltjhdjw.cfolks.pl',
-    NEXT_PUBLIC_BASE_URL: baseUrl || 'https://www.filler.pl',
+    NEXT_PUBLIC_BASE_URL: baseUrl || (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3001'),
     SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,
     SENDINBLUE_LIST_ID: process.env.SENDINBLUE_LIST_ID,
     NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,

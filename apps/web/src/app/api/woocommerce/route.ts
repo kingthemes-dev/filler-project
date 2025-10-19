@@ -36,6 +36,8 @@ if (!WC_URL || !CK || !CS) {
     NEXT_PUBLIC_WC_URL: process.env.NEXT_PUBLIC_WC_URL,
     WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY,
     WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET,
+    NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL,
   });
 }
 

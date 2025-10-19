@@ -12,8 +12,8 @@ class WooCommerceService {
     // Use absolute URL for server-side, relative for client-side
     this.baseUrl = typeof window !== 'undefined' 
       ? '/api/woocommerce' 
-      : `${process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://filler.pl' : 'http://localhost:3001')}/api/woocommerce`;
-    console.log('🚀 WooCommerce Optimized Service initialized');
+      : `${process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3001')}/api/woocommerce`;
+    console.log('🚀 WooCommerce Optimized Service initialized with baseUrl:', this.baseUrl);
   }
 
   /**

@@ -70,30 +70,36 @@ const ALLOWED_IPS = [
 
 // Security middleware function
 export function securityMiddleware(request: NextRequest): NextResponse | null {
-  const response = NextResponse.next();
-  const clientIp = getClientIP(request);
+  try {
+    const response = NextResponse.next();
+    const clientIp = getClientIP(request);
 
-  // Add security headers
-  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
+    // Add security headers
+    Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
 
-  // Rate limiting
-  if (!checkRateLimit(clientIp)) {
-    logger.warn('Rate limit exceeded', { ip: clientIp, url: request.url });
-    return new NextResponse('Too Many Requests', { status: 429 });
+    // Rate limiting
+    if (!checkRateLimit(clientIp)) {
+      logger.warn('Rate limit exceeded', { ip: clientIp, url: request.url });
+      return new NextResponse('Too Many Requests', { status: 429 });
+    }
+
+    // IP filtering in development
+    if (env.NODE_ENV === 'development' && !ALLOWED_IPS.includes(clientIp)) {
+      logger.warn('Blocked IP in development', { ip: clientIp });
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+
+    // Log suspicious activity
+    logSuspiciousActivity(request);
+
+    return response;
+  } catch (error) {
+    console.error('Security middleware error:', error);
+    // Return a basic response if security middleware fails
+    return NextResponse.next();
   }
-
-  // IP filtering in development
-  if (env.NODE_ENV === 'development' && !ALLOWED_IPS.includes(clientIp)) {
-    logger.warn('Blocked IP in development', { ip: clientIp });
-    return new NextResponse('Forbidden', { status: 403 });
-  }
-
-  // Log suspicious activity
-  logSuspiciousActivity(request);
-
-  return response;
 }
 
 // Get client IP address
