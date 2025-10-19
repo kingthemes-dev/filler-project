@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import storeApiService from '@/services/store-api';
+import cartPersistenceService from '@/services/cart-persistence';
+import sessionManager from '@/services/session-manager';
 import { calculatePriceWithVAT } from '@/utils/format-price';
 
 // Types
