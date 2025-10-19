@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
-    reactCompiler: true, // React 19 Compiler for automatic optimizations
+    // reactCompiler: true, // React 19 Compiler - temporarily disabled for routes-manifest
     // ppr: true, // Partial Prerendering - disabled until Next.js canary
   },
   // Fix for Node.js v18 compatibility - moved to top level
