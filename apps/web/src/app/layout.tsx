@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import TopBar from '@/components/ui/top-bar';
 import Header from '@/components/ui/header';
-import Footer from '@/components/ui/footer';
+import { ConditionalFooter } from '@/components/conditional-footer';
 import CartDrawer from '@/components/ui/cart-drawer';
 import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
 import FavoritesModal from '@/components/ui/favorites-modal';
@@ -236,7 +236,7 @@ export default function RootLayout({
                           </ReactQueryProvider>
                           <AuthModalManager />
                           <FavoritesModal />
-                          <Footer />
+                          <ConditionalFooter />
                           <CartDrawer />
                         </ErrorBoundary>
                         
