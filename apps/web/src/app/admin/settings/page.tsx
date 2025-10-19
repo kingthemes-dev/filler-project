@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+// import { Switch } from '@/components/ui/switch'; // Switch component not available
 import { RefreshCw, Save, Eye, EyeOff, ExternalLink } from 'lucide-react';
 
 interface Settings {
@@ -219,10 +219,12 @@ export default function SettingsPage() {
               <Label htmlFor="redis-enabled">Enable Redis</Label>
               <p className="text-sm text-gray-600">Use Redis for caching</p>
             </div>
-            <Switch
+            <input
               id="redis-enabled"
+              type="checkbox"
               checked={settings.redis.enabled}
-              onCheckedChange={(checked) => updateSetting('redis', 'enabled', checked)}
+              onChange={(e) => updateSetting('redis', 'enabled', e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
           
@@ -260,10 +262,12 @@ export default function SettingsPage() {
               <Label htmlFor="cache-enabled">Enable Caching</Label>
               <p className="text-sm text-gray-600">Cache API responses</p>
             </div>
-            <Switch
+            <input
               id="cache-enabled"
+              type="checkbox"
               checked={settings.performance.cacheEnabled}
-              onCheckedChange={(checked) => updateSetting('performance', 'cacheEnabled', checked)}
+              onChange={(e) => updateSetting('performance', 'cacheEnabled', e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
           
@@ -272,10 +276,12 @@ export default function SettingsPage() {
               <Label htmlFor="monitoring-enabled">Enable Monitoring</Label>
               <p className="text-sm text-gray-600">Track performance metrics</p>
             </div>
-            <Switch
+            <input
               id="monitoring-enabled"
+              type="checkbox"
               checked={settings.performance.monitoringEnabled}
-              onCheckedChange={(checked) => updateSetting('performance', 'monitoringEnabled', checked)}
+              onChange={(e) => updateSetting('performance', 'monitoringEnabled', e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
 
@@ -304,10 +310,12 @@ export default function SettingsPage() {
               <Label htmlFor="csrf-enabled">CSRF Protection</Label>
               <p className="text-sm text-gray-600">Protect against CSRF attacks</p>
             </div>
-            <Switch
+            <input
               id="csrf-enabled"
+              type="checkbox"
               checked={settings.security.csrfEnabled}
-              onCheckedChange={(checked) => updateSetting('security', 'csrfEnabled', checked)}
+              onChange={(e) => updateSetting('security', 'csrfEnabled', e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
           
@@ -316,10 +324,12 @@ export default function SettingsPage() {
               <Label htmlFor="rate-limit-enabled">Rate Limiting</Label>
               <p className="text-sm text-gray-600">Limit API requests per IP</p>
             </div>
-            <Switch
+            <input
               id="rate-limit-enabled"
+              type="checkbox"
               checked={settings.security.rateLimitEnabled}
-              onCheckedChange={(checked) => updateSetting('security', 'rateLimitEnabled', checked)}
+              onChange={(e) => updateSetting('security', 'rateLimitEnabled', e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
 
@@ -328,10 +338,12 @@ export default function SettingsPage() {
               <Label htmlFor="cors-enabled">CORS</Label>
               <p className="text-sm text-gray-600">Enable Cross-Origin Resource Sharing</p>
             </div>
-            <Switch
+            <input
               id="cors-enabled"
+              type="checkbox"
               checked={settings.security.corsEnabled}
-              onCheckedChange={(checked) => updateSetting('security', 'corsEnabled', checked)}
+              onChange={(e) => updateSetting('security', 'corsEnabled', e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
         </CardContent>
