@@ -76,13 +76,26 @@ export default function WooCommerceStatus() {
   };
 
   const handleSyncProducts = async () => {
-    // TODO: Implement product sync
-    console.log('Syncing products...');
+    try {
+      console.log('Syncing products...');
+      // Trigger product sync via API
+      const response = await fetch('/api/woocommerce?endpoint=products&per_page=100', {
+        method: 'GET',
+      });
+      if (response.ok) {
+        console.log('Products synced successfully');
+        await fetchWooCommerceStatus(); // Refresh status
+      } else {
+        console.error('Failed to sync products');
+      }
+    } catch (error) {
+      console.error('Error syncing products:', error);
+    }
   };
 
   const handleViewLogs = () => {
-    // TODO: Navigate to logs
-    console.log('Viewing logs...');
+    // Navigate to logs page
+    window.location.href = '/admin/logs';
   };
 
   if (loading && !status) {

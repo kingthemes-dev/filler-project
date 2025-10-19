@@ -22,6 +22,8 @@ interface CacheStats {
 export default function CacheStatus() {
   const [stats, setStats] = useState<CacheStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
+  const [warming, setWarming] = useState(false);
 
   const fetchCacheStats = async () => {
     try {
@@ -70,6 +72,45 @@ export default function CacheStatus() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleClearCache = async () => {
+    setClearing(true);
+    try {
+      const response = await fetch('/api/cache/clear', { method: 'POST' });
+      if (response.ok) {
+        console.log('Cache cleared successfully');
+        await fetchCacheStats(); // Refresh stats
+      } else {
+        console.error('Failed to clear cache');
+      }
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const handleWarmCache = async () => {
+    setWarming(true);
+    try {
+      const response = await fetch('/api/cache/warm', { method: 'POST' });
+      if (response.ok) {
+        console.log('Cache warmed successfully');
+        await fetchCacheStats(); // Refresh stats
+      } else {
+        console.error('Failed to warm cache');
+      }
+    } catch (error) {
+      console.error('Error warming cache:', error);
+    } finally {
+      setWarming(false);
+    }
+  };
+
+  const handleViewLogs = () => {
+    // Navigate to logs page
+    window.location.href = '/admin/logs';
+  };
+
   const formatBytes = (bytes: number) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 Bytes';
@@ -97,7 +138,7 @@ export default function CacheStatus() {
           <p className="text-gray-600">Redis and memory cache monitoring</p>
         </div>
         <div className="flex space-x-2">
-          <Button onClick={clearCache} variant="outline">
+          <Button onClick={handleClearCache} variant="outline" disabled={clearing}>
             <Trash2 className="h-4 w-4 mr-2" />
             Clear Cache
           </Button>
@@ -237,15 +278,15 @@ export default function CacheStatus() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex flex-col">
+            <Button variant="outline" className="h-20 flex flex-col" onClick={handleClearCache} disabled={clearing}>
               <Trash2 className="h-6 w-6 mb-2" />
-              <span className="text-sm">Clear All Cache</span>
+              <span className="text-sm">{clearing ? 'Clearing...' : 'Clear All Cache'}</span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col">
-              <RefreshCw className="h-6 w-6 mb-2" />
-              <span className="text-sm">Warm Cache</span>
+            <Button variant="outline" className="h-20 flex flex-col" onClick={handleWarmCache} disabled={warming}>
+              <RefreshCw className={`h-6 w-6 mb-2 ${warming ? 'animate-spin' : ''}`} />
+              <span className="text-sm">{warming ? 'Warming...' : 'Warm Cache'}</span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col">
+            <Button variant="outline" className="h-20 flex flex-col" onClick={handleViewLogs}>
               <Activity className="h-6 w-6 mb-2" />
               <span className="text-sm">View Cache Logs</span>
             </Button>

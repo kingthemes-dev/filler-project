@@ -60,6 +60,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [nodeVersion, setNodeVersion] = useState('');
   const [platform, setPlatform] = useState('');
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
 
   // Load environment variables after hydration
   useEffect(() => {
@@ -115,18 +117,32 @@ export default function SettingsPage() {
   };
 
   const testConnection = async (type: 'woocommerce' | 'redis') => {
+    setTestingConnection(true);
+    setConnectionStatus(null);
+    
     try {
+      let isConnected = false;
+      
       if (type === 'woocommerce') {
         const response = await fetch('/api/health');
         const data = await response.json();
-        return data.services.database.status === 'ok';
+        isConnected = data.services.database.status === 'ok';
       } else {
         const response = await fetch('/api/health');
         const data = await response.json();
-        return data.services.redis.status === 'ok';
+        isConnected = data.services.redis.status === 'ok';
       }
+      
+      setConnectionStatus(isConnected ? 'Connection successful!' : 'Connection failed!');
+      
+      // Clear status after 3 seconds
+      setTimeout(() => setConnectionStatus(null), 3000);
+      
     } catch (error) {
-      return false;
+      setConnectionStatus('Connection failed!');
+      setTimeout(() => setConnectionStatus(null), 3000);
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -164,10 +180,16 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={() => testConnection('woocommerce')}
+                disabled={testingConnection}
                 className="w-full"
               >
-                Test Connection
+                {testingConnection ? 'Testing...' : 'Test Connection'}
               </Button>
+              {connectionStatus && (
+                <div className={`text-sm mt-2 ${connectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
+                  {connectionStatus}
+                </div>
+              )}
             </div>
           </div>
           

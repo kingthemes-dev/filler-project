@@ -1,43 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { warmCache, getCacheWarmingStatus } from '@/utils/cache-warming';
-import { logger } from '@/utils/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const body = await request.json().catch(() => ({}));
-    const { config } = body;
+    // Warm cache by preloading common endpoints
+    const endpoints = [
+      '/api/woocommerce?endpoint=products&per_page=10',
+      '/api/woocommerce?endpoint=products/categories',
+      '/api/woocommerce?endpoint=system_status',
+      '/api/health'
+    ];
 
-    // Start cache warming
-    warmCache(config);
+    const results = await Promise.allSettled(
+      endpoints.map(async (endpoint) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${endpoint}`);
+        return { endpoint, status: response.status };
+      })
+    );
+
+    const successful = results.filter(result => result.status === 'fulfilled').length;
+    const failed = results.filter(result => result.status === 'rejected').length;
 
     return NextResponse.json({
       success: true,
-      message: 'Cache warming started',
-      timestamp: new Date().toISOString(),
+      message: 'Cache warmed successfully',
+      results: {
+        successful,
+        failed,
+        total: endpoints.length
+      },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Cache warming API error:', error);
+    console.error('Error warming cache:', error);
     return NextResponse.json(
-      { error: 'Failed to start cache warming' },
+      { 
+        success: false, 
+        error: 'Failed to warm cache',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }
 }
-
-export async function GET() {
-  try {
-    const status = getCacheWarmingStatus();
-
-    return NextResponse.json({
-      status,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    logger.error('Cache warming status API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get cache warming status' },
-      { status: 500 }
-    );
-  }
-}
-
