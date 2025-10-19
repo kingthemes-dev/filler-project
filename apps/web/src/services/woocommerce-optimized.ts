@@ -172,8 +172,8 @@ class WooCommerceService {
   async getProductBySlug(slug: string): Promise<WooProduct | null> {
     try {
       console.log(`🔍 Fetching product by slug: ${slug}`);
-      // Use cache=off to ensure fresh data for product pages
-      const response = await fetch(`${this.baseUrl}?endpoint=products&slug=${slug}&cache=off`);
+      // WooCommerce doesn't support slug parameter directly, so we use search
+      const response = await fetch(`${this.baseUrl}?endpoint=products&search=${slug}&cache=off`);
       
       console.log(`📡 Response status: ${response.status}`);
       
@@ -185,11 +185,11 @@ class WooCommerceService {
       const data = await response.json();
       console.log(`📦 Data received:`, data);
       
-      // WooCommerce API zwraca array, więc bierzemy pierwszy element
-      const product = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      // Find product with exact slug match
+      const product = Array.isArray(data) ? data.find((p: any) => p.slug === slug) : null;
       console.log(`✅ Product found:`, product ? product.name : 'null');
       
-      return product;
+      return product || null;
     } catch (error) {
       console.error('❌ Error fetching product by slug:', error);
       throw error;
@@ -207,7 +207,7 @@ class WooCommerceService {
     perPage: number;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/categories`);
+      const response = await fetch(`${this.baseUrl}?endpoint=categories`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -972,7 +972,7 @@ class WooCommerceService {
   async getProductAttributes(): Promise<{ success: boolean; attributes?: Array<{ id: number; name: string; slug: string; type: string; order_by: string; has_archives: boolean }>; error?: string }> {
     try {
       // PERFORMANCE FIX: Add _fields to reduce payload size
-      const response = await fetch(`/api/woocommerce?endpoint=products/attributes&_fields=id,name,slug,type,order_by,has_archives`);
+      const response = await fetch(`/api/woocommerce?endpoint=attributes&_fields=id,name,slug,type,order_by,has_archives`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
