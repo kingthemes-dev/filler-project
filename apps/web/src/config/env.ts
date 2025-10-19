@@ -28,15 +28,13 @@ interface EnvConfig {
 const isBrowser = typeof window !== 'undefined';
 const REQUIRED_ENV_VARS = isBrowser
   ? [
-      'NEXT_PUBLIC_WORDPRESS_URL',
-      'NEXT_PUBLIC_BASE_URL'
+      'NEXT_PUBLIC_WORDPRESS_URL'
     ] as const
   : [
       'NEXT_PUBLIC_WC_URL',
       'WC_CONSUMER_KEY',
       'WC_CONSUMER_SECRET',
-      'NEXT_PUBLIC_WORDPRESS_URL',
-      'NEXT_PUBLIC_BASE_URL'
+      'NEXT_PUBLIC_WORDPRESS_URL'
     ] as const;
 
 // Optional environment variables
