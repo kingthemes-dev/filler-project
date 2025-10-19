@@ -62,30 +62,21 @@ export default function SettingsPage() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
 
-  // Load environment variables after hydration
+  // Load settings status from API
   useEffect(() => {
-    setSettings({
-      woocommerce: {
-        url: (process.env.NEXT_PUBLIC_WORDPRESS_URL || '') + '/wp-json/wc/v3',
-        consumerKey: process.env.WC_CONSUMER_KEY || '',
-        consumerSecret: process.env.WC_CONSUMER_SECRET || '',
-        webhookSecret: process.env.WOOCOMMERCE_WEBHOOK_SECRET || ''
-      },
-      redis: {
-        url: process.env.REDIS_URL || '',
-        enabled: !!process.env.REDIS_URL
-      },
-      performance: {
-        cacheEnabled: true,
-        cacheTtl: 60,
-        monitoringEnabled: true
-      },
-      security: {
-        csrfEnabled: true,
-        rateLimitEnabled: true,
-        corsEnabled: true
+    const fetchSettingsStatus = async () => {
+      try {
+        const response = await fetch('/api/settings/status');
+        if (response.ok) {
+          const data = await response.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Error fetching settings status:', error);
       }
-    });
+    };
+
+    fetchSettingsStatus();
     
     // Set Node.js version and platform after hydration
     setNodeVersion(process.version);
