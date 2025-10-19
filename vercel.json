@@ -4,7 +4,6 @@
   "framework": "nextjs",
   "installCommand": "pnpm install",
   "devCommand": "pnpm run dev:web",
-  "rootDirectory": "apps/web",
   "build": {
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1"
