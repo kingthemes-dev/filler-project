@@ -13,12 +13,17 @@ export async function middleware(request: NextRequest) {
   // Apply security middleware
   const securityResponse = securityMiddleware(request);
   
-  // Apply CDN cache strategy
-  if (!shouldBypassCDNCache(request)) {
-    return applyCDNCache(request, securityResponse);
+  // If security middleware returned a response (error), return it
+  if (securityResponse && securityResponse.status !== 200) {
+    return securityResponse;
   }
   
-  return securityResponse;
+  // Apply CDN cache strategy
+  if (!shouldBypassCDNCache(request)) {
+    return applyCDNCache(request, securityResponse || NextResponse.next());
+  }
+  
+  return securityResponse || NextResponse.next();
 }
 
 export const config = {

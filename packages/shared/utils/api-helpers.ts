@@ -2,7 +2,7 @@
  * API helper functions and utilities
  */
 
-import { env } from '@/config/env';
+import { env } from '../constants/env';
 import { CustomError, ERROR_CODES, handleNetworkRequest } from './error-handler';
 import { RequestConfig, ApiResponse } from '@/types/api';
 import { formatPrice } from './format-price';

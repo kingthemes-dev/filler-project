@@ -2,7 +2,7 @@
  * Centralized logging utility
  */
 
-import { env } from '@/config/env';
+// import { env } from '@/config/env';
 
 export enum LogLevel {
   ERROR = 0,
@@ -24,7 +24,7 @@ class Logger {
   private logLevel: LogLevel;
 
   constructor() {
-    this.logLevel = env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG;
+    this.logLevel = process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG;
   }
 
   private formatMessage(level: LogLevel, message: string, context?: any): LogEntry {
@@ -92,7 +92,7 @@ class Logger {
     const emoji = this.getLevelEmoji(level);
 
     // Console logging with colors in development
-    if (env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development') {
       const color = this.getLevelColor(level);
       console.log(
         `%c${emoji} [${levelName}] ${entry.timestamp}`,
@@ -106,7 +106,7 @@ class Logger {
     }
 
     // Send to external logging service in production
-    if (env.NODE_ENV === 'production' && level <= LogLevel.ERROR) {
+    if (process.env.NODE_ENV === 'production' && level <= LogLevel.ERROR) {
       this.sendToExternalService(entry);
     }
   }

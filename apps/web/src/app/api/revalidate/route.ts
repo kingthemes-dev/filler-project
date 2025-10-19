@@ -39,7 +39,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           results.push({ path, status: 'revalidated' });
           console.log(`✅ Path revalidated: ${path}`);
         } catch (error) {
-          results.push({ path, status: 'error', error: error.message });
+          results.push({ path, status: 'error', error: error instanceof Error ? error.message : String(error) });
           console.error(`❌ Path revalidation failed: ${path}`, error);
         }
       }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           results.push({ tag, status: 'revalidated' });
           console.log(`✅ Tag revalidated: ${tag}`);
         } catch (error) {
-          results.push({ tag, status: 'error', error: error.message });
+          results.push({ tag, status: 'error', error: error instanceof Error ? error.message : String(error) });
           console.error(`❌ Tag revalidation failed: ${tag}`, error);
         }
       }
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error('Revalidation failed:', error);
     return NextResponse.json(
-      { error: 'Revalidation failed', message: error.message },
+      { error: 'Revalidation failed', message: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
