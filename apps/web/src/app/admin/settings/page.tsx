@@ -35,14 +35,14 @@ interface Settings {
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>({
     woocommerce: {
-      url: process.env.NEXT_PUBLIC_WORDPRESS_URL + '/wp-json/wc/v3' || '',
-      consumerKey: process.env.WC_CONSUMER_KEY ? '••••••••••••••••' : '',
-      consumerSecret: process.env.WC_CONSUMER_SECRET ? '••••••••••••••••' : '',
-      webhookSecret: process.env.WOOCOMMERCE_WEBHOOK_SECRET ? '••••••••••••••••' : ''
+      url: '',
+      consumerKey: '',
+      consumerSecret: '',
+      webhookSecret: ''
     },
     redis: {
-      url: process.env.REDIS_URL ? '••••••••••••••••' : '',
-      enabled: !!process.env.REDIS_URL
+      url: '',
+      enabled: false
     },
     performance: {
       cacheEnabled: true,
@@ -58,6 +58,32 @@ export default function SettingsPage() {
 
   const [showSecrets, setShowSecrets] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Load environment variables after hydration
+  useEffect(() => {
+    setSettings({
+      woocommerce: {
+        url: process.env.NEXT_PUBLIC_WORDPRESS_URL + '/wp-json/wc/v3' || '',
+        consumerKey: process.env.WC_CONSUMER_KEY ? '••••••••••••••••' : '',
+        consumerSecret: process.env.WC_CONSUMER_SECRET ? '••••••••••••••••' : '',
+        webhookSecret: process.env.WOOCOMMERCE_WEBHOOK_SECRET ? '••••••••••••••••' : ''
+      },
+      redis: {
+        url: process.env.REDIS_URL ? '••••••••••••••••' : '',
+        enabled: !!process.env.REDIS_URL
+      },
+      performance: {
+        cacheEnabled: true,
+        cacheTtl: 60,
+        monitoringEnabled: true
+      },
+      security: {
+        csrfEnabled: true,
+        rateLimitEnabled: true,
+        corsEnabled: true
+      }
+    });
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
