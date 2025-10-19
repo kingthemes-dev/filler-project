@@ -61,13 +61,101 @@ export async function generateMetadata({ searchParams }: { searchParams?: Promis
 export default async function ShopPage({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
   const params = await searchParams;
   const qc = new QueryClient();
+  const defaultCategory = params?.category || '';
   
-  // Simplified approach - no prefetching to avoid build timeouts
-  const dehydratedState = dehydrate(qc);
+  // Prefetch first page of products (respect default category if present)
+  const initialFilters = {
+    search: '',
+    categories: defaultCategory ? [defaultCategory] : [],
+    brands: [],
+    minPrice: 0,
+    maxPrice: 10000,
+    inStock: false,
+    onSale: false,
+    sortBy: 'date' as const,
+    sortOrder: 'desc' as const
+  };
+  
+  try {
+    // Prefetch shop data with error handling
+    await qc.prefetchQuery({
+      queryKey: ['shop','products',{ page: 1, perPage: 12, filters: initialFilters }],
+      queryFn: async () => {
+        const params = new URLSearchParams();
+        params.append('endpoint', 'shop');
+        params.append('page', '1');
+        params.append('per_page', '12');
+        if (defaultCategory) params.append('category', defaultCategory);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/woocommerce?${params.toString()}`, { 
+          next: { revalidate: 30 },
+          signal: AbortSignal.timeout(10000) // 10s timeout
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      },
+      retry: 2,
+      retryDelay: 1000,
+    });
+    
+    // Prefetch categories with error handling
+    await qc.prefetchQuery({
+      queryKey: ['shop','categories'],
+      queryFn: async () => wooCommerceService.getCategories(),
+      retry: 1,
+      retryDelay: 500,
+    });
 
-  return (
-    <HydrationBoundary state={dehydratedState}>
-      <ShopClient />
-    </HydrationBoundary>
-  );
+    // Prefetch attributes with error handling
+    await qc.prefetchQuery({
+      queryKey: ['shop','attributes',{ categories: defaultCategory ? [defaultCategory] : [], search: '', min: 0, max: 10000, selected: [] }],
+      queryFn: async () => {
+        const params = new URLSearchParams();
+        params.append('endpoint', 'attributes');
+        if (defaultCategory) params.append('category', defaultCategory);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/woocommerce?${params.toString()}`, { 
+          next: { revalidate: 600 },
+          signal: AbortSignal.timeout(10000) // 10s timeout
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      },
+      staleTime: 10 * 60_000,
+      retry: 1,
+      retryDelay: 500,
+    });
+
+    const dehydratedState = dehydrate(qc);
+
+    return (
+      <HydrationBoundary state={dehydratedState}>
+        <ShopClient />
+      </HydrationBoundary>
+    );
+  } catch (error) {
+    console.error('Error in ShopPage SSR:', error);
+    
+    // Return error state with proper hydration
+    const dehydratedState = dehydrate(qc);
+    
+    return (
+      <HydrationBoundary state={dehydratedState}>
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Błąd ładowania sklepu
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Wystąpił problem z połączeniem do sklepu. Spróbuj ponownie za chwilę.
+            </p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Odśwież stronę
+            </button>
+          </div>
+        </div>
+      </HydrationBoundary>
+    );
+  }
 }
