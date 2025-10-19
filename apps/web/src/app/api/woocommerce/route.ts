@@ -21,10 +21,10 @@ try {
   console.warn('Redis not available, using in-memory cache', error);
 }
 
-const WC_URL = process.env.NEXT_PUBLIC_WC_URL || process.env.WOOCOMMERCE_API_URL;
+const WC_URL = process.env.NEXT_PUBLIC_WC_URL;
 const SITE_BASE = WC_URL ? WC_URL.replace(/\/wp-json\/wc\/v3.*/, '') : '';
-const CK = process.env.WC_CONSUMER_KEY || process.env.WOOCOMMERCE_CONSUMER_KEY;
-const CS = process.env.WC_CONSUMER_SECRET || process.env.WOOCOMMERCE_CONSUMER_SECRET;
+const CK = process.env.WC_CONSUMER_KEY;
+const CS = process.env.WC_CONSUMER_SECRET;
 
 // Check if required environment variables are available
 if (!WC_URL || !CK || !CS) {
@@ -33,11 +33,8 @@ if (!WC_URL || !CK || !CS) {
     CK: !!CK,
     CS: !!CS,
     NEXT_PUBLIC_WC_URL: process.env.NEXT_PUBLIC_WC_URL,
-    WOOCOMMERCE_API_URL: process.env.WOOCOMMERCE_API_URL,
     WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY,
-    WOOCOMMERCE_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY,
     WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET,
-    WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET,
   });
 }
 
@@ -1098,11 +1095,8 @@ export async function GET(req: NextRequest) {
           CK: !!CK,
           CS: !!CS,
           NEXT_PUBLIC_WC_URL: process.env.NEXT_PUBLIC_WC_URL,
-          WOOCOMMERCE_API_URL: process.env.WOOCOMMERCE_API_URL,
           WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY,
-          WOOCOMMERCE_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY,
           WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET,
-          WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET,
         }
       },
       { status: 500 }

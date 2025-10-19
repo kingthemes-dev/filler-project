@@ -4,9 +4,9 @@
 
 interface EnvConfig {
   // WooCommerce
-  WOOCOMMERCE_API_URL: string;
-  WOOCOMMERCE_CONSUMER_KEY: string;
-  WOOCOMMERCE_CONSUMER_SECRET: string;
+  NEXT_PUBLIC_WC_URL: string;
+  WC_CONSUMER_KEY: string;
+  WC_CONSUMER_SECRET: string;
   
   // WordPress
   NEXT_PUBLIC_WORDPRESS_URL: string;
@@ -25,9 +25,9 @@ interface EnvConfig {
 
 // Required environment variables (server-side only)
 const REQUIRED_SERVER_ENV_VARS = [
-  'WOOCOMMERCE_API_URL',
-  'WOOCOMMERCE_CONSUMER_KEY',
-  'WOOCOMMERCE_CONSUMER_SECRET'
+  'NEXT_PUBLIC_WC_URL',
+  'WC_CONSUMER_KEY',
+  'WC_CONSUMER_SECRET'
 ] as const;
 
 // Required environment variables (client-side)
@@ -52,9 +52,9 @@ function validateEnv(): EnvConfig {
   if (isClient) {
     // Return safe defaults for client-side
     return {
-      WOOCOMMERCE_API_URL: '',
-      WOOCOMMERCE_CONSUMER_KEY: '',
-      WOOCOMMERCE_CONSUMER_SECRET: '',
+      NEXT_PUBLIC_WC_URL: '',
+      WC_CONSUMER_KEY: '',
+      WC_CONSUMER_SECRET: '',
       NEXT_PUBLIC_WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL || '',
       NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || '',
       SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,
@@ -100,9 +100,9 @@ function validateEnv(): EnvConfig {
   
   // Return config with safe defaults for client-side
   return {
-    WOOCOMMERCE_API_URL: process.env.WOOCOMMERCE_API_URL || '',
-    WOOCOMMERCE_CONSUMER_KEY: process.env.WOOCOMMERCE_CONSUMER_KEY || '',
-    WOOCOMMERCE_CONSUMER_SECRET: process.env.WOOCOMMERCE_CONSUMER_SECRET || '',
+    NEXT_PUBLIC_WC_URL: process.env.NEXT_PUBLIC_WC_URL || '',
+    WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY || '',
+    WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET || '',
     NEXT_PUBLIC_WORDPRESS_URL: wordpressUrl,
     NEXT_PUBLIC_BASE_URL: baseUrl,
     SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,

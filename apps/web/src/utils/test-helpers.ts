@@ -11,9 +11,9 @@ import { ReactElement } from 'react';
 // Mock environment variables for testing
 export const mockEnv = {
   NODE_ENV: 'test' as const,
-  WOOCOMMERCE_API_URL: 'https://test.example.com/wp-json/wc/v3',
-  WOOCOMMERCE_CONSUMER_KEY: 'test_consumer_key',
-  WOOCOMMERCE_CONSUMER_SECRET: 'test_consumer_secret',
+  NEXT_PUBLIC_WC_URL: 'https://test.example.com/wp-json/wc/v3',
+  WC_CONSUMER_KEY: 'test_consumer_key',
+  WC_CONSUMER_SECRET: 'test_consumer_secret',
   NEXT_PUBLIC_WORDPRESS_URL: 'https://test.example.com',
   NEXT_PUBLIC_BASE_URL: 'http://localhost:3000'
 };

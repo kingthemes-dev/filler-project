@@ -21,9 +21,9 @@ export class WooCommerceAPI {
   private consumerSecret: string;
 
   constructor() {
-    this.baseUrl = env.WOOCOMMERCE_API_URL;
-    this.consumerKey = env.WOOCOMMERCE_CONSUMER_KEY;
-    this.consumerSecret = env.WOOCOMMERCE_CONSUMER_SECRET;
+    this.baseUrl = env.NEXT_PUBLIC_WC_URL;
+    this.consumerKey = env.WC_CONSUMER_KEY;
+    this.consumerSecret = env.WC_CONSUMER_SECRET;
   }
 
   private getAuthHeader(): string {

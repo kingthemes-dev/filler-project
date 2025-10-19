@@ -9,9 +9,9 @@ async function generateDiscountCode(email: string, source: string): Promise<stri
   
   // Create coupon in WooCommerce
   try {
-    const WC_URL = process.env.WOOCOMMERCE_API_URL;
-    const CK = process.env.WOOCOMMERCE_CONSUMER_KEY;
-    const CS = process.env.WOOCOMMERCE_CONSUMER_SECRET;
+    const WC_URL = process.env.NEXT_PUBLIC_WC_URL;
+    const CK = process.env.WC_CONSUMER_KEY;
+    const CS = process.env.WC_CONSUMER_SECRET;
     
     if (WC_URL && CK && CS) {
       const couponData = {
