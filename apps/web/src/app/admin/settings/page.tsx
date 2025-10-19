@@ -63,13 +63,13 @@ export default function SettingsPage() {
   useEffect(() => {
     setSettings({
       woocommerce: {
-        url: process.env.NEXT_PUBLIC_WORDPRESS_URL + '/wp-json/wc/v3' || '',
-        consumerKey: process.env.WC_CONSUMER_KEY ? '••••••••••••••••' : '',
-        consumerSecret: process.env.WC_CONSUMER_SECRET ? '••••••••••••••••' : '',
-        webhookSecret: process.env.WOOCOMMERCE_WEBHOOK_SECRET ? '••••••••••••••••' : ''
+        url: (process.env.NEXT_PUBLIC_WORDPRESS_URL || '') + '/wp-json/wc/v3',
+        consumerKey: process.env.WC_CONSUMER_KEY || '',
+        consumerSecret: process.env.WC_CONSUMER_SECRET || '',
+        webhookSecret: process.env.WOOCOMMERCE_WEBHOOK_SECRET || ''
       },
       redis: {
-        url: process.env.REDIS_URL ? '••••••••••••••••' : '',
+        url: process.env.REDIS_URL || '',
         enabled: !!process.env.REDIS_URL
       },
       performance: {
