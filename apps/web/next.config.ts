@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
     // ppr: true, // Partial Prerendering - disabled until Next.js canary
   },
   // Fix for Node.js v18 compatibility - moved to top level
-  serverExternalPackages: ['ioredis', 'nodemailer'],
+  // serverExternalPackages: ['ioredis', 'nodemailer'], // Temporarily disabled for routes-manifest
   // Production optimizations
   ...(process.env.NODE_ENV === 'production' && {
     compress: true,
@@ -104,7 +104,7 @@ const nextConfig: NextConfig = {
     
     return config;
   },
-  transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+  // transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'], // Temporarily disabled for routes-manifest
   
   // Output configuration for Docker
   // output: 'standalone', // Disabled for Vercel deployment
