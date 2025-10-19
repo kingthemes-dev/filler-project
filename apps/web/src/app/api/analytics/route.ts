@@ -110,7 +110,7 @@ async function updateSessionMetrics(sessionId: string, events: AnalyticsEvent[])
     const metricsKey = `analytics:metrics:${sessionId}`;
     
     // Get existing metrics
-    const existingMetrics = await redisCache.get(metricsKey) || {
+    const existingMetrics = await redisCache.get(metricsKey) as any || {
       page_views: 0,
       events_count: 0,
       unique_events: new Set(),
@@ -165,7 +165,7 @@ async function processRealTimeMetrics(events: AnalyticsEvent[], sessionId: strin
 async function updateGlobalMetrics(metrics: any) {
   try {
     const globalKey = 'analytics:global:metrics';
-    const globalMetrics = await redisCache.get(globalKey) || {
+    const globalMetrics = await redisCache.get(globalKey) as any || {
       total_sessions: 0,
       total_events: 0,
       event_types: {},
@@ -248,7 +248,7 @@ export async function GET(request: NextRequest) {
 async function getAnalyticsSummary() {
   try {
     const globalKey = 'analytics:global:metrics';
-    const globalMetrics = await redisCache.get(globalKey) || {
+    const globalMetrics = await redisCache.get(globalKey) as any || {
       total_sessions: 0,
       total_events: 0,
       event_types: {},
@@ -273,7 +273,7 @@ async function getAnalyticsSummary() {
 async function getRealTimeMetrics() {
   try {
     // Get recent real-time metrics
-    const realTimeKeys = await redisCache.get('analytics:realtime:*') || [];
+    const realTimeKeys = await redisCache.get('analytics:realtime:*') as string[] || [];
     const metrics = [];
 
     for (const key of realTimeKeys) {
@@ -301,7 +301,7 @@ async function getRealTimeMetrics() {
 async function getSessionData() {
   try {
     // Get active sessions
-    const sessionKeys = await redisCache.get('analytics:session:*') || [];
+    const sessionKeys = await redisCache.get('analytics:session:*') as string[] || [];
     const sessions = [];
 
     for (const key of sessionKeys) {

@@ -27,12 +27,9 @@ class RedisCache {
       this.redis = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         lazyConnect: true,
-        keepAlive: 30000,
-        connectTimeout: 5000,  // Reduced timeout
-        commandTimeout: 3000,  // Reduced timeout
-        retryDelayOnFailover: 100,
+        connectTimeout: 5000,
+        commandTimeout: 3000,
         enableReadyCheck: false,
-        maxRetriesPerRequest: 2,
       });
 
       this.redis.on('connect', () => {
@@ -115,7 +112,9 @@ class RedisCache {
       // Clean up old entries if cache is full
       if (this.memoryCache.size >= this.maxMemoryCacheSize) {
         const oldestKey = this.memoryCache.keys().next().value;
-        this.memoryCache.delete(oldestKey);
+        if (oldestKey) {
+          this.memoryCache.delete(oldestKey);
+        }
       }
       
       this.memoryCache.set(key, { value, expires });

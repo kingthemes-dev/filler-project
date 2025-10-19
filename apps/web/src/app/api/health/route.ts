@@ -25,15 +25,18 @@ interface HealthStatus {
       load: number;
     };
   };
+  circuitBreakers?: any;
+  cache?: any;
   version: string;
   environment: string;
 }
 
 interface ServiceStatus {
-  status: 'ok' | 'error' | 'unknown';
+  status: 'ok' | 'error' | 'unknown' | 'degraded';
   responseTime?: number;
   lastCheck: string;
   error?: string;
+  message?: string;
 }
 
 class HealthChecker {

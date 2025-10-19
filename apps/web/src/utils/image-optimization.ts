@@ -188,8 +188,8 @@ export class ImageOptimizer {
       return { width, height };
     }
 
-    if (device) {
-      const deviceWidth = IMAGE_OPTIMIZATION_CONFIG.breakpoints[device];
+    if (device && device in IMAGE_OPTIMIZATION_CONFIG.breakpoints) {
+      const deviceWidth = IMAGE_OPTIMIZATION_CONFIG.breakpoints[device as keyof typeof IMAGE_OPTIMIZATION_CONFIG.breakpoints];
       return { width: deviceWidth };
     }
 
@@ -344,7 +344,7 @@ export class ImageOptimizer {
       
       this.setupLazyLoading(img);
     } else {
-      img.src = this.optimizeImageUrl(src, { width, height, quality, format });
+      img.src = this.optimizeImageUrl(src, { width, height, quality, format: format as any });
     }
 
     return img;

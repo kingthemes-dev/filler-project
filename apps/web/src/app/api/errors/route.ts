@@ -90,7 +90,7 @@ async function storeErrorInRedis(errorData: ErrorData) {
 
     // Store in errors list for quick access
     const errorsListKey = 'errors:list';
-    const errorsList = await redisCache.get(errorsListKey) || [];
+    const errorsList = await redisCache.get(errorsListKey) as any[] || [];
     errorsList.push({
       error_id: errorId,
       message: errorData.message,
@@ -115,7 +115,7 @@ async function storeErrorInRedis(errorData: ErrorData) {
 async function updateErrorMetrics(errorData: ErrorData) {
   try {
     const metricsKey = 'errors:metrics';
-    const metrics = await redisCache.get(metricsKey) || {
+    const metrics = await redisCache.get(metricsKey) as any || {
       total_errors: 0,
       errors_by_type: {},
       errors_by_severity: {},
@@ -199,8 +199,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'summary';
-    const severity = searchParams.get('severity');
-    const component = searchParams.get('component');
+    const severity = searchParams.get('severity') || undefined;
+    const component = searchParams.get('component') || undefined;
     const limit = parseInt(searchParams.get('limit') || '50');
 
     switch (type) {
@@ -230,7 +230,7 @@ export async function GET(request: NextRequest) {
 async function getErrorSummary() {
   try {
     const metricsKey = 'errors:metrics';
-    const metrics = await redisCache.get(metricsKey) || {
+    const metrics = await redisCache.get(metricsKey) as any || {
       total_errors: 0,
       errors_by_type: {},
       errors_by_severity: {},
@@ -256,7 +256,7 @@ async function getErrorSummary() {
 async function getErrorList(severity?: string, component?: string, limit: number = 50) {
   try {
     const errorsListKey = 'errors:list';
-    const errorsList = await redisCache.get(errorsListKey) || [];
+    const errorsList = await redisCache.get(errorsListKey) as any[] || [];
 
     // Filter errors
     let filteredErrors = errorsList;
@@ -296,7 +296,7 @@ async function getErrorList(severity?: string, component?: string, limit: number
 async function getErrorMetrics() {
   try {
     const metricsKey = 'errors:metrics';
-    const metrics = await redisCache.get(metricsKey) || {};
+    const metrics = await redisCache.get(metricsKey) as any || {};
 
     // Calculate additional metrics
     const additionalMetrics = {

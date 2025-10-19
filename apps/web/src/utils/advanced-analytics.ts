@@ -17,6 +17,9 @@ export const ADVANCED_ANALYTICS_CONFIG = {
 
 // Event types for advanced tracking
 export const ADVANCED_EVENT_TYPES = {
+  // Page events
+  PAGE_VIEW: 'page_view',
+  
   // E-commerce events
   PRODUCT_VIEW: 'product_view',
   PRODUCT_CLICK: 'product_click',

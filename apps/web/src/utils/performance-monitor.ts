@@ -366,7 +366,7 @@ class PerformanceMonitor {
     }
   }
 
-  private recordMetric(metric: PerformanceMetric): void {
+  public recordMetric(metric: PerformanceMetric): void {
     // Add URL and timestamp if not provided
     metric.url = metric.url || (typeof window !== 'undefined' ? window.location.href : 'server');
     metric.timestamp = metric.timestamp || new Date().toISOString();

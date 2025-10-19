@@ -112,7 +112,15 @@ export default function SettingsPage() {
     }
   };
 
-  // Settings are now read-only - no updateSetting needed
+  const updateSetting = (section: string, key: string, value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section as keyof typeof prev],
+        [key]: value
+      }
+    }));
+  };
 
   const testConnection = async (type: 'woocommerce' | 'redis') => {
     setTestingConnection(true);

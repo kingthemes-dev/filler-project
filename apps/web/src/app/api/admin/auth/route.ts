@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Log successful admin login
     console.log('✅ Admin login successful:', {
       timestamp: new Date().toISOString(),
-      ip: request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
     });
 
     return NextResponse.json({ 

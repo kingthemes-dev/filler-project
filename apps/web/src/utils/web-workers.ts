@@ -223,7 +223,7 @@ export class WorkerUtils {
       items: data,
       operation
     });
-    return result.result;
+    return (result as any).result;
   }
 
   // Mathematical calculations
@@ -232,7 +232,7 @@ export class WorkerUtils {
       values,
       operation
     });
-    return result.result;
+    return (result as any).result;
   }
 
   // Product data processing

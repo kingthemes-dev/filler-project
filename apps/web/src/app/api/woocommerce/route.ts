@@ -1281,6 +1281,7 @@ export async function GET(req: NextRequest) {
 
     // Retry logic for better reliability
     let lastError: Error | null = null;
+    let responseTime = 0;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         console.log(`🔄 Attempt ${attempt} for ${url.toString()}`);
@@ -1293,7 +1294,7 @@ export async function GET(req: NextRequest) {
           },
           cache: "no-store",
         });
-        const responseTime = Date.now() - startTime;
+        responseTime = Date.now() - startTime;
         
         // Record API metrics
         sentryMetrics.recordApiResponse(
