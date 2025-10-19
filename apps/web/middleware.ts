@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { securityMiddleware } from '@/middleware/security';
 import { csrfMiddleware } from '@/middleware/csrf';
 import { applyCDNCache, shouldBypassCDNCache } from '@/middleware/cdn-cache';
+import { adminAuthMiddleware } from '@/middleware/admin-auth';
 
 export async function middleware(request: NextRequest) {
+  // Apply admin authentication for admin routes
+  const adminResponse = adminAuthMiddleware(request);
+  if (adminResponse.status !== 200) {
+    return adminResponse;
+  }
+
   // Apply CSRF protection first
   const csrfResponse = await csrfMiddleware(request);
   if (csrfResponse.status !== 200) {
