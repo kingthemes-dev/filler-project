@@ -9,14 +9,14 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
-        <aside className="w-64 bg-white shadow-sm min-h-screen">
+        <aside className="w-64 bg-white shadow-sm min-h-screen flex flex-col">
           <div className="p-4 border-b">
             <h1 className="text-xl font-semibold">Admin Panel</h1>
           </div>
-          <div className="p-4">
+          <div className="flex-1 p-4">
             <AdminNav />
           </div>
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="p-4 border-t">
             <LogoutButton />
           </div>
         </aside>
