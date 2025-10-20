@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Filter, RotateCcw } from 'lucide-react';
+import { X, RotateCcw } from 'lucide-react';
 
 interface FilterState {
   search: string;
@@ -138,9 +138,6 @@ export default function ActiveFiltersBar({
           {/* Left side - Filter info */}
           <div className="flex items-center gap-4 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="p-1.5 rounded-lg bg-blue-50">
-                <Filter className="w-4 h-4 text-blue-600" />
-              </div>
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">
                   Aktywne filtry

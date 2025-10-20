@@ -436,11 +436,6 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
               onClearFilters={clearFilters}
               onPriceRangeReset={() => setPriceRange({ min: 0, max: 10000 })}
             />
-            <div className="mb-6">
-              <p className="text-gray-600">
-                Znaleziono <span className="font-semibold">{totalProducts}</span> produktów
-              </p>
-            </div>
             
             {loading || filterLoading ? (
               <div className="grid gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-3">

@@ -196,16 +196,6 @@ export default function ShopFilters({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {activeFiltersCount > 0 && (
-                  <motion.button
-                    onClick={() => { analytics.track('filters_clear'); onClearFilters(); }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="text-xs sm:text-sm text-gray-500 hover:text-red-600 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium"
-                  >
-                    Wyczyść ({activeFiltersCount})
-                  </motion.button>
-                  )}
                   {/* Mobile Close Button */}
                   <motion.button
                     onClick={onToggleFilters}
