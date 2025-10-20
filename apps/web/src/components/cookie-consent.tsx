@@ -64,7 +64,7 @@ export default function CookieConsent() {
     // Google Analytics
     if (prefs.analytics && typeof window !== 'undefined') {
       const script = document.createElement('script');
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}`;
       script.async = true;
       document.head.appendChild(script);
 
@@ -74,7 +74,7 @@ export default function CookieConsent() {
         (window as any).dataLayer.push(args);
       }
       gtag('js', new Date());
-      gtag('config', process.env.NEXT_PUBLIC_GA_ID || '', {
+      gtag('config', process.env.NEXT_PUBLIC_GA4_ID || '', {
         anonymize_ip: true,
         cookie_flags: 'SameSite=None;Secure',
       });
