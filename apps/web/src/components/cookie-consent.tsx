@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Cookie, Settings, Check, X as XIcon } from 'lucide-react';
+import Link from 'next/link';
 
 interface CookiePreferences {
   necessary: boolean;
@@ -130,6 +131,11 @@ export default function CookieConsent() {
                 <p className="text-gray-600 text-sm mb-4 leading-relaxed">
                   Używamy plików cookies, aby zapewnić najlepszą jakość usług. 
                   Możesz zaakceptować wszystkie lub dostosować preferencje.
+                  {' '}
+                  <Link href="/polityka-prywatnosci" className="text-blue-600 hover:text-blue-800 underline">
+                    Dowiedz się więcej w polityce prywatności
+                  </Link>
+                  .
                 </p>
 
                 {/* Buttons */}
@@ -164,6 +170,11 @@ export default function CookieConsent() {
                 {/* Settings Description */}
                 <p className="text-gray-600 text-sm mb-4 leading-relaxed">
                   Wybierz, które pliki cookies chcesz akceptować. Niezbędne cookies są zawsze włączone.
+                  {' '}
+                  <Link href="/polityka-prywatnosci" className="text-blue-600 hover:text-blue-800 underline">
+                    Dowiedz się więcej w polityce prywatności
+                  </Link>
+                  .
                 </p>
 
                 {/* Cookie Options */}
