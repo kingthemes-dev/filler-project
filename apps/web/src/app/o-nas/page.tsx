@@ -88,7 +88,7 @@ export default function AboutPage() {
         </section>
 
         {/* Features Section */}
-        <section className="pt-8 pb-4">
+        <section className="pt-8 pb-4 lg:pb-2 xl:pb-1">
           <PageContainer>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {/* Konkurencyjne ceny */}
