@@ -180,9 +180,9 @@ export default function ShopFilters({
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
         <div
-          className={`bg-white border border-gray-200 p-4 sm:p-6 shadow-sm lg:block rounded-2xl ${
+          className={`bg-white/95 backdrop-blur-sm border border-gray-200/50 p-4 sm:p-6 shadow-xl lg:block rounded-2xl ${
             showFilters 
-              ? 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform translate-x-0 transition-transform duration-300 ease-in-out rounded-r-2xl lg:relative lg:inset-auto lg:w-auto lg:max-w-none lg:transform-none lg:transition-none' 
+              ? 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform translate-x-0 transition-all duration-300 ease-out rounded-r-2xl lg:relative lg:inset-auto lg:w-auto lg:max-w-none lg:transform-none lg:transition-none lg:shadow-2xl lg:backdrop-blur-md' 
               : 'hidden lg:block'
           }`}
           id="filters-panel"
@@ -193,64 +193,288 @@ export default function ShopFilters({
         >
               {/* Header */}
               <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <div className="flex items-center">
-                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-gray-600" />
-                  <h3 id="filters-heading" className="text-base sm:text-lg font-semibold text-gray-900">Filtry</h3>
-                  <span className="ml-2 text-xs sm:text-sm text-gray-500">({totalProducts} produktów)</span>
+                <div className="flex items-center group">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
+                    <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 id="filters-heading" className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Filtry</h3>
+                    <span className="text-xs sm:text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-300">
+                      {totalProducts} produktów
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {activeFiltersCount > 0 && (
-                  <button
+                  <motion.button
                     onClick={() => { analytics.track('filters_clear'); onClearFilters(); }}
-                      className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      Wyczyść
-                    </button>
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="text-xs sm:text-sm text-gray-500 hover:text-red-600 px-3 py-1.5 rounded-full bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium"
+                  >
+                    Wyczyść ({activeFiltersCount})
+                  </motion.button>
                   )}
                   {/* Mobile Close Button */}
-                  <button
+                  <motion.button
                     onClick={onToggleFilters}
-                    className="lg:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="lg:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-300"
                     aria-label="Zamknij filtry"
                     ref={closeBtnRef}
                   >
                     <X className="w-5 h-5" />
-                  </button>
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Active Filter Chips */}
+              {activeFiltersCount > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 sm:mb-6"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                    <h4 className="text-sm font-semibold text-gray-900">Aktywne filtry</h4>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {filters.search && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full border border-blue-200"
+                      >
+                        <span>Szukaj: "{filters.search}"</span>
+                        <button
+                          onClick={() => onFilterChange('search', '')}
+                          className="hover:bg-blue-200 rounded-full p-0.5 transition-colors duration-200"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </motion.div>
+                    )}
+                    {filters.categories.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200"
+                      >
+                        <span>Kategorie: {filters.categories.length}</span>
+                        <button
+                          onClick={() => onFilterChange('categories', [])}
+                          className="hover:bg-green-200 rounded-full p-0.5 transition-colors duration-200"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </motion.div>
+                    )}
+                    {(filters.minPrice || filters.maxPrice) && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-800 text-xs font-medium rounded-full border border-orange-200"
+                      >
+                        <span>
+                          Cena: {filters.minPrice || 0} - {filters.maxPrice || '∞'} zł
+                        </span>
+                        <button
+                          onClick={() => {
+                            onFilterChange('minPrice', '');
+                            onFilterChange('maxPrice', '');
+                            setPriceRange({ min: 0, max: 10000 });
+                          }}
+                          className="hover:bg-orange-200 rounded-full p-0.5 transition-colors duration-200"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </motion.div>
+                    )}
+                    {filters.onSale && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-800 text-xs font-medium rounded-full border border-red-200"
+                      >
+                        <span>Promocje</span>
+                        <button
+                          onClick={() => onFilterChange('onSale', false)}
+                          className="hover:bg-red-200 rounded-full p-0.5 transition-colors duration-200"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Filter Presets */}
+              <div className="mb-4 sm:mb-6">
+                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                  Szybkie filtry
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      onFilterChange('onSale', true);
+                      onFilterChange('categories', []);
+                      onFilterChange('search', '');
+                      onFilterChange('minPrice', '');
+                      onFilterChange('maxPrice', '');
+                    }}
+                    className="p-3 rounded-xl bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 hover:from-red-100 hover:to-pink-100 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span className="text-xs font-semibold text-red-700 group-hover:text-red-800">Promocje</span>
+                    </div>
+                    <p className="text-xs text-red-600 mt-1">Najlepsze oferty</p>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      onFilterChange('minPrice', 0);
+                      onFilterChange('maxPrice', 500);
+                      onFilterChange('onSale', false);
+                      onFilterChange('categories', []);
+                      onFilterChange('search', '');
+                    }}
+                    className="p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 hover:from-green-100 hover:to-emerald-100 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-xs font-semibold text-green-700 group-hover:text-green-800">Do 500 zł</span>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">Przystępne ceny</p>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      onFilterChange('search', 'krem');
+                      onFilterChange('onSale', false);
+                      onFilterChange('categories', []);
+                      onFilterChange('minPrice', '');
+                      onFilterChange('maxPrice', '');
+                    }}
+                    className="p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-xs font-semibold text-blue-700 group-hover:text-blue-800">Kremy</span>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-1">Najpopularniejsze</p>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      onFilterChange('search', 'serum');
+                      onFilterChange('onSale', false);
+                      onFilterChange('categories', []);
+                      onFilterChange('minPrice', '');
+                      onFilterChange('maxPrice', '');
+                    }}
+                    className="p-3 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 hover:from-purple-100 hover:to-pink-100 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <span className="text-xs font-semibold text-purple-700 group-hover:text-purple-800">Serum</span>
+                    </div>
+                    <p className="text-xs text-purple-600 mt-1">Skuteczne</p>
+                  </motion.button>
                 </div>
               </div>
 
               {/* Search Filter */}
               <div className="mb-4 sm:mb-6">
-                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Wyszukiwanie</h4>
-                <div className="relative" data-testid="filter-search">
+                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  Wyszukiwanie
+                </h4>
+                <div className="relative group" data-testid="filter-search">
                   <input
                     type="text"
                     placeholder="Szukaj produktów..."
                     value={filters.search}
                     onChange={(e) => onFilterChange('search', e.target.value)}
-                    className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-4 py-3 pl-12 border border-gray-200 rounded-xl text-sm bg-gray-50/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400 group-hover:border-gray-300 group-hover:bg-white/80"
                   />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </div>
+                  {filters.search && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      onClick={() => onFilterChange('search', '')}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </motion.button>
+                  )}
                 </div>
+                
+                {/* Search Suggestions */}
+                {!filters.search && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3"
+                  >
+                    <p className="text-xs text-gray-500 mb-2">Popularne wyszukiwania:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['krem', 'serum', 'tonik', 'maseczka', 'oczyszczanie', 'nawilżanie'].map((suggestion, index) => (
+                        <motion.button
+                          key={suggestion}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.1 }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => onFilterChange('search', suggestion)}
+                          className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 rounded-full border border-gray-200 hover:border-blue-200 transition-all duration-300 font-medium"
+                        >
+                          {suggestion}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               {/* Categories Filter */}
               <div className="mb-4 sm:mb-6">
-                <button
+                <motion.button
                   onClick={() => toggleSection('categories')}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
                 >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Kategorie</h4>
-                  {expandedSections.categories ? (
-                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Kategorie</h4>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: expandedSections.categories ? 180 : 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
+                  </motion.div>
+                </motion.button>
                 
                 <AnimatePresence>
                   {expandedSections.categories && (
@@ -274,17 +498,23 @@ export default function ShopFilters({
 
                   {/* Dynamic Attributes Filter */}
                   <div className="mb-4 sm:mb-6">
-                    <button
+                    <motion.button
                       onClick={() => toggleSection('attributes')}
-                      className="flex items-center justify-between w-full mb-3 sm:mb-4"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
                     >
-                      <h4 className="text-sm sm:text-base font-semibold text-gray-900">Atrybuty</h4>
-                      {expandedSections.attributes ? (
-                        <ChevronUp className="w-4 h-4 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-gray-500" />
-                      )}
-                    </button>
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Atrybuty</h4>
+                      </div>
+                      <motion.div
+                        animate={{ rotate: expandedSections.attributes ? 180 : 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                      >
+                        <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
+                      </motion.div>
+                    </motion.button>
                     
                     <AnimatePresence>
                       {expandedSections.attributes && (
@@ -321,17 +551,23 @@ export default function ShopFilters({
 
                   {/* Price Range Filter */}
               <div className="mb-4 sm:mb-6">
-                <button
+                <motion.button
                   onClick={() => toggleSection('price')}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
                 >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Zakres cen</h4>
-                  {expandedSections.price ? (
-                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Zakres cen</h4>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: expandedSections.price ? 180 : 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
+                  </motion.div>
+                </motion.button>
                 
                 <AnimatePresence>
                   {expandedSections.price && (
@@ -385,37 +621,43 @@ export default function ShopFilters({
                           />
                         </div>
                         
-                        <div className="flex gap-2">
-                          <button
+                        <div className="flex gap-2 flex-wrap">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => {
                               setPriceRange({ min: 0, max: 1000 });
                               onFilterChange('minPrice', 0);
                               onFilterChange('maxPrice', 1000);
                             }}
-                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="px-4 py-2 text-xs bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 rounded-full hover:from-green-100 hover:to-emerald-100 border border-green-200 hover:border-green-300 transition-all duration-300 font-medium"
                           >
                             Do 1000 zł
-                          </button>
-                          <button
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => {
                               setPriceRange({ min: 1000, max: 5000 });
                               onFilterChange('minPrice', 1000);
                               onFilterChange('maxPrice', 5000);
                             }}
-                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="px-4 py-2 text-xs bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-full hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 transition-all duration-300 font-medium"
                           >
                             1000-5000 zł
-                          </button>
-                          <button
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => {
                               setPriceRange({ min: 5000, max: 10000 });
                               onFilterChange('minPrice', 5000);
                               onFilterChange('maxPrice', 10000);
                             }}
-                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="px-4 py-2 text-xs bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 rounded-full hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 transition-all duration-300 font-medium"
                           >
                             Powyżej 5000 zł
-                          </button>
+                          </motion.button>
                         </div>
                       </div>
                     </motion.div>
@@ -425,17 +667,23 @@ export default function ShopFilters({
 
               {/* Special Offers */}
               <div className="mb-4 sm:mb-6">
-                <button
+                <motion.button
                   onClick={() => toggleSection('availability')}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
                 >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">Oferty specjalne</h4>
-                  {expandedSections.availability ? (
-                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Oferty specjalne</h4>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: expandedSections.availability ? 180 : 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
+                  </motion.div>
+                </motion.button>
                 
                 <AnimatePresence>
                   {expandedSections.availability && (
@@ -446,24 +694,52 @@ export default function ShopFilters({
                       transition={{ duration: 0.2 }}
                       className="space-y-3"
                     >
-                      <label className={`flex items-center p-3 sm:p-4 rounded-lg cursor-pointer transition-all duration-200 border-2 ${
-                        filters.onSale 
-                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 shadow-sm' 
-                          : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent hover:border-gray-200'
-                      }`}>
-                        <input
-                          type="checkbox"
-                          checked={filters.onSale}
-                          onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                          className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
-                        />
-                        <div className="ml-3 sm:ml-4">
-                          <span className={`text-xs sm:text-sm font-semibold ${filters.onSale ? 'text-blue-700' : 'text-gray-700'}`}>
-                            Promocje
-                          </span>
-                          <p className="text-xs text-gray-500 mt-0.5">Produkty w promocji</p>
+                      <motion.label 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`flex items-center p-4 rounded-xl cursor-pointer transition-all duration-300 border-2 group ${
+                          filters.onSale 
+                            ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200 shadow-lg shadow-red-100/50' 
+                            : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent hover:border-gray-200 hover:shadow-md'
+                        }`}
+                      >
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={filters.onSale}
+                            onChange={(e) => onFilterChange('onSale', e.target.checked)}
+                            className="w-5 h-5 text-red-600 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300 appearance-none checked:bg-red-500 checked:border-red-500"
+                          />
+                          {filters.onSale && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute inset-0 flex items-center justify-center"
+                            >
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
                         </div>
-                      </label>
+                        <div className="ml-4">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold transition-colors duration-300 ${filters.onSale ? 'text-red-700' : 'text-gray-700 group-hover:text-gray-800'}`}>
+                              Promocje
+                            </span>
+                            {filters.onSale && (
+                              <motion.span
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full"
+                              >
+                                AKTYWNE
+                              </motion.span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 group-hover:text-gray-600 transition-colors duration-300">Produkty w promocji</p>
+                        </div>
+                      </motion.label>
                       
                     </motion.div>
                   )}
