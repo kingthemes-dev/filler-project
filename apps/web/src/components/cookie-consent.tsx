@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { X, Cookie, Settings, Check, X as XIcon } from 'lucide-react';
 
@@ -177,10 +176,11 @@ export default function CookieConsent() {
             <CardContent className="space-y-6">
               {/* Necessary Cookies */}
               <div className="flex items-start gap-3">
-                <Checkbox 
+                <input 
+                  type="checkbox"
                   checked={preferences.necessary} 
                   disabled
-                  className="mt-1"
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
                   <Label className="font-medium">Niezbędne cookies</Label>
@@ -193,12 +193,13 @@ export default function CookieConsent() {
 
               {/* Analytics Cookies */}
               <div className="flex items-start gap-3">
-                <Checkbox 
+                <input 
+                  type="checkbox"
                   checked={preferences.analytics}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, analytics: !!checked }))
+                  onChange={(e) => 
+                    setPreferences(prev => ({ ...prev, analytics: e.target.checked }))
                   }
-                  className="mt-1"
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
                   <Label className="font-medium">Analityczne cookies</Label>
@@ -211,12 +212,13 @@ export default function CookieConsent() {
 
               {/* Marketing Cookies */}
               <div className="flex items-start gap-3">
-                <Checkbox 
+                <input 
+                  type="checkbox"
                   checked={preferences.marketing}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, marketing: !!checked }))
+                  onChange={(e) => 
+                    setPreferences(prev => ({ ...prev, marketing: e.target.checked }))
                   }
-                  className="mt-1"
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
                   <Label className="font-medium">Marketingowe cookies</Label>
@@ -229,12 +231,13 @@ export default function CookieConsent() {
 
               {/* Preferences Cookies */}
               <div className="flex items-start gap-3">
-                <Checkbox 
+                <input 
+                  type="checkbox"
                   checked={preferences.preferences}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, preferences: !!checked }))
+                  onChange={(e) => 
+                    setPreferences(prev => ({ ...prev, preferences: e.target.checked }))
                   }
-                  className="mt-1"
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
                   <Label className="font-medium">Cookies preferencji</Label>
