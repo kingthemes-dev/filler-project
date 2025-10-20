@@ -361,7 +361,7 @@ export default function SearchModal({
                         <Link
                           href={`/wyszukiwanie?q=${encodeURIComponent(query)}`}
                           onClick={closeModal}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
                         >
                           Zobacz wszystkie wyniki
                           <ChevronRight className="h-4 w-4" />
