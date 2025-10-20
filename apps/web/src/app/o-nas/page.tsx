@@ -89,8 +89,7 @@ export default function AboutPage() {
 
         {/* Features Section */}
         <section className="pt-8 pb-4 lg:pb-2 xl:pb-1">
-          <PageContainer>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {/* Konkurencyjne ceny */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -163,7 +162,6 @@ export default function AboutPage() {
                 </p>
               </motion.div>
             </div>
-          </PageContainer>
         </section>
       </PageContainer>
     </div>
