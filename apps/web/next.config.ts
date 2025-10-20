@@ -110,7 +110,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
   
   // Output configuration for Vercel
-  output: 'standalone', // Enable for Vercel deployment stability
+  // output: 'standalone', // Temporarily disabled for Vercel compatibility
   
   // Sentry configuration will be handled by sentry config files
 };
