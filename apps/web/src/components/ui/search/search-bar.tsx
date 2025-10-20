@@ -131,21 +131,6 @@ export default function SearchBar({
     });
   }, []);
 
-  // Calculate dropdown position when opening and on resize/scroll
-  useEffect(() => {
-    if (isOpen) {
-      updatePosition();
-
-      // Update position on scroll and resize
-      window.addEventListener('scroll', updatePosition, { passive: true });
-      window.addEventListener('resize', updatePosition, { passive: true });
-
-      return () => {
-        window.removeEventListener('scroll', updatePosition);
-        window.removeEventListener('resize', updatePosition);
-      };
-    }
-  }, [isOpen, updatePosition]);
 
   // Close search on outside click
   useEffect(() => {
@@ -385,12 +370,7 @@ export default function SearchBar({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed z-[60] bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden max-h-[80vh] sm:max-h-[70vh] will-change-transform"
-            style={{
-              top: dropdownPosition.top,
-              left: dropdownPosition.left,
-              width: dropdownPosition.width
-            }}
+            className="absolute z-[60] bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden max-h-[80vh] sm:max-h-[70vh] will-change-transform top-full left-0 right-0 mt-1"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -510,7 +490,10 @@ export default function SearchBar({
                 </div>
                 <div className="p-3">
                   <div className="flex flex-wrap gap-2">
-                    {popularSearches.slice(0, 8).map((popularQuery, index) => (
+                    {popularSearches
+                      .filter(query => query !== 'wszystkie kategorie')
+                      .slice(0, 8)
+                      .map((popularQuery, index) => (
                       <button
                         key={index}
                         onClick={() => handleSearch(popularQuery)}
