@@ -14,9 +14,9 @@ const nextConfig: NextConfig = {
   // Fix for Vercel routes-manifest issue with Next.js 15
   distDir: '.next',
   experimental: {
-    // Senior Level 10/10 Optimizations - Restored
-    optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
-    reactCompiler: true, // React 19 Compiler - Senior Level 10/10
+    // Temporary: disable experimental features for stable Vercel deployment
+    optimizePackageImports: false, // Disabled for Vercel stability
+    reactCompiler: false, // Disabled for Vercel stability
     // ppr: true, // Partial Prerendering - requires Next.js canary
   },
   // Fix for Node.js v18 compatibility - moved to top level
@@ -109,8 +109,8 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
   
-  // Output configuration for Docker
-  // output: 'standalone', // Disabled for Vercel deployment
+  // Output configuration for Vercel
+  output: 'standalone', // Enable for Vercel deployment stability
   
   // Sentry configuration will be handled by sentry config files
 };
