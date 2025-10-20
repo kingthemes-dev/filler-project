@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, User, Heart, ShoppingCart, ChevronRight, Filter, Sparkles } from 'lucide-react';
+import { X, User, Heart, ShoppingCart, ChevronRight, Sparkles } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
 import Link from 'next/link';
 import SearchBar from './search/search-bar';
@@ -105,8 +105,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const brandOptions = (attributes.brands || []).slice(0, 36).map((brand: any) => ({
     id: brand.id,
     label: brand.name,
-    value: brand.slug,
-    icon: <Sparkles className="w-4 h-4" />
+    value: brand.slug
   }));
 
   console.log('🔍 Brands debug:', {
@@ -165,10 +164,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                             : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 text-gray-900'
                         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20`}
                       >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="flex-shrink-0 text-gray-400">
-                            <Filter className="w-4 h-4" />
-                          </div>
+                        <div className="flex items-center justify-between w-full">
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-gray-900 group-hover:text-blue-900">
                               {category.name}
@@ -288,9 +284,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                             onClick={onClose}
                             title={brand.label}
                           >
-                            <div className="flex items-center gap-1 w-full">
-                              {brand.icon}
-                              <span className="truncate text-center flex-1">{brand.label}</span>
+                            <div className="flex items-center justify-center w-full">
+                              <span className="truncate text-center">{brand.label}</span>
                             </div>
                           </Link>
                         </motion.div>
