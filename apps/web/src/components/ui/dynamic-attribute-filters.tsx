@@ -322,7 +322,7 @@ export default function DynamicAttributeFilters({
                 const term = items[index];
                 return (
                   <div style={style}>
-                    <label className="flex items-center px-2 sm:px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0">
+                    <label className="flex items-center px-2 sm:px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0 min-w-0">
                       <input
                         type="checkbox"
                         name={attributeSlug}
@@ -331,7 +331,7 @@ export default function DynamicAttributeFilters({
                         onChange={() => handleAttributeTermClick(attributeSlug, term.slug)}
                         className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                       />
-                      <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{term.name}</span>
+                      <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700 text-left truncate">{term.name}</span>
                       <span className="ml-auto text-xs text-gray-500">({term.count})</span>
                     </label>
                   </div>

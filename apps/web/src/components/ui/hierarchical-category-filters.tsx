@@ -263,7 +263,7 @@ export default function HierarchicalCategoryFilters({
                   onChange={() => handleCategoryClick(category.slug)}
                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                 />
-                <span className="ml-3 text-xs sm:text-sm font-semibold text-gray-800">{category.name}</span>
+                <span className="ml-3 text-xs sm:text-sm font-semibold text-gray-800 text-left">{category.name}</span>
                 <span className="ml-auto text-xs text-gray-500">({category.count || 0})</span>
               </label>
             </div>
@@ -296,7 +296,7 @@ export default function HierarchicalCategoryFilters({
                         onChange={() => handleCategoryClick(category.slug, subcategory.slug)}
                         className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                       />
-                      <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{subcategory.name}</span>
+                      <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700 text-left">{subcategory.name}</span>
                       <span className="ml-auto text-xs text-gray-500">({subcategory.count || 0})</span>
                     </motion.label>
                   ))}

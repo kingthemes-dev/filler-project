@@ -270,7 +270,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   </div>
                 ) : (
                   <div className="max-h-[50vh] overflow-y-auto pr-2 pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {brandOptions.map((brand, index) => (
                         <motion.div
                           key={brand.id}
@@ -280,7 +280,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                         >
                           <Link
                             href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-2 py-2 text-xs text-gray-900 shadow-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group w-full"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-2 py-2 text-xs sm:text-sm text-gray-900 shadow-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group w-full min-h-[32px]"
                             onClick={onClose}
                             title={brand.label}
                           >
