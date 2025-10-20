@@ -122,9 +122,12 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           exit={{ opacity: 0, y: -12, scale: 0.95 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
           onMouseEnter={() => {}} // Keep dropdown open when hovering over it
-          onMouseLeave={() => {
-            // Close dropdown when leaving the dropdown area
-            onClose();
+          onMouseLeave={(e) => {
+            // Only close if we're actually leaving the dropdown area
+            // Don't close if we're moving to a child element
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              onClose();
+            }
           }}
         >
           <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-8">
@@ -146,7 +149,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       transition={{ duration: 0.2 }}
                     >
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedCat(category.id);
                         }}
                         className={`flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group ${
