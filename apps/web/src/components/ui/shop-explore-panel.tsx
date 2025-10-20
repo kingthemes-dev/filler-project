@@ -136,9 +136,9 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           }}
         >
           <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-8">
-            <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Kategorie główne - Nowoczesny Dropdown */}
-              <div className="space-y-4">
+              <div className="md:col-span-4 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Filter className="w-5 h-5 text-gray-600" />
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Kategorie</h3>
@@ -188,17 +188,15 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
               </div>
 
               {/* Podkategorie / Zastosowanie - Pokazuje podkategorie wybranej kategorii głównej */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Zastosowanie</h3>
-                  </div>
+              <div className="md:col-span-3 space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <ChevronRight className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Zastosowanie</h3>
                   {currentMain && (
                     <Link
                       href={`/sklep?category=${encodeURIComponent(currentMain.slug)}`}
                       onClick={onClose}
-                      className="text-xs font-medium text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
+                      className="ml-auto text-xs font-medium text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
                       title={`Zobacz wszystko: ${currentMain.name}`}
                     >
                       Zobacz wszystko
@@ -254,7 +252,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
               </div>
 
               {/* Marki - Nowoczesny Dropdown */}
-              <div className="space-y-4">
+              <div className="md:col-span-5 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-gray-600" />
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Marka</h3>
@@ -270,7 +268,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   </div>
                 ) : (
                   <div className="pr-1 pb-2">
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-3 gap-1">
                       {brandOptions.map((brand, index) => (
                         <motion.div
                           key={brand.id}
