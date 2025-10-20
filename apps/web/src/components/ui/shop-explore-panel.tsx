@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, User, Heart, ShoppingCart, ChevronRight, Sparkles } from 'lucide-react';
+import { X, User, Heart, ShoppingCart, ChevronRight, Sparkles, Filter } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
 import Link from 'next/link';
 import SearchBar from './search/search-bar';
