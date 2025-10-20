@@ -110,7 +110,7 @@ export class WooCommerceSearchService {
       const response = await wooCommerceService.getProducts({
         search: query,
         per_page: limit,
-        orderby: 'relevance',
+        orderby: 'popularity',
         order: 'desc'
       });
 
@@ -281,7 +281,7 @@ export class WooCommerceSearchService {
         orderby: sortBy === 'price_asc' ? 'price' : 
                 sortBy === 'price_desc' ? 'price' : 
                 sortBy === 'rating' ? 'rating' : 
-                sortBy === 'newest' ? 'date' : 'relevance',
+                sortBy === 'newest' ? 'date' : 'popularity',
         order: sortBy === 'price_desc' ? 'desc' : 'asc'
       };
 
