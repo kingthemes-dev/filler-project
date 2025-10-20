@@ -311,97 +311,14 @@ export default function ShopFilters({
                 </motion.div>
               )}
 
-              {/* Filter Presets */}
-              <div className="mb-4 sm:mb-6">
-                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                  Szybkie filtry
-                </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      onFilterChange('onSale', true);
-                      onFilterChange('categories', []);
-                      onFilterChange('search', '');
-                      onFilterChange('minPrice', '');
-                      onFilterChange('maxPrice', '');
-                    }}
-                    className="p-3 rounded-xl bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 hover:from-red-100 hover:to-pink-100 transition-all duration-300 group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <span className="text-xs font-semibold text-red-700 group-hover:text-red-800">Promocje</span>
-                    </div>
-                    <p className="text-xs text-red-600 mt-1">Najlepsze oferty</p>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      onFilterChange('minPrice', 0);
-                      onFilterChange('maxPrice', 500);
-                      onFilterChange('onSale', false);
-                      onFilterChange('categories', []);
-                      onFilterChange('search', '');
-                    }}
-                    className="p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 hover:from-green-100 hover:to-emerald-100 transition-all duration-300 group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-xs font-semibold text-green-700 group-hover:text-green-800">Do 500 zł</span>
-                    </div>
-                    <p className="text-xs text-green-600 mt-1">Przystępne ceny</p>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      onFilterChange('search', 'krem');
-                      onFilterChange('onSale', false);
-                      onFilterChange('categories', []);
-                      onFilterChange('minPrice', '');
-                      onFilterChange('maxPrice', '');
-                    }}
-                    className="p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="text-xs font-semibold text-blue-700 group-hover:text-blue-800">Kremy</span>
-                    </div>
-                    <p className="text-xs text-blue-600 mt-1">Najpopularniejsze</p>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      onFilterChange('search', 'serum');
-                      onFilterChange('onSale', false);
-                      onFilterChange('categories', []);
-                      onFilterChange('minPrice', '');
-                      onFilterChange('maxPrice', '');
-                    }}
-                    className="p-3 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 hover:from-purple-100 hover:to-pink-100 transition-all duration-300 group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <span className="text-xs font-semibold text-purple-700 group-hover:text-purple-800">Serum</span>
-                    </div>
-                    <p className="text-xs text-purple-600 mt-1">Skuteczne</p>
-                  </motion.button>
-                </div>
-              </div>
 
               {/* Search Filter */}
-              <div className="mb-4 sm:mb-6">
-                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  Wyszukiwanie
-                </h4>
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 px-4 bg-white">Wyszukiwanie</h4>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                </div>
                 <div className="relative group" data-testid="filter-search">
                   <input
                     type="text"
@@ -427,54 +344,28 @@ export default function ShopFilters({
                     </motion.button>
                   )}
                 </div>
-                
-                {/* Search Suggestions */}
-                {!filters.search && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-3"
-                  >
-                    <p className="text-xs text-gray-500 mb-2">Popularne wyszukiwania:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {['krem', 'serum', 'tonik', 'maseczka', 'oczyszczanie', 'nawilżanie'].map((suggestion, index) => (
-                        <motion.button
-                          key={suggestion}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: index * 0.1 }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => onFilterChange('search', suggestion)}
-                          className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-700 rounded-full border border-gray-200 hover:border-blue-200 transition-all duration-300 font-medium"
-                        >
-                          {suggestion}
-                        </motion.button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
               </div>
 
               {/* Categories Filter */}
-              <div className="mb-4 sm:mb-6">
-                <motion.button
-                  onClick={() => toggleSection('categories')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Kategorie</h4>
-                  </div>
-                  <motion.div
-                    animate={{ rotate: expandedSections.categories ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                  <motion.button
+                    onClick={() => toggleSection('categories')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-2 px-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-300 group"
                   >
-                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                  </motion.div>
-                </motion.button>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Kategorie</h4>
+                    <motion.div
+                      animate={{ rotate: expandedSections.categories ? 180 : 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
+                    </motion.div>
+                  </motion.button>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                </div>
                 
                 <AnimatePresence>
                   {expandedSections.categories && (
@@ -497,24 +388,25 @@ export default function ShopFilters({
 
 
                   {/* Dynamic Attributes Filter */}
-                  <div className="mb-4 sm:mb-6">
-                    <motion.button
-                      onClick={() => toggleSection('attributes')}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Atrybuty</h4>
-                      </div>
-                      <motion.div
-                        animate={{ rotate: expandedSections.attributes ? 180 : 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                  <div className="mb-6">
+                    <div className="flex items-center mb-4">
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                      <motion.button
+                        onClick={() => toggleSection('attributes')}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex items-center gap-2 px-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-300 group"
                       >
-                        <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                      </motion.div>
-                    </motion.button>
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Atrybuty</h4>
+                        <motion.div
+                          animate={{ rotate: expandedSections.attributes ? 180 : 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                          <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
+                        </motion.div>
+                      </motion.button>
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                    </div>
                     
                     <AnimatePresence>
                       {expandedSections.attributes && (
@@ -550,24 +442,25 @@ export default function ShopFilters({
                   </div>
 
                   {/* Price Range Filter */}
-              <div className="mb-4 sm:mb-6">
-                <motion.button
-                  onClick={() => toggleSection('price')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Zakres cen</h4>
-                  </div>
-                  <motion.div
-                    animate={{ rotate: expandedSections.price ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                  <motion.button
+                    onClick={() => toggleSection('price')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-2 px-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-300 group"
                   >
-                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                  </motion.div>
-                </motion.button>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Zakres cen</h4>
+                    <motion.div
+                      animate={{ rotate: expandedSections.price ? 180 : 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
+                    </motion.div>
+                  </motion.button>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                </div>
                 
                 <AnimatePresence>
                   {expandedSections.price && (
@@ -621,44 +514,6 @@ export default function ShopFilters({
                           />
                         </div>
                         
-                        <div className="flex gap-2 flex-wrap">
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              setPriceRange({ min: 0, max: 1000 });
-                              onFilterChange('minPrice', 0);
-                              onFilterChange('maxPrice', 1000);
-                            }}
-                            className="px-4 py-2 text-xs bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 rounded-full hover:from-green-100 hover:to-emerald-100 border border-green-200 hover:border-green-300 transition-all duration-300 font-medium"
-                          >
-                            Do 1000 zł
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              setPriceRange({ min: 1000, max: 5000 });
-                              onFilterChange('minPrice', 1000);
-                              onFilterChange('maxPrice', 5000);
-                            }}
-                            className="px-4 py-2 text-xs bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-full hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 transition-all duration-300 font-medium"
-                          >
-                            1000-5000 zł
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              setPriceRange({ min: 5000, max: 10000 });
-                              onFilterChange('minPrice', 5000);
-                              onFilterChange('maxPrice', 10000);
-                            }}
-                            className="px-4 py-2 text-xs bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 rounded-full hover:from-purple-100 hover:to-pink-100 border border-purple-200 hover:border-purple-300 transition-all duration-300 font-medium"
-                          >
-                            Powyżej 5000 zł
-                          </motion.button>
-                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -666,24 +521,25 @@ export default function ShopFilters({
               </div>
 
               {/* Special Offers */}
-              <div className="mb-4 sm:mb-6">
-                <motion.button
-                  onClick={() => toggleSection('availability')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Oferty specjalne</h4>
-                  </div>
-                  <motion.div
-                    animate={{ rotate: expandedSections.availability ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                  <motion.button
+                    onClick={() => toggleSection('availability')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-2 px-4 bg-white hover:bg-gray-50 rounded-lg transition-all duration-300 group"
                   >
-                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                  </motion.div>
-                </motion.button>
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Oferty specjalne</h4>
+                    <motion.div
+                      animate={{ rotate: expandedSections.availability ? 180 : 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
+                    </motion.div>
+                  </motion.button>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                </div>
                 
                 <AnimatePresence>
                   {expandedSections.availability && (
