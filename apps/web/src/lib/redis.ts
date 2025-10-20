@@ -31,6 +31,12 @@ class RedisCache {
         return;
       }
 
+      // Check if we're in a browser environment
+      if (typeof window !== 'undefined') {
+        logger.info('🚀 Browser environment detected - using in-memory cache');
+        return;
+      }
+
       // Dynamic import to avoid client-side issues
       const Redis = (await import('ioredis')).default;
       
@@ -40,6 +46,9 @@ class RedisCache {
         connectTimeout: 5000,
         commandTimeout: 3000,
         enableReadyCheck: false,
+        // Disable cluster features that require DNS
+        enableCluster: false,
+        enableClusterSlotsCheck: false,
       });
 
       this.redis.on('connect', () => {
