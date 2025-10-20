@@ -222,8 +222,8 @@ export default function HierarchicalCategoryFilters({
 
   return (
     <div className="space-y-2">
-          {/* Wszystkie kategorie */}
-          <label className="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+          {/* Wszystkie kategorie - ukryte */}
+          <label className="hidden items-center p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
             <input
               type="checkbox"
               name="categories"
