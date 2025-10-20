@@ -10,7 +10,6 @@ import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import AnimatedDropdown from './animated-dropdown';
-import AdvancedDropdown from './advanced-dropdown';
 
 interface ShopExplorePanelProps {
   open: boolean;
@@ -91,15 +90,6 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // Convert ALL categories to dropdown options (not just main categories)
-  const categoryOptions = categories.map(cat => ({
-    id: cat.id,
-    label: cat.name,
-    value: cat.slug,
-    count: cat.count,
-    icon: <Filter className="w-4 h-4" />,
-    group: cat.parent === 0 ? 'Główne kategorie' : 'Podkategorie'
-  }));
 
 
   // Convert subcategories to dropdown options
@@ -146,45 +136,41 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Kategorie</h3>
                 </div>
                 
-                <AdvancedDropdown
-                  options={categoryOptions}
-                  value={''}
-                  onChange={(value) => {
-                    const selectedCategory = categories.find(cat => cat.slug === value);
-                    if (selectedCategory) {
-                      setSelectedCat(selectedCategory.id);
-                    }
-                  }}
-                  placeholder="Wybierz kategorię..."
-                  searchable={true}
-                  showCounts={true}
-                  groupBy="group"
-                  className="w-full"
-                  renderOption={(option, isSelected) => (
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="flex-shrink-0 text-gray-400">
-                          {option.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
-                            {option.label}
+                {/* Pokaż główne kategorie bezpośrednio zamiast dropdown */}
+                <div className="space-y-2">
+                  {mainCategories.map((category) => (
+                    <motion.div
+                      key={category.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Link
+                        href={`/sklep?category=${encodeURIComponent(category.slug)}`}
+                        className="flex items-center justify-between w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
+                        onClick={onClose}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex-shrink-0 text-gray-400">
+                            <Filter className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 group-hover:text-blue-900">
+                              {category.name}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {option.count !== undefined && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {option.count}
-                          </span>
-                        )}
-                        {isSelected && (
-                          <Check className="w-4 h-4 text-blue-600" />
-                        )}
-                      </div>
-                    </div>
-                  )}
-                />
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {category.count !== undefined && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 group-hover:bg-blue-200">
+                              {category.count}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
 
               {/* Podkategorie / Zastosowanie - Nowoczesny Dropdown */}
