@@ -54,6 +54,11 @@
     border-bottom: none !important;
   }
   
+  /* Ensure search dropdown connects properly to search bar */
+  .search-dropdown-open .search-input {
+    border-bottom: none !important;
+  }
+  
   .slider-thumb::-webkit-slider-track {
     -webkit-appearance: none;
     appearance: none;
