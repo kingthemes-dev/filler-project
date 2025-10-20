@@ -55,10 +55,10 @@ headless-woo/
 - **Request Deduplication**
 - **Circuit Breaker** patterns
 
-### Search & Analytics
-- **Algolia** - Search & autocomplete
+### Analytics & Monitoring
 - **Sentry** - Error tracking & monitoring
 - **Custom Analytics** - Edge-based tracking
+- **Google Analytics** - User behavior tracking
 
 ### Infrastructure
 - **Docker** + **Docker Compose**
@@ -300,7 +300,7 @@ WC_CONSUMER_SECRET=cs_...
 # Optional
 REDIS_URL=redis://localhost:6379
 SENTRY_DSN=https://...
-ALGOLIA_APP_ID=...
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
 ```
 
 ### Health Monitoring
