@@ -171,10 +171,10 @@ export default function ShopFilters({
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
         <div
-          className={`bg-white border border-gray-200/50 p-4 sm:p-6 shadow-sm lg:block rounded-2xl ${
+          className={`bg-white border border-gray-200/50 p-4 sm:p-6 shadow-sm rounded-2xl ${
             showFilters 
               ? 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform translate-x-0 transition-transform duration-300 ease-out lg:relative lg:inset-auto lg:w-80 lg:max-w-none lg:transform-none lg:transition-none lg:shadow-md lg:backdrop-blur-md' 
-              : 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform -translate-x-full transition-transform duration-300 ease-out lg:relative lg:inset-auto lg:w-80 lg:max-w-none lg:transform-none lg:transition-none lg:shadow-md lg:backdrop-blur-md lg:block'
+              : 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform -translate-x-full transition-transform duration-300 ease-out lg:relative lg:inset-auto lg:w-80 lg:max-w-none lg:transform-none lg:transition-none lg:shadow-md lg:backdrop-blur-md lg:block lg:translate-x-0'
           }`}
           id="filters-panel"
           role="region"
