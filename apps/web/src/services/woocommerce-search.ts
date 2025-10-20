@@ -88,7 +88,7 @@ export class WooCommerceSearchService {
         return cached;
       }
 
-      // Search via WooCommerce API
+      // Search via WooCommerce API with expanded search
       const response = await wooCommerceService.getProducts({
         search: query,
         per_page: limit,
