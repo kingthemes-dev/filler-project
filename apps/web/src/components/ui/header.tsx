@@ -411,11 +411,6 @@ export default function Header() {
                 <AnimatePresence>
                   {showUserMenu && (
                     <>
-                      {/* Backdrop */}
-                      <div 
-                        className="fixed inset-0 z-[65] bg-black/20"
-                        onClick={() => setShowUserMenu(false)}
-                      />
                       
                       {/* Dropdown */}
                     <motion.div
