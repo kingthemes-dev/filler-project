@@ -1,6 +1,6 @@
 'use client';
 
-import { Facebook, Instagram, Mail, Phone, MapPin, Clock, Award, Truck, Shield, Building2, User, CreditCard, Info } from 'lucide-react';
+import { Facebook, Instagram, Mail, Phone, MapPin, Clock, Award, Truck, Shield, Building2, User, CreditCard, Info, Download, Smartphone } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -133,39 +133,9 @@ export default function Footer() {
            {/* Desktop Grid */}
            <div className="hidden lg:grid lg:grid-cols-5 gap-8 sm:gap-12">
           
-          {/* Logo i kontakt */}
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-xl">F</span>
-                </div>
-                <h3 className="text-3xl font-bold">FILLER</h3>
-              </div>
-              
-              {/* Social Media Icons - Mobile only */}
-              <div className="flex space-x-2 lg:hidden">
-                <a 
-                  href="https://facebook.com/filler" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
-                  aria-label="Facebook"
-                >
-                  <Facebook className="w-5 h-5" />
-                </a>
-                
-                <a 
-                  href="https://instagram.com/filler" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center hover:bg-gray-700/50 transition-colors border border-gray-700/50"
-                  aria-label="Instagram"
-                >
-                  <Instagram className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
+          {/* Kontakt - pierwsza kolumna z większym odstępem */}
+          <div className="lg:pr-12">
+            <h4 className="text-lg font-semibold mb-6 text-white">Kontakt</h4>
             
             <div className="space-y-4 mb-8">
               <div className="flex items-start">
@@ -228,23 +198,50 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Płatności */}
-          <div>
-            <h4 className="text-lg font-semibold mb-6 text-white">Płatności</h4>
-            <ul className="space-y-3">
-              <li><a href="/formy-platnosci" className="text-gray-300 hover:text-white transition-colors">Formy płatności</a></li>
-              <li><a href="/czas-koszty-dostawy" className="text-gray-300 hover:text-white transition-colors">Czas i koszty dostawy</a></li>
-            </ul>
-          </div>
-
-          {/* Informacje */}
+          {/* Informacje (połączone z płatnościami) */}
           <div>
             <h4 className="text-lg font-semibold mb-6 text-white">Informacje</h4>
             <ul className="space-y-3">
+              <li><a href="/formy-platnosci" className="text-gray-300 hover:text-white transition-colors">Formy płatności</a></li>
+              <li><a href="/czas-koszty-dostawy" className="text-gray-300 hover:text-white transition-colors">Czas i koszty dostawy</a></li>
               <li><a href="/polityka-prywatnosci" className="text-gray-300 hover:text-white transition-colors">Polityka prywatności</a></li>
               <li><a href="/regulamin" className="text-gray-300 hover:text-white transition-colors">Regulamin sklepu</a></li>
               <li><a href="/zwroty-reklamacje" className="text-gray-300 hover:text-white transition-colors">Zwroty i reklamacje</a></li>
             </ul>
+          </div>
+
+          {/* Pobierz aplikację */}
+          <div>
+            <h4 className="text-lg font-semibold mb-6 text-white">Pobierz aplikację</h4>
+            <p className="text-gray-300 text-sm mb-4">Oszczędź 50 zł z aplikacją & Nowi użytkownicy</p>
+            
+            <div className="space-y-3">
+              <a 
+                href="#" 
+                className="flex items-center bg-black border border-gray-600 rounded-lg px-4 py-3 hover:bg-gray-900 transition-colors group"
+              >
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-black font-bold text-sm">🍎</span>
+                </div>
+                <div className="text-left">
+                  <p className="text-white text-xs">Pobierz z</p>
+                  <p className="text-white font-semibold text-sm">App Store</p>
+                </div>
+              </a>
+              
+              <a 
+                href="#" 
+                className="flex items-center bg-black border border-gray-600 rounded-lg px-4 py-3 hover:bg-gray-900 transition-colors group"
+              >
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-black font-bold text-sm">▶</span>
+                </div>
+                <div className="text-left">
+                  <p className="text-white text-xs">Pobierz z</p>
+                  <p className="text-white font-semibold text-sm">Google Play</p>
+                </div>
+              </a>
+            </div>
           </div>
            </div>
 
