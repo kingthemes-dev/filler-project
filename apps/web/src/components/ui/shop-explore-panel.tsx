@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, User, Heart, ShoppingCart } from 'lucide-react';
+import { X, User, Heart, ShoppingCart, ChevronRight, Filter, Sparkles } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
 import Link from 'next/link';
 import SearchBar from './search/search-bar';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
+import AnimatedDropdown from './animated-dropdown';
 
 interface ShopExplorePanelProps {
   open: boolean;
@@ -89,6 +90,32 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // Convert categories to dropdown options
+  const categoryOptions = mainCategories.map(cat => ({
+    id: cat.id,
+    label: cat.name,
+    value: cat.slug,
+    count: cat.count,
+    icon: <Filter className="w-4 h-4" />
+  }));
+
+  // Convert subcategories to dropdown options
+  const subcategoryOptions = subCategories.map(sub => ({
+    id: sub.id,
+    label: sub.name,
+    value: sub.slug,
+    count: sub.count,
+    icon: <ChevronRight className="w-4 h-4" />
+  }));
+
+  // Convert brands to dropdown options
+  const brandOptions = (attributes.brands || []).slice(0, 36).map((brand: any) => ({
+    id: brand.id,
+    label: brand.name,
+    value: brand.slug,
+    icon: <Sparkles className="w-4 h-4" />
+  }));
+
   return (
     <AnimatePresence>
       {open && (
@@ -96,97 +123,160 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           id="shop-explore-panel"
           role="dialog"
           aria-modal="false"
-          className="absolute top-full left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50 rounded-b-2xl"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
+          className="absolute top-full left-0 right-0 bg-white shadow-2xl border-t border-gray-200 z-50 rounded-b-3xl backdrop-blur-sm"
+          initial={{ opacity: 0, y: -12, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -12, scale: 0.95 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
           onMouseEnter={() => {}} // Keep dropdown open when hovering over it
           onMouseLeave={() => {
             // Close dropdown when leaving the dropdown area
             onClose();
           }}
         >
-            <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-6">
-              <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {/* Kategorie główne */}
-                  <div>
-                    <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Kategorie</h3>
-                    <div className="max-h-[60vh] overflow-auto pr-2">
-                      <ul className="rounded-xl divide-y divide-gray-100 border border-gray-100 bg-white/60">
-                        {mainCategories.map((c) => (
-                          <li key={c.id}>
-                            <button
-                              onClick={() => setSelectedCat(c.id)}
-                              className={`w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 ${selectedCat === c.id ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
-                            >
-                              <span className="text-gray-900 font-medium">{c.name}</span>
-                              {typeof c.count === 'number' && (
-                                <span className="inline-flex h-6 items-center rounded-full bg-gray-100 px-2 text-xs text-gray-600">{c.count}</span>
-                              )}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Podkategorie / Zastosowanie */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-xs uppercase tracking-wide text-gray-500">Zastosowanie</h3>
-                      {currentMain && (
-                        <Link
-                          href={`/sklep?category=${encodeURIComponent(currentMain.slug)}`}
-                          onClick={onClose}
-                          className="text-xs font-medium text-gray-700 hover:text-black px-2 py-1 rounded-lg hover:bg-gray-100"
-                          title={`Zobacz wszystko: ${currentMain.name}`}
-                        >
-                          Zobacz wszystko
-                        </Link>
-                      )}
-                    </div>
-                    <div className="max-h-[60vh] overflow-auto pr-2">
-                      {subCategories.length === 0 ? (
-                        <div className="text-sm text-gray-500 px-2">Brak podkategorii</div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-2">
-                          {subCategories.map((sc) => (
-                            <Link
-                              key={sc.id}
-                              href={`/sklep?category=${encodeURIComponent(sc.slug)}`}
-                              className="px-3 py-2 min-h-[42px] rounded-lg border border-gray-200 text-sm bg-white/70 hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 flex items-center justify-between"
-                              onClick={onClose}
-                            >
-                              {sc.name}
-                            </Link>
-                          ))}
+          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-8">
+            <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Kategorie główne - Nowoczesny Dropdown */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Kategorie</h3>
+                </div>
+                
+                <AnimatedDropdown
+                  options={categoryOptions}
+                  value={currentMain?.slug || ''}
+                  onChange={(value) => {
+                    const selectedCategory = mainCategories.find(cat => cat.slug === value);
+                    if (selectedCategory) {
+                      setSelectedCat(selectedCategory.id);
+                    }
+                  }}
+                  placeholder="Wybierz kategorię..."
+                  searchable={true}
+                  showCounts={true}
+                  variant="outlined"
+                  size="lg"
+                  animation="slide"
+                  className="w-full"
+                  renderOption={(option, isSelected) => (
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0 text-gray-400">
+                          {option.icon}
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Marki */}
-                  <div>
-                    <h3 className="text-xs uppercase tracking-wide text-gray-500 mb-3">Marka</h3>
-                    <div className="max-h-[60vh] overflow-auto pr-1 pb-2">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
-                        {((attributes.brands || []).slice(0, 36)).map((t: any) => (
-                          <Link
-                            key={String(t.id)}
-                            href={`/sklep?brands=${encodeURIComponent(t.slug)}`}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-2.5 py-1 text-xs text-gray-900 shadow-sm hover:bg-gray-50 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 transition-colors"
-                            onClick={onClose}
-                            title={t.name}
-                          >
-                            {t.name}
-                          </Link>
-                        ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate">
+                            {option.label}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {option.count !== undefined && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {option.count}
+                          </span>
+                        )}
+                        {isSelected && (
+                          <Check className="w-4 h-4 text-blue-600" />
+                        )}
                       </div>
                     </div>
+                  )}
+                />
+              </div>
+
+              {/* Podkategorie / Zastosowanie - Nowoczesny Dropdown */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Zastosowanie</h3>
                   </div>
+                  {currentMain && (
+                    <Link
+                      href={`/sklep?category=${encodeURIComponent(currentMain.slug)}`}
+                      onClick={onClose}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
+                      title={`Zobacz wszystko: ${currentMain.name}`}
+                    >
+                      Zobacz wszystko
+                    </Link>
+                  )}
+                </div>
+                
+                {subCategories.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Filter className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm">Brak podkategorii</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2">
+                    {subCategories.map((sc) => (
+                      <motion.div
+                        key={sc.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Link
+                          href={`/sklep?category=${encodeURIComponent(sc.slug)}`}
+                          className="block px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
+                          onClick={onClose}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-900 group-hover:text-blue-900">
+                              {sc.name}
+                            </span>
+                            {sc.count && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-800">
+                                {sc.count}
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Marki - Nowoczesny Dropdown */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Marka</h3>
+                </div>
+                
+                <div className="max-h-[60vh] overflow-auto pr-1 pb-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+                    {brandOptions.map((brand, index) => (
+                      <motion.div
+                        key={brand.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.02, duration: 0.2 }}
+                      >
+                        <Link
+                          href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-3 py-2 text-xs text-gray-900 shadow-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
+                          onClick={onClose}
+                          title={brand.label}
+                        >
+                          <div className="flex items-center gap-1">
+                            {brand.icon}
+                            <span className="truncate max-w-[80px]">{brand.label}</span>
+                          </div>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
