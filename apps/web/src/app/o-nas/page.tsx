@@ -2,188 +2,85 @@
 
 import { motion } from 'framer-motion';
 import PageContainer from '@/components/ui/page-container';
-import { Shield, Award, Users, Heart, CheckCircle } from 'lucide-react';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export default function AboutPage() {
+  const breadcrumbs = [
+    { label: 'Strona główna', href: '/' },
+    { label: 'O nas', href: '/o-nas' }
+  ];
+
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-gray-50 to-white py-20">
-        <PageContainer>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-              O nas
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Profesjonalne usługi kosmetyczne i medycyny estetycznej. 
-              Zapewniamy najwyższą jakość i bezpieczeństwo zabiegów.
-            </p>
-          </motion.div>
-        </PageContainer>
-      </section>
+      <PageContainer>
+        {/* Breadcrumbs */}
+        <div className="py-6">
+          <Breadcrumbs items={breadcrumbs} />
+        </div>
 
-      {/* Main Content */}
-      <section className="py-20">
-        <PageContainer>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        {/* Main Content */}
+        <section className="py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             
-            {/* Left Column - Text Content */}
+            {/* Left Column - Image */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              transition={{ duration: 0.6 }}
+              className="order-2 lg:order-1"
             >
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                Nasza misja
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                W Filler wierzymy, że każdy zasługuje na to, aby czuć się pewnie i pięknie. 
-                Nasza misja to dostarczanie najwyższej jakości produktów i usług w dziedzinie 
-                medycyny estetycznej, które pomagają naszym klientom osiągnąć ich cele.
-              </p>
-              <p className="text-lg text-gray-600 mb-8">
-                Jako hurtownia medycyny estetycznej, współpracujemy z najlepszymi producentami 
-                i dostarczamy certyfikowane preparaty do profesjonalistów w całej Polsce.
-              </p>
-
-              {/* Values */}
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
-                  <span className="text-gray-700">Certyfikowane produkty</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
-                  <span className="text-gray-700">Profesjonalne doradztwo</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
-                  <span className="text-gray-700">Bezpieczeństwo i jakość</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
-                  <span className="text-gray-700">Szybka dostawa</span>
+              <div className="relative">
+                {/* Mock Image */}
+                <div className="aspect-[4/5] bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden">
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
+                        <span className="text-4xl font-bold text-gray-800">F</span>
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-800 mb-2">Filler.pl</h3>
+                      <p className="text-gray-600">Hurtownia medycyny estetycznej</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
 
-            {/* Right Column - Image/Visual */}
+            {/* Right Column - Text Content */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="relative"
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="order-1 lg:order-2"
             >
-              <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-12 text-center">
-                <div className="w-32 h-32 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg">
-                  <span className="text-6xl font-bold text-gray-800">F</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Filler</h3>
-                <p className="text-gray-600">Hurtownia medycyny estetycznej</p>
+              <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-8">
+                Hurtownia medycyny estetycznej Filler.pl
+              </h1>
+              
+              <div className="prose prose-lg max-w-none">
+                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                  Filler.pl to firma, która powstała z pasji do medycyny estetycznej i chęci dostarczania najlepszych produktów na dynamicznie rozwijający się rynek. Naszą misją jest wspieranie profesjonalistów w branży, oferując im szeroki wybór sprawdzonych, wysokiej jakości materiałów i narzędzi, które spełniają najwyższe standardy.
+                </p>
+
+                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                  Dokładamy wszelkich starań, aby nasza oferta była zawsze aktualna i odpowiadała na potrzeby rynku, regularnie analizując pojawiające się nowinki oraz trendy. Nasz zespół jest zawsze gotowy, by dostosować asortyment do indywidualnych oczekiwań klientów, a także by wprowadzać innowacje, które pomogą w rozwoju gabinetów i klinik medycyny estetycznej.
+                </p>
+
+                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                  Wszystkie produkty dostępne w Filler.pl są w pełni oryginalne i pochodzą od certyfikowanych producentów i dystrybutorów, którzy są uznanymi liderami na rynku medycyny estetycznej. Dzięki bliskiej współpracy z najlepszymi markami, możemy zapewnić Państwu konkurencyjne ceny oraz dostęp do produktów, które wyróżniają się na tle innych.
+                </p>
+
+                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                  Naszym celem jest nie tylko sprzedaż, ale także budowanie długoterminowych relacji z naszymi klientami. Zależy nam na stałym doskonaleniu jakości obsługi, dlatego czekamy na Wasze sugestie, które pozwolą nam rozwijać się i jeszcze lepiej odpowiadać na potrzeby rynku.
+                </p>
+
+                <p className="text-lg text-gray-700 mb-8 leading-relaxed font-medium">
+                  Zapraszamy do współpracy i zaufania profesjonalistom z Filler.pl!
+                </p>
               </div>
             </motion.div>
           </div>
-        </PageContainer>
-      </section>
-
-      {/* Features Section */}
-      <section className="bg-gray-50 py-20">
-        <PageContainer>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Dlaczego wybierają nas profesjonaliści?
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Oferujemy kompleksowe rozwiązania dla specjalistów medycyny estetycznej
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: Shield,
-                title: "Bezpieczeństwo",
-                description: "Wszystkie produkty przechodzą rygorystyczną kontrolę jakości i są certyfikowane"
-              },
-              {
-                icon: Award,
-                title: "Jakość",
-                description: "Współpracujemy tylko z renomowanymi producentami i dostawcami"
-              },
-              {
-                icon: Users,
-                title: "Ekspertyza",
-                description: "Nasz zespół składa się z doświadczonych specjalistów medycyny estetycznej"
-              },
-              {
-                icon: Heart,
-                title: "Pasja",
-                description: "Kochamy to, co robimy i pomagamy naszym klientom osiągnąć ich cele"
-              }
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 * index }}
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </PageContainer>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Gotowy na współpracę?
-            </h2>
-            <p className="text-lg text-gray-600 mb-8">
-              Skontaktuj się z nami, aby dowiedzieć się więcej o naszych produktach i usługach
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="/kontakt"
-                className="bg-black text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
-              >
-                Skontaktuj się z nami
-              </a>
-              <a
-                href="/sklep"
-                className="border border-black text-black px-8 py-3 rounded-lg hover:bg-black hover:text-white transition-colors font-medium"
-              >
-                Zobacz produkty
-              </a>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+        </section>
+      </PageContainer>
     </div>
   );
 }
