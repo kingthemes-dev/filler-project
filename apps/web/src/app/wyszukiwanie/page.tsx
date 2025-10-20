@@ -6,12 +6,14 @@ import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Search, Filter, SortAsc, Star, ShoppingCart, Heart } from 'lucide-react';
 import { WooCommerceService } from '@/services/woocommerce-optimized';
+import { wooSearchService } from '@/services/woocommerce-search';
 import { formatPrice } from '@/utils/format-price';
 import { WooProduct } from '@/types/woocommerce';
 import { useCartStore } from '@/stores/cart-store';
 import Image from 'next/image';
 import Link from 'next/link';
 import SearchTracking from '@/components/seo/search-tracking';
+import { logger } from '@/utils/logger';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();
@@ -49,30 +51,49 @@ function SearchResultsContent() {
     }
   }, [query, filters, sortBy, currentPage, wooService]);
 
-  // Perform search
+  // Perform search with advanced search service
   const performSearch = async () => {
-    if (!query || !wooService) return;
+    if (!query) return;
 
     setIsLoading(true);
+    const startTime = Date.now();
     
     try {
-      const response = await wooService.getProducts({
-        search: query,
+      // Use advanced search service with filters
+      const searchParams = {
+        query,
         page: currentPage,
-        per_page: 20,
-        orderby: sortBy === 'price_asc' ? 'price' : sortBy === 'price_desc' ? 'price' : 'relevance',
-        order: sortBy === 'price_desc' ? 'desc' : 'asc'
-      });
+        limit: 20,
+        sortBy: sortBy as any,
+        // Add filters from state
+        ...(filters.category && { category: filters.category as string }),
+        ...(filters.price_min && { minPrice: filters.price_min as number }),
+        ...(filters.price_max && { maxPrice: filters.price_max as number }),
+        ...(filters.in_stock !== undefined && { inStock: filters.in_stock as boolean }),
+        ...(filters.rating_min && { minRating: filters.rating_min as number })
+      };
+
+      const response = await wooSearchService.advancedSearch(searchParams);
       
-      setSearchResults(response.data || []);
+      setSearchResults(response.products || []);
       setTotalResults(response.total || 0);
       setTotalPages(response.totalPages || 1);
-      setProcessingTime(100); // Mock processing time
+      
+      const processingTime = Date.now() - startTime;
+      setProcessingTime(processingTime);
+      
+      logger.info('Advanced search completed', {
+        query,
+        resultsCount: response.products.length,
+        processingTime: `${processingTime}ms`,
+        filters
+      });
       
     } catch (error) {
-      console.error('Search error:', error);
+      logger.error('Search error:', error);
       setSearchResults([]);
       setTotalResults(0);
+      setProcessingTime(0);
     } finally {
       setIsLoading(false);
     }
@@ -164,6 +185,9 @@ function SearchResultsContent() {
           <span>
             Znaleziono {totalResults} produktów
             {processingTime > 0 && ` w ${processingTime}ms`}
+            {processingTime > 0 && processingTime < 100 && (
+              <span className="ml-2 text-green-600 font-medium">⚡ Szybko!</span>
+            )}
           </span>
           
           {/* Mobile filter toggle */}

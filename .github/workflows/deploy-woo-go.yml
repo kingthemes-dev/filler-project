@@ -1,0 +1,62 @@
+name: Deploy to Woo_GO
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        cd apps/web
+        npm ci
+        
+    - name: Build Next.js (Static Export)
+      run: |
+        cd apps/web
+        npm run build
+        npm run export
+      env:
+        NEXT_PUBLIC_WC_URL: ${{ secrets.WOO_GO_API_URL }}
+        NEXT_PUBLIC_BASE_URL: ${{ secrets.WOO_GO_BASE_URL }}
+        WC_CONSUMER_KEY: ${{ secrets.WOO_GO_CONSUMER_KEY }}
+        WC_CONSUMER_SECRET: ${{ secrets.WOO_GO_CONSUMER_SECRET }}
+        NEXT_PUBLIC_WORDPRESS_URL: ${{ secrets.WOO_GO_WORDPRESS_URL }}
+        
+    - name: Deploy to Woo_GO via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.WOO_GO_FTP_HOST }}
+        username: ${{ secrets.WOO_GO_FTP_USER }}
+        password: ${{ secrets.WOO_GO_FTP_PASS }}
+        local-dir: ./apps/web/out/
+        server-dir: /public_html/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/.DS_Store
+          
+    - name: Clear WordPress Cache
+      run: |
+        curl -X POST "${{ secrets.WOO_GO_WORDPRESS_URL }}/wp-json/wp/v2/cache/clear" \
+          -H "Authorization: Bearer ${{ secrets.WOO_GO_API_TOKEN }}"
+          
+    - name: Health Check
+      run: |
+        sleep 10
+        curl -f "${{ secrets.WOO_GO_BASE_URL }}" || exit 1
+        echo "✅ Deploy successful - site is accessible"

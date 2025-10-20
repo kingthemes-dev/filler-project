@@ -4,10 +4,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Star } from 'lucide-react';
 import { WooCommerceService } from '@/services/woocommerce-optimized';
+import { wooSearchService } from '@/services/woocommerce-search';
 import { formatPrice } from '@/utils/format-price';
 import { WooProduct } from '@/types/woocommerce';
 import SearchErrorBoundary from './search-error-boundary';
 import Image from 'next/image';
+import { logger } from '@/utils/logger';
 
 // Google Analytics gtag type declaration
 declare global {
@@ -29,15 +31,15 @@ export default function SearchBar({
 }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  // Removed mock suggestions/popular searches for ultra-fast real search
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [popularSearches] = useState<string[]>([]);
+  const [popularSearches, setPopularSearches] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<WooProduct[]>([]);
   const [wooService, setWooService] = useState<WooCommerceService | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasResults, setHasResults] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [searchTime, setSearchTime] = useState(0);
   
   // Analytics tracking functions
   const trackSearchQuery = useCallback((query: string, resultsCount: number) => {
@@ -77,13 +79,24 @@ export default function SearchBar({
   // Mount
   useEffect(() => {
     loadRecentSearches();
+    loadPopularSearches();
     // Initialize WooCommerce service after mount
     try {
       setWooService(new WooCommerceService());
     } catch (error) {
-      console.error('Error initializing WooCommerceService:', error);
+      logger.error('Error initializing WooCommerceService:', error);
     }
   }, []);
+
+  // Load popular searches
+  const loadPopularSearches = async () => {
+    try {
+      const popular = await wooSearchService.getPopularSearches(8);
+      setPopularSearches(popular);
+    } catch (error) {
+      logger.error('Error loading popular searches:', error);
+    }
+  };
 
   // Memoized position update function
   const updatePosition = useCallback(() => {
@@ -182,7 +195,7 @@ export default function SearchBar({
     }
   };
 
-  // Handle search input change (debounced + cached, no mock suggestions)
+  // Handle search input change (debounced + cached + suggestions)
   const handleInputChange = useCallback((value: string) => {
     setQuery(value);
     if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
@@ -196,43 +209,53 @@ export default function SearchBar({
     }
 
     debounceTimeoutRef.current = setTimeout(async () => {
-      if (!wooService) {
-        setSearchResults([]);
-        setHasResults(false);
-        setIsOpen(false);
-        return;
-      }
-
+      const startTime = Date.now();
+      
       try {
         setIsLoading(true);
         setIsOpen(true);
 
-        // Serve from cache if available
-        if (cacheRef.current.has(value)) {
-          const cached = cacheRef.current.get(value) || [];
-          setSearchResults(cached);
-          setHasResults(cached.length > 0);
-          setIsLoading(false);
-          return;
+        // Get suggestions and search results in parallel
+        const [suggestionsResult, searchResult] = await Promise.allSettled([
+          wooSearchService.getSearchSuggestions(value, 5),
+          wooSearchService.searchProducts(value, 8)
+        ]);
+
+        // Handle suggestions
+        if (suggestionsResult.status === 'fulfilled') {
+          setSuggestions(suggestionsResult.value);
         }
 
-        const results = await wooService.getProducts({ search: value, per_page: 15 });
-        const items = results.data || [];
-        cacheRef.current.set(value, items);
-        setSearchResults(items);
-        setHasResults(items.length > 0);
-        
-        // Track search query
-        trackSearchQuery(value, items.length);
+        // Handle search results
+        if (searchResult.status === 'fulfilled') {
+          const searchData = searchResult.value;
+          setSearchResults(searchData.products);
+          setHasResults(searchData.products.length > 0);
+          
+          // Track search query with performance metrics
+          const searchTime = Date.now() - startTime;
+          setSearchTime(searchTime);
+          trackSearchQuery(value, searchData.products.length);
+          
+          logger.info('Search completed', { 
+            query: value, 
+            resultsCount: searchData.products.length,
+            searchTime: `${searchTime}ms`
+          });
+        } else {
+          logger.error('Search failed:', searchResult.reason);
+          setSearchResults([]);
+          setHasResults(false);
+        }
       } catch (error) {
-        console.error('Search error:', error);
+        logger.error('Search error:', error);
         setSearchResults([]);
         setHasResults(false);
       } finally {
         setIsLoading(false);
       }
-    }, 200);
-  }, [wooService]);
+    }, 300); // Slightly longer debounce for better performance
+  }, [trackSearchQuery]);
 
   // Handle search submit
   const handleSearch = (searchQuery: string) => {
@@ -374,9 +397,15 @@ export default function SearchBar({
             transition={{ duration: 0.2 }}
           >
             {/* Loading State */}
+            {isLoading && (
+              <div className="p-4 text-center">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-black"></div>
+                <p className="text-sm text-gray-500 mt-2">Wyszukiwanie...</p>
+              </div>
+            )}
 
             {/* Search Results */}
-            {hasResults && searchResults.length > 0 && (
+            {!isLoading && hasResults && searchResults.length > 0 && (
               <div className="border-b border-gray-100">
                 <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide">
                   Produkty ({searchResults.length})
@@ -439,6 +468,62 @@ export default function SearchBar({
               </div>
             )}
 
+            {/* Search Suggestions */}
+            {!isLoading && query.length >= 2 && suggestions.length > 0 && (
+              <div className="border-b border-gray-100">
+                <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide">
+                  Sugestie
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleSearch(suggestion)}
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors group"
+                    >
+                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full mr-3 flex items-center justify-center">
+                        <Search className="w-4 h-4 text-blue-600" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-black">
+                          {suggestion}
+                        </p>
+                      </div>
+                      
+                      <div className="flex-shrink-0 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Popular Searches */}
+            {!isLoading && query.length === 0 && popularSearches.length > 0 && (
+              <div className="border-b border-gray-100">
+                <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600 uppercase tracking-wide">
+                  Popularne wyszukiwania
+                </div>
+                <div className="p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {popularSearches.slice(0, 8).map((popularQuery, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSearch(popularQuery)}
+                        className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
+                      >
+                        {popularQuery}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Recent Searches */}
             {!isLoading && query.length === 0 && recentSearches.length > 0 && (
               <div className="border-b border-gray-100">
@@ -452,8 +537,8 @@ export default function SearchBar({
                     Wyczyść
                   </button>
                 </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {recentSearches.slice(0, 12).map((recentQuery, index) => (
+                <div className="max-h-60 overflow-y-auto">
+                  {recentSearches.slice(0, 8).map((recentQuery, index) => (
                     <div
                       key={index}
                       onClick={() => handleRecentSearchClick(recentQuery)}
@@ -490,10 +575,17 @@ export default function SearchBar({
             )}
 
             {/* Empty State */}
-            {!isLoading && query.length === 0 && suggestions.length === 0 && searchResults.length === 0 && (
+            {!isLoading && query.length === 0 && suggestions.length === 0 && searchResults.length === 0 && recentSearches.length === 0 && popularSearches.length === 0 && (
               <div className="p-4 text-center text-gray-500">
                 <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                 <p>Wpisz nazwę produktu, aby rozpocząć wyszukiwanie</p>
+              </div>
+            )}
+
+            {/* Search Performance Info */}
+            {searchTime > 0 && !isLoading && (
+              <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t border-gray-100">
+                Wyszukiwanie ukończone w {searchTime}ms
               </div>
             )}
           </motion.div>
