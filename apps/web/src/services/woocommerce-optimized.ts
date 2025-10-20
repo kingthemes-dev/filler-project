@@ -176,30 +176,31 @@ class WooCommerceService {
       console.log(`🔍 Fetching product by slug: ${slug}`);
       console.log(`🔗 Using baseUrl: ${this.baseUrl}`);
       
-      // WooCommerce doesn't support slug parameter directly, so we use search
-      const url = `${this.baseUrl}?endpoint=products&search=${slug}&cache=off`;
-      console.log(`🌐 Fetching URL: ${url}`);
+      // Try multiple approaches to find product by slug
+      let product: WooProduct | null = null;
       
-      const response = await fetch(url);
+      // Approach 1: Search by slug (convert slug to readable name)
+      const searchTerm = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      console.log(`🔍 Trying search term: ${searchTerm}`);
       
-      console.log(`📡 Response status: ${response.status}`);
-      console.log(`📡 Response headers:`, Object.fromEntries(response.headers.entries()));
+      const searchUrl = `${this.baseUrl}?endpoint=products&search=${encodeURIComponent(searchTerm)}&cache=off`;
+      console.log(`🌐 Search URL: ${searchUrl}`);
       
-      if (!response.ok) {
-        console.error(`❌ HTTP error! status: ${response.status}`);
-        const errorText = await response.text();
-        console.error(`❌ Error response:`, errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const searchResponse = await fetch(searchUrl);
+      
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        console.log(`📦 Search data received:`, Array.isArray(searchData) ? `Array with ${searchData.length} items` : typeof searchData);
+        
+        // Find product with exact slug match
+        product = Array.isArray(searchData) ? searchData.find((p: any) => p.slug === slug) : null;
+        console.log(`✅ Product found via search:`, product ? `${product.name} (ID: ${product.id})` : 'null');
       }
       
-      const data = await response.json();
-      console.log(`📦 Data received:`, Array.isArray(data) ? `Array with ${data.length} items` : typeof data);
+      // Approach 2: If not found, try direct product endpoint (if we had ID)
+      // This would require a different approach - maybe store slug-to-ID mapping
       
-      // Find product with exact slug match
-      const product = Array.isArray(data) ? data.find((p: any) => p.slug === slug) : null;
-      console.log(`✅ Product found:`, product ? `${product.name} (ID: ${product.id})` : 'null');
-      
-      return product || null;
+      return product;
     } catch (error) {
       console.error('❌ Error fetching product by slug:', error);
       throw error;
