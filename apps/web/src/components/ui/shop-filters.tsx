@@ -180,9 +180,9 @@ export default function ShopFilters({
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
         <div
-          className={`bg-white border border-gray-200 p-4 sm:p-6 shadow-sm lg:block ${
+          className={`bg-white border border-gray-200 p-4 sm:p-6 shadow-sm lg:block rounded-2xl ${
             showFilters 
-              ? 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform translate-x-0 transition-transform duration-300 ease-in-out rounded-r-2xl lg:relative lg:inset-auto lg:w-auto lg:max-w-none lg:transform-none lg:transition-none lg:rounded-2xl' 
+              ? 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform translate-x-0 transition-transform duration-300 ease-in-out rounded-r-2xl lg:relative lg:inset-auto lg:w-auto lg:max-w-none lg:transform-none lg:transition-none' 
               : 'hidden lg:block'
           }`}
           id="filters-panel"
