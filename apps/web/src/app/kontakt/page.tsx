@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
 import { useState } from 'react';
+import PageContainer from '@/components/ui/page-container';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -27,8 +29,25 @@ export default function ContactPage() {
     });
   };
 
+  const breadcrumbs = [
+    { label: 'Strona główna', href: '/' },
+    { label: 'Kontakt', href: '/kontakt' }
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <PageContainer>
+        {/* Header with Title and Breadcrumbs */}
+        <div className="py-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-bold text-gray-900">
+              Kontakt
+            </h1>
+            <Breadcrumbs items={breadcrumbs} />
+          </div>
+        </div>
+      </PageContainer>
+
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-gray-50 to-white py-20">
         <div className="max-w-[95vw] mx-auto px-6">
@@ -38,9 +57,6 @@ export default function ContactPage() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-              Kontakt
-            </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Skontaktuj się z nami, aby uzyskać profesjonalne doradztwo 
               i dowiedzieć się więcej o naszych produktach.

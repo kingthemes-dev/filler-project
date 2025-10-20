@@ -7,9 +7,15 @@ import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import Link from 'next/link';
 import PageContainer from '@/components/ui/page-container';
 import Image from 'next/image';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export default function CartPage() {
   const { items, total, itemCount, removeItem, updateQuantity, clearCart } = useCartStore();
+  
+  const breadcrumbs = [
+    { label: 'Strona główna', href: '/' },
+    { label: 'Koszyk', href: '/koszyk' }
+  ];
 
   const handleQuantityChange = (item: CartItem, newQuantity: number) => {
     updateQuantity(item.id, newQuantity, item.variant?.id);
@@ -23,6 +29,14 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-white py-12 pb-16">
         <PageContainer>
+          {/* Header with Title and Breadcrumbs */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-900">Koszyk</h1>
+              <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
+            </div>
+          </div>
+          
           <div className="max-w-2xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -61,6 +75,14 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-white py-8 pb-16">
       <div className="container mx-auto px-4">
+        {/* Header with Title and Breadcrumbs */}
+        <div className="max-w-6xl mx-auto mb-8">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Koszyk</h1>
+            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
+          </div>
+        </div>
+        
         {/* Header */}
         <div className="max-w-6xl mx-auto">
           <motion.div

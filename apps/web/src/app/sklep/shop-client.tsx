@@ -12,6 +12,7 @@ import KingProductCard from '@/components/king-product-card';
 import ShopFilters from '@/components/ui/shop-filters';
 import ActiveFiltersBar from '@/components/ui/active-filters-bar';
 import { wooCommerceOptimized as wooCommerceService } from '@/services/woocommerce-optimized';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 import { WooProduct } from '@/types/woocommerce';
 import { useQuery } from '@tanstack/react-query';
@@ -390,12 +391,20 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   // totalPages is now managed by state
 
+  const breadcrumbs = [
+    { label: 'Strona główna', href: '/' },
+    { label: 'Sklep', href: '/sklep' }
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       <PageContainer className="py-4 pb-12">
-        {/* Minimal header */}
+        {/* Header with Title and Breadcrumbs */}
         <div className="mb-4 sm:mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Sklep</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Sklep</h1>
+            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
+          </div>
         </div>
         
         {/* Usunięto górną wyszukiwarkę – pozostaje ta w panelu filtrów */}
