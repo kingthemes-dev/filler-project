@@ -105,170 +105,158 @@ export default function CookieConsent() {
 
   return (
     <>
-      {/* Cookie Banner - Bottom Left Popup */}
-      {showBanner && (
+      {/* Cookie Modal - Bottom Left Popup */}
+      {(showBanner || showSettings) && (
         <div className="fixed bottom-4 left-4 z-50 w-80 bg-white rounded-lg shadow-xl border border-gray-200">
           <div className="p-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Cookie className="w-5 h-5 text-blue-600" />
-                Cookies
+                {showSettings ? 'Ustawienia cookies' : 'Cookies'}
               </h2>
               <button 
-                onClick={handleRejectAll}
+                onClick={showSettings ? () => setShowSettings(false) : handleRejectAll}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Description */}
-            <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-              Używamy plików cookies, aby zapewnić najlepszą jakość usług. 
-              Możesz zaakceptować wszystkie lub dostosować preferencje.
-            </p>
+            {/* Content */}
+            {!showSettings ? (
+              <>
+                {/* Description */}
+                <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                  Używamy plików cookies, aby zapewnić najlepszą jakość usług. 
+                  Możesz zaakceptować wszystkie lub dostosować preferencje.
+                </p>
 
-            {/* Buttons */}
-            <div className="space-y-2">
-              <Button 
-                onClick={handleAcceptAll}
-                className="w-full bg-gradient-to-r from-gray-800 to-black text-white hover:from-gray-700 hover:to-gray-900 transition-all duration-300 py-2 rounded-lg font-medium text-sm"
-              >
-                <Check className="w-4 h-4 mr-2" /> Akceptuj wszystkie
-              </Button>
-              
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleRejectAll}
-                  variant="outline"
-                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-2 rounded-lg text-sm"
-                >
-                  <XIcon className="w-4 h-4 mr-1" /> Odrzuć
-                </Button>
-                <Button 
-                  onClick={() => setShowSettings(true)}
-                  variant="outline"
-                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-2 rounded-lg text-sm"
-                >
-                  <Settings className="w-4 h-4 mr-1" /> Dostosuj
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cookie Settings Modal - Only this one is full screen */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white rounded-lg shadow-lg">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Ustawienia cookies</h2>
-              <button 
-                onClick={() => setShowSettings(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Description */}
-            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-              Wybierz, które pliki cookies chcesz akceptować. Niezbędne cookies są zawsze włączone.
-            </p>
-
-            {/* Cookie Options */}
-            <div className="space-y-4 mb-6">
-              {/* Necessary Cookies */}
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <input 
-                  type="checkbox"
-                  checked={preferences.necessary} 
-                  disabled
-                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <div className="flex-1">
-                  <label className="font-medium text-gray-900 block mb-1">Niezbędne cookies</label>
-                  <p className="text-xs text-gray-600">
-                    Niezbędne do podstawowego funkcjonowania strony. Nie można ich wyłączyć.
-                  </p>
+                {/* Buttons */}
+                <div className="space-y-2">
+                  <Button 
+                    onClick={handleAcceptAll}
+                    className="w-full bg-gradient-to-r from-gray-800 to-black text-white hover:from-gray-700 hover:to-gray-900 transition-all duration-300 py-2 rounded-lg font-medium text-sm"
+                  >
+                    <Check className="w-4 h-4 mr-2" /> Akceptuj wszystkie
+                  </Button>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleRejectAll}
+                      variant="outline"
+                      className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-2 rounded-lg text-sm"
+                    >
+                      <XIcon className="w-4 h-4 mr-1" /> Odrzuć
+                    </Button>
+                    <Button 
+                      onClick={() => setShowSettings(true)}
+                      variant="outline"
+                      className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-2 rounded-lg text-sm"
+                    >
+                      <Settings className="w-4 h-4 mr-1" /> Dostosuj
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              </>
+            ) : (
+              <>
+                {/* Settings Description */}
+                <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                  Wybierz, które pliki cookies chcesz akceptować. Niezbędne cookies są zawsze włączone.
+                </p>
 
-              {/* Analytics Cookies */}
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <input 
-                  type="checkbox"
-                  checked={preferences.analytics}
-                  onChange={(e) => 
-                    setPreferences(prev => ({ ...prev, analytics: e.target.checked }))
-                  }
-                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <div className="flex-1">
-                  <label className="font-medium text-gray-900 block mb-1">Analityczne cookies</label>
-                  <p className="text-xs text-gray-600">
-                    Pomagają zrozumieć, jak użytkownicy korzystają z strony. (Google Analytics)
-                  </p>
+                {/* Cookie Options */}
+                <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
+                  {/* Necessary Cookies */}
+                  <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg">
+                    <input 
+                      type="checkbox"
+                      checked={preferences.necessary} 
+                      disabled
+                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <div className="flex-1">
+                      <label className="font-medium text-gray-900 block mb-1 text-sm">Niezbędne cookies</label>
+                      <p className="text-xs text-gray-600">
+                        Niezbędne do podstawowego funkcjonowania strony.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Analytics Cookies */}
+                  <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg">
+                    <input 
+                      type="checkbox"
+                      checked={preferences.analytics}
+                      onChange={(e) => 
+                        setPreferences(prev => ({ ...prev, analytics: e.target.checked }))
+                      }
+                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <div className="flex-1">
+                      <label className="font-medium text-gray-900 block mb-1 text-sm">Analityczne cookies</label>
+                      <p className="text-xs text-gray-600">
+                        Pomagają zrozumieć, jak użytkownicy korzystają z strony.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Marketing Cookies */}
+                  <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg">
+                    <input 
+                      type="checkbox"
+                      checked={preferences.marketing}
+                      onChange={(e) => 
+                        setPreferences(prev => ({ ...prev, marketing: e.target.checked }))
+                      }
+                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <div className="flex-1">
+                      <label className="font-medium text-gray-900 block mb-1 text-sm">Marketingowe cookies</label>
+                      <p className="text-xs text-gray-600">
+                        Używane do wyświetlania reklam dostosowanych do Twoich zainteresowań.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Preferences Cookies */}
+                  <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg">
+                    <input 
+                      type="checkbox"
+                      checked={preferences.preferences}
+                      onChange={(e) => 
+                        setPreferences(prev => ({ ...prev, preferences: e.target.checked }))
+                      }
+                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <div className="flex-1">
+                      <label className="font-medium text-gray-900 block mb-1 text-sm">Cookies preferencji</label>
+                      <p className="text-xs text-gray-600">
+                        Zapamiętują Twoje wybory i ustawienia strony.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Marketing Cookies */}
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <input 
-                  type="checkbox"
-                  checked={preferences.marketing}
-                  onChange={(e) => 
-                    setPreferences(prev => ({ ...prev, marketing: e.target.checked }))
-                  }
-                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <div className="flex-1">
-                  <label className="font-medium text-gray-900 block mb-1">Marketingowe cookies</label>
-                  <p className="text-xs text-gray-600">
-                    Używane do wyświetlania reklam dostosowanych do Twoich zainteresowań.
-                  </p>
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSavePreferences}
+                    className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white hover:from-gray-700 hover:to-gray-900 transition-all duration-300 py-2 rounded-lg font-medium text-sm"
+                  >
+                    <Check className="w-4 h-4 mr-2" /> Zapisz
+                  </Button>
+                  <Button 
+                    onClick={() => setShowSettings(false)}
+                    variant="outline"
+                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-2 rounded-lg text-sm"
+                  >
+                    <XIcon className="w-4 h-4 mr-2" /> Anuluj
+                  </Button>
                 </div>
-              </div>
-
-              {/* Preferences Cookies */}
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <input 
-                  type="checkbox"
-                  checked={preferences.preferences}
-                  onChange={(e) => 
-                    setPreferences(prev => ({ ...prev, preferences: e.target.checked }))
-                  }
-                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <div className="flex-1">
-                  <label className="font-medium text-gray-900 block mb-1">Cookies preferencji</label>
-                  <p className="text-xs text-gray-600">
-                    Zapamiętują Twoje wybory i ustawienia strony.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleSavePreferences}
-                className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white hover:from-gray-700 hover:to-gray-900 transition-all duration-300 py-3 rounded-lg font-medium"
-              >
-                <Check className="w-4 h-4 mr-2" /> Zapisz preferencje
-              </Button>
-              <Button 
-                onClick={() => setShowSettings(false)}
-                variant="outline"
-                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-3 rounded-lg"
-              >
-                <XIcon className="w-4 h-4 mr-2" /> Anuluj
-              </Button>
-            </div>
+              </>
+            )}
           </div>
         </div>
       )}
