@@ -367,8 +367,8 @@ export default function SearchBar({
               setIsOpen(true);
             }
           }}
-          className={`block w-full pl-10 pr-10 py-3 leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-black text-sm ${
-            isOpen ? 'rounded-t-lg' : 'rounded-lg border border-gray-300'
+          className={`block w-full pl-10 pr-10 py-3 leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-black text-sm border border-gray-300 ${
+            isOpen ? 'rounded-t-lg border-b-0' : 'rounded-lg'
           }`}
           placeholder={placeholder}
         />
