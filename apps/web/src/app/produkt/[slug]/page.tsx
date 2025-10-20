@@ -20,7 +20,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   
   try {
-    const product = await wooCommerceOptimized.getProductBySlug(slug);
+    // Use direct API call that works instead of wooCommerceOptimized service
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.filler.pl';
+    const apiUrl = `${baseUrl}/api/woocommerce?endpoint=products&search=${slug}&cache=off`;
+    
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const products = await response.json();
+    const product = Array.isArray(products) ? products.find((p: any) => p.slug === slug) : null;
     
     if (!product) {
       return {
@@ -79,20 +90,33 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const queryClient = new QueryClient();
 
   try {
-    // Prefetch product by slug with error handling
-    await queryClient.prefetchQuery({
-      queryKey: ['product', slug],
-      queryFn: () => wooCommerceOptimized.getProductBySlug(slug),
-      retry: 2,
-      retryDelay: 1000,
-    });
-
-    // Read product to obtain id for dependent queries
-    const product: any = queryClient.getQueryData(['product', slug]);
+    // Use direct API call that works instead of wooCommerceOptimized service
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.filler.pl';
+    const apiUrl = `${baseUrl}/api/woocommerce?endpoint=products&search=${slug}&cache=off`;
+    
+    console.log(`🔍 Direct API call for product slug: ${slug}`);
+    console.log(`🌐 API URL: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl);
+    console.log(`📡 Response status: ${response.status}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const products = await response.json();
+    console.log(`📦 Products received:`, Array.isArray(products) ? `Array with ${products.length} items` : typeof products);
+    
+    // Find product with exact slug match
+    const product = Array.isArray(products) ? products.find((p: any) => p.slug === slug) : null;
+    console.log(`✅ Product found:`, product ? `${product.name} (ID: ${product.id})` : 'null');
     
     if (!product) {
       throw new Error('Product not found');
     }
+
+    // Store product in query cache
+    queryClient.setQueryData(['product', slug], product);
 
     const productId: number = product.id || 0;
 
