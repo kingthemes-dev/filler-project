@@ -106,8 +106,8 @@ export default function SearchBar({
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
     
-    // Calculate position
-    let top = rect.bottom + window.scrollY + 8;
+    // Calculate position - bezpośrednio pod input (bez przerwy)
+    let top = rect.bottom + window.scrollY;
     let left = rect.left + window.scrollX;
     let width = rect.width;
     
@@ -131,6 +131,21 @@ export default function SearchBar({
     });
   }, []);
 
+  // Calculate dropdown position when opening and on resize/scroll
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition();
+
+      // Update position on scroll and resize
+      window.addEventListener('scroll', updatePosition, { passive: true });
+      window.addEventListener('resize', updatePosition, { passive: true });
+
+      return () => {
+        window.removeEventListener('scroll', updatePosition);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [isOpen, updatePosition]);
 
   // Close search on outside click
   useEffect(() => {
@@ -370,7 +385,12 @@ export default function SearchBar({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="absolute z-[60] bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden max-h-[80vh] sm:max-h-[70vh] will-change-transform top-full left-0 right-0 mt-1"
+            className="fixed z-[60] bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden max-h-[80vh] sm:max-h-[70vh] will-change-transform"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width
+            }}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
