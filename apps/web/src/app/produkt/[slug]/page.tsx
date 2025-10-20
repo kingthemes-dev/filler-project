@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         title: `${product.name} - ${price} zł`,
         description: description,
         type: 'website',
-        images: product.images?.map(img => ({
+        images: product.images?.map((img: any) => ({
           url: img.src,
           width: 800,
           height: 600,
