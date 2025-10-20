@@ -182,7 +182,7 @@ export default function ShopFilters({
         <div
           className={`bg-white/95 backdrop-blur-sm border border-gray-200/50 p-4 sm:p-6 shadow-sm lg:block rounded-2xl ${
             showFilters 
-              ? 'fixed inset-y-0 left-0 w-96 max-w-[85vw] z-50 transform translate-x-0 transition-all duration-300 ease-out rounded-r-2xl lg:relative lg:inset-auto lg:w-80 lg:max-w-none lg:transform-none lg:transition-none lg:shadow-md lg:backdrop-blur-md' 
+              ? 'block lg:relative lg:inset-auto lg:w-80 lg:max-w-none lg:transform-none lg:transition-none lg:shadow-md lg:backdrop-blur-md' 
               : 'hidden lg:block lg:w-80'
           }`}
           id="filters-panel"
