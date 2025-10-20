@@ -43,7 +43,7 @@ export default function ContactPage() {
             <h1 className="text-4xl font-bold text-gray-900">
               Kontakt
             </h1>
-            <Breadcrumbs items={breadcrumbs} />
+            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
           </div>
         </div>
       </PageContainer>

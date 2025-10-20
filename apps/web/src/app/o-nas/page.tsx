@@ -3,9 +3,7 @@
 import { motion } from 'framer-motion';
 import PageContainer from '@/components/ui/page-container';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
-import { Button } from '@/components/ui/button';
 import { Award, Truck, Headphones, Shield } from 'lucide-react';
-import Link from 'next/link';
 
 export default function AboutPage() {
   const breadcrumbs = [
@@ -22,7 +20,7 @@ export default function AboutPage() {
             <h1 className="text-4xl font-bold text-gray-900">
               O nas
             </h1>
-            <Breadcrumbs items={breadcrumbs} />
+            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
           </div>
         </div>
 
@@ -64,57 +62,34 @@ export default function AboutPage() {
                 Hurtownia medycyny estetycznej Filler.pl
               </h2>
               
-              <div className="prose prose-lg max-w-none">
-                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+              <div className="prose max-w-none">
+                <p className="text-base text-gray-700 mb-6 leading-relaxed">
                   Filler.pl to firma, która powstała z pasji do medycyny estetycznej i chęci dostarczania najlepszych produktów na dynamicznie rozwijający się rynek. Naszą misją jest wspieranie profesjonalistów w branży, oferując im szeroki wybór sprawdzonych, wysokiej jakości materiałów i narzędzi, które spełniają najwyższe standardy.
                 </p>
 
-                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                <p className="text-base text-gray-700 mb-6 leading-relaxed">
                   Dokładamy wszelkich starań, aby nasza oferta była zawsze aktualna i odpowiadała na potrzeby rynku, regularnie analizując pojawiające się nowinki oraz trendy. Nasz zespół jest zawsze gotowy, by dostosować asortyment do indywidualnych oczekiwań klientów, a także by wprowadzać innowacje, które pomogą w rozwoju gabinetów i klinik medycyny estetycznej.
                 </p>
 
-                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                <p className="text-base text-gray-700 mb-6 leading-relaxed">
                   Wszystkie produkty dostępne w Filler.pl są w pełni oryginalne i pochodzą od certyfikowanych producentów i dystrybutorów, którzy są uznanymi liderami na rynku medycyny estetycznej. Dzięki bliskiej współpracy z najlepszymi markami, możemy zapewnić Państwu konkurencyjne ceny oraz dostęp do produktów, które wyróżniają się na tle innych.
                 </p>
 
-                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+                <p className="text-base text-gray-700 mb-6 leading-relaxed">
                   Naszym celem jest nie tylko sprzedaż, ale także budowanie długoterminowych relacji z naszymi klientami. Zależy nam na stałym doskonaleniu jakości obsługi, dlatego czekamy na Wasze sugestie, które pozwolą nam rozwijać się i jeszcze lepiej odpowiadać na potrzeby rynku.
                 </p>
 
-                <p className="text-lg text-gray-700 mb-8 leading-relaxed font-medium">
+                <p className="text-base text-gray-700 mb-8 leading-relaxed font-medium">
                   Zapraszamy do współpracy i zaufania profesjonalistom z Filler.pl!
                 </p>
-              </div>
-
-              {/* CTA Button */}
-              <div className="mt-8">
-                <Link href="/sklep">
-                  <Button className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 text-lg font-medium rounded-xl">
-                    Zobacz produkty
-                  </Button>
-                </Link>
               </div>
             </motion.div>
           </div>
         </section>
 
         {/* Features Section */}
-        <section className="py-16 bg-gray-50">
+        <section className="py-16">
           <PageContainer>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Dlaczego warto wybrać Filler.pl?
-              </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Oferujemy kompleksowe rozwiązania dla specjalistów medycyny estetycznej
-              </p>
-            </motion.div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {/* Konkurencyjne ceny */}
               <motion.div
