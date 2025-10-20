@@ -145,10 +145,15 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Link
-                        href={`/sklep?category=${encodeURIComponent(category.slug)}`}
-                        className="flex items-center justify-between w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
-                        onClick={onClose}
+                      <button
+                        onClick={() => {
+                          setSelectedCat(category.id);
+                        }}
+                        className={`flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group ${
+                          selectedCat === category.id
+                            ? 'border-blue-300 bg-blue-50 text-blue-900'
+                            : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 text-gray-900'
+                        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20`}
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="flex-shrink-0 text-gray-400">
@@ -166,14 +171,17 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                               {category.count}
                             </span>
                           )}
+                          {selectedCat === category.id && (
+                            <ChevronRight className="w-4 h-4 text-blue-600" />
+                          )}
                         </div>
-                      </Link>
+                      </button>
                     </motion.div>
                   ))}
                 </div>
               </div>
 
-              {/* Podkategorie / Zastosowanie - Nowoczesny Dropdown */}
+              {/* Podkategorie / Zastosowanie - Pokazuje podkategorie wybranej kategorii głównej */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -192,12 +200,21 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   )}
                 </div>
                 
-                {subCategories.length === 0 ? (
+                {!selectedCat ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <ChevronRight className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm">Wybierz kategorię główną</p>
+                    <p className="text-xs text-gray-400 mt-1">aby zobaczyć podkategorie</p>
+                  </div>
+                ) : subCategories.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
                       <Filter className="w-6 h-6 text-gray-400" />
                     </div>
                     <p className="text-sm">Brak podkategorii</p>
+                    <p className="text-xs text-gray-400 mt-1">dla kategorii "{currentMain?.name}"</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2">
