@@ -10,6 +10,7 @@ import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import AnimatedDropdown from './animated-dropdown';
+import AdvancedDropdown from './advanced-dropdown';
 
 interface ShopExplorePanelProps {
   open: boolean;
@@ -90,13 +91,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // Convert categories to dropdown options
-  const categoryOptions = mainCategories.map(cat => ({
+  // Convert ALL categories to dropdown options (not just main categories)
+  const categoryOptions = categories.map(cat => ({
     id: cat.id,
     label: cat.name,
     value: cat.slug,
     count: cat.count,
-    icon: <Filter className="w-4 h-4" />
+    icon: <Filter className="w-4 h-4" />,
+    group: cat.parent === 0 ? 'Główne kategorie' : 'Podkategorie'
   }));
 
   // Convert subcategories to dropdown options
@@ -143,11 +145,11 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Kategorie</h3>
                 </div>
                 
-                <AnimatedDropdown
+                <AdvancedDropdown
                   options={categoryOptions}
                   value={currentMain?.slug || ''}
                   onChange={(value) => {
-                    const selectedCategory = mainCategories.find(cat => cat.slug === value);
+                    const selectedCategory = categories.find(cat => cat.slug === value);
                     if (selectedCategory) {
                       setSelectedCat(selectedCategory.id);
                     }
@@ -155,9 +157,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   placeholder="Wybierz kategorię..."
                   searchable={true}
                   showCounts={true}
-                  variant="outlined"
-                  size="lg"
-                  animation="slide"
+                  groupBy="group"
                   className="w-full"
                   renderOption={(option, isSelected) => (
                     <div className="flex items-center justify-between w-full">
