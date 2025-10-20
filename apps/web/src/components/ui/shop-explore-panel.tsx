@@ -116,7 +116,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           id="shop-explore-panel"
           role="dialog"
           aria-modal="false"
-          className="absolute top-full left-0 right-0 bg-white shadow-2xl border-t border-gray-200 z-50 rounded-b-3xl backdrop-blur-sm"
+          className="shop-dropdown-container absolute top-full left-0 right-0 bg-white shadow-2xl border-t border-gray-200 z-50 rounded-b-3xl backdrop-blur-sm"
           initial={{ opacity: 0, y: -12, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -12, scale: 0.95 }}
