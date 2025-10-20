@@ -160,13 +160,6 @@ export default function ShopFilters({
         </button>
       </div>
 
-      {/* Mobile Sidebar Overlay */}
-      {showFilters && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onToggleFilters}
-        />
-      )}
 
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
