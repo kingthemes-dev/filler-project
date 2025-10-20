@@ -75,7 +75,7 @@ function SearchResultsContent() {
 
       const response = await wooSearchService.advancedSearch(searchParams);
       
-      setSearchResults(response.products || []);
+      setSearchResults(response.products as WooProduct[] || []);
       setTotalResults(response.total || 0);
       setTotalPages(response.totalPages || 1);
       

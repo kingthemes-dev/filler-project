@@ -229,7 +229,7 @@ export default function SearchBar({
         // Handle search results
         if (searchResult.status === 'fulfilled') {
           const searchData = searchResult.value;
-          setSearchResults(searchData.products);
+          setSearchResults(searchData.products as WooProduct[]);
           setHasResults(searchData.products.length > 0);
           
           // Track search query with performance metrics

@@ -13,12 +13,11 @@ const nextConfig: NextConfig = {
   },
   // Fix for Vercel routes-manifest issue with Next.js 15
   distDir: '.next',
-  experimental: {
-    // Temporary: disable experimental features for stable Vercel deployment
-    // optimizePackageImports: false, // Disabled for Vercel stability
-    reactCompiler: false, // Disabled for Vercel stability
-    // ppr: true, // Partial Prerendering - requires Next.js canary
-  },
+      experimental: {
+        // Temporary: disable experimental features for stable Vercel deployment
+        // optimizePackageImports: false, // Disabled for Vercel stability
+        // ppr: true, // Partial Prerendering - requires Next.js canary
+      },
   // Fix for Node.js v18 compatibility - moved to top level
   serverExternalPackages: ['ioredis', 'nodemailer'],
   // Production optimizations
@@ -48,17 +47,35 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer, dev }) => {
-    // Fix for Next.js 15.5.2 compatibility issues
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        crypto: false,
-      };
-    }
+      webpack: (config, { isServer, dev }) => {
+        // Fix for Next.js 15.5.2 compatibility issues
+        if (!isServer) {
+          config.resolve.fallback = {
+            ...config.resolve.fallback,
+            fs: false,
+            net: false,
+            tls: false,
+            crypto: false,
+            dns: false,
+            child_process: false,
+            cluster: false,
+            os: false,
+            path: false,
+            stream: false,
+            util: false,
+            url: false,
+            querystring: false,
+            buffer: false,
+            events: false,
+            assert: false,
+            constants: false,
+            domain: false,
+            http: false,
+            https: false,
+            vm: false,
+            zlib: false,
+          };
+        }
     
     config.module.rules.push({
       test: /\.svg$/,

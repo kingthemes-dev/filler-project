@@ -2,7 +2,6 @@
 // Expert Level 9.6/10 - Advanced Search with Redis Cache & Performance Optimization
 
 import wooCommerceService from './woocommerce-optimized';
-import { redisCache } from '@/lib/redis';
 import { logger } from '@/utils/logger';
 
 export interface WooSearchProduct {
@@ -71,11 +70,14 @@ export class WooCommerceSearchService {
     const cacheKey = this.getSearchCacheKey(query, limit);
     
     try {
+      // Dynamic import to avoid client-side issues
+      const { redisCache } = await import('@/lib/redis');
+      
       // Try to get from Redis cache first
-      const cached = await redisCache.get(cacheKey);
+      const cached = await redisCache.get<WooSearchResponse>(cacheKey);
       if (cached) {
         logger.info('Search cache hit', { query, limit });
-        return JSON.parse(cached);
+        return cached;
       }
 
       // Search via WooCommerce API
@@ -95,7 +97,7 @@ export class WooCommerceSearchService {
       };
 
       // Cache for 5 minutes
-      await redisCache.setex(cacheKey, 300, JSON.stringify(result));
+      await redisCache.setex(cacheKey, 300, result);
       
       logger.info('Search cache miss, stored new result', { 
         query, 
@@ -125,11 +127,14 @@ export class WooCommerceSearchService {
     const cacheKey = this.getSuggestionsCacheKey(query);
 
     try {
+      // Dynamic import to avoid client-side issues
+      const { redisCache } = await import('@/lib/redis');
+      
       // Try to get from Redis cache first
-      const cached = await redisCache.get(cacheKey);
+      const cached = await redisCache.get<string[]>(cacheKey);
       if (cached) {
         logger.info('Suggestions cache hit', { query });
-        return JSON.parse(cached);
+        return cached;
       }
 
       // Search for products with the query
@@ -169,7 +174,7 @@ export class WooCommerceSearchService {
       }
 
       // Cache for 10 minutes
-      await redisCache.setex(cacheKey, 600, JSON.stringify(result));
+      await redisCache.setex(cacheKey, 600, result);
       
       logger.info('Suggestions cache miss, stored new result', { 
         query, 
@@ -193,14 +198,17 @@ export class WooCommerceSearchService {
     const cacheKey = this.getPopularSearchesCacheKey();
 
     try {
+      // Dynamic import to avoid client-side issues
+      const { redisCache } = await import('@/lib/redis');
+      
       // Try to get from Redis cache first
-      const cached = await redisCache.get(cacheKey);
+      const cached = await redisCache.get<string[]>(cacheKey);
       if (cached) {
-        return JSON.parse(cached).slice(0, limit);
+        return cached.slice(0, limit);
       }
 
       // Cache for 1 hour
-      await redisCache.setex(cacheKey, 3600, JSON.stringify(this.popularSearches));
+      await redisCache.setex(cacheKey, 3600, this.popularSearches);
       
       return this.popularSearches.slice(0, limit);
     } catch (error) {
@@ -238,11 +246,14 @@ export class WooCommerceSearchService {
     const cacheKey = `advanced_search:${JSON.stringify(params)}`;
     
     try {
+      // Dynamic import to avoid client-side issues
+      const { redisCache } = await import('@/lib/redis');
+      
       // Try to get from Redis cache first
-      const cached = await redisCache.get(cacheKey);
+      const cached = await redisCache.get<WooSearchResponse>(cacheKey);
       if (cached) {
         logger.info('Advanced search cache hit', { query, params });
-        return JSON.parse(cached);
+        return cached;
       }
 
       // Build search parameters
@@ -275,7 +286,7 @@ export class WooCommerceSearchService {
       };
 
       // Cache for 5 minutes
-      await redisCache.setex(cacheKey, 300, JSON.stringify(result));
+      await redisCache.setex(cacheKey, 300, result);
       
       logger.info('Advanced search cache miss, stored new result', { 
         query, 
@@ -306,10 +317,18 @@ export class WooCommerceSearchService {
     cacheHitRate: number;
   }> {
     try {
+      // Dynamic import to avoid client-side issues
+      const { redisCache } = await import('@/lib/redis');
+      
       // Get analytics from Redis
-      const analytics = await redisCache.get('search_analytics');
+      const analytics = await redisCache.get<{
+        totalSearches: number;
+        popularQueries: Array<{ query: string; count: number }>;
+        averageResults: number;
+        cacheHitRate: number;
+      }>('search_analytics');
       if (analytics) {
-        return JSON.parse(analytics);
+        return analytics;
       }
 
       // Return default analytics
@@ -335,6 +354,9 @@ export class WooCommerceSearchService {
    */
   async clearSearchCache(): Promise<void> {
     try {
+      // Dynamic import to avoid client-side issues
+      const { redisCache } = await import('@/lib/redis');
+      
       const keys = await redisCache.keys('search:*');
       const suggestionKeys = await redisCache.keys('suggestions:*');
       const popularKeys = await redisCache.keys('popular_searches');
@@ -342,7 +364,10 @@ export class WooCommerceSearchService {
       const allKeys = [...keys, ...suggestionKeys, ...popularKeys];
       
       if (allKeys.length > 0) {
-        await redisCache.del(...allKeys);
+        // Delete keys one by one to avoid spread operator issues
+        for (const key of allKeys) {
+          await redisCache.del(key);
+        }
         logger.info('Search cache cleared', { keysCount: allKeys.length });
       }
     } catch (error) {
