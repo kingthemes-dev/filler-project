@@ -367,8 +367,8 @@ export default function SearchBar({
               setIsOpen(true);
             }
           }}
-          className={`block w-full pl-10 pr-10 py-3 leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-black text-sm border border-gray-300 ${
-            isOpen ? 'rounded-t-lg border-b-0' : 'rounded-lg'
+          className={`block w-full pl-10 pr-10 py-3 leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-gray-400 text-sm border border-gray-300 ${
+            isOpen ? 'rounded-lg border-b-0' : 'rounded-lg'
           }`}
           placeholder={placeholder}
         />
@@ -387,7 +387,7 @@ export default function SearchBar({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed z-[60] bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden max-h-[80vh] sm:max-h-[70vh] will-change-transform"
+            className="fixed z-[60] bg-white rounded-b-lg shadow-lg border-l border-r border-b border-gray-200 overflow-hidden max-h-[80vh] sm:max-h-[70vh] will-change-transform"
             style={{
               top: dropdownPosition.top,
               left: dropdownPosition.left,
