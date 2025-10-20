@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   distDir: '.next',
   experimental: {
     // Temporary: disable experimental features for stable Vercel deployment
-    optimizePackageImports: false, // Disabled for Vercel stability
+    // optimizePackageImports: false, // Disabled for Vercel stability
     reactCompiler: false, // Disabled for Vercel stability
     // ppr: true, // Partial Prerendering - requires Next.js canary
   },
