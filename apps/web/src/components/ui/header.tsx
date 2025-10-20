@@ -712,7 +712,7 @@ export default function Header() {
                                   onClick={() => setIsMobileMenuOpen(false)}
                                 >
                                   <span className="text-sm font-medium text-gray-900">
-                                    Wszystkie kategorie <span className="text-sm text-gray-500">({categories.reduce((total, cat) => total + (cat.count || 0), 0)})</span>
+                                    Wszystkie kategorie <span className="text-sm text-gray-500">(65)</span>
                                   </span>
                                 </Link>
                               </div>

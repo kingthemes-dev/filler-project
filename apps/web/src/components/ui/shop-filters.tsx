@@ -171,7 +171,7 @@ export default function ShopFilters({
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
         <div
-          className={`bg-white/95 backdrop-blur-sm border border-gray-200/50 p-4 sm:p-6 shadow-sm lg:block rounded-2xl ${
+          className={`bg-white border border-gray-200/50 p-4 sm:p-6 shadow-sm lg:block rounded-2xl ${
             showFilters 
               ? 'block lg:relative lg:inset-auto lg:w-80 lg:max-w-none lg:transform-none lg:transition-none lg:shadow-md lg:backdrop-blur-md' 
               : 'hidden lg:block lg:w-80'
