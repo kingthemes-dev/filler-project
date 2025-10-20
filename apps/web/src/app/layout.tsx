@@ -104,7 +104,6 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        {/* Cookiebot removed - using custom cookie consent */}
         {/* Google Tag Manager */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <Script id="gtm" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
