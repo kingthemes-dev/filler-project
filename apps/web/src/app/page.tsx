@@ -144,10 +144,10 @@ export default async function HomePage() {
                 <Award className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Najlepsze ceny
+                Konkurencyjne ceny
               </h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Najkorzystniejsza oferta na rynku. Regularne promocje i kody rabatowe.
+                Atrakcyjne ceny dzięki bezpośredniej współpracy z producentami. Częste promocje i specjalne oferty dla stałych klientów.
               </p>
             </div>
             
@@ -157,10 +157,10 @@ export default async function HomePage() {
                 <Truck className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Niezawodna dostawa
+                Szybka realizacja
               </h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Wysyłka w 1 dzień roboczy. Możliwość zamówienia transportu medycznego.
+                Realizacja zamówień w ciągu 24h. Specjalistyczny transport dla produktów wymagających kontroli temperatury.
               </p>
             </div>
             
@@ -170,10 +170,10 @@ export default async function HomePage() {
                 <Headphones className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Profesjonalne wsparcie
+                Eksperckie doradztwo
               </h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Masz pytanie? Skontaktuj się z nami i porozmawiaj z ekspertem.
+                Zespół specjalistów gotowy do udzielenia fachowej pomocy w wyborze produktów dostosowanych do potrzeb Twojego gabinetu.
               </p>
             </div>
 
@@ -183,10 +183,10 @@ export default async function HomePage() {
                 <Shield className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Gwarancja oryginalności
+                Certyfikowane produkty
               </h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Szeroka oferta oryginalnych preparatów prosto od producentów i oficjalnych dystrybutorów.
+                Wszystkie preparaty posiadają odpowiednie certyfikaty i pochodzą wyłącznie od autoryzowanych dystrybutorów.
               </p>
             </div>
           </div>
