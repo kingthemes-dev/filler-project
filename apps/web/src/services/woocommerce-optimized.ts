@@ -174,22 +174,30 @@ class WooCommerceService {
   async getProductBySlug(slug: string): Promise<WooProduct | null> {
     try {
       console.log(`🔍 Fetching product by slug: ${slug}`);
+      console.log(`🔗 Using baseUrl: ${this.baseUrl}`);
+      
       // WooCommerce doesn't support slug parameter directly, so we use search
-      const response = await fetch(`${this.baseUrl}?endpoint=products&search=${slug}&cache=off`);
+      const url = `${this.baseUrl}?endpoint=products&search=${slug}&cache=off`;
+      console.log(`🌐 Fetching URL: ${url}`);
+      
+      const response = await fetch(url);
       
       console.log(`📡 Response status: ${response.status}`);
+      console.log(`📡 Response headers:`, Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         console.error(`❌ HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`❌ Error response:`, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log(`📦 Data received:`, data);
+      console.log(`📦 Data received:`, Array.isArray(data) ? `Array with ${data.length} items` : typeof data);
       
       // Find product with exact slug match
       const product = Array.isArray(data) ? data.find((p: any) => p.slug === slug) : null;
-      console.log(`✅ Product found:`, product ? product.name : 'null');
+      console.log(`✅ Product found:`, product ? `${product.name} (ID: ${product.id})` : 'null');
       
       return product || null;
     } catch (error) {
