@@ -4,16 +4,13 @@ import { useState, useEffect, Suspense } from 'react';
 import PageContainer from '@/components/ui/page-container';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Search, Filter, SortAsc, Star, ShoppingCart, Heart } from 'lucide-react';
+import { Search, Filter, SortAsc } from 'lucide-react';
 import { WooCommerceService } from '@/services/woocommerce-optimized';
 import { wooSearchService } from '@/services/woocommerce-search';
-import { formatPrice } from '@/utils/format-price';
 import { WooProduct } from '@/types/woocommerce';
-import { useCartStore } from '@/stores/cart-store';
-import Image from 'next/image';
-import Link from 'next/link';
 import SearchTracking from '@/components/seo/search-tracking';
 import { logger } from '@/utils/logger';
+import KingProductCard from '@/components/king-product-card';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();
@@ -31,8 +28,6 @@ function SearchResultsContent() {
   const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'rating' | 'newest'>('relevance');
   const [showFilters, setShowFilters] = useState(false);
   
-  // Cart store
-  const { addItem } = useCartStore();
   const [wooService, setWooService] = useState<WooCommerceService | null>(null);
 
   // Initialize WooCommerce service
@@ -120,16 +115,6 @@ function SearchResultsContent() {
     setCurrentPage(1);
   };
 
-  // Add to cart
-  const handleAddToCart = (product: WooProduct) => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: parseFloat(product.sale_price || product.price),
-      sale_price: product.sale_price ? parseFloat(product.sale_price) : undefined,
-      image: product.images && product.images.length > 0 ? product.images[0].src : '/images/placeholder-product.jpg'
-    });
-  };
 
   // Get filter options
   const getFilterOptions = () => {
@@ -325,93 +310,17 @@ function SearchResultsContent() {
           {searchResults.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
               {searchResults.map((product) => (
-                <Link key={product.id} href={`/produkt/${product.slug}`}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                  {/* Product Image */}
-                  <div className="aspect-square bg-gray-200 relative">
-                    {product.images && product.images.length > 0 ? (
-                      <Image 
-                        src={product.images[0].src} 
-                        alt={product.images[0].alt || product.name}
-                        width={300}
-                        height={300}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-300"></div>
-                    )}
-                    {product.sale_price && (
-                      <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                        Promocja
-                      </div>
-                    )}
-                    {product.stock_status !== 'instock' && (
-                      <div className="absolute top-2 right-2 bg-gray-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                        Brak w magazynie
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                      {product.name}
-                    </h3>
-                    
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {product.short_description || product.description}
-                    </p>
-
-                    {/* Rating */}
-                    <div className="flex items-center mb-3">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm text-gray-600 ml-1">
-                          {parseFloat(product.average_rating) || 0}
-                        </span>
-                      </div>
-                      <span className="text-xs text-gray-400 mx-2">•</span>
-                      <span className="text-xs text-gray-600">
-                        {(product as any).review_count || 0} opinii
-                      </span>
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <span className="text-lg font-bold text-gray-900">
-                          {formatPrice(parseFloat(product.sale_price || product.price))}
-                        </span>
-                        {product.sale_price && (
-                          <span className="text-sm text-gray-500 line-through ml-2">
-                            {formatPrice(parseFloat(product.price))}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        disabled={product.stock_status !== 'instock'}
-                        className="flex-1 bg-black text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Dodaj do koszyka
-                      </button>
-                      
-                      <button className="p-2 text-gray-400 hover:text-red-500 transition-colors border border-gray-300 rounded-lg hover:border-red-300">
-                        <Heart className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  </motion.div>
-                </Link>
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <KingProductCard
+                    product={product}
+                    variant="default"
+                    showActions={true}
+                  />
+                </motion.div>
               ))}
             </div>
           )}

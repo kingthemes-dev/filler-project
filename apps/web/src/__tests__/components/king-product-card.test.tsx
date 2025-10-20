@@ -17,9 +17,9 @@ jest.mock('next/image', () => {
   );
 });
 
-// Mock useFavorites hook
-jest.mock('@/hooks/use-favorites-sync', () => ({
-  useFavoritesSync: () => ({
+// Mock useFavoritesStore
+jest.mock('@/stores/favorites-store', () => ({
+  useFavoritesStore: () => ({
     favorites: [],
     addToFavorites: jest.fn(),
     removeFromFavorites: jest.fn(),
