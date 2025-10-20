@@ -26,7 +26,7 @@ export default function AboutPage() {
 
         {/* Main Content */}
         <section className="py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             
             {/* Left Column - Image */}
             <motion.div
@@ -56,7 +56,7 @@ export default function AboutPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="order-1 lg:order-2"
+              className="order-1 lg:order-2 flex flex-col justify-center"
             >
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">
                 Hurtownia medycyny estetycznej Filler.pl
