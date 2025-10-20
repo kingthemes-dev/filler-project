@@ -57,8 +57,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
     if (productsResponse.ok) {
       const contentType = productsResponse.headers.get('content-type')
-      if (contentType && contentType.includes('application/json')) {
-        const responseText = await productsResponse.text()
+      const responseText = await productsResponse.text()
+      // Try strict JSON first, then fallback to regex extraction if HTML/noise is present
+      if (!contentType || contentType.includes('application/json')) {
         try {
           const products = JSON.parse(responseText)
           if (Array.isArray(products)) {
@@ -70,9 +71,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             }))
           }
         } catch (jsonError) {
-          console.error('Error parsing products JSON:', jsonError)
-          console.error('Response text preview:', responseText.substring(0, 500))
-          // Fallback: return static pages only
+          try {
+            // Extract the first JSON array from the response as a fallback
+            const match = responseText.match(/\[[\s\S]*\]/)
+            if (match) {
+              const products = JSON.parse(match[0])
+              if (Array.isArray(products)) {
+                dynamicPages = products.map((product: any) => ({
+                  url: `${baseUrl}/produkt/${product.slug}`,
+                  lastModified: new Date(product.date_modified || product.date_created),
+                  changeFrequency: 'weekly' as const,
+                  priority: 0.7,
+                }))
+              }
+            }
+          } catch (fallbackError) {
+            console.error('Error parsing products JSON (fallback):', fallbackError)
+            console.error('Response text preview:', responseText.substring(0, 500))
+            // Fallback: keep only static pages
+          }
         }
       } else {
         console.error('Products API returned non-JSON response:', contentType)
@@ -98,8 +115,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
     if (categoriesResponse.ok) {
       const contentType = categoriesResponse.headers.get('content-type')
-      if (contentType && contentType.includes('application/json')) {
-        const responseText = await categoriesResponse.text()
+      const responseText = await categoriesResponse.text()
+      if (!contentType || contentType.includes('application/json')) {
         try {
           const categories = JSON.parse(responseText)
           if (Array.isArray(categories)) {
@@ -112,9 +129,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             dynamicPages = [...dynamicPages, ...categoryPages]
           }
         } catch (jsonError) {
-          console.error('Error parsing categories JSON:', jsonError)
-          console.error('Response text preview:', responseText.substring(0, 500))
-          // Continue with existing dynamicPages (products)
+          try {
+            const match = responseText.match(/\[[\s\S]*\]/)
+            if (match) {
+              const categories = JSON.parse(match[0])
+              if (Array.isArray(categories)) {
+                const categoryPages = categories.map((category: any) => ({
+                  url: `${baseUrl}/sklep?kategoria=${category.slug}`,
+                  lastModified: new Date(),
+                  changeFrequency: 'weekly' as const,
+                  priority: 0.6,
+                }))
+                dynamicPages = [...dynamicPages, ...categoryPages]
+              }
+            }
+          } catch (fallbackError) {
+            console.error('Error parsing categories JSON (fallback):', fallbackError)
+            console.error('Response text preview:', responseText.substring(0, 500))
+            // Continue with existing dynamicPages (products)
+          }
         }
       } else {
         console.error('Categories API returned non-JSON response:', contentType)
