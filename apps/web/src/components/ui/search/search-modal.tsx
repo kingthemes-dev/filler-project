@@ -254,7 +254,7 @@ export default function SearchModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -50, scale: 0.95 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed inset-x-0 top-0 z-[101] bg-white shadow-2xl"
+            className="fixed inset-x-0 top-0 z-[101] bg-white shadow-2xl flex flex-col"
             style={{ height: '100vh' }}
           >
             {/* Header */}
@@ -297,8 +297,8 @@ export default function SearchModal({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-6">
-              <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+            <div className="flex-1 overflow-y-auto">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-20">
                 {isLoading && (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -307,9 +307,9 @@ export default function SearchModal({
                 )}
 
                 {!isLoading && query.length >= 2 && hasResults && (
-                  <div className="space-y-6">
+                  <>
                     {/* Search Results */}
-                    <div>
+                    <div className="mb-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
                         Wyniki wyszukiwania ({searchResults.length})
                       </h3>
@@ -378,19 +378,17 @@ export default function SearchModal({
                     </div>
 
                     {/* View All Results */}
-                    {searchResults.length > 0 && (
-                      <div className="text-center pt-6 border-t border-gray-100 mt-6">
-                        <Link
-                          href={`/wyszukiwanie?q=${encodeURIComponent(query)}`}
-                          onClick={closeModal}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
-                        >
-                          Zobacz wszystkie wyniki
-                          <ChevronRight className="h-4 w-4" />
-                        </Link>
-                      </div>
-                    )}
-                  </div>
+                    <div className="text-center pt-6 border-t border-gray-100">
+                      <Link
+                        href={`/wyszukiwanie?q=${encodeURIComponent(query)}`}
+                        onClick={closeModal}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
+                      >
+                        Zobacz wszystkie wyniki
+                        <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </>
                 )}
 
                 {!isLoading && query.length >= 2 && !hasResults && (
