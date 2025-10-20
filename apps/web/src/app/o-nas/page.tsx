@@ -16,9 +16,14 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       <PageContainer>
-        {/* Breadcrumbs */}
+        {/* Header with Title and Breadcrumbs */}
         <div className="py-6">
-          <Breadcrumbs items={breadcrumbs} />
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-bold text-gray-900">
+              O nas
+            </h1>
+            <Breadcrumbs items={breadcrumbs} />
+          </div>
         </div>
 
         {/* Main Content */}
@@ -55,9 +60,9 @@ export default function AboutPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="order-1 lg:order-2"
             >
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">
                 Hurtownia medycyny estetycznej Filler.pl
-              </h1>
+              </h2>
               
               <div className="prose prose-lg max-w-none">
                 <p className="text-lg text-gray-700 mb-6 leading-relaxed">
