@@ -138,7 +138,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-8">
             <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Kategorie główne - Nowoczesny Dropdown */}
-              <div className="md:col-span-4 space-y-4">
+              <div className="md:col-span-3 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Filter className="w-5 h-5 text-gray-600" />
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Kategorie</h3>
@@ -252,7 +252,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
               </div>
 
               {/* Marki - Nowoczesny Dropdown */}
-              <div className="md:col-span-5 space-y-4">
+              <div className="md:col-span-6 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-gray-600" />
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Marka</h3>
