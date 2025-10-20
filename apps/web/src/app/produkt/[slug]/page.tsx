@@ -16,8 +16,8 @@ export async function generateStaticParams() {
 }
 
 // Generate metadata for product pages
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const { slug } = params;
   
   try {
     const product = await wooCommerceOptimized.getProductBySlug(slug);
@@ -73,8 +73,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function ProductPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
 
   const queryClient = new QueryClient();
 
