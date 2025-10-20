@@ -297,7 +297,7 @@ export default function SearchModal({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pb-6">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
                 {isLoading && (
                   <div className="flex items-center justify-center py-12">
@@ -340,6 +340,28 @@ export default function SearchModal({
                             <h4 className="font-medium text-gray-900 mb-2 line-clamp-2">
                               {product.name}
                             </h4>
+                            
+                            {/* Categories */}
+                            {product.categories && product.categories.length > 0 && (
+                              <div className="mb-2">
+                                <div className="flex flex-wrap gap-1">
+                                  {product.categories.slice(0, 2).map((category) => (
+                                    <span
+                                      key={category.id}
+                                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                                    >
+                                      {category.name}
+                                    </span>
+                                  ))}
+                                  {product.categories.length > 2 && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                      +{product.categories.length - 2}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
                             <div className="flex items-center justify-between">
                               <span className="text-lg font-semibold text-gray-900">
                                 {formatPrice(product.price)}
@@ -357,7 +379,7 @@ export default function SearchModal({
 
                     {/* View All Results */}
                     {searchResults.length > 0 && (
-                      <div className="text-center pt-4">
+                      <div className="text-center pt-6 border-t border-gray-100 mt-6">
                         <Link
                           href={`/wyszukiwanie?q=${encodeURIComponent(query)}`}
                           onClick={closeModal}
