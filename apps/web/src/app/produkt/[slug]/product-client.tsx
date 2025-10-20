@@ -192,8 +192,37 @@ export default function ProductClient({ slug }: ProductClientProps) {
     openCart();
   };
 
-  if (isLoading || !product) {
-    return null;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white py-8 pb-16" data-testid="product-page">
+        <PageContainer>
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+              <p className="text-gray-600">Ładowanie produktu...</p>
+            </div>
+          </div>
+        </PageContainer>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-white py-8 pb-16" data-testid="product-page">
+        <PageContainer>
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold mb-4">Produkt nie znaleziony</h1>
+              <p className="text-gray-600 mb-4">Szukany produkt nie został znaleziony w naszej hurtowni.</p>
+              <Link href="/sklep" className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+                Wróć do sklepu
+              </Link>
+            </div>
+          </div>
+        </PageContainer>
+      </div>
+    );
   }
 
   return (

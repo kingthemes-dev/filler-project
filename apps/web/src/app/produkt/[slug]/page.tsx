@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { HydrationBoundary, dehydrate, QueryClient } from '@tanstack/react-query';
 import { wooCommerceOptimized } from '@/services/woocommerce-optimized';
