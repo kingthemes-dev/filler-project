@@ -107,13 +107,13 @@ export default function SearchBar({
     const viewportWidth = window.innerWidth;
     
     // Calculate position - bezpośrednio pod input (bez przerwy)
-    let top = rect.bottom + window.scrollY;
-    let left = rect.left + window.scrollX;
+    let top = rect.bottom;
+    let left = rect.left;
     let width = rect.width;
     
     // Ensure dropdown doesn't go below viewport
-    if (top + 400 > window.scrollY + viewportHeight) {
-      top = rect.top + window.scrollY - 8; // Show above input instead
+    if (top + 400 > viewportHeight) {
+      top = rect.top - 8; // Show above input instead
     }
     
     // Ensure dropdown doesn't go outside viewport horizontally
