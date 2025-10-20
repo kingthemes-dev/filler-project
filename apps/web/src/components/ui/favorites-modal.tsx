@@ -106,7 +106,10 @@ export default function FavoritesModal() {
                     <p className="text-gray-600 mb-6">
                       Dodaj produkty do ulubionych, klikając ikonę serca
                     </p>
-                    <Button onClick={closeFavoritesModal}>
+                    <Button 
+                      onClick={closeFavoritesModal}
+                      className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium rounded-2xl"
+                    >
                       Kontynuuj zakupy
                     </Button>
                   </div>
@@ -146,7 +149,10 @@ export default function FavoritesModal() {
                     <div className="text-sm text-gray-600">
                       {favorites.length} {favorites.length === 1 ? 'produkt' : 'produktów'} w ulubionych
                     </div>
-                    <Button onClick={closeFavoritesModal}>
+                    <Button 
+                      onClick={closeFavoritesModal}
+                      className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium rounded-2xl"
+                    >
                       Zamknij
                     </Button>
                   </div>
