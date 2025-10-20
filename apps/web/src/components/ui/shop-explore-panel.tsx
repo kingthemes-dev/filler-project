@@ -101,6 +101,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     group: cat.parent === 0 ? 'Główne kategorie' : 'Podkategorie'
   }));
 
+
   // Convert subcategories to dropdown options
   const subcategoryOptions = subCategories.map(sub => ({
     id: sub.id,
@@ -147,7 +148,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                 
                 <AdvancedDropdown
                   options={categoryOptions}
-                  value={currentMain?.slug || ''}
+                  value={''}
                   onChange={(value) => {
                     const selectedCategory = categories.find(cat => cat.slug === value);
                     if (selectedCategory) {
