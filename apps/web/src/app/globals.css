@@ -49,6 +49,11 @@
     pointer-events: auto;
   }
   
+  /* Remove header border when search dropdown is open */
+  .search-dropdown-open header {
+    border-bottom: none !important;
+  }
+  
   .slider-thumb::-webkit-slider-track {
     -webkit-appearance: none;
     appearance: none;

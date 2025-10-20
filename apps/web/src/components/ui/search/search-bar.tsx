@@ -135,6 +135,9 @@ export default function SearchBar({
   useEffect(() => {
     if (isOpen) {
       updatePosition();
+      
+      // Add class to body to indicate search dropdown is open
+      document.body.classList.add('search-dropdown-open');
 
       // Update position on scroll and resize
       window.addEventListener('scroll', updatePosition, { passive: true });
@@ -143,7 +146,12 @@ export default function SearchBar({
       return () => {
         window.removeEventListener('scroll', updatePosition);
         window.removeEventListener('resize', updatePosition);
+        // Remove class when dropdown closes
+        document.body.classList.remove('search-dropdown-open');
       };
+    } else {
+      // Remove class when dropdown is closed
+      document.body.classList.remove('search-dropdown-open');
     }
   }, [isOpen, updatePosition]);
 
