@@ -109,6 +109,12 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     icon: <Sparkles className="w-4 h-4" />
   }));
 
+  console.log('🔍 Brands debug:', {
+    attributes: attributes,
+    brands: attributes.brands,
+    brandOptions: brandOptions
+  });
+
   return (
     <AnimatePresence>
       {open && (
@@ -258,30 +264,40 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Marka</h3>
                 </div>
                 
-                <div className="max-h-[60vh] overflow-auto pr-1 pb-2">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
-                    {brandOptions.map((brand, index) => (
-                      <motion.div
-                        key={brand.id}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.02, duration: 0.2 }}
-                      >
-                        <Link
-                          href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
-                          className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-3 py-2 text-xs text-gray-900 shadow-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
-                          onClick={onClose}
-                          title={brand.label}
-                        >
-                          <div className="flex items-center gap-1">
-                            {brand.icon}
-                            <span className="truncate max-w-[80px]">{brand.label}</span>
-                          </div>
-                        </Link>
-                      </motion.div>
-                    ))}
+                {brandOptions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm">Brak marek</p>
+                    <p className="text-xs text-gray-400 mt-1">Marki będą dostępne wkrótce</p>
                   </div>
-                </div>
+                ) : (
+                  <div className="max-h-[50vh] overflow-y-auto pr-2 pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <div className="grid grid-cols-3 gap-2">
+                      {brandOptions.map((brand, index) => (
+                        <motion.div
+                          key={brand.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.02, duration: 0.2 }}
+                        >
+                          <Link
+                            href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-2 py-2 text-xs text-gray-900 shadow-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group w-full"
+                            onClick={onClose}
+                            title={brand.label}
+                          >
+                            <div className="flex items-center gap-1 w-full">
+                              {brand.icon}
+                              <span className="truncate text-center flex-1">{brand.label}</span>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
