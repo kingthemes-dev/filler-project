@@ -3,6 +3,9 @@
 import { motion } from 'framer-motion';
 import PageContainer from '@/components/ui/page-container';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
+import { Button } from '@/components/ui/button';
+import { Award, Truck, Headphones, Shield } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AboutPage() {
   const breadcrumbs = [
@@ -30,15 +33,15 @@ export default function AboutPage() {
               className="order-2 lg:order-1"
             >
               <div className="relative">
-                {/* Mock Image */}
-                <div className="aspect-[4/5] bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden">
-                  <div className="w-full h-full flex items-center justify-center">
+                {/* Mock Image - Full Height */}
+                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden p-8">
+                  <div className="w-full h-full flex items-center justify-center min-h-[500px]">
                     <div className="text-center">
-                      <div className="w-24 h-24 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
-                        <span className="text-4xl font-bold text-gray-800">F</span>
+                      <div className="w-32 h-32 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg">
+                        <span className="text-5xl font-bold text-gray-800">F</span>
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-800 mb-2">Filler.pl</h3>
-                      <p className="text-gray-600">Hurtownia medycyny estetycznej</p>
+                      <h3 className="text-3xl font-bold text-gray-800 mb-3">Filler.pl</h3>
+                      <p className="text-gray-600 text-lg">Hurtownia medycyny estetycznej</p>
                     </div>
                   </div>
                 </div>
@@ -52,7 +55,7 @@ export default function AboutPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="order-1 lg:order-2"
             >
-              <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-8">
+              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">
                 Hurtownia medycyny estetycznej Filler.pl
               </h1>
               
@@ -77,8 +80,110 @@ export default function AboutPage() {
                   Zapraszamy do współpracy i zaufania profesjonalistom z Filler.pl!
                 </p>
               </div>
+
+              {/* CTA Button */}
+              <div className="mt-8">
+                <Link href="/sklep">
+                  <Button className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 text-lg font-medium rounded-xl">
+                    Zobacz produkty
+                  </Button>
+                </Link>
+              </div>
             </motion.div>
           </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-16 bg-gray-50">
+          <PageContainer>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                Dlaczego warto wybrać Filler.pl?
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Oferujemy kompleksowe rozwiązania dla specjalistów medycyny estetycznej
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* Konkurencyjne ceny */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg bg-white"
+              >
+                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
+                  <Award className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Konkurencyjne ceny
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Atrakcyjne ceny dzięki bezpośredniej współpracy z producentami. Częste promocje i specjalne oferty dla stałych klientów.
+                </p>
+              </motion.div>
+
+              {/* Szybka realizacja */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg bg-white"
+              >
+                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
+                  <Truck className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Szybka realizacja
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Realizacja zamówień w ciągu 24h. Specjalistyczny transport dla produktów wymagających kontroli temperatury.
+                </p>
+              </motion.div>
+
+              {/* Eksperckie doradztwo */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg bg-white"
+              >
+                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
+                  <Headphones className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Eksperckie doradztwo
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Zespół specjalistów gotowy do udzielenia fachowej pomocy w wyborze produktów dostosowanych do potrzeb Twojego gabinetu.
+                </p>
+              </motion.div>
+
+              {/* Certyfikowane produkty */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg bg-white"
+              >
+                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
+                  <Shield className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Certyfikowane produkty
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Wszystkie preparaty posiadają odpowiednie certyfikaty i pochodzą wyłącznie od autoryzowanych dystrybutorów.
+                </p>
+              </motion.div>
+            </div>
+          </PageContainer>
         </section>
       </PageContainer>
     </div>
