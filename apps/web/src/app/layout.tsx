@@ -11,6 +11,7 @@ import FavoritesModal from '@/components/ui/favorites-modal';
 import ErrorBoundary from '@/components/error-boundary';
 import ReactQueryProvider from './providers/react-query-provider';
 import PerformanceTracker from '@/components/PerformanceTracker';
+import CookieConsent from '@/components/cookie-consent';
 import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
 import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analytics';
 
@@ -103,16 +104,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        {/* Cookiebot */}
-        <Script
-          id="Cookiebot"
-          src="https://consent.cookiebot.com/uc.js"
-          data-cbid={process.env.NEXT_PUBLIC_COOKIEBOT_ID || "fa168711-f44f-4971-91cf-f37e7337d834"}
-          data-blockingmode="auto"
-          strategy="beforeInteractive"
-          integrity="sha384-..."
-          crossOrigin="anonymous"
-        />
+        {/* Cookiebot removed - using custom cookie consent */}
         {/* Google Tag Manager */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <Script id="gtm" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
@@ -185,12 +177,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="" />
-        <link rel="preconnect" href="https://consent.cookiebot.com" crossOrigin="" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-        <link rel="dns-prefetch" href="https://consent.cookiebot.com" />
         {/* Preload hero image for faster LCP - highest priority */}
         <link rel="preload" as="image" href="/images/hero/home.webp" type="image/webp" fetchPriority="high" imageSrcSet="/images/hero/home.webp 1920w" imageSizes="100vw" />
         {/* Preload critical CSS inline */}
@@ -237,6 +227,7 @@ export default function RootLayout({
                           </ReactQueryProvider>
                           <AuthModalManager />
                           <FavoritesModal />
+                          <CookieConsent />
                           <ConditionalFooter />
                           <CartDrawer />
                         </ErrorBoundary>
