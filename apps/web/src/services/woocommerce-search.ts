@@ -58,26 +58,8 @@ export interface WooSearchResponse {
 }
 
 export class WooCommerceSearchService {
-  private popularSearches: string[] = [
-    'krem nawilżający',
-    'serum witamina c',
-    'peeling enzymatyczny',
-    'maska do twarzy',
-    'tonik do twarzy',
-    'krem pod oczy',
-    'olejek do twarzy',
-    'krem spf',
-    'kwas hialuronowy',
-    'retinol',
-    'mezoterapia',
-    'nici pdo',
-    'wypełniacze',
-    'botoks',
-    'kwas hialuronowy',
-    'derma roller',
-    'radiofrekwencja',
-    'laser co2'
-  ];
+  private popularSearches: string[] = [];
+  private popularSearchesLoaded = false;
 
   // Cache keys for memory cache
   private getSearchCacheKey(query: string, limit: number): string {
@@ -191,6 +173,11 @@ export class WooCommerceSearchService {
 
       // If no products found, fall back to popular searches
       if (result.length === 0) {
+        // Load popular searches if not loaded
+        if (!this.popularSearchesLoaded) {
+          await this.loadPopularSearchesFromWooCommerce();
+        }
+        
         result = this.popularSearches.filter(search =>
           search.toLowerCase().includes(query.toLowerCase())
         ).slice(0, limit);
@@ -215,7 +202,7 @@ export class WooCommerceSearchService {
   }
 
   /**
-   * Get popular searches with Redis cache
+   * Get popular searches from real WooCommerce data
    */
   async getPopularSearches(limit: number = 8): Promise<string[]> {
     const cacheKey = this.getPopularSearchesCacheKey();
@@ -227,13 +214,95 @@ export class WooCommerceSearchService {
         return cached.slice(0, limit);
       }
 
+      // Load popular searches from WooCommerce if not loaded
+      if (!this.popularSearchesLoaded) {
+        await this.loadPopularSearchesFromWooCommerce();
+      }
+
       // Cache for 1 hour
       setToCache(cacheKey, this.popularSearches, 3600);
       
       return this.popularSearches.slice(0, limit);
     } catch (error) {
       logger.error('Error getting popular searches:', error);
-      return this.popularSearches.slice(0, limit);
+      // Fallback to basic popular terms if API fails
+      const fallbackSearches = [
+        'kwas hialuronowy',
+        'retinol',
+        'mezoterapia',
+        'nici pdo',
+        'wypełniacze',
+        'botoks',
+        'derma roller',
+        'radiofrekwencja'
+      ];
+      return fallbackSearches.slice(0, limit);
+    }
+  }
+
+  /**
+   * Load popular searches from WooCommerce products
+   */
+  private async loadPopularSearchesFromWooCommerce(): Promise<void> {
+    try {
+      // Get popular products from WooCommerce
+      const response = await wooCommerceService.getProducts({
+        per_page: 50,
+        orderby: 'popularity',
+        order: 'desc',
+        status: 'publish'
+      });
+
+      if (response.data && response.data.length > 0) {
+        // Extract search terms from product names and categories
+        const searchTerms = new Set<string>();
+        
+        response.data.forEach(product => {
+          // Add product name as search term
+          if (product.name) {
+            // Extract key terms from product name
+            const nameTerms = product.name
+              .toLowerCase()
+              .split(/[\s,\-()]+/)
+              .filter(term => term.length > 3 && !['krem', 'serum', 'maska', 'tonik'].includes(term))
+              .slice(0, 2); // Take first 2 meaningful terms
+            
+            nameTerms.forEach(term => searchTerms.add(term));
+          }
+
+          // Add category names
+          if (product.categories && product.categories.length > 0) {
+            product.categories.forEach(cat => {
+              if (cat.name && cat.name.length > 3) {
+                searchTerms.add(cat.name.toLowerCase());
+              }
+            });
+          }
+        });
+
+        // Convert to array and limit
+        this.popularSearches = Array.from(searchTerms).slice(0, 20);
+        this.popularSearchesLoaded = true;
+        
+        logger.info('Loaded popular searches from WooCommerce', { 
+          count: this.popularSearches.length,
+          searches: this.popularSearches.slice(0, 5)
+        });
+      }
+    } catch (error) {
+      logger.error('Error loading popular searches from WooCommerce:', error);
+      // Set basic fallback searches
+      this.popularSearches = [
+        'kwas hialuronowy',
+        'retinol',
+        'mezoterapia',
+        'nici pdo',
+        'wypełniacze',
+        'botoks',
+        'derma roller',
+        'radiofrekwencja'
+      ];
+      this.popularSearchesLoaded = true;
     }
   }
 
