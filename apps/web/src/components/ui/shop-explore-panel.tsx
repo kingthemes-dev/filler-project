@@ -269,7 +269,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                     <p className="text-xs text-gray-400 mt-1">Marki będą dostępne wkrótce</p>
                   </div>
                 ) : (
-                  <div className="max-h-[40vh] overflow-y-auto pr-1 pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  <div className="pr-1 pb-2">
                     <div className="grid grid-cols-2 gap-1">
                       {brandOptions.map((brand, index) => (
                         <motion.div
