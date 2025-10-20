@@ -90,8 +90,8 @@ export default function CookieConsent() {
     }
   };
 
+  // Show cookie settings button in bottom left when not showing modals
   if (!showBanner && !showSettings) {
-    // Show cookie settings button in bottom left
     return (
       <button
         onClick={() => setShowSettings(true)}
@@ -104,32 +104,36 @@ export default function CookieConsent() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg">
-        {showBanner && (
-          <div className="p-6">
+    <>
+      {/* Cookie Banner - Bottom Left Popup */}
+      {showBanner && (
+        <div className="fixed bottom-4 left-4 z-50 w-80 bg-white rounded-lg shadow-xl border border-gray-200">
+          <div className="p-4">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Używamy plików cookies</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Cookie className="w-5 h-5 text-blue-600" />
+                Cookies
+              </h2>
               <button 
                 onClick={handleRejectAll}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Description */}
-            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-              Ta strona używa plików cookies, aby zapewnić najlepszą jakość usług. 
-              Możesz zaakceptować wszystkie, odrzucić niepotrzebne lub dostosować swoje preferencje.
+            <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+              Używamy plików cookies, aby zapewnić najlepszą jakość usług. 
+              Możesz zaakceptować wszystkie lub dostosować preferencje.
             </p>
 
             {/* Buttons */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Button 
                 onClick={handleAcceptAll}
-                className="w-full bg-gradient-to-r from-gray-800 to-black text-white hover:from-gray-700 hover:to-gray-900 transition-all duration-300 py-3 rounded-lg font-medium"
+                className="w-full bg-gradient-to-r from-gray-800 to-black text-white hover:from-gray-700 hover:to-gray-900 transition-all duration-300 py-2 rounded-lg font-medium text-sm"
               >
                 <Check className="w-4 h-4 mr-2" /> Akceptuj wszystkie
               </Button>
@@ -138,27 +142,31 @@ export default function CookieConsent() {
                 <Button 
                   onClick={handleRejectAll}
                   variant="outline"
-                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-3 rounded-lg"
+                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-2 rounded-lg text-sm"
                 >
-                  <XIcon className="w-4 h-4 mr-2" /> Odrzuć
+                  <XIcon className="w-4 h-4 mr-1" /> Odrzuć
                 </Button>
                 <Button 
                   onClick={() => setShowSettings(true)}
                   variant="outline"
-                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-3 rounded-lg"
+                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-2 rounded-lg text-sm"
                 >
-                  <Settings className="w-4 h-4 mr-2" /> Dostosuj
+                  <Settings className="w-4 h-4 mr-1" /> Dostosuj
                 </Button>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {showSettings && (
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Ustawienia cookies</h2>
+      {/* Cookie Settings Modal - Only this one is full screen */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-lg shadow-lg">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Ustawienia cookies</h2>
               <button 
                 onClick={() => setShowSettings(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -262,8 +270,8 @@ export default function CookieConsent() {
               </Button>
             </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
