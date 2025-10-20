@@ -12,7 +12,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-white">
       <PageContainer>
         {/* Header with Title and Breadcrumbs */}
         <div className="py-6">
