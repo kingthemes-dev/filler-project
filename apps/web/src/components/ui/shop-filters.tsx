@@ -315,7 +315,6 @@ export default function ShopFilters({
               {/* Search Filter */}
               <div className="mb-4 sm:mb-6">
                 <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Wyszukiwanie</h4>
-                <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                 <div className="relative group" data-testid="filter-search">
                   <input
                     type="text"
@@ -345,6 +344,7 @@ export default function ShopFilters({
 
               {/* Categories Filter */}
               <div className="mb-4 sm:mb-6">
+                <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                 <motion.button
                   onClick={() => toggleSection('categories')}
                   whileHover={{ scale: 1.02 }}
@@ -359,7 +359,6 @@ export default function ShopFilters({
                     <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
                   </motion.div>
                 </motion.button>
-                <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                 
                 <AnimatePresence>
                   {expandedSections.categories && (
@@ -383,6 +382,7 @@ export default function ShopFilters({
 
                   {/* Dynamic Attributes Filter */}
                   <div className="mb-4 sm:mb-6">
+                    <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                     <motion.button
                       onClick={() => toggleSection('attributes')}
                       whileHover={{ scale: 1.02 }}
@@ -397,7 +397,6 @@ export default function ShopFilters({
                         <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
                       </motion.div>
                     </motion.button>
-                    <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                     
                     <AnimatePresence>
                       {expandedSections.attributes && (
@@ -434,6 +433,7 @@ export default function ShopFilters({
 
                   {/* Price Range Filter */}
               <div className="mb-4 sm:mb-6">
+                <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                 <motion.button
                   onClick={() => toggleSection('price')}
                   whileHover={{ scale: 1.02 }}
@@ -448,7 +448,6 @@ export default function ShopFilters({
                     <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
                   </motion.div>
                 </motion.button>
-                <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                 
                 <AnimatePresence>
                   {expandedSections.price && (
@@ -510,6 +509,7 @@ export default function ShopFilters({
 
               {/* Special Offers */}
               <div className="mb-4 sm:mb-6">
+                <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                 <motion.button
                   onClick={() => toggleSection('availability')}
                   whileHover={{ scale: 1.02 }}
@@ -524,7 +524,6 @@ export default function ShopFilters({
                     <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
                   </motion.div>
                 </motion.button>
-                <div className="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 mb-4"></div>
                 
                 <AnimatePresence>
                   {expandedSections.availability && (
