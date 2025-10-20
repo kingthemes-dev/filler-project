@@ -16,6 +16,8 @@ export interface CartItem {
   quantity: number;
   image?: string;
   permalink?: string;
+  slug?: string;
+  capacity?: string;
   attributes?: Record<string, string>;
   variant?: {
     id: number;

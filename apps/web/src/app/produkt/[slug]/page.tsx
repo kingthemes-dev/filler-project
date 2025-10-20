@@ -110,9 +110,11 @@ export default function ProductPage({ params }: ProductPageProps) {
   // Helper function to get variation price
   const getVariationPrice = (capacity: string): number => {
     const variation = variations.find(v => {
-      const hasCapacityAttr = v.attributes && v.attributes.some((attr) => 
-        attr.name.toLowerCase().includes('pojemność') && (attr as any).option === capacity
-      );
+      const hasCapacityAttr = v.attributes && v.attributes.some((attr) => {
+        // Variation attributes have 'option' (string), not 'options' (array)
+        const attrValue = (attr as any).option || attr.options?.[0];
+        return attr.name.toLowerCase().includes('pojemność') && attrValue === capacity;
+      });
       return hasCapacityAttr;
     });
     
@@ -126,9 +128,10 @@ export default function ProductPage({ params }: ProductPageProps) {
   const handleAddToCart = () => {
     const selectedVariation = selectedCapacity 
       ? variations.find(v => {
-          const hasCapacityAttr = v.attributes && v.attributes.some((attr) => 
-            attr.name.toLowerCase().includes('pojemność') && (attr as any).option === selectedCapacity
-          );
+          const hasCapacityAttr = v.attributes && v.attributes.some((attr) => {
+            const attrValue = (attr as any).option || attr.options?.[0];
+            return attr.name.toLowerCase().includes('pojemność') && attrValue === selectedCapacity;
+          });
           return hasCapacityAttr;
         })
       : null;
@@ -149,13 +152,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   };
 
   const toggleFavoriteHandler = () => {
-    toggleFavorite({
-      id: product.id,
-      name: product.name,
-      price: parseFloat(product.price || '0'),
-      image: product.images?.[0]?.src || '/images/placeholder-product.jpg',
-      slug: product.slug,
-    });
+    toggleFavorite(product);
   };
 
   return (
@@ -227,9 +224,10 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <h3 className="text-lg font-semibold mb-3">Pojemność</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {variations.map((variation) => {
-                    const capacity = variation.attributes?.find((attr) => 
+                    const capacityAttr = variation.attributes?.find((attr) => 
                       attr.name.toLowerCase().includes('pojemność')
-                    )?.option;
+                    );
+                    const capacity = capacityAttr ? ((capacityAttr as any).option || capacityAttr.options?.[0]) : null;
                     
                     if (!capacity) return null;
                     
@@ -367,7 +365,12 @@ export default function ProductPage({ params }: ProductPageProps) {
         </div>
 
         {/* Similar Products */}
-        <SimilarProducts productId={product.id} />
+        {product.categories && product.categories.length > 0 && (
+          <SimilarProducts 
+            productId={product.id} 
+            categoryId={product.categories[0].id}
+          />
+        )}
       </div>
     </div>
   );
