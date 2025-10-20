@@ -166,7 +166,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       >
                         <div className="flex items-center justify-between w-full">
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 group-hover:text-blue-900">
+                            <div className="font-medium text-gray-900 group-hover:text-blue-900 text-left">
                               {category.name}
                             </div>
                           </div>
