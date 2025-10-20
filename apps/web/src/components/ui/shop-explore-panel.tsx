@@ -153,7 +153,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                           e.stopPropagation();
                           setSelectedCat(category.id);
                         }}
-                        className={`flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group ${
+                        className={`${category.id === 15 ? 'hidden' : ''} flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group ${
                           selectedCat === category.id
                             ? 'border-blue-300 bg-blue-50 text-blue-900'
                             : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 text-gray-900'
