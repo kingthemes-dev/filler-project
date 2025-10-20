@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   try {
     // Use direct API call that works instead of wooCommerceOptimized service
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.filler.pl';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3001');
     const apiUrl = `${baseUrl}/api/woocommerce?endpoint=products&search=${slug}&cache=off`;
     
     const response = await fetch(apiUrl);
@@ -91,7 +91,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   try {
     // Use direct API call that works instead of wooCommerceOptimized service
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.filler.pl';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3001');
     const apiUrl = `${baseUrl}/api/woocommerce?endpoint=products&search=${slug}&cache=off`;
     
     console.log(`🔍 Direct API call for product slug: ${slug}`);
