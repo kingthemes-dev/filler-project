@@ -131,7 +131,7 @@ export default function Footer() {
            </div>
 
            {/* Desktop Grid */}
-           <div className="hidden lg:grid lg:grid-cols-5 gap-8 sm:gap-12">
+           <div className="hidden lg:grid lg:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-8 sm:gap-12">
           
           {/* Kontakt - pierwsza kolumna z większym odstępem */}
           <div className="lg:pr-12">
