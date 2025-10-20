@@ -26,6 +26,8 @@ interface ShopFiltersProps {
     onSale: boolean;
     [key: string]: string[] | string | number | boolean; // Dynamiczne atrybuty
   };
+  priceRange: { min: number; max: number };
+  setPriceRange: (range: { min: number; max: number }) => void;
   onFilterChange: (key: string, value: string | number | boolean) => void;
   onCategoryChange: (categoryId: string, subcategoryId?: string) => void;
   onClearFilters: () => void;
@@ -40,6 +42,8 @@ interface ShopFiltersProps {
 export default function ShopFilters({
   categories,
   filters,
+  priceRange,
+  setPriceRange,
   onFilterChange,
   onCategoryChange,
   onClearFilters,
@@ -75,19 +79,6 @@ export default function ShopFilters({
     } catch {}
   }, [expandedSections]);
   
-  // Price range state for slider
-  const [priceRange, setPriceRange] = useState({
-    min: filters.minPrice || 0,
-    max: filters.maxPrice || 10000
-  });
-
-  // Sync priceRange with filters when they change externally
-  React.useEffect(() => {
-    setPriceRange({
-      min: filters.minPrice || 0,
-      max: filters.maxPrice || 10000
-    });
-  }, [filters.minPrice, filters.maxPrice]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -229,87 +220,6 @@ export default function ShopFilters({
                 </div>
               </div>
 
-              {/* Active Filter Chips */}
-              {activeFiltersCount > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 sm:mb-6"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                    <h4 className="text-sm font-semibold text-gray-900">Aktywne filtry</h4>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {filters.search && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full border border-blue-200"
-                      >
-                        <span>Szukaj: "{filters.search}"</span>
-                        <button
-                          onClick={() => onFilterChange('search', '')}
-                          className="hover:bg-blue-200 rounded-full p-0.5 transition-colors duration-200"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </motion.div>
-                    )}
-                    {filters.categories.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200"
-                      >
-                        <span>Kategorie: {filters.categories.length}</span>
-                        <button
-                          onClick={() => onFilterChange('categories', [])}
-                          className="hover:bg-green-200 rounded-full p-0.5 transition-colors duration-200"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </motion.div>
-                    )}
-                    {(filters.minPrice || filters.maxPrice) && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-800 text-xs font-medium rounded-full border border-orange-200"
-                      >
-                        <span>
-                          Cena: {filters.minPrice || 0} - {filters.maxPrice || '∞'} zł
-                        </span>
-                        <button
-                          onClick={() => {
-                            onFilterChange('minPrice', '');
-                            onFilterChange('maxPrice', '');
-                            setPriceRange({ min: 0, max: 10000 });
-                          }}
-                          className="hover:bg-orange-200 rounded-full p-0.5 transition-colors duration-200"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </motion.div>
-                    )}
-                    {filters.onSale && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-800 text-xs font-medium rounded-full border border-red-200"
-                      >
-                        <span>Promocje</span>
-                        <button
-                          onClick={() => onFilterChange('onSale', false)}
-                          className="hover:bg-red-200 rounded-full p-0.5 transition-colors duration-200"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
 
 
               {/* Search Filter */}

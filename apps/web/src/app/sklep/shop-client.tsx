@@ -10,6 +10,7 @@ import KingProductCard from '@/components/king-product-card';
 
 // Import filters directly for instant loading
 import ShopFilters from '@/components/ui/shop-filters';
+import ActiveFiltersBar from '@/components/ui/active-filters-bar';
 import { wooCommerceOptimized as wooCommerceService } from '@/services/woocommerce-optimized';
 
 import { WooProduct } from '@/types/woocommerce';
@@ -61,6 +62,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   // fixed grid view – list variant removed
   const [filterLoading, setFilterLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false); // PRO: Separate state for refreshing
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     categories: [],
@@ -403,6 +405,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           <ShopFilters
             categories={allCategories.map(c => ({ ...c, count: c.count || 0 }))}
             filters={filters}
+            priceRange={priceRange}
+            setPriceRange={setPriceRange}
             onFilterChange={handleFilterChange}
             onCategoryChange={handleCategoryChange}
             onClearFilters={clearFilters}
@@ -422,42 +426,16 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           
           {/* Products grid */}
           <div className="flex-1">
-            {/* Active filter chips (compact, desktop only) */}
-            {activeFilters().length > 0 && (
-              <div className="hidden lg:flex flex-wrap gap-2 mb-3 items-center">
-                {(() => {
-                  const chips = activeFilters();
-                  const importantKeys = new Set(['category', 'brands', 'minPrice', 'maxPrice']);
-                  const prioritized = chips.filter(c => importantKeys.has(c.key));
-                  const visible = prioritized.slice(0, 6);
-                  const hiddenCount = chips.length - visible.length;
-                  return (
-                    <>
-                      {visible.map(({ key, label, value }) => (
-                        <button
-                          key={key + ':' + value}
-                          onClick={() => clearSingleFilter(key, value)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-800 text-xs hover:bg-gray-200"
-                          title={`Usuń filtr: ${label}`}
-                        >
-                          <span className="truncate max-w-[180px]">{label}</span>
-                          <X className="w-3 h-3" />
-                        </button>
-                      ))}
-                      {hiddenCount > 0 && (
-                        <span className="text-xs text-gray-500">+{hiddenCount} więcej</span>
-                      )}
-                      <button
-                        onClick={clearFilters}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black text-white text-xs hover:bg-gray-900"
-                      >
-                        Wyczyść wszystkie
-                      </button>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+            {/* Active filters bar */}
+            <ActiveFiltersBar
+              filters={filters}
+              categories={allCategories}
+              totalProducts={totalProducts}
+              activeFiltersCount={activeFilters().length}
+              onFilterChange={handleFilterChange}
+              onClearFilters={clearFilters}
+              onPriceRangeReset={() => setPriceRange({ min: 0, max: 10000 })}
+            />
             <div className="mb-6">
               <p className="text-gray-600">
                 Znaleziono <span className="font-semibold">{totalProducts}</span> produktów
