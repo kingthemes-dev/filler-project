@@ -88,7 +88,7 @@ export default function AboutPage() {
         </section>
 
         {/* Features Section */}
-        <section className="py-16">
+        <section className="py-8">
           <PageContainer>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {/* Konkurencyjne ceny */}
