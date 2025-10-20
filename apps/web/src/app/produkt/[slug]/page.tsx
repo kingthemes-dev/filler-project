@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         'medycyna estetyczna',
         'hurtownia',
         'filler',
-        ...(product.categories?.map(cat => typeof cat === 'string' ? cat : cat.name) || [])
+        ...(product.categories?.map((cat: any) => typeof cat === 'string' ? cat : cat.name) || [])
       ],
       openGraph: {
         title: `${product.name} - ${price} zł`,
