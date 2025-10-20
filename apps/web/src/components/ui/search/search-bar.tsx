@@ -107,7 +107,7 @@ export default function SearchBar({
     const viewportWidth = window.innerWidth;
     
     // Calculate position - bezpośrednio pod input (bez przerwy)
-    let top = rect.bottom;
+    let top = rect.bottom - 1; // -1px żeby idealnie połączyć
     let left = rect.left;
     let width = rect.width;
     
@@ -368,7 +368,7 @@ export default function SearchBar({
             }
           }}
           className={`block w-full pl-10 pr-10 py-3 leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-gray-400 text-sm border border-gray-300 ${
-            isOpen ? 'rounded-lg border-b-0' : 'rounded-lg'
+            isOpen ? 'rounded-t-lg border-b-0' : 'rounded-lg'
           }`}
           placeholder={placeholder}
         />
