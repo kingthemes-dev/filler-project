@@ -80,9 +80,10 @@ export default function CookieConsent() {
       script.async = true;
       document.head.appendChild(script);
 
-      window.dataLayer = window.dataLayer || [];
+      // Declare dataLayer on window object
+      (window as any).dataLayer = (window as any).dataLayer || [];
       function gtag(...args: any[]) {
-        window.dataLayer.push(args);
+        (window as any).dataLayer.push(args);
       }
       gtag('js', new Date());
       gtag('config', process.env.NEXT_PUBLIC_GA_ID || '', {
