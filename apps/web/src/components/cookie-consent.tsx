@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { X, Cookie, Settings, Check, X as XIcon } from 'lucide-react';
 
 interface CookiePreferences {
@@ -13,60 +11,49 @@ interface CookiePreferences {
   preferences: boolean;
 }
 
+const COOKIE_CONSENT_KEY = 'cookie_preferences';
+
 export default function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [preferences, setPreferences] = useState<CookiePreferences>({
-    necessary: true, // Always true, can't be disabled
+    necessary: true,
     analytics: false,
     marketing: false,
     preferences: false,
   });
 
   useEffect(() => {
-    // Check if user has already made a choice
-    const consent = localStorage.getItem('cookie-consent');
-    if (!consent) {
-      setShowBanner(true);
-    } else {
-      const savedPreferences = JSON.parse(consent);
-      setPreferences(savedPreferences);
-      loadScripts(savedPreferences);
+    if (typeof window !== 'undefined') {
+      const storedConsent = localStorage.getItem(COOKIE_CONSENT_KEY);
+      if (storedConsent) {
+        const parsedPreferences: CookiePreferences = JSON.parse(storedConsent);
+        setPreferences(parsedPreferences);
+        loadScripts(parsedPreferences);
+      } else {
+        setShowBanner(true);
+      }
     }
   }, []);
 
   const handleAcceptAll = () => {
-    const allAccepted = {
-      necessary: true,
-      analytics: true,
-      marketing: true,
-      preferences: true,
-    };
-    
-    setPreferences(allAccepted);
-    localStorage.setItem('cookie-consent', JSON.stringify(allAccepted));
+    const newPreferences = { necessary: true, analytics: true, marketing: true, preferences: true };
+    setPreferences(newPreferences);
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
     setShowBanner(false);
-    setShowSettings(false);
-    loadScripts(allAccepted);
+    loadScripts(newPreferences);
   };
 
   const handleRejectAll = () => {
-    const onlyNecessary = {
-      necessary: true,
-      analytics: false,
-      marketing: false,
-      preferences: false,
-    };
-    
-    setPreferences(onlyNecessary);
-    localStorage.setItem('cookie-consent', JSON.stringify(onlyNecessary));
+    const newPreferences = { necessary: true, analytics: false, marketing: false, preferences: false };
+    setPreferences(newPreferences);
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(newPreferences));
     setShowBanner(false);
-    setShowSettings(false);
-    loadScripts(onlyNecessary);
+    loadScripts(newPreferences);
   };
 
   const handleSavePreferences = () => {
-    localStorage.setItem('cookie-consent', JSON.stringify(preferences));
+    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(preferences));
     setShowBanner(false);
     setShowSettings(false);
     loadScripts(preferences);
@@ -94,89 +81,101 @@ export default function CookieConsent() {
 
     // Google Ads (if marketing is accepted)
     if (prefs.marketing && typeof window !== 'undefined') {
-      // Load Google Ads scripts here
       console.log('Loading Google Ads scripts...');
     }
 
     // Facebook Pixel (if marketing is accepted)
     if (prefs.marketing && typeof window !== 'undefined') {
-      // Load Facebook Pixel here
-      console.log('Loading Facebook Pixel...');
+      console.log('Loading Facebook Pixel scripts...');
     }
   };
 
-  if (!showBanner && !showSettings) return null;
+  if (!showBanner && !showSettings) {
+    // Show cookie settings button in bottom left
+    return (
+      <button
+        onClick={() => setShowSettings(true)}
+        className="fixed bottom-4 left-4 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 hover:shadow-xl transition-all duration-300 group"
+        title="Ustawienia cookies"
+      >
+        <Cookie className="w-5 h-5 text-gray-600 group-hover:text-gray-900 transition-colors" />
+      </button>
+    );
+  }
 
   return (
-    <>
-      {/* Cookie Banner */}
-      {showBanner && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-gray-200 shadow-lg">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-start gap-4">
-              <Cookie className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  Używamy plików cookies
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Używamy plików cookies, aby zapewnić najlepszą jakość usług i dostosować treści do Twoich preferencji. 
-                  Możesz zarządzać ustawieniami cookies w dowolnym momencie.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button 
-                    onClick={handleAcceptAll}
-                    className="bg-black text-white hover:bg-gray-800"
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    Akceptuj wszystkie
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleRejectAll}
-                  >
-                    <XIcon className="w-4 h-4 mr-2" />
-                    Odrzuć wszystkie
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowSettings(true)}
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Ustawienia
-                  </Button>
-                </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg">
+        {showBanner && (
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Używamy plików cookies</h2>
+              <button 
+                onClick={handleRejectAll}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+              Ta strona używa plików cookies, aby zapewnić najlepszą jakość usług. 
+              Możesz zaakceptować wszystkie, odrzucić niepotrzebne lub dostosować swoje preferencje.
+            </p>
+
+            {/* Buttons */}
+            <div className="space-y-3">
+              <Button 
+                onClick={handleAcceptAll}
+                className="w-full bg-gradient-to-r from-gray-800 to-black text-white hover:from-gray-700 hover:to-gray-900 transition-all duration-300 py-3 rounded-lg font-medium"
+              >
+                <Check className="w-4 h-4 mr-2" /> Akceptuj wszystkie
+              </Button>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleRejectAll}
+                  variant="outline"
+                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-3 rounded-lg"
+                >
+                  <XIcon className="w-4 h-4 mr-2" /> Odrzuć
+                </Button>
+                <Button 
+                  onClick={() => setShowSettings(true)}
+                  variant="outline"
+                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-3 rounded-lg"
+                >
+                  <Settings className="w-4 h-4 mr-2" /> Dostosuj
+                </Button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Cookie Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Cookie className="w-6 h-6 text-blue-600" />
-                  <CardTitle>Ustawienia plików cookies</CardTitle>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setShowSettings(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <CardDescription>
-                Wybierz, które pliki cookies chcesz akceptować. Niezbędne cookies są zawsze włączone.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+        {showSettings && (
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Ustawienia cookies</h2>
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+              Wybierz, które pliki cookies chcesz akceptować. Niezbędne cookies są zawsze włączone.
+            </p>
+
+            {/* Cookie Options */}
+            <div className="space-y-4 mb-6">
               {/* Necessary Cookies */}
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <input 
                   type="checkbox"
                   checked={preferences.necessary} 
@@ -184,16 +183,15 @@ export default function CookieConsent() {
                   className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
-                  <Label className="font-medium">Niezbędne cookies</Label>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Te pliki cookies są niezbędne do podstawowego funkcjonowania strony internetowej. 
-                    Nie można ich wyłączyć.
+                  <label className="font-medium text-gray-900 block mb-1">Niezbędne cookies</label>
+                  <p className="text-xs text-gray-600">
+                    Niezbędne do podstawowego funkcjonowania strony. Nie można ich wyłączyć.
                   </p>
                 </div>
               </div>
 
               {/* Analytics Cookies */}
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <input 
                   type="checkbox"
                   checked={preferences.analytics}
@@ -203,16 +201,15 @@ export default function CookieConsent() {
                   className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
-                  <Label className="font-medium">Analityczne cookies</Label>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Pomagają nam zrozumieć, jak użytkownicy korzystają z naszej strony, 
-                    dzięki czemu możemy ją ulepszać. (Google Analytics)
+                  <label className="font-medium text-gray-900 block mb-1">Analityczne cookies</label>
+                  <p className="text-xs text-gray-600">
+                    Pomagają zrozumieć, jak użytkownicy korzystają z strony. (Google Analytics)
                   </p>
                 </div>
               </div>
 
               {/* Marketing Cookies */}
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <input 
                   type="checkbox"
                   checked={preferences.marketing}
@@ -222,16 +219,15 @@ export default function CookieConsent() {
                   className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
-                  <Label className="font-medium">Marketingowe cookies</Label>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Używane do wyświetlania reklam dostosowanych do Twoich zainteresowań. 
-                    (Google Ads, Facebook Pixel)
+                  <label className="font-medium text-gray-900 block mb-1">Marketingowe cookies</label>
+                  <p className="text-xs text-gray-600">
+                    Używane do wyświetlania reklam dostosowanych do Twoich zainteresowań.
                   </p>
                 </div>
               </div>
 
               {/* Preferences Cookies */}
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <input 
                   type="checkbox"
                   checked={preferences.preferences}
@@ -241,31 +237,33 @@ export default function CookieConsent() {
                   className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                 />
                 <div className="flex-1">
-                  <Label className="font-medium">Cookies preferencji</Label>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Zapamiętują Twoje wybory i ustawienia, aby strona działała zgodnie z Twoimi preferencjami.
+                  <label className="font-medium text-gray-900 block mb-1">Cookies preferencji</label>
+                  <p className="text-xs text-gray-600">
+                    Zapamiętują Twoje wybory i ustawienia strony.
                   </p>
                 </div>
               </div>
+            </div>
 
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  onClick={handleSavePreferences}
-                  className="bg-black text-white hover:bg-gray-800"
-                >
-                  Zapisz ustawienia
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setShowSettings(false)}
-                >
-                  Anuluj
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSavePreferences}
+                className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white hover:from-gray-700 hover:to-gray-900 transition-all duration-300 py-3 rounded-lg font-medium"
+              >
+                <Check className="w-4 h-4 mr-2" /> Zapisz preferencje
+              </Button>
+              <Button 
+                onClick={() => setShowSettings(false)}
+                variant="outline"
+                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors py-3 rounded-lg"
+              >
+                <XIcon className="w-4 h-4 mr-2" /> Anuluj
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
