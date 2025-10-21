@@ -1475,7 +1475,7 @@ function CheckoutPageInner() {
                     value={discountCode}
                     onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
                     placeholder="Wpisz kod rabatowy"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm h-10"
                     disabled={discountLoading || !!appliedDiscount}
                   />
                   {!appliedDiscount ? (
@@ -1483,7 +1483,7 @@ function CheckoutPageInner() {
                       type="button"
                       onClick={handleApplyDiscount}
                       disabled={!discountCode.trim() || discountLoading}
-                      size="sm"
+                      className="h-10 px-4"
                     >
                       {discountLoading ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1492,13 +1492,14 @@ function CheckoutPageInner() {
                       )}
                     </Button>
                   ) : (
-                    <button
+                    <Button
                       type="button"
                       onClick={handleRemoveDiscount}
-                      className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors"
+                      variant="destructive"
+                      className="h-10 px-4"
                     >
                       Usuń
-                    </button>
+                    </Button>
                   )}
                 </div>
                 
