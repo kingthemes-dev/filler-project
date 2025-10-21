@@ -124,7 +124,7 @@ export default function CartDrawer() {
                   </p>
                   <button
                     onClick={closeCart}
-                    className="bg-gradient-to-r from-gray-800 to-black text-white px-6 py-3 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
+                    className="bg-gradient-to-r from-gray-800 to-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900  transition-all duration-300"
                   >
                     Przejdź do sklepu
                   </button>
@@ -224,7 +224,7 @@ export default function CartDrawer() {
                   <div className="flex space-x-3">
                     <Link
                       href="/koszyk"
-                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-gradient-to-r hover:from-gray-800 hover:to-black hover:text-white hover:scale-105 transition-all duration-300 flex items-center justify-center"
+                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-gradient-to-r hover:from-gray-800 hover:to-black hover:text-white  transition-all duration-300 flex items-center justify-center"
                       onClick={closeCart}
                     >
                       <span>Zobacz koszyk</span>
@@ -232,7 +232,7 @@ export default function CartDrawer() {
 
                     <Link
                       href="/checkout"
-                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-gradient-to-r hover:from-gray-800 hover:to-black hover:text-white hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2"
+                      className="flex-1 border-2 border-black text-black py-3 px-4 rounded-lg font-medium hover:bg-gradient-to-r hover:from-gray-800 hover:to-black hover:text-white  transition-all duration-300 flex items-center justify-center space-x-2"
                       onClick={closeCart}
                     >
                       <span>Kasa</span>
@@ -261,7 +261,7 @@ export default function CartDrawer() {
                       {/* Apple Pay */}
                       <Link
                         href="/checkout?payment=apple_pay"
-                        className="w-full py-2 px-4 bg-gradient-to-r from-gray-800 to-black text-white rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 transition-all flex items-center justify-center space-x-2"
+                        className="w-full py-2 px-4 bg-gradient-to-r from-gray-800 to-black text-white rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all flex items-center justify-center space-x-2"
                         onClick={closeCart}
                       >
                         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">

@@ -252,7 +252,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="flex gap-4">
               <div className="flex flex-col gap-3">
                 {(product.images || []).map((image: { src: string }, index: number) => (
-                  <button key={index} onClick={() => setActiveImageIndex(index)} className={`w-20 h-20 bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 ${activeImageIndex === index ? 'ring-2 ring-black ring-offset-1' : 'hover:shadow-md hover:scale-105'}`}>
+                  <button key={index} onClick={() => setActiveImageIndex(index)} className={`w-20 h-20 bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 ${activeImageIndex === index ? 'ring-2 ring-black ring-offset-1' : 'hover:shadow-md '}`}>
                     {image?.src ? (
                       <Image src={image.src} alt={`${product.name} ${index + 1}`} width={100} height={100} className="w-full h-full object-cover" />
                     ) : (
@@ -341,7 +341,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
                 </div>
 
                 <div className="flex space-x-3 flex-1">
-                  <button onClick={handleAddToCart} disabled={product.stock_status === 'outofstock' || product.stock_status === 'onbackorder' || (variations.length > 0 && !selectedCapacity)} className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white py-4 px-6 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2">
+                  <button onClick={handleAddToCart} disabled={product.stock_status === 'outofstock' || product.stock_status === 'onbackorder' || (variations.length > 0 && !selectedCapacity)} className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white py-4 px-6 rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900  transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2">
                     <ShoppingCart className="w-5 h-5" />
                     <span>
                       {product.stock_status === 'outofstock' ? 'Brak w magazynie' : product.stock_status === 'onbackorder' ? 'Na zamówienie' : (variations.length > 0 && !selectedCapacity) ? 'Wybierz pojemność' : 'Dodaj do koszyka'}
@@ -367,9 +367,9 @@ export default function ProductClient({ slug }: ProductClientProps) {
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="p-4">
                 <nav className="flex space-x-2" role="tablist" aria-label="Zakładki produktu">
-                  <button onClick={() => setActiveTab('description')} role="tab" aria-selected={activeTab === 'description'} aria-controls="tab-description" id="tab-description-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'description' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:from-gray-700 hover:to-gray-900 hover:scale-105' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Opis produktu</button>
-                  <button onClick={() => setActiveTab('reviews')} role="tab" aria-selected={activeTab === 'reviews'} aria-controls="tab-reviews" id="tab-reviews-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'reviews' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:from-gray-700 hover:to-gray-900 hover:scale-105' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Opinie ({product.rating_count || 0})</button>
-                  <button onClick={() => setActiveTab('shipping')} role="tab" aria-selected={activeTab === 'shipping'} aria-controls="tab-shipping" id="tab-shipping-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'shipping' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:from-gray-700 hover:to-gray-900 hover:scale-105' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Dostawa i zwroty</button>
+                  <button onClick={() => setActiveTab('description')} role="tab" aria-selected={activeTab === 'description'} aria-controls="tab-description" id="tab-description-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'description' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 ' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Opis produktu</button>
+                  <button onClick={() => setActiveTab('reviews')} role="tab" aria-selected={activeTab === 'reviews'} aria-controls="tab-reviews" id="tab-reviews-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'reviews' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 ' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Opinie ({product.rating_count || 0})</button>
+                  <button onClick={() => setActiveTab('shipping')} role="tab" aria-selected={activeTab === 'shipping'} aria-controls="tab-shipping" id="tab-shipping-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'shipping' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 ' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Dostawa i zwroty</button>
                 </nav>
               </div>
 

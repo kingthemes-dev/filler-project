@@ -148,7 +148,7 @@ export default function ShopFilters({
       <div className="lg:hidden mb-4">
         <button
           onClick={onToggleFilters}
-          className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-800 to-black text-white border border-gray-200 rounded-xl hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
+          className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-gray-800 to-black text-white border border-gray-200 rounded-xl hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300"
           aria-expanded={showFilters}
           aria-controls="filters-panel"
         >
