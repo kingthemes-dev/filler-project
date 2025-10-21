@@ -503,32 +503,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                         </div>
                       )}
 
-                      {/* Show other attributes if no variants */}
-                      {product?.attributes && product.attributes.length > 0 && variations.length === 0 && (
-                        <div className="space-y-4">
-                          {product.attributes.map((attr: { name: string; options: any[] }, index: number) => {
-                            const isCapacity = attr.name.toLowerCase().includes('pojemność');
-                            const isBrand = attr.name.toLowerCase().includes('marka');
-                            
-                            return (
-                              <div key={index}>
-                                {!isBrand && (
-                                  <div className="flex flex-wrap gap-3">
-                                    {attr.options.map((option: any, optionIndex: number) => (
-                                      <span
-                                        key={optionIndex}
-                                        className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full"
-                                      >
-                                        {toOptionLabel(option)}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
 
                     {/* Price - only show if no variations */}
