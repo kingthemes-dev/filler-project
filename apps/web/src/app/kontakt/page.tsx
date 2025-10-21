@@ -55,6 +55,7 @@ export default function ContactPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
+              className="bg-gray-50 border border-gray-200 rounded-xl p-8"
             >
               <h2 className="text-2xl font-bold text-gray-900 mb-8">
                 Informacje kontaktowe
@@ -92,6 +93,7 @@ export default function ContactPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-gray-50 border border-gray-200 rounded-xl p-8"
             >
               <h2 className="text-2xl font-bold text-gray-900 mb-8">
                 Formularz kontaktowy
