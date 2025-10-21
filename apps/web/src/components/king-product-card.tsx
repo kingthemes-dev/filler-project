@@ -540,7 +540,7 @@ export default function KingProductCard({
                       className="w-full h-12 py-6 hover:bg-black hover:text-white transition-colors text-base"
                       size="sm"
                     >
-                      <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
+                      <ShoppingCart className="w-4 h-4 mr-1.5 sm:mr-2" />
                       <span className="text-xs sm:text-base">{isLoading ? 'Dodawanie...' : `Dodaj ${selectedVariant} do koszyka`}</span>
                     </Button>
                   )}
@@ -552,7 +552,7 @@ export default function KingProductCard({
                   className="flex-1 h-10 py-2 hover:bg-black hover:text-white transition-colors text-sm"
                   size="sm"
                 >
-                  <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
+                  <ShoppingCart className="w-4 h-4 mr-1.5 sm:mr-2" />
                   <span className="text-xs sm:text-sm">{isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}</span>
                 </Button>
               )}
@@ -1002,7 +1002,7 @@ export default function KingProductCard({
               className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-3 font-medium text-sm"
               size="lg"
             >
-              <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
+              <ShoppingCart className="w-4 h-4 mr-1.5 sm:mr-2" />
               <span className="text-xs sm:text-sm">{isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}</span>
             </Button>
             
