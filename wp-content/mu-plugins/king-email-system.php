@@ -46,16 +46,13 @@ class KingEmailSystem {
         // Add FILLER branding to email headers
         add_action('woocommerce_email_header', [$this, 'add_filler_branding'], 10, 2);
         
-        // TYMCZASOWE: Trigger emails for REST API orders
-        add_action('woocommerce_new_order', [$this, 'trigger_rest_api_emails'], 10, 1);
-        add_action('woocommerce_api_create_order', [$this, 'trigger_rest_api_emails'], 10, 2);
-        
-        // Hook into order creation via REST API
-        add_action('woocommerce_rest_insert_shop_order_object', [$this, 'trigger_rest_api_emails'], 10, 2);
-        
-        // Additional hooks for REST API
-        add_action('woocommerce_create_order', [$this, 'trigger_rest_api_emails'], 10, 1);
-        add_action('woocommerce_checkout_order_processed', [$this, 'trigger_rest_api_emails'], 10, 1);
+        // DISABLED: Custom email triggering - let WooCommerce handle emails automatically
+        // This was causing duplicate emails and bypassing WooCommerce templates
+        // add_action('woocommerce_new_order', [$this, 'trigger_rest_api_emails'], 10, 1);
+        // add_action('woocommerce_api_create_order', [$this, 'trigger_rest_api_emails'], 10, 2);
+        // add_action('woocommerce_rest_insert_shop_order_object', [$this, 'trigger_rest_api_emails'], 10, 2);
+        // add_action('woocommerce_create_order', [$this, 'trigger_rest_api_emails'], 10, 1);
+        // add_action('woocommerce_checkout_order_processed', [$this, 'trigger_rest_api_emails'], 10, 1);
         
         // Debug: Log all order creation attempts
         add_action('woocommerce_new_order', [$this, 'debug_order_creation'], 5, 1);
