@@ -9,6 +9,7 @@ import { Metadata } from 'next';
 // Dynamic imports for below-the-fold components
 const KingProductTabsServer = dynamicImport(() => import('@/components/king-product-tabs-server'));
 const NewsletterForm = dynamicImport(() => import('@/components/ui/newsletter-form'));
+const Threads = dynamicImport(() => import('@/components/ui/threads'));
 
 // ISR - Incremental Static Regeneration
 export const revalidate = 300; // 5 minutes
@@ -98,22 +99,20 @@ export default async function HomePage() {
 
 
 
-      {/* Newsletter Section */}
+      {/* Newsletter Section with Threads Animation */}
       <section className="py-12 sm:py-16">
         <PageContainer>
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl">
-            {/* Background Image */}
+            {/* Threads Animation Background */}
             <div className="absolute inset-0 z-0">
-              <Image
-                src="/images/hero/newslettter.webp"
-                alt="Newsletter - bądź na bieżąco"
-                fill
-                className="object-cover object-center"
-                sizes="100vw"
-                priority
+              <Threads
+                color={[0.8, 0.4, 0.8]} // Purple color
+                amplitude={1.2}
+                distance={0.1}
+                enableMouseInteraction={true}
               />
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-black/50" />
+              {/* Overlay for better text readability */}
+              <div className="absolute inset-0 bg-black/40" />
             </div>
             
             {/* Content */}
