@@ -184,7 +184,7 @@ export default function ContactPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 text-base"
+                  className="w-full h-12 text-base transition-all duration-300"
                 >
                   <Send className="w-5 h-5 mr-2" />
                   Wyślij wiadomość
