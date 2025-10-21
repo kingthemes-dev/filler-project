@@ -8,6 +8,7 @@ interface ThreadsProps {
   amplitude?: number;
   distance?: number;
   enableMouseInteraction?: boolean;
+  sectionId?: string;
 }
 
 const vertexShader = `
@@ -132,6 +133,7 @@ const Threads: React.FC<ThreadsProps> = ({
   amplitude = 1,
   distance = 0,
   enableMouseInteraction = false,
+  sectionId,
   ...rest
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -198,10 +200,14 @@ const Threads: React.FC<ThreadsProps> = ({
     function handleMouseLeave() {
       targetMouse = [0.5, 0.5];
     }
-    if (enableMouseInteraction) {
-      console.log('Adding mouse event listeners to container');
-      container.addEventListener('mousemove', handleMouseMove);
-      container.addEventListener('mouseleave', handleMouseLeave);
+    
+    // Use section element for mouse interaction if sectionId is provided
+    const targetElement = sectionId ? document.getElementById(sectionId) : container;
+    
+    if (enableMouseInteraction && targetElement) {
+      console.log('Adding mouse event listeners to:', targetElement);
+      targetElement.addEventListener('mousemove', handleMouseMove);
+      targetElement.addEventListener('mouseleave', handleMouseLeave);
     }
 
     function update(t: number) {
@@ -226,9 +232,9 @@ const Threads: React.FC<ThreadsProps> = ({
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
       window.removeEventListener('resize', resize);
 
-      if (enableMouseInteraction) {
-        container.removeEventListener('mousemove', handleMouseMove);
-        container.removeEventListener('mouseleave', handleMouseLeave);
+      if (enableMouseInteraction && targetElement) {
+        targetElement.removeEventListener('mousemove', handleMouseMove);
+        targetElement.removeEventListener('mouseleave', handleMouseLeave);
       }
       if (container.contains(gl.canvas)) container.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();

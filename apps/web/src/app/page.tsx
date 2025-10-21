@@ -100,7 +100,7 @@ export default async function HomePage() {
 
 
       {/* Newsletter Section with Threads Animation */}
-      <section className="py-16 sm:py-24">
+      <section className="py-16 sm:py-24" id="newsletter-section">
         <PageContainer>
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-900 via-black to-gray-800 min-h-[500px]">
             {/* Threads Animation Background */}
@@ -110,6 +110,7 @@ export default async function HomePage() {
                 amplitude={2.6}
                 distance={0.3}
                 enableMouseInteraction={true}
+                sectionId="newsletter-section"
               />
               {/* Overlay for better text readability - but allow mouse interaction */}
               <div className="absolute inset-0 bg-black/40 pointer-events-none" />
