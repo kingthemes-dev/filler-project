@@ -40,12 +40,8 @@ class KingEmailSystem {
         // CTA links to frontend (order details + account)
         add_action('woocommerce_email_after_order_table', [$this, 'inject_frontend_cta_links'], 15, 4);
         
-        // ADAPTER MODE: Enrich WooCommerce emails with Polish branding
-        add_filter('woocommerce_email_subject_new_order', [$this, 'polish_new_order_subject'], 10, 2);
-        add_filter('woocommerce_email_subject_customer_processing_order', [$this, 'polish_processing_subject'], 10, 2);
-        add_filter('woocommerce_email_subject_customer_completed_order', [$this, 'polish_completed_subject'], 10, 2);
-        add_filter('woocommerce_email_subject_customer_on_hold_order', [$this, 'polish_on_hold_subject'], 10, 2);
-        add_filter('woocommerce_email_subject_cancelled_order', [$this, 'polish_cancelled_subject'], 10, 2);
+        // REMOVED: Polish email subjects - edit in WooCommerce admin instead
+        // You can now edit all email titles in WooCommerce → Settings → Emails
         
         // Add FILLER branding to email headers
         add_action('woocommerce_email_header', [$this, 'add_filler_branding'], 10, 2);
@@ -802,28 +798,8 @@ class KingEmailSystem {
         </html>";
     }
     
-    /**
-     * ADAPTER MODE: Polish email subjects with FILLER branding
-     */
-    public function polish_new_order_subject($subject, $order) {
-        return 'Potwierdzenie zamówienia #' . $order->get_order_number() . ' - FILLER';
-    }
-    
-    public function polish_processing_subject($subject, $order) {
-        return 'Zamówienie #' . $order->get_order_number() . ' w trakcie realizacji - FILLER';
-    }
-    
-    public function polish_completed_subject($subject, $order) {
-        return 'Zamówienie #' . $order->get_order_number() . ' zostało dostarczone - FILLER';
-    }
-    
-    public function polish_on_hold_subject($subject, $order) {
-        return 'Zamówienie #' . $order->get_order_number() . ' zostało wstrzymane - FILLER';
-    }
-    
-    public function polish_cancelled_subject($subject, $order) {
-        return 'Zamówienie #' . $order->get_order_number() . ' zostało anulowane - FILLER';
-    }
+    // REMOVED: Polish email subjects - edit in WooCommerce admin instead
+    // Go to WooCommerce → Settings → Emails to customize all email titles
     
     /**
      * Add FILLER branding to email headers
