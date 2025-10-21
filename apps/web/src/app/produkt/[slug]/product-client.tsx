@@ -332,6 +332,15 @@ export default function ProductClient({ slug }: ProductClientProps) {
                 </div>
               )}
 
+              {/* Short Description */}
+              {product.short_description && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    {product.short_description.replace(/<[^>]*>/g, '')}
+                  </p>
+                </div>
+              )}
+
               {/* Quantity & Add to Cart */}
               <div className="flex items-center space-x-4">
                 <div className="flex items-center border border-gray-300 rounded-lg bg-white h-[56px]">
