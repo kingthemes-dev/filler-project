@@ -9,11 +9,19 @@ class WooCommerceService {
   private baseUrl: string;
 
   constructor() {
-    // Use absolute URL for server-side, relative for client-side
-    this.baseUrl = typeof window !== 'undefined' 
-      ? '/api/woocommerce' 
-      : `${process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3001')}/api/woocommerce`;
+    // Use WordPress URL directly for both server and client
+    this.baseUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
     console.log('🚀 WooCommerce Optimized Service initialized with baseUrl:', this.baseUrl);
+  }
+
+  private getAuthHeaders() {
+    const consumerKey = process.env.WC_CONSUMER_KEY || 'ck_deb61eadd7301ebfc5f8074ce7c53c6668eb725d';
+    const consumerSecret = process.env.WC_CONSUMER_SECRET || 'cs_0de18ed0e013f96aebfb51c77f506bb94e416cb8';
+    const auth = btoa(`${consumerKey}:${consumerSecret}`);
+    return {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/json'
+    };
   }
 
   /**
@@ -21,7 +29,7 @@ class WooCommerceService {
    */
   async getPaymentGateways(): Promise<{ success: boolean; gateways?: Array<{ id: string; title: string; description?: string; enabled: boolean }>; error?: string }>{
     try {
-      const r = await fetch(`${this.baseUrl}?endpoint=payment_gateways`, { headers: { Accept: 'application/json' } });
+      const r = await fetch(`${this.baseUrl}/wp-json/wc/v3/payment_gateways`, { headers: this.getAuthHeaders() });
       if (!r.ok) {
         const e = await r.json();
         throw new Error(e.error || 'Nie udało się pobrać metod płatności');
@@ -49,7 +57,7 @@ class WooCommerceService {
   }> {
     try {
       // PERFORMANCE FIX: Add _fields to reduce payload size
-      const response = await fetch(`${this.baseUrl}?endpoint=homepage&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count`);
+      const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products?per_page=12&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count`, { headers: this.getAuthHeaders() });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -140,7 +148,7 @@ class WooCommerceService {
   // =========================================
   async getProductData(productId: number): Promise<WooProduct> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=product/${productId}`);
+      const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products/${productId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -155,7 +163,7 @@ class WooCommerceService {
 
   async getProductById(productId: number): Promise<WooProduct> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}&cache=off`);
+      const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products/${productId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -183,7 +191,7 @@ class WooCommerceService {
       const searchTerm = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       console.log(`🔍 Trying search term: ${searchTerm}`);
       
-      const searchUrl = `${this.baseUrl}?endpoint=products&search=${encodeURIComponent(searchTerm)}&cache=off`;
+      const searchUrl = `${this.baseUrl}/wp-json/wc/v3/products?search=${encodeURIComponent(searchTerm)}`;
       console.log(`🌐 Search URL: ${searchUrl}`);
       
       const searchResponse = await fetch(searchUrl);
@@ -218,7 +226,7 @@ class WooCommerceService {
     perPage: number;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/categories`);
+      const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products/categories`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -369,7 +377,7 @@ class WooCommerceService {
         params.append('_', String(Date.now()));
       }
       
-      const response = await fetch(`${this.baseUrl}?endpoint=products&${params}`);
+          const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products?${params}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -392,7 +400,7 @@ class WooCommerceService {
 
   async getProduct(productId: number): Promise<WooProduct> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}`);
+          const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products/${productId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -611,7 +619,7 @@ class WooCommerceService {
   // =========================================
   async getProductReviews(productId: number): Promise<{ success: boolean; reviews?: Array<{ id: number; review: string; rating: number; reviewer: string; date_created: string }>; error?: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=reviews&product_id=${productId}&cache=off`);
+          const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products/reviews?product=${productId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -968,7 +976,7 @@ class WooCommerceService {
   async getProductVariations(productId: number): Promise<{ success: boolean; variations?: Array<{ id: number; attributes?: Array<{ slug: string; option: string }>; price: string; regular_price: string; sale_price: string; name: string; menu_order: number }>; error?: string }> {
     try {
       // PERFORMANCE FIX: Add _fields to reduce payload size
-      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}/variations&_fields=id,attributes,price,regular_price,sale_price,name,menu_order`);
+          const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products/${productId}/variations?_fields=id,attributes,price,regular_price,sale_price,name,menu_order`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -983,7 +991,7 @@ class WooCommerceService {
   async getProductAttributes(): Promise<{ success: boolean; attributes?: Array<{ id: number; name: string; slug: string; type: string; order_by: string; has_archives: boolean }>; error?: string }> {
     try {
       // PERFORMANCE FIX: Add _fields to reduce payload size
-      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes&_fields=id,name,slug,type,order_by,has_archives`);
+          const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products/attributes?_fields=id,name,slug,type,order_by,has_archives`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
