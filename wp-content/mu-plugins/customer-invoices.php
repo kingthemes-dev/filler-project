@@ -13,52 +13,11 @@ if (file_exists(WP_CONTENT_DIR . '/mu-plugins/headless-config.php')) {
 // FIXED: Faktura tylko przy completed status - Senior Level
 add_action('woocommerce_order_status_completed', 'auto_generate_invoice_for_order');
 
-// CONTROL PDF Invoices & Packing Slips - tylko gdy klient zaznaczył checkbox
-add_filter('woocommerce_email_attachments', 'control_pdf_invoice_attachments', 10, 3);
+// REMOVED: PDF Invoices & Packing Slips control - we don't need that plugin
+// We have our own invoice system that works independently
 
-/**
- * CONTROL PDF Invoices & Packing Slips attachments
- * Only attach invoices when customer requested them
- */
-function control_pdf_invoice_attachments($attachments, $email_id, $order) {
-    // DEBUG: Log that function is called
-    error_log("Customer Invoice Control: Function called with email_id = '{$email_id}' and " . count($attachments) . " attachments");
-    
-    // Only control for customer emails (not admin emails)
-    if (strpos($email_id, 'customer_') !== 0) {
-        error_log("Customer Invoice Control: Skipping - not customer email");
-        return $attachments;
-    }
-    
-    // Only control for completed order emails
-    // DEBUG: Log all email IDs to see what we're getting
-    error_log("Customer Invoice Control DEBUG: Email ID = '{$email_id}' for order {$order->get_id()}");
-    
-    if ($email_id !== 'customer_completed_order') {
-        error_log("Customer Invoice Control DEBUG: Skipping email ID '{$email_id}' - not customer_completed_order");
-        return $attachments;
-    }
-    
-    // Check if customer requested invoice
-    $invoice_request = $order->get_meta('_invoice_request');
-    
-    // DEBUG: Log invoice request status
-    error_log("Customer Invoice Control DEBUG: Invoice request = '{$invoice_request}' for order {$order->get_id()}");
-    
-    // If customer didn't request invoice, remove all PDF attachments
-    if ($invoice_request !== 'yes') {
-        // Filter out PDF attachments (invoices)
-        $attachments = array_filter($attachments, function($attachment) {
-            return !preg_match('/\.pdf$/i', $attachment);
-        });
-        
-        error_log("Customer Invoice Control: Removed PDF attachments for order {$order->get_id()} - customer didn't request invoice");
-    } else {
-        error_log("Customer Invoice Control: Keeping PDF attachments for order {$order->get_id()} - customer requested invoice");
-    }
-    
-    return $attachments;
-}
+// REMOVED: PDF Invoices & Packing Slips control function
+// We don't need to control that plugin - we have our own invoice system
 
 function auto_generate_invoice_for_order($order_id) {
     $order = wc_get_order($order_id);
