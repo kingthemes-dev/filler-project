@@ -106,9 +106,9 @@ export default async function HomePage() {
             {/* Threads Animation Background */}
             <div className="absolute inset-0 z-0">
               <Threads
-                color={[0.8, 0.4, 0.8]} // Purple color
-                amplitude={1.2}
-                distance={0.1}
+                color={[1, 1, 1]} // White color like on screen
+                amplitude={2.6}
+                distance={0.3}
                 enableMouseInteraction={true}
               />
               {/* Overlay for better text readability */}
