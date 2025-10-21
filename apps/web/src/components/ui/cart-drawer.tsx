@@ -122,12 +122,13 @@ export default function CartDrawer() {
                   <p className="text-gray-500 mb-6">
                     Dodaj produkty, aby rozpocząć zakupy
                   </p>
-                  <button
+                  <Link
+                    href="/sklep"
                     onClick={closeCart}
-                    className="bg-gradient-to-r from-gray-800 to-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900  transition-all duration-300"
+                    className="bg-gradient-to-r from-gray-800 to-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900  transition-all duration-300 inline-block text-center"
                   >
                     Przejdź do sklepu
-                  </button>
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-2">

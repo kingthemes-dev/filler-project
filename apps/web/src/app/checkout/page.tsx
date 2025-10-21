@@ -1284,7 +1284,7 @@ function CheckoutPageInner() {
                             setCurrentStep(2);
                           }
                         }}
-                        className="w-full"
+                        className="w-full h-12 text-base"
                       >
                         Kontynuuj - dostawa i płatność
                       </Button>
@@ -1439,7 +1439,7 @@ function CheckoutPageInner() {
                       <Button
                         type="submit"
                         disabled={loading || !form.acceptTerms}
-                        className="flex-1"
+                        className="flex-1 h-12 text-base"
                       >
                         {loading ? (
                           <>
