@@ -21,8 +21,12 @@ add_filter('woocommerce_email_attachments', 'control_pdf_invoice_attachments', 1
  * Only attach invoices when customer requested them
  */
 function control_pdf_invoice_attachments($attachments, $email_id, $order) {
+    // DEBUG: Log that function is called
+    error_log("Customer Invoice Control: Function called with email_id = '{$email_id}' and " . count($attachments) . " attachments");
+    
     // Only control for customer emails (not admin emails)
     if (strpos($email_id, 'customer_') !== 0) {
+        error_log("Customer Invoice Control: Skipping - not customer email");
         return $attachments;
     }
     
