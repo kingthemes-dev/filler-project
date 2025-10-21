@@ -841,7 +841,7 @@ export default function KingProductCard({
             </div>
 
             {/* Icons - top right */}
-            <div className="absolute top-2 right-2 flex gap-2">
+            <div className="absolute top-2 right-2 flex flex-col gap-2">
               <button
                 onClick={(e) => {
                   e.preventDefault();
