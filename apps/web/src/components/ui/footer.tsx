@@ -53,8 +53,8 @@ export default function Footer() {
                    <div className="flex items-start">
                      <MapPin className="w-5 h-5 mt-0.5 mr-3 text-gray-400" />
                      <div>
-                       <p className="text-gray-300 text-sm">ul. Partyzantów 8/101</p>
-                       <p className="text-gray-300 text-sm">80-254 Gdańsk</p>
+                       <p className="text-gray-300 text-sm">ul. Partyzantów 8/101, 80-254</p>
+                       <p className="text-gray-300 text-sm">Gdańsk, Polska</p>
                      </div>
                    </div>
                    
@@ -81,8 +81,8 @@ export default function Footer() {
                    <div className="flex items-start">
                      <Clock className="w-5 h-5 mt-0.5 mr-3 text-gray-400" />
                      <div>
-                       <p className="text-gray-300 text-sm">Poniedziałek - Piątek</p>
-                       <p className="text-gray-300 font-semibold text-sm">8:00 - 18:00</p>
+                       <p className="text-gray-300 text-sm">Czynne od poniedziałku do piątku,</p>
+                       <p className="text-gray-300 font-semibold text-sm">w godzinach 8:00 - 18:00</p>
                      </div>
                    </div>
                  </div>
@@ -175,8 +175,8 @@ export default function Footer() {
               <div className="flex items-start">
                 <MapPin className="w-5 h-5 mt-0.5 mr-3 text-gray-400" />
                 <div>
-                  <p className="text-gray-300">ul. Partyzantów 8/101</p>
-                  <p className="text-gray-300">80-254 Gdańsk</p>
+                  <p className="text-gray-300">ul. Partyzantów 8/101, 80-254</p>
+                  <p className="text-gray-300">Gdańsk, Polska</p>
                 </div>
               </div>
               
@@ -203,8 +203,8 @@ export default function Footer() {
               <div className="flex items-start">
                 <Clock className="w-5 h-5 mt-0.5 mr-3 text-gray-400" />
                 <div>
-                  <p className="text-gray-300">Poniedziałek - Piątek</p>
-                  <p className="text-gray-300 font-semibold">8:00 - 18:00</p>
+                  <p className="text-gray-300">Czynne od poniedziałku do piątku,</p>
+                  <p className="text-gray-300 font-semibold">w godzinach 8:00 - 18:00</p>
                 </div>
               </div>
             </div>
