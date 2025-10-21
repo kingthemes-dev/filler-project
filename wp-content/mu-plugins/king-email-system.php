@@ -213,14 +213,7 @@ class KingEmailSystem {
             
             error_log("King Email System DEBUG: Available emails: " . implode(', ', array_keys($emails)));
             
-            // Send customer processing order email (potwierdzenie zamówienia)
-            if (isset($emails['customer_processing_order'])) {
-                $email = $emails['customer_processing_order'];
-                $email->trigger($order_id);
-                error_log("King Email System: ✅ Sent customer_processing_order email for order {$order_id}");
-            } else {
-                error_log("King Email System ERROR: customer_processing_order email not found");
-            }
+            // REMOVED: customer_processing_order email - WooCommerce will send it automatically when order status changes to 'processing'
             
             // Send new order notification to admin
             if (isset($emails['new_order'])) {
