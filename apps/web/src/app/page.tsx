@@ -111,8 +111,8 @@ export default async function HomePage() {
                 distance={0.3}
                 enableMouseInteraction={true}
               />
-              {/* Overlay for better text readability */}
-              <div className="absolute inset-0 bg-black/40" />
+              {/* Overlay for better text readability - but allow mouse interaction */}
+              <div className="absolute inset-0 bg-black/40 pointer-events-none" />
             </div>
             
             {/* Content */}
