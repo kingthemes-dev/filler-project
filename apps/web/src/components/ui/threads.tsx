@@ -146,6 +146,15 @@ const Threads: React.FC<ThreadsProps> = ({
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    
+    // Ensure canvas can receive mouse events
+    gl.canvas.style.pointerEvents = 'auto';
+    gl.canvas.style.position = 'absolute';
+    gl.canvas.style.top = '0';
+    gl.canvas.style.left = '0';
+    gl.canvas.style.width = '100%';
+    gl.canvas.style.height = '100%';
+    
     container.appendChild(gl.canvas);
 
     const geometry = new Triangle(gl);
@@ -184,11 +193,13 @@ const Threads: React.FC<ThreadsProps> = ({
       const x = (e.clientX - rect.left) / rect.width;
       const y = 1.0 - (e.clientY - rect.top) / rect.height;
       targetMouse = [x, y];
+      console.log('Mouse move:', { x, y, targetMouse });
     }
     function handleMouseLeave() {
       targetMouse = [0.5, 0.5];
     }
     if (enableMouseInteraction) {
+      console.log('Adding mouse event listeners to container');
       container.addEventListener('mousemove', handleMouseMove);
       container.addEventListener('mouseleave', handleMouseLeave);
     }
