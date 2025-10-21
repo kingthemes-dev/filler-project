@@ -83,7 +83,7 @@ export default function NewsletterForm() {
         <div className="flex-1">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input + Button - Simple design without animations */}
-            <div className="flex h-14 rounded-xl overflow-hidden border border-white/80">
+            <div className="flex h-14 rounded-2xl overflow-hidden border border-white/60">
               {/* Input field - smaller width */}
               <div className="flex-[2] relative bg-gray-800">
                 <input
@@ -97,7 +97,7 @@ export default function NewsletterForm() {
               </div>
               
               {/* Divider line */}
-              <div className="w-px bg-white/80"></div>
+              <div className="w-px bg-white/60"></div>
               
               {/* Button - simple style */}
               <button
