@@ -82,10 +82,10 @@ export default function NewsletterForm() {
         {/* Formularz po prawej stronie */}
         <div className="flex-1">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input + Button - Clean design with global button style */}
-            <div className="flex h-14 rounded-2xl overflow-hidden border border-white/20">
+            {/* Email Input + Button - Simple design without animations */}
+            <div className="flex h-14 rounded-lg overflow-hidden border border-white/80">
               {/* Input field - smaller width */}
-              <div className="flex-[2] relative bg-white/10 backdrop-blur-sm">
+              <div className="flex-[2] relative bg-gray-800">
                 <input
                   type="email"
                   value={email}
@@ -97,13 +97,13 @@ export default function NewsletterForm() {
               </div>
               
               {/* Divider line */}
-              <div className="w-px bg-white/20"></div>
+              <div className="w-px bg-white/80"></div>
               
-              {/* Button with global gradient style - larger */}
+              {/* Button - simple style */}
               <button
                 type="submit"
                 disabled={isLoading || !consent}
-                className="flex-[1] px-6 bg-gradient-to-r from-gray-800 to-black text-white border-0 font-semibold text-lg hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 active:bg-gradient-to-l active:from-gray-700 active:to-gray-900 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="flex-[1] px-6 bg-black text-white border-0 font-semibold text-lg hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isLoading ? (
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
