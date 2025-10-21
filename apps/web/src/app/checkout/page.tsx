@@ -815,12 +815,11 @@ function CheckoutPageInner() {
                   Wróć do sklepu
                 </Link>
               </Button>
-              <Link
-                href="/moje-zamowienia"
-                className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-              >
-                Moje zamówienia
-              </Link>
+              <Button asChild variant="outline">
+                <Link href="/moje-zamowienia">
+                  Moje zamówienia
+                </Link>
+              </Button>
             </div>
           </motion.div>
         </div>
