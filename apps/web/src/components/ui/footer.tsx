@@ -49,9 +49,9 @@ export default function Footer() {
                </div>
                
                <div className="flex justify-between items-start">
-                 <div className="space-y-3 flex-1">
+                 <div className="space-y-2 flex-1">
                    <div className="flex items-start">
-                     <MapPin className="w-5 h-5 mt-0.5 mr-3 text-gray-400" />
+                     <MapPin className="w-4 h-4 mt-1 mr-2 text-gray-400" />
                      <div>
                        <p className="text-gray-300 text-sm">ul. Partyzantów 8/101, 80-254</p>
                        <p className="text-gray-300 text-sm">Gdańsk, Polska</p>
@@ -59,7 +59,7 @@ export default function Footer() {
                    </div>
                    
                    <div className="flex items-center">
-                     <Phone className="w-5 h-5 mr-3 text-gray-400" />
+                     <Phone className="w-4 h-4 mr-2 text-gray-400" />
                      <a 
                        href="tel:+48535956932" 
                        className="text-gray-300 hover:text-white transition-colors text-sm"
@@ -69,7 +69,7 @@ export default function Footer() {
                    </div>
                    
                    <div className="flex items-center">
-                     <Mail className="w-5 h-5 mr-3 text-gray-400" />
+                     <Mail className="w-4 h-4 mr-2 text-gray-400" />
                      <a 
                        href="mailto:kontakt@filler.pl" 
                        className="text-gray-300 hover:text-white transition-colors text-sm"
@@ -79,7 +79,7 @@ export default function Footer() {
                    </div>
                    
                    <div className="flex items-start">
-                     <Clock className="w-5 h-5 mt-0.5 mr-3 text-gray-400" />
+                     <Clock className="w-4 h-4 mt-1 mr-2 text-gray-400" />
                      <div>
                        <p className="text-gray-300 text-sm">Czynne od poniedziałku do piątku,</p>
                        <p className="text-gray-300 font-semibold text-sm">w godzinach 8:00 - 18:00</p>
@@ -171,9 +171,9 @@ export default function Footer() {
           <div className="lg:pr-12 lg:ml-4">
             <h4 className="text-lg font-semibold mb-6 text-white">Kontakt</h4>
             
-            <div className="space-y-4 mb-8">
+            <div className="space-y-3 mb-8">
               <div className="flex items-start">
-                <MapPin className="w-5 h-5 mt-0.5 mr-3 text-gray-400" />
+                <MapPin className="w-4 h-4 mt-1 mr-2 text-gray-400" />
                 <div>
                   <p className="text-gray-300">ul. Partyzantów 8/101, 80-254</p>
                   <p className="text-gray-300">Gdańsk, Polska</p>
@@ -181,7 +181,7 @@ export default function Footer() {
               </div>
               
               <div className="flex items-center">
-                <Phone className="w-5 h-5 mr-3 text-gray-400" />
+                <Phone className="w-4 h-4 mr-2 text-gray-400" />
                 <a 
                   href="tel:+48535956932" 
                   className="text-gray-300 hover:text-white transition-colors"
@@ -191,7 +191,7 @@ export default function Footer() {
               </div>
               
               <div className="flex items-center">
-                <Mail className="w-5 h-5 mr-3 text-gray-400" />
+                <Mail className="w-4 h-4 mr-2 text-gray-400" />
                 <a 
                   href="mailto:kontakt@filler.pl" 
                   className="text-gray-300 hover:text-white transition-colors"
@@ -201,7 +201,7 @@ export default function Footer() {
               </div>
               
               <div className="flex items-start">
-                <Clock className="w-5 h-5 mt-0.5 mr-3 text-gray-400" />
+                <Clock className="w-4 h-4 mt-1 mr-2 text-gray-400" />
                 <div>
                   <p className="text-gray-300">Czynne od poniedziałku do piątku,</p>
                   <p className="text-gray-300 font-semibold">w godzinach 8:00 - 18:00</p>
