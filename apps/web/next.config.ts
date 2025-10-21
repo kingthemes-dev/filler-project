@@ -4,6 +4,10 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
+// Debug environment variables
+console.log('🔍 Next.js Config - GTM ID:', process.env.NEXT_PUBLIC_GTM_ID);
+console.log('🔍 Next.js Config - GA4 ID:', process.env.NEXT_PUBLIC_GA4_ID);
+
 const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,

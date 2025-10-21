@@ -46,9 +46,6 @@ class RedisCache {
         connectTimeout: 5000,
         commandTimeout: 3000,
         enableReadyCheck: false,
-        // Disable cluster features that require DNS
-        enableCluster: false,
-        enableClusterSlotsCheck: false,
       });
 
       this.redis.on('connect', () => {

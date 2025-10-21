@@ -377,7 +377,7 @@ export default function ShopFilters({
                             onChange={(e) => {
                               const newMin = parseInt(e.target.value);
                               if (newMin <= priceRange.max) {
-                                setPriceRange(prev => ({ ...prev, min: newMin }));
+                                setPriceRange({ ...priceRange, min: newMin });
                                 onFilterChange('minPrice', newMin);
                               }
                             }}
@@ -393,7 +393,7 @@ export default function ShopFilters({
                             onChange={(e) => {
                               const newMax = parseInt(e.target.value);
                               if (newMax >= priceRange.min) {
-                                setPriceRange(prev => ({ ...prev, max: newMax }));
+                                setPriceRange({ ...priceRange, max: newMax });
                                 onFilterChange('maxPrice', newMax);
                               }
                             }}

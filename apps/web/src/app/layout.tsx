@@ -98,6 +98,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Debug environment variables
+  console.log('🔍 GTM ID:', process.env.NEXT_PUBLIC_GTM_ID);
+  console.log('🔍 GA4 ID:', process.env.NEXT_PUBLIC_GA4_ID);
 
   return (
     <html lang="pl" data-scroll-behavior="smooth">

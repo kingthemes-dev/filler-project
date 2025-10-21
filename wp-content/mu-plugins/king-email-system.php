@@ -74,6 +74,10 @@ class KingEmailSystem {
                 'subject' => 'Potwierdzenie zamówienia #{order_number} - FILLER',
                 'template' => 'order-confirmation.php'
             ],
+            'order_processing' => [
+                'subject' => 'Zamówienie #{order_number} w trakcie realizacji - FILLER',
+                'template' => 'order-processing.php'
+            ],
             'order_shipped' => [
                 'subject' => 'Twoje zamówienie #{order_number} zostało wysłane - FILLER',
                 'template' => 'order-shipped.php'
@@ -81,6 +85,14 @@ class KingEmailSystem {
             'order_delivered' => [
                 'subject' => 'Twoje zamówienie #{order_number} zostało dostarczone - FILLER',
                 'template' => 'order-delivered.php'
+            ],
+            'order_cancelled' => [
+                'subject' => 'Zamówienie #{order_number} zostało anulowane - FILLER',
+                'template' => 'order-cancelled.php'
+            ],
+            'order_on_hold' => [
+                'subject' => 'Zamówienie #{order_number} zostało wstrzymane - FILLER',
+                'template' => 'order-on-hold.php'
             ],
             'password_reset' => [
                 'subject' => 'Reset hasła - FILLER',
@@ -150,17 +162,28 @@ class KingEmailSystem {
     public function handle_order_status_change($order_id, $old_status, $new_status, $order) {
         switch ($new_status) {
             case 'processing':
-                // Order is being processed
+                // Order is being processed - send custom email
+                $this->send_order_processing($order);
                 break;
                 
             case 'completed':
-                // Order completed – rely on Woo default email. Log only.
-                $this->log_email_sent($order_id, 'order_completed_adapter', $order->get_billing_email());
+                // Order completed – send custom email
+                $this->send_order_delivered($order);
                 break;
                 
             case 'shipped':
-                // Order shipped – if using custom status/email, add meta only. Log.
-                $this->log_email_sent($order_id, 'order_shipped_adapter', $order->get_billing_email());
+                // Order shipped – send custom email
+                $this->send_order_shipped($order);
+                break;
+                
+            case 'cancelled':
+                // Order cancelled - send custom email
+                $this->send_order_cancelled($order);
+                break;
+                
+            case 'on-hold':
+                // Order on hold - send custom email
+                $this->send_order_on_hold($order);
                 break;
         }
     }
@@ -291,6 +314,51 @@ class KingEmailSystem {
             $user->display_name,
             $subject,
             $this->get_email_template('password_reset', $template_data)
+        );
+    }
+    
+    /**
+     * Send order processing email
+     */
+    public function send_order_processing($order) {
+        $template_data = $this->prepare_order_template_data($order);
+        $subject = $this->process_template_variables($this->email_templates['order_processing']['subject'], $template_data);
+        
+        $this->send_email(
+            $order->get_billing_email(),
+            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+            $subject,
+            $this->get_email_template('order_processing', $template_data)
+        );
+    }
+    
+    /**
+     * Send order cancelled email
+     */
+    public function send_order_cancelled($order) {
+        $template_data = $this->prepare_order_template_data($order);
+        $subject = $this->process_template_variables($this->email_templates['order_cancelled']['subject'], $template_data);
+        
+        $this->send_email(
+            $order->get_billing_email(),
+            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+            $subject,
+            $this->get_email_template('order_cancelled', $template_data)
+        );
+    }
+    
+    /**
+     * Send order on hold email
+     */
+    public function send_order_on_hold($order) {
+        $template_data = $this->prepare_order_template_data($order);
+        $subject = $this->process_template_variables($this->email_templates['order_on_hold']['subject'], $template_data);
+        
+        $this->send_email(
+            $order->get_billing_email(),
+            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+            $subject,
+            $this->get_email_template('order_on_hold', $template_data)
         );
     }
     

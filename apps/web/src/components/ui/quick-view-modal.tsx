@@ -262,10 +262,10 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     console.log('🖼️ Quick View - Processed images:', imageArray);
     if (imageArray.length > 0) return imageArray;
     
-    // Try to get image from product.image if available
-    if (product.image && typeof product.image === 'string' && !isWooPlaceholder(product.image)) {
-      console.log('🖼️ Quick View - Using product.image:', product.image);
-      return [{ src: product.image, name: product.name, alt: product.name }];
+    // Try to get image from product.images[0] if available
+    if (product.images && product.images.length > 0 && product.images[0].src && !isWooPlaceholder(product.images[0].src)) {
+      console.log('🖼️ Quick View - Using product.images[0]:', product.images[0].src);
+      return [{ src: product.images[0].src, name: product.name, alt: product.name }];
     }
     
     // fallback – keep one placeholder to avoid empty UI

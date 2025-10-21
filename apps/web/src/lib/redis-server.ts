@@ -39,8 +39,6 @@ class ServerRedisCache {
         connectTimeout: 5000,
         commandTimeout: 3000,
         enableReadyCheck: false,
-        enableCluster: false,
-        enableClusterSlotsCheck: false,
       });
 
       this.redis.on('connect', () => {

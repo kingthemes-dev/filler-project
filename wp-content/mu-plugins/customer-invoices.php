@@ -10,10 +10,8 @@ if (file_exists(WP_CONTENT_DIR . '/mu-plugins/headless-config.php')) {
  */
 
 // Hook into WooCommerce order completion to auto-generate invoices
+// FIXED: Faktura tylko przy completed status - Senior Level
 add_action('woocommerce_order_status_completed', 'auto_generate_invoice_for_order');
-add_action('woocommerce_order_status_processing', 'auto_generate_invoice_for_order');
-add_action('woocommerce_order_status_pending', 'auto_generate_invoice_for_order');
-add_action('woocommerce_new_order', 'auto_generate_invoice_for_order');
 
 function auto_generate_invoice_for_order($order_id) {
     $order = wc_get_order($order_id);
