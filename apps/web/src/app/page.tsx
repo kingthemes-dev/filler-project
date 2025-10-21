@@ -100,7 +100,7 @@ export default async function HomePage() {
 
 
       {/* Newsletter Section with Threads Animation */}
-      <section className="py-12 sm:py-16">
+      <section className="py-12 sm:py-16 bg-gradient-to-br from-gray-900 via-black to-gray-800">
         <PageContainer>
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl">
             {/* Threads Animation Background */}
