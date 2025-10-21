@@ -85,7 +85,7 @@ export default function MyOrdersPage() {
             name: item.name,
             quantity: item.quantity,
             price: parseFloat(item.price), // Keep as PLN (not convert to grosze)
-            image: item.image?.src || 'https://via.placeholder.com/100x100/1f2937/ffffff?text=Product'
+            image: item.image?.src || '/images/placeholder-product.jpg'
           })),
           billing: {
             address: order.billing.address_1,
@@ -146,6 +146,45 @@ export default function MyOrdersPage() {
     };
     
     return paymentMap[paymentMethod] || paymentMethod;
+  };
+
+  const handleDownloadInvoice = async (orderId: string) => {
+    try {
+      console.log('🔄 Downloading invoice for order:', orderId);
+      
+      // Try to get invoice from custom WordPress API
+      const response = await fetch(`/api/woocommerce?endpoint=customers/invoices&customer_id=${user?.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Nie udało się pobrać faktury');
+      }
+      
+      const data = await response.json();
+      const invoice = data.invoices?.find((inv: any) => inv.id === parseInt(orderId));
+      
+      if (!invoice) {
+        alert('Faktura dla tego zamówienia nie została znaleziona');
+        return;
+      }
+      
+      if (invoice.download_url) {
+        // Open download URL in new tab
+        window.open(invoice.download_url, '_blank');
+      } else {
+        alert('Link do pobierania faktury nie jest dostępny');
+      }
+      
+      console.log('✅ Invoice download initiated for order:', orderId);
+    } catch (error) {
+      console.error('❌ Error downloading invoice:', error);
+      alert('Błąd podczas pobierania faktury');
+    }
+  };
+
+  const handleViewDetails = (orderId: string) => {
+    console.log('🔄 Viewing details for order:', orderId);
+    // For now, just show an alert - can be expanded later
+    alert(`Szczegóły zamówienia ${orderId} - funkcja w trakcie rozwoju`);
   };
 
 
@@ -424,13 +463,19 @@ export default function MyOrdersPage() {
 
                         {/* Action Buttons */}
                         <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
-                          <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                          <button 
+                            onClick={() => handleDownloadInvoice(order.id)}
+                            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
                             <Download className="w-4 h-4" />
                             <span>Pobierz fakturę</span>
                           </button>
                           
                           {order.status === 'delivered' && (
-                            <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            <button 
+                              onClick={() => handleViewDetails(order.id)}
+                              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
                               <Eye className="w-4 h-4" />
                               <span>Zobacz szczegóły</span>
                             </button>
