@@ -164,7 +164,7 @@ export default function ActiveFiltersBar({
                         delay: index * 0.05,
                         layout: { duration: 0.3 }
                       }}
-                      className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 hover:scale-105 ${
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 ${
                         chip.type === 'search' 
                           ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
                           : chip.type === 'category'

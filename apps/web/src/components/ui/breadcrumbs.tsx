@@ -120,13 +120,13 @@ export default function Breadcrumbs({
       >
         <Link
           href={item.href}
-          className={`${currentVariant.item} ${sizeClasses[size]} flex items-center transition-all duration-200 hover:scale-105 active:scale-95`}
+          className={`${currentVariant.item} ${sizeClasses[size]} flex items-center transition-all duration-200`}
           onMouseEnter={() => setShowOverflow(false)}
         >
           {index === 0 && showHomeIcon ? (
             <Home className={`${iconSizes[size]} mr-1.5 group-hover:rotate-12 transition-transform duration-200`} />
           ) : ItemIcon ? (
-            <ItemIcon className={`${iconSizes[size]} mr-1.5 group-hover:scale-110 transition-transform duration-200`} />
+            <ItemIcon className={`${iconSizes[size]} mr-1.5 transition-transform duration-200`} />
           ) : null}
           <span className="truncate max-w-[120px] sm:max-w-[200px]">{item.label}</span>
         </Link>
@@ -176,7 +176,7 @@ export default function Breadcrumbs({
             >
               <button
                 onClick={() => setShowOverflow(!showOverflow)}
-                className={`${currentVariant.item} ${sizeClasses[size]} flex items-center hover:scale-105 transition-all duration-200`}
+                className={`${currentVariant.item} ${sizeClasses[size]} flex items-center transition-all duration-200`}
                 aria-label="Show more breadcrumbs"
               >
                 <MoreHorizontal className={`${iconSizes[size]} mr-1`} />
