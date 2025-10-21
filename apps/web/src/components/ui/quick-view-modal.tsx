@@ -247,10 +247,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const galleryImages = (() => {
     console.log('🖼️ Quick View - Product images:', product.images);
     console.log('🖼️ Quick View - Product images type:', typeof product.images, Array.isArray(product.images));
+    console.log('🖼️ Quick View - Product name:', product.name);
     
     // Handle both string array and object array formats
     let imageArray: any[] = [];
-    if (Array.isArray(product.images)) {
+    if (Array.isArray(product.images) && product.images.length > 0) {
       // If it's an array of strings
       if (typeof product.images[0] === 'string') {
         imageArray = (product.images as any).map((src: string) => ({ src, name: product.name, alt: product.name }));
@@ -262,6 +263,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     
     console.log('🖼️ Quick View - Processed images:', imageArray);
     if (imageArray.length > 0) return imageArray;
+    
+    // Try to get image from product.image if available
+    if (product.image && typeof product.image === 'string' && !isWooPlaceholder(product.image)) {
+      console.log('🖼️ Quick View - Using product.image:', product.image);
+      return [{ src: product.image, name: product.name, alt: product.name }];
+    }
     
     // fallback – keep one placeholder to avoid empty UI
     console.log('🖼️ Quick View - Using fallback placeholder');
@@ -346,6 +353,13 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           quality={90}
                           className="object-cover"
                           priority
+                          onError={(e) => {
+                            console.error('🖼️ Quick View - Image load error:', e);
+                            console.error('🖼️ Quick View - Failed src:', getSafeImageSrc(galleryImages[selectedImageIndex]?.src));
+                          }}
+                          onLoad={() => {
+                            console.log('🖼️ Quick View - Image loaded successfully:', getSafeImageSrc(galleryImages[selectedImageIndex]?.src));
+                          }}
                         />
                       </motion.div>
                       
