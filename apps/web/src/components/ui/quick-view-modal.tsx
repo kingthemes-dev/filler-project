@@ -208,7 +208,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     return String(option ?? '');
   };
 
-  // Safe image helper – ensures non-empty HTTP URL, otherwise remote placeholder
+  // Safe image helper – uses original resolution, no resizing
   const getSafeImageSrc = (src?: string): string => {
     const placeholder = 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
     if (!src || typeof src !== 'string') return placeholder;
@@ -218,14 +218,9 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     // If it's already a placeholder, return it
     if (trimmed.includes('woocommerce-placeholder')) return trimmed;
     
-    // Prefer a 600x600 variant if available: replace any size suffix with -600x600
-    const hasSizeSuffix = /-(?:\d{2,4})x(?:\d{2,4})(?=\.[a-zA-Z]{3,4}$)/.test(trimmed);
-    if (hasSizeSuffix) {
-      trimmed = trimmed.replace(/-(?:\d{2,4})x(?:\d{2,4})(?=\.[a-zA-Z]{3,4}$)/, '-600x600');
-    } else {
-      // If no suffix, try to inject -600x600 before extension for typical WP uploads
-      trimmed = trimmed.replace(/(\.[a-zA-Z]{3,4})$/, '-600x600$1');
-    }
+    // Use original URL without any modifications - no resizing
+    console.log('🖼️ Quick View - Using original image URL:', trimmed);
+    
     // Clean query params that may downscale
     try {
       const url = new URL(trimmed, 'https://dummy-base/');
@@ -236,8 +231,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       url.search = url.search.toString();
       trimmed = url.href.replace('https://dummy-base/', '');
     } catch (_) {}
-    // Also remove '-scaled' if present
-    trimmed = trimmed.replace(/-scaled(?=\.[a-zA-Z]{3,4}$)/, '');
+    
     // Some APIs return relative paths – allow absolute http(s) only
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return placeholder;
