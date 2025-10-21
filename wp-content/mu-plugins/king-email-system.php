@@ -40,6 +40,16 @@ class KingEmailSystem {
         // CTA links to frontend (order details + account)
         add_action('woocommerce_email_after_order_table', [$this, 'inject_frontend_cta_links'], 15, 4);
         
+        // ADAPTER MODE: Enrich WooCommerce emails with Polish branding
+        add_filter('woocommerce_email_subject_new_order', [$this, 'polish_new_order_subject'], 10, 2);
+        add_filter('woocommerce_email_subject_customer_processing_order', [$this, 'polish_processing_subject'], 10, 2);
+        add_filter('woocommerce_email_subject_customer_completed_order', [$this, 'polish_completed_subject'], 10, 2);
+        add_filter('woocommerce_email_subject_customer_on_hold_order', [$this, 'polish_on_hold_subject'], 10, 2);
+        add_filter('woocommerce_email_subject_cancelled_order', [$this, 'polish_cancelled_subject'], 10, 2);
+        
+        // Add FILLER branding to email headers
+        add_action('woocommerce_email_header', [$this, 'add_filler_branding'], 10, 2);
+        
         // TYMCZASOWE: Trigger emails for REST API orders
         add_action('woocommerce_new_order', [$this, 'trigger_rest_api_emails'], 10, 1);
         add_action('woocommerce_api_create_order', [$this, 'trigger_rest_api_emails'], 10, 2);
@@ -69,31 +79,9 @@ class KingEmailSystem {
      * Initialize email templates
      */
     private function init_email_templates() {
+        // ADAPTER MODE: Only keep templates for custom functionality (password reset)
+        // WooCommerce default emails will be used and enriched
         $this->email_templates = [
-            'order_confirmation' => [
-                'subject' => 'Potwierdzenie zamówienia #{order_number} - FILLER',
-                'template' => 'order-confirmation.php'
-            ],
-            'order_processing' => [
-                'subject' => 'Zamówienie #{order_number} w trakcie realizacji - FILLER',
-                'template' => 'order-processing.php'
-            ],
-            'order_shipped' => [
-                'subject' => 'Twoje zamówienie #{order_number} zostało wysłane - FILLER',
-                'template' => 'order-shipped.php'
-            ],
-            'order_delivered' => [
-                'subject' => 'Twoje zamówienie #{order_number} zostało dostarczone - FILLER',
-                'template' => 'order-delivered.php'
-            ],
-            'order_cancelled' => [
-                'subject' => 'Zamówienie #{order_number} zostało anulowane - FILLER',
-                'template' => 'order-cancelled.php'
-            ],
-            'order_on_hold' => [
-                'subject' => 'Zamówienie #{order_number} zostało wstrzymane - FILLER',
-                'template' => 'order-on-hold.php'
-            ],
             'password_reset' => [
                 'subject' => 'Reset hasła - FILLER',
                 'template' => 'password-reset.php'
@@ -160,30 +148,32 @@ class KingEmailSystem {
      * Handle order status change
      */
     public function handle_order_status_change($order_id, $old_status, $new_status, $order) {
+        // ADAPTER MODE: Only log and enrich WooCommerce default emails
+        // Do not send custom emails - let WooCommerce handle it
         switch ($new_status) {
             case 'processing':
-                // Order is being processed - send custom email
-                $this->send_order_processing($order);
+                // Order is being processed - log only
+                $this->log_email_sent($order_id, 'order_processing_adapter', $order->get_billing_email());
                 break;
                 
             case 'completed':
-                // Order completed – send custom email
-                $this->send_order_delivered($order);
+                // Order completed – log only
+                $this->log_email_sent($order_id, 'order_completed_adapter', $order->get_billing_email());
                 break;
                 
             case 'shipped':
-                // Order shipped – send custom email
-                $this->send_order_shipped($order);
+                // Order shipped – log only
+                $this->log_email_sent($order_id, 'order_shipped_adapter', $order->get_billing_email());
                 break;
                 
             case 'cancelled':
-                // Order cancelled - send custom email
-                $this->send_order_cancelled($order);
+                // Order cancelled - log only
+                $this->log_email_sent($order_id, 'order_cancelled_adapter', $order->get_billing_email());
                 break;
                 
             case 'on-hold':
-                // Order on hold - send custom email
-                $this->send_order_on_hold($order);
+                // Order on hold - log only
+                $this->log_email_sent($order_id, 'order_on_hold_adapter', $order->get_billing_email());
                 break;
         }
     }
@@ -250,50 +240,8 @@ class KingEmailSystem {
         }
     }
     
-    /**
-     * Send order confirmation email
-     */
-    public function send_order_confirmation($order) {
-        $template_data = $this->prepare_order_template_data($order);
-        $subject = $this->process_template_variables($this->email_templates['order_confirmation']['subject'], $template_data);
-        
-        $this->send_email(
-            $order->get_billing_email(),
-            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-            $subject,
-            $this->get_email_template('order_confirmation', $template_data)
-        );
-    }
-    
-    /**
-     * Send order shipped email
-     */
-    public function send_order_shipped($order) {
-        $template_data = $this->prepare_order_template_data($order);
-        $subject = $this->process_template_variables($this->email_templates['order_shipped']['subject'], $template_data);
-        
-        $this->send_email(
-            $order->get_billing_email(),
-            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-            $subject,
-            $this->get_email_template('order_shipped', $template_data)
-        );
-    }
-    
-    /**
-     * Send order delivered email
-     */
-    public function send_order_delivered($order) {
-        $template_data = $this->prepare_order_template_data($order);
-        $subject = $this->process_template_variables($this->email_templates['order_delivered']['subject'], $template_data);
-        
-        $this->send_email(
-            $order->get_billing_email(),
-            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-            $subject,
-            $this->get_email_template('order_delivered', $template_data)
-        );
-    }
+    // REMOVED: Custom email sending methods - using ADAPTER MODE instead
+    // WooCommerce default emails will be enriched with Polish branding and frontend links
     
     /**
      * Send password reset email
@@ -317,50 +265,8 @@ class KingEmailSystem {
         );
     }
     
-    /**
-     * Send order processing email
-     */
-    public function send_order_processing($order) {
-        $template_data = $this->prepare_order_template_data($order);
-        $subject = $this->process_template_variables($this->email_templates['order_processing']['subject'], $template_data);
-        
-        $this->send_email(
-            $order->get_billing_email(),
-            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-            $subject,
-            $this->get_email_template('order_processing', $template_data)
-        );
-    }
-    
-    /**
-     * Send order cancelled email
-     */
-    public function send_order_cancelled($order) {
-        $template_data = $this->prepare_order_template_data($order);
-        $subject = $this->process_template_variables($this->email_templates['order_cancelled']['subject'], $template_data);
-        
-        $this->send_email(
-            $order->get_billing_email(),
-            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-            $subject,
-            $this->get_email_template('order_cancelled', $template_data)
-        );
-    }
-    
-    /**
-     * Send order on hold email
-     */
-    public function send_order_on_hold($order) {
-        $template_data = $this->prepare_order_template_data($order);
-        $subject = $this->process_template_variables($this->email_templates['order_on_hold']['subject'], $template_data);
-        
-        $this->send_email(
-            $order->get_billing_email(),
-            $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-            $subject,
-            $this->get_email_template('order_on_hold', $template_data)
-        );
-    }
+    // REMOVED: Custom email sending methods - using ADAPTER MODE instead
+    // WooCommerce default emails will be enriched with Polish branding and frontend links
     
     /**
      * Prepare order template data
@@ -894,6 +800,40 @@ class KingEmailSystem {
             <p>Dane: " . json_encode($data) . "</p>
         </body>
         </html>";
+    }
+    
+    /**
+     * ADAPTER MODE: Polish email subjects with FILLER branding
+     */
+    public function polish_new_order_subject($subject, $order) {
+        return 'Potwierdzenie zamówienia #' . $order->get_order_number() . ' - FILLER';
+    }
+    
+    public function polish_processing_subject($subject, $order) {
+        return 'Zamówienie #' . $order->get_order_number() . ' w trakcie realizacji - FILLER';
+    }
+    
+    public function polish_completed_subject($subject, $order) {
+        return 'Zamówienie #' . $order->get_order_number() . ' zostało dostarczone - FILLER';
+    }
+    
+    public function polish_on_hold_subject($subject, $order) {
+        return 'Zamówienie #' . $order->get_order_number() . ' zostało wstrzymane - FILLER';
+    }
+    
+    public function polish_cancelled_subject($subject, $order) {
+        return 'Zamówienie #' . $order->get_order_number() . ' zostało anulowane - FILLER';
+    }
+    
+    /**
+     * Add FILLER branding to email headers
+     */
+    public function add_filler_branding($email_heading, $email) {
+        // Add FILLER branding to email headers
+        if ($email_heading) {
+            return '<h1 style="color: #000; font-size: 28px; font-weight: bold; margin: 0; text-align: center;">FILLER</h1>' . $email_heading;
+        }
+        return $email_heading;
     }
 }
 
