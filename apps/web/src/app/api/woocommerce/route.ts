@@ -1228,6 +1228,12 @@ export async function GET(req: NextRequest) {
   if (endpoint === "shop") {
     return handleShopEndpoint(req);
   }
+
+  // Special handling for customer invoices - GET requests
+  if (endpoint === "customers/invoices") {
+    console.log('🔄 Handling customer invoices GET request');
+    return await handleCustomerInvoices(req);
+  }
   
   if (!WC_URL || !CK || !CS) {
     return NextResponse.json(

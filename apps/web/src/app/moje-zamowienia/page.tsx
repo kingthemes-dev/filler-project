@@ -85,7 +85,7 @@ export default function MyOrdersPage() {
             name: item.name,
             quantity: item.quantity,
             price: parseFloat(item.price), // Keep as PLN (not convert to grosze)
-            image: item.image?.src || '/images/placeholder-product.jpg'
+            image: item.image?.src || item.product_image || 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp'
           })),
           billing: {
             address: order.billing.address_1,
