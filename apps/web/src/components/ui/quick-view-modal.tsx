@@ -563,7 +563,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                         <Button
                           onClick={handleAddToCart}
                           disabled={product.stock_status !== 'instock' || isLoading || (variations.length > 0 && !selectedCapacity)}
-                          className="flex-1 bg-black hover:bg-gray-800 text-white h-[56px] rounded-lg font-medium"
+                          className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white h-[56px] rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
                         >
                           {isLoading ? (
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
