@@ -35,10 +35,10 @@ function auto_generate_invoice_for_order($order_id) {
         $order->update_meta_data('_invoice_date', $invoice_data['invoice_date']);
         $order->save();
         
-        // Send invoice email if requested
-        if ($invoice_request === 'yes') {
-            send_invoice_email($order, $invoice_data);
-        }
+        // DISABLED: Custom invoice email sending - let PDF Invoices & Packing Slips handle it
+        // if ($invoice_request === 'yes') {
+        //     send_invoice_email($order, $invoice_data);
+        // }
         
         error_log("Auto-generated invoice for order: " . $order_id);
     }
