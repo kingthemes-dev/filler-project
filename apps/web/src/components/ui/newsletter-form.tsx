@@ -13,7 +13,18 @@ export default function NewsletterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !consent) return;
+    
+    // Walidacja emaila
+    if (!email) {
+      setError('Proszę podać adres email');
+      return;
+    }
+    
+    // Walidacja zgody
+    if (!consent) {
+      setError('Musisz zaznaczyć zgodę na przetwarzanie danych osobowych');
+      return;
+    }
 
     setIsLoading(true);
     setError('');
@@ -102,7 +113,7 @@ export default function NewsletterForm() {
               {/* Button - simple style */}
               <button
                 type="submit"
-                disabled={isLoading || !consent}
+                disabled={isLoading}
                 className="flex-[1] px-6 bg-black text-white border-0 font-semibold text-lg hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isLoading ? (
