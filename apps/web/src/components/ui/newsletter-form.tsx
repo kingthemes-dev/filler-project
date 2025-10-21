@@ -115,7 +115,7 @@ export default function NewsletterForm() {
         
         {/* Premium Consent Checkbox */}
         <div className="flex justify-center">
-          <label className="flex items-start cursor-pointer group">
+          <label className="flex items-start cursor-pointer group justify-center">
             <div className="relative mt-1">
               <input
                 type="checkbox"
