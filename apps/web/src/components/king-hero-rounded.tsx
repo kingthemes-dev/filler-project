@@ -71,6 +71,10 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
     return `${parseFloat(price).toFixed(2)} PLN`;
   };
 
+  const formatPriceInline = (price: string) => {
+    return `${parseFloat(price).toFixed(2)} PLN`;
+  };
+
 
   return (
     <section className="relative h-[60vh] sm:h-[65vh] lg:h-[70vh] min-h-[500px] sm:min-h-[550px] lg:min-h-[600px] py-4 mt-4 mb-6">
@@ -118,13 +122,19 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
             {/* Bottom Section - Product Card */}
             <div className="hidden md:flex justify-center lg:justify-end absolute bottom-4 right-4 lg:bottom-6 lg:right-6">
               {featuredProduct ? (
-                <Link href={`/produkt/${featuredProduct.slug}`} className="group block">
-                <Card className="w-45 md:w-51 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 group-hover:-translate-y-0.5">
-                  <CardContent className="px-4 md:px-6 pt-1 pb-1">
-                    {/* Product Name */}
-                    <h2 className="text-xs md:text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-3 md:mb-4">
-                      {featuredProduct?.name || 'Produkt'}
-                    </h2>
+                <div className="group block">
+                  {/* Promocja Title */}
+                  <div className="text-center mb-2">
+                    <span className="text-xs text-white/80 font-medium">Promocja</span>
+                  </div>
+                  
+                  <Link href={`/produkt/${featuredProduct.slug}`} className="group block">
+                  <Card className="w-45 md:w-51 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 group-hover:-translate-y-0.5">
+                    <CardContent className="px-4 md:px-6 pt-1 pb-1">
+                      {/* Product Name */}
+                      <h2 className="text-xs md:text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-3 md:mb-4">
+                        {featuredProduct?.name || 'Produkt'}
+                      </h2>
 
                     {/* Product Image */}
                     <div className="relative mb-3 md:mb-4">
@@ -149,23 +159,33 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
                         />
                       </div>
 
+                      {/* Discount Badge */}
+                      {featuredProduct?.regular_price && featuredProduct?.sale_price && (
+                        <div className="absolute top-2 right-2">
+                          <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                            -{Math.round(((parseFloat(featuredProduct.regular_price) - parseFloat(featuredProduct.sale_price)) / parseFloat(featuredProduct.regular_price)) * 100)}%
+                          </span>
+                        </div>
+                      )}
+
                       {/* Note: Favorites functionality moved to client components */}
                     </div>
 
                     {/* Price */}
                     <div className="flex items-center gap-2 mb-0">
                       <span className="text-xs md:text-sm font-bold text-gray-900">
-                        {featuredProduct && formatPrice(featuredProduct.sale_price || featuredProduct.price)}
+                        {featuredProduct && formatPriceInline(featuredProduct.sale_price || featuredProduct.price)}
                       </span>
                       {featuredProduct?.regular_price && featuredProduct?.sale_price && (
                         <span className="text-xs text-gray-500 line-through">
-                          {formatPrice(featuredProduct.regular_price)}
+                          {formatPriceInline(featuredProduct.regular_price)}
                         </span>
                       )}
                     </div>
                   </CardContent>
                 </Card>
                 </Link>
+                </div>
               ) : (
                 <div className="w-80 h-96 bg-white/10 rounded-2xl flex items-center justify-center">
                   <p className="text-white/70">Brak produktów</p>
