@@ -4,13 +4,14 @@ import { Facebook, Instagram, Mail, Phone, MapPin, Clock, Award, Truck, Shield, 
 
 export default function Footer() {
   return (
-    <footer className="relative bg-black text-white py-16 sm:py-20 mt-16 sm:mt-20 rounded-t-3xl">
+    <footer className="relative bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white py-16 sm:py-20 mt-16 sm:mt-20 rounded-t-3xl">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20"></div>
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_25%_25%,rgba(59,130,246,0.15),transparent_50%)]"></div>
-        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_75%_75%,rgba(147,51,234,0.15),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.02)_50%,transparent_75%)] bg-[length:20px_20px]"></div>
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 via-transparent to-purple-600/30"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_25%_25%,rgba(59,130,246,0.25),transparent_60%)]"></div>
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_75%_75%,rgba(147,51,234,0.25),transparent_60%)]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.03)_50%,transparent_75%)] bg-[length:20px_20px]"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-800/50 via-transparent to-gray-900/30"></div>
       </div>
       
          <div className="relative max-w-[95vw] mx-auto px-4 sm:px-6">
