@@ -214,6 +214,10 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     if (!src || typeof src !== 'string') return placeholder;
     let trimmed = src.trim();
     if (!trimmed || trimmed === '/' || trimmed === '#') return placeholder;
+    
+    // If it's already a placeholder, return it
+    if (trimmed.includes('woocommerce-placeholder')) return trimmed;
+    
     // Prefer a 600x600 variant if available: replace any size suffix with -600x600
     const hasSizeSuffix = /-(?:\d{2,4})x(?:\d{2,4})(?=\.[a-zA-Z]{3,4}$)/.test(trimmed);
     if (hasSizeSuffix) {
@@ -356,6 +360,9 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           onError={(e) => {
                             console.error('🖼️ Quick View - Image load error:', e);
                             console.error('🖼️ Quick View - Failed src:', getSafeImageSrc(galleryImages[selectedImageIndex]?.src));
+                            // Force fallback to placeholder
+                            const img = e.target as HTMLImageElement;
+                            img.src = 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
                           }}
                           onLoad={() => {
                             console.log('🖼️ Quick View - Image loaded successfully:', getSafeImageSrc(galleryImages[selectedImageIndex]?.src));
