@@ -199,3 +199,11 @@ Debuguj [problem] używając:
 - ✅ Use TypeScript strict mode
 - ✅ Update documentation
 
+18. ENVIRONMENT VARIABLES - CRITICAL:
+- ✅ `.env.local` EXISTS in `apps/web/` directory (hidden file)
+- ✅ Contains: NEXT_PUBLIC_WORDPRESS_URL, WC_CONSUMER_KEY, WC_CONSUMER_SECRET
+- ✅ NEVER ask "where is .env.local" - it's ALWAYS there!
+- ✅ Use `ls -la` to see hidden files
+- ✅ Environment variables are properly configured for production
+- ✅ Vercel deployment uses these variables automatically
+
