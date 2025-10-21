@@ -82,42 +82,45 @@ export default function NewsletterForm() {
         {/* Formularz po prawej stronie */}
         <div className="flex-1">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input + Button */}
-            <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative group">
-            {/* Animated border - like Next.js Weekly */}
-            <div className="absolute inset-0 rounded-2xl p-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient-x bg-[length:200%_200%]">
-              <div className="w-full h-full bg-white/95 rounded-2xl"></div>
-            </div>
-            
-            {/* Input field */}
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5 group-hover:text-purple-500 transition-colors z-10" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Twój adres email"
-                className="w-full pl-12 pr-4 h-14 border-0 rounded-2xl bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none text-lg font-medium relative z-10"
-                required
-              />
-            </div>
-          </div>
-          <Button 
-            type="submit"
-            size="lg" 
-            disabled={isLoading || !consent}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 h-14 px-8 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <div className="flex items-center space-x-2">
-                <span>Odbierz 10%!</span>
+            {/* Email Input + Button - Connected like Next.js Weekly */}
+            <div className="relative group">
+              {/* Animated border - like Next.js Weekly */}
+              <div className="absolute inset-0 rounded-2xl p-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient-x bg-[length:200%_200%]">
+                <div className="w-full h-full bg-white/95 rounded-2xl"></div>
               </div>
-            )}
-          </Button>
-        </div>
+              
+              {/* Connected Input + Button */}
+              <div className="relative flex h-14 rounded-2xl overflow-hidden">
+                {/* Input field */}
+                <div className="flex-1 relative">
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5 group-hover:text-purple-500 transition-colors z-10" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Twój adres email"
+                    className="w-full h-full pl-12 pr-4 border-0 bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none text-lg font-medium relative z-10"
+                    required
+                  />
+                </div>
+                
+                {/* Divider line */}
+                <div className="w-px bg-gray-300 my-2"></div>
+                
+                {/* Button */}
+                <button
+                  type="submit"
+                  disabled={isLoading || !consent}
+                  className="px-6 bg-white text-gray-900 font-semibold text-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
+                >
+                  {isLoading ? (
+                    <div className="w-6 h-6 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    "Odbierz 10%!"
+                  )}
+                </button>
+              </div>
+            </div>
         
         {/* Premium Consent Checkbox */}
         <div className="flex items-start justify-start">
