@@ -145,9 +145,9 @@ export default function NewsletterForm() {
               </span>
             </div>
             <p className="text-sm text-white/70 leading-relaxed">
-              Możesz zrezygnować w każdej chwili. Zgodnie z naszą{' '}
+              Subskrybując, wyrażasz zgodę na przetwarzanie swoich danych osobowych w celu wysyłania informacji marketingowych zgodnie z naszą{' '}
               <a href="/polityka-prywatnosci" className="underline hover:text-white font-medium">
-                Polityką Prywatności
+                Polityką prywatności
               </a>
             </p>
           </div>
