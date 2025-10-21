@@ -100,7 +100,13 @@ export default function NewsletterForm() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    // Ukryj komunikat błędu gdy użytkownik zacznie pisać email
+                    if (e.target.value && error) {
+                      setError('');
+                    }
+                  }}
                   placeholder="Twój adres email"
                   className="w-full h-full pl-4 pr-4 border-0 bg-transparent text-white placeholder:text-white/60 focus:outline-none text-lg font-medium"
                   required
@@ -131,7 +137,13 @@ export default function NewsletterForm() {
             <input
               type="checkbox"
               checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
+              onChange={(e) => {
+                setConsent(e.target.checked);
+                // Ukryj komunikat błędu gdy użytkownik zaznacza zgodę
+                if (e.target.checked && error) {
+                  setError('');
+                }
+              }}
               className="sr-only"
             />
             <div className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
