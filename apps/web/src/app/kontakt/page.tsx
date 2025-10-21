@@ -5,6 +5,7 @@ import { MapPin, Phone, Mail, Send } from 'lucide-react';
 import { useState } from 'react';
 import PageContainer from '@/components/ui/page-container';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
+import { Button } from '@/components/ui/button';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -181,13 +182,13 @@ export default function ContactPage() {
                   />
                 </div>
 
-                <button
+                <Button
                   type="submit"
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center"
+                  className="w-full h-12 text-base"
                 >
                   <Send className="w-5 h-5 mr-2" />
                   Wyślij wiadomość
-                </button>
+                </Button>
               </form>
             </motion.div>
           </div>
