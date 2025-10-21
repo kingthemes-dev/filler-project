@@ -11,6 +11,7 @@ import { WooProduct } from '@/types/woocommerce';
 import SearchTracking from '@/components/seo/search-tracking';
 import { logger } from '@/utils/logger';
 import KingProductCard from '@/components/king-product-card';
+import { Button } from '@/components/ui/button';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();
@@ -176,13 +177,13 @@ function SearchResultsContent() {
           </span>
           
           {/* Mobile filter toggle */}
-          <button
+          <Button
             onClick={() => setShowFilters(!showFilters)}
-            className="lg:hidden flex items-center space-x-2 bg-gradient-to-r from-gray-800 to-black text-white px-4 py-2 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
+            className="lg:hidden flex items-center space-x-2"
           >
             <Filter className="w-4 h-4" />
             <span>Filtry</span>
-          </button>
+          </Button>
         </div>
       </div>
 

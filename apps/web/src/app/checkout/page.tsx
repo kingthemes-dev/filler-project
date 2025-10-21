@@ -23,6 +23,7 @@ import wooCommerceService from '@/services/woocommerce-optimized';
 import { useAuthStore } from '@/stores/auth-store';
 import RegisterModal from '@/components/ui/auth/register-modal';
 import { validateEmail, validatePhone, validatePostalCode, validateName, validateAddress } from '@/utils/validation';
+import { Button } from '@/components/ui/button';
 
 interface CheckoutForm {
   // Billing Information
@@ -809,12 +810,11 @@ function CheckoutPageInner() {
               Potwierdzenie zostało wysłane na adres email: <strong>{form.email}</strong>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/"
-                className="bg-gradient-to-r from-gray-800 to-black text-white px-8 py-3 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
-              >
-                Wróć do sklepu
-              </Link>
+              <Button asChild>
+                <Link href="/">
+                  Wróć do sklepu
+                </Link>
+              </Button>
               <Link
                 href="/moje-zamowienia"
                 className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
@@ -1278,17 +1278,17 @@ function CheckoutPageInner() {
                     </div>
 
                     <div className="pt-4">
-                      <button
+                      <Button
                         type="button"
                         onClick={() => {
                           if (validateForm()) {
                             setCurrentStep(2);
                           }
                         }}
-                        className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-3 px-6 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
+                        className="w-full"
                       >
                         Kontynuuj - dostawa i płatność
-                      </button>
+                      </Button>
                     </div>
                   </motion.div>
                 )}
@@ -1437,10 +1437,10 @@ function CheckoutPageInner() {
                       >
                         Wstecz
                       </button>
-                      <button
+                      <Button
                         type="submit"
                         disabled={loading || !form.acceptTerms}
-                        className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white py-3 px-6 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+                        className="flex-1"
                       >
                         {loading ? (
                           <>
@@ -1453,7 +1453,7 @@ function CheckoutPageInner() {
                             Złóż zamówienie bezpiecznie
                           </>
                         )}
-                      </button>
+                      </Button>
                     </div>
                   </motion.div>
                 )}
@@ -1480,18 +1480,18 @@ function CheckoutPageInner() {
                     disabled={discountLoading || !!appliedDiscount}
                   />
                   {!appliedDiscount ? (
-                    <button
+                    <Button
                       type="button"
                       onClick={handleApplyDiscount}
                       disabled={!discountCode.trim() || discountLoading}
-                      className="px-4 py-2 bg-gradient-to-r from-gray-800 to-black text-white text-sm font-medium rounded-lg hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
+                      size="sm"
                     >
                       {discountLoading ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
                         'Zastosuj'
                       )}
-                    </button>
+                    </Button>
                   ) : (
                     <button
                       type="button"

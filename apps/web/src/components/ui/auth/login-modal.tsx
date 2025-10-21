@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
+import { Button } from '@/components/ui/button';
 import ForgotPasswordModal from './forgot-password-modal';
 
 interface LoginModalProps {
@@ -188,13 +189,13 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-3 px-6 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+              className="w-full"
             >
               Zaloguj się
-            </button>
+            </Button>
 
             {/* Switch to Register */}
             <div className="text-center">

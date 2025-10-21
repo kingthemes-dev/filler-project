@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -196,12 +197,12 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
               </div>
 
               <div className="space-y-4">
-                <button
+                <Button
                   onClick={handleClose}
-                  className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-4 px-6 rounded-lg font-semibold text-base hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300"
+                  className="w-full"
                 >
                   Rozumiem
-                </button>
+                </Button>
                 
                 <button
                   onClick={handleBackToLogin}
@@ -262,13 +263,13 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
               )}
 
               {/* Submit Button */}
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-3 px-6 rounded-lg font-medium hover:from-gray-700 hover:to-gray-900 hover:scale-105 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+                className="w-full"
               >
                 Wyślij link resetujący
-              </button>
+              </Button>
 
               {/* Back to Login */}
               <div className="text-center">
