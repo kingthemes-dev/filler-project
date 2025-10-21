@@ -13,6 +13,42 @@ if (file_exists(WP_CONTENT_DIR . '/mu-plugins/headless-config.php')) {
 // FIXED: Faktura tylko przy completed status - Senior Level
 add_action('woocommerce_order_status_completed', 'auto_generate_invoice_for_order');
 
+// CONTROL PDF Invoices & Packing Slips - tylko gdy klient zaznaczył checkbox
+add_filter('woocommerce_email_attachments', 'control_pdf_invoice_attachments', 10, 3);
+
+/**
+ * CONTROL PDF Invoices & Packing Slips attachments
+ * Only attach invoices when customer requested them
+ */
+function control_pdf_invoice_attachments($attachments, $email_id, $order) {
+    // Only control for customer emails (not admin emails)
+    if (strpos($email_id, 'customer_') !== 0) {
+        return $attachments;
+    }
+    
+    // Only control for completed order emails
+    if ($email_id !== 'customer_completed_order') {
+        return $attachments;
+    }
+    
+    // Check if customer requested invoice
+    $invoice_request = $order->get_meta('_invoice_request');
+    
+    // If customer didn't request invoice, remove all PDF attachments
+    if ($invoice_request !== 'yes') {
+        // Filter out PDF attachments (invoices)
+        $attachments = array_filter($attachments, function($attachment) {
+            return !preg_match('/\.pdf$/i', $attachment);
+        });
+        
+        error_log("Customer Invoice Control: Removed PDF attachments for order {$order->get_id()} - customer didn't request invoice");
+    } else {
+        error_log("Customer Invoice Control: Keeping PDF attachments for order {$order->get_id()} - customer requested invoice");
+    }
+    
+    return $attachments;
+}
+
 function auto_generate_invoice_for_order($order_id) {
     $order = wc_get_order($order_id);
     
