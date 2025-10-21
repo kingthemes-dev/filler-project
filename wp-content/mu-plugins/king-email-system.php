@@ -498,37 +498,38 @@ class KingEmailSystem {
         //     ]
         // ]);
         
-        register_rest_route('king-email/v1', '/send-direct-email', [
-            'methods' => 'POST',
-            'callback' => [$this, 'send_direct_email_api'],
-            'permission_callback' => '__return_true',
-            'args' => [
-                'order_id' => [
-                    'required' => true,
-                    'type' => 'integer'
-                ],
-                'customer_email' => [
-                    'required' => true,
-                    'type' => 'string'
-                ],
-                'customer_name' => [
-                    'required' => true,
-                    'type' => 'string'
-                ],
-                'order_number' => [
-                    'required' => true,
-                    'type' => 'string'
-                ],
-                'total' => [
-                    'required' => true,
-                    'type' => 'number'
-                ],
-                'items' => [
-                    'required' => true,
-                    'type' => 'array'
-                ]
-            ]
-        ]);
+        // DISABLED: REST API endpoint for sending direct emails - let WooCommerce handle emails automatically
+        // register_rest_route('king-email/v1', '/send-direct-email', [
+        //     'methods' => 'POST',
+        //     'callback' => [$this, 'send_direct_email_api'],
+        //     'permission_callback' => '__return_true',
+        //     'args' => [
+        //         'order_id' => [
+        //             'required' => true,
+        //             'type' => 'integer'
+        //         ],
+        //         'customer_email' => [
+        //             'required' => true,
+        //             'type' => 'string'
+        //         ],
+        //         'customer_name' => [
+        //             'required' => true,
+        //             'type' => 'string'
+        //         ],
+        //         'order_number' => [
+        //             'required' => true,
+        //             'type' => 'string'
+        //         ],
+        //         'total' => [
+        //             'required' => true,
+        //             'type' => 'number'
+        //         ],
+        //         'items' => [
+        //             'required' => true,
+        //             'type' => 'array'
+        //         ]
+        //     ]
+        // ]);
         
         register_rest_route('king-email/v1', '/send-newsletter-email', [
             'methods' => 'POST',
