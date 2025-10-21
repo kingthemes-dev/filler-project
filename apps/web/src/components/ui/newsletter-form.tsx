@@ -82,44 +82,35 @@ export default function NewsletterForm() {
         {/* Formularz po prawej stronie */}
         <div className="flex-1">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input + Button - Connected like Next.js Weekly */}
-            <div className="relative group">
-              {/* Animated border - like Next.js Weekly */}
-              <div className="absolute inset-0 rounded-2xl p-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient-x bg-[length:200%_200%]">
-                <div className="w-full h-full bg-white/95 rounded-2xl"></div>
+            {/* Email Input + Button - Exactly like Next.js Weekly */}
+            <div className="flex h-12 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg overflow-hidden">
+              {/* Input field */}
+              <div className="flex-1 relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Twój adres email"
+                  className="w-full h-full pl-4 pr-4 border-0 bg-transparent text-white placeholder:text-white/60 focus:outline-none text-base font-medium"
+                  required
+                />
               </div>
               
-              {/* Connected Input + Button */}
-              <div className="relative flex h-14 rounded-2xl overflow-hidden">
-                {/* Input field */}
-                <div className="flex-1 relative">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5 group-hover:text-purple-500 transition-colors z-10" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Twój adres email"
-                    className="w-full h-full pl-12 pr-4 border-0 bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none text-lg font-medium relative z-10"
-                    required
-                  />
-                </div>
-                
-                {/* Divider line */}
-                <div className="w-px bg-gray-300 my-2"></div>
-                
-                {/* Button */}
-                <button
-                  type="submit"
-                  disabled={isLoading || !consent}
-                  className="px-6 bg-white text-gray-900 font-semibold text-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
-                >
-                  {isLoading ? (
-                    <div className="w-6 h-6 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    "Odbierz 10%!"
-                  )}
-                </button>
-              </div>
+              {/* Divider line */}
+              <div className="w-px bg-white/20"></div>
+              
+              {/* Button */}
+              <button
+                type="submit"
+                disabled={isLoading || !consent}
+                className="px-6 bg-white text-gray-900 font-semibold text-base hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  "Odbierz 10%!"
+                )}
+              </button>
             </div>
         
         {/* Premium Consent Checkbox */}
