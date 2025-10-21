@@ -303,32 +303,34 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               <div className="flex flex-col lg:flex-row max-h-[calc(90vh-80px)] overflow-hidden">
                 {/* Images Section */}
                 <div className="lg:w-1/2 p-6">
-                  <div className="grid grid-cols-5 gap-4">
-                    {/* Thumbnails */}
-                    <div className="col-span-1 space-y-2">
-                      {galleryImages.map((image, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setSelectedImageIndex(index)}
-                          className={`w-full aspect-square rounded-lg overflow-hidden border-2 transition-colors shadow-sm ${
-                            selectedImageIndex === index
-                              ? 'border-black'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <Image
-                            src={getSafeImageSrc(image.src)}
-                            alt={image.alt || image.name || product.name || 'Zdjęcie produktu'}
-                            width={100}
-                            height={100}
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
+                  <div className={`grid gap-4 ${galleryImages.length > 1 ? 'grid-cols-5' : 'grid-cols-1'}`}>
+                    {/* Thumbnails - only show if more than 1 image */}
+                    {galleryImages.length > 1 && (
+                      <div className="col-span-1 space-y-2">
+                        {galleryImages.map((image, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setSelectedImageIndex(index)}
+                            className={`w-full aspect-square rounded-lg overflow-hidden border-2 transition-colors shadow-sm ${
+                              selectedImageIndex === index
+                                ? 'border-black'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <Image
+                              src={getSafeImageSrc(image.src)}
+                              alt={image.alt || image.name || product.name || 'Zdjęcie produktu'}
+                              width={100}
+                              height={100}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     
                     {/* Main Image */}
-                    <div className="col-span-4 relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg">
+                    <div className={`relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg ${galleryImages.length > 1 ? 'col-span-4' : 'col-span-1'}`}>
                       <motion.div
                         key={selectedImageIndex}
                         initial={{ opacity: 0 }}
@@ -549,7 +551,14 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       </div>
                     )}
 
-
+                    {/* Short Description */}
+                    {product.short_description && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-gray-700 text-sm leading-relaxed">
+                          {product.short_description.replace(/<[^>]*>/g, '')}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Quantity & Actions */}
                     <div className="flex items-center space-x-3">
