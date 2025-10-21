@@ -82,28 +82,31 @@ export default function NewsletterForm() {
         {/* Formularz po prawej stronie */}
         <div className="flex-1">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input + Button - Gradient inside input like in image */}
-            <div className="flex h-14 rounded-2xl overflow-hidden">
-              {/* Input field with gradient background */}
-              <div className="flex-1 relative bg-gradient-to-r from-purple-500 to-pink-500">
+            {/* Email Input + Button - Clean design with global button style */}
+            <div className="flex h-14 rounded-2xl overflow-hidden border border-white/20">
+              {/* Input field */}
+              <div className="flex-1 relative bg-white/10 backdrop-blur-sm">
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Twój adres email"
-                  className="w-full h-full pl-4 pr-4 border-0 bg-transparent text-white placeholder:text-white/80 focus:outline-none text-lg font-medium"
+                  className="w-full h-full pl-4 pr-4 border-0 bg-transparent text-white placeholder:text-white/60 focus:outline-none text-lg font-medium"
                   required
                 />
               </div>
               
-              {/* Button */}
+              {/* Divider line */}
+              <div className="w-px bg-white/20"></div>
+              
+              {/* Button with global gradient style */}
               <button
                 type="submit"
                 disabled={isLoading || !consent}
-                className="px-8 bg-white text-gray-900 font-semibold text-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[160px]"
+                className="px-8 bg-gradient-to-r from-gray-800 to-black text-white border-0 font-semibold text-lg hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 active:bg-gradient-to-l active:from-gray-700 active:to-gray-900 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[160px]"
               >
                 {isLoading ? (
-                  <div className="w-6 h-6 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   "Odbierz 10%!"
                 )}
