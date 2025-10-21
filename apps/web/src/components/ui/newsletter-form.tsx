@@ -84,8 +84,8 @@ export default function NewsletterForm() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input + Button - Clean design with global button style */}
             <div className="flex h-14 rounded-2xl overflow-hidden border border-white/20">
-              {/* Input field */}
-              <div className="flex-1 relative bg-white/10 backdrop-blur-sm">
+              {/* Input field - smaller width */}
+              <div className="flex-[2] relative bg-white/10 backdrop-blur-sm">
                 <input
                   type="email"
                   value={email}
@@ -99,11 +99,11 @@ export default function NewsletterForm() {
               {/* Divider line */}
               <div className="w-px bg-white/20"></div>
               
-              {/* Button with global gradient style */}
+              {/* Button with global gradient style - larger */}
               <button
                 type="submit"
                 disabled={isLoading || !consent}
-                className="px-8 bg-gradient-to-r from-gray-800 to-black text-white border-0 font-semibold text-lg hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 active:bg-gradient-to-l active:from-gray-700 active:to-gray-900 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[160px]"
+                className="flex-[1] px-6 bg-gradient-to-r from-gray-800 to-black text-white border-0 font-semibold text-lg hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 active:bg-gradient-to-l active:from-gray-700 active:to-gray-900 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {isLoading ? (
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -114,7 +114,7 @@ export default function NewsletterForm() {
             </div>
         
         {/* Premium Consent Checkbox */}
-        <div className="flex items-start justify-start">
+        <div className="flex items-start justify-center">
           <label className="flex items-start cursor-pointer group w-full">
             <div className="relative mt-1">
               <input

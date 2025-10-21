@@ -117,15 +117,15 @@ export default async function HomePage() {
             </div>
             
             {/* Content */}
-            <div className="relative z-10 py-12 sm:py-16 px-6 sm:px-8 text-left">
-              <div className="max-w-4xl mx-auto">
+            <div className="relative z-10 py-12 sm:py-16 px-6 sm:px-8 text-center">
+              <div className="max-w-3xl mx-auto">
                 <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">
                   Zapisz się i odbierz 10% zniżki na pierwsze zakupy
                 </h2>
-                <p className="text-sm sm:text-base text-white/90 mb-6 sm:mb-8 max-w-2xl">
+                <p className="text-sm sm:text-base text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto">
                   Zapisz się do naszego newslettera i otrzymuj informacje o nowych produktach i promocjach
                 </p>
-                <div className="max-w-2xl">
+                <div className="max-w-lg mx-auto">
                   <NewsletterForm />
                 </div>
               </div>
