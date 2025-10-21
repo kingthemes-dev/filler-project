@@ -482,20 +482,21 @@ class KingEmailSystem {
             'permission_callback' => [$this, 'check_admin_permissions']
         ]);
         
-        register_rest_route('king-email/v1', '/trigger-order-email', [
-            'methods' => 'POST',
-            'callback' => [$this, 'trigger_order_email_api'],
-            'permission_callback' => '__return_true',
-            'args' => [
-                'order_id' => [
-                    'required' => true,
-                    'type' => 'integer',
-                    'validate_callback' => function($param, $request, $key) {
-                        return is_numeric($param);
-                    }
-                ]
-            ]
-        ]);
+        // DISABLED: REST API endpoint for triggering emails - let WooCommerce handle emails automatically
+        // register_rest_route('king-email/v1', '/trigger-order-email', [
+        //     'methods' => 'POST',
+        //     'callback' => [$this, 'trigger_order_email_api'],
+        //     'permission_callback' => '__return_true',
+        //     'args' => [
+        //         'order_id' => [
+        //             'required' => true,
+        //             'type' => 'integer',
+        //             'validate_callback' => function($param, $request, $key) {
+        //                 return is_numeric($param);
+        //             }
+        //         ]
+        //     ]
+        // ]);
         
         register_rest_route('king-email/v1', '/send-direct-email', [
             'methods' => 'POST',
