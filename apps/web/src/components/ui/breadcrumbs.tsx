@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { ChevronRight, Home, MoreHorizontal } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -218,10 +219,10 @@ export default function Breadcrumbs({
           const globalIndex = shouldTruncate ? hiddenItems.length + index : index;
           
           return (
-            <>
+            <React.Fragment key={`breadcrumb-${globalIndex}`}>
               {index > 0 && renderSeparator(globalIndex)}
               {renderBreadcrumbItem(item, globalIndex, isActive)}
-            </>
+            </React.Fragment>
           );
         })}
       </ol>
