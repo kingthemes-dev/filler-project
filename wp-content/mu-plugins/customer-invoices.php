@@ -27,12 +27,19 @@ function control_pdf_invoice_attachments($attachments, $email_id, $order) {
     }
     
     // Only control for completed order emails
+    // DEBUG: Log all email IDs to see what we're getting
+    error_log("Customer Invoice Control DEBUG: Email ID = '{$email_id}' for order {$order->get_id()}");
+    
     if ($email_id !== 'customer_completed_order') {
+        error_log("Customer Invoice Control DEBUG: Skipping email ID '{$email_id}' - not customer_completed_order");
         return $attachments;
     }
     
     // Check if customer requested invoice
     $invoice_request = $order->get_meta('_invoice_request');
+    
+    // DEBUG: Log invoice request status
+    error_log("Customer Invoice Control DEBUG: Invoice request = '{$invoice_request}' for order {$order->get_id()}");
     
     // If customer didn't request invoice, remove all PDF attachments
     if ($invoice_request !== 'yes') {
