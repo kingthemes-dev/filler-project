@@ -217,13 +217,13 @@ class KingEmailSystem {
             
             error_log("King Email System DEBUG: Available emails: " . implode(', ', array_keys($emails)));
             
-            // Send customer invoice email
-            if (isset($emails['customer_invoice'])) {
-                $email = $emails['customer_invoice'];
+            // Send customer processing order email (potwierdzenie zamówienia)
+            if (isset($emails['customer_processing_order'])) {
+                $email = $emails['customer_processing_order'];
                 $email->trigger($order_id);
-                error_log("King Email System: ✅ Sent customer_invoice email for order {$order_id}");
+                error_log("King Email System: ✅ Sent customer_processing_order email for order {$order_id}");
             } else {
-                error_log("King Email System ERROR: customer_invoice email not found");
+                error_log("King Email System ERROR: customer_processing_order email not found");
             }
             
             // Send new order notification to admin
