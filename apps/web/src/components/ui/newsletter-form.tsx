@@ -114,9 +114,9 @@ export default function NewsletterForm() {
             </div>
         
         {/* Premium Consent Checkbox */}
-        <div className="flex items-center justify-center">
-          <label className="flex items-center cursor-pointer group">
-            <div className="relative">
+        <div className="flex justify-center">
+          <label className="flex items-start cursor-pointer group">
+            <div className="relative mt-1">
               <input
                 type="checkbox"
                 checked={consent}
@@ -135,8 +135,8 @@ export default function NewsletterForm() {
                 )}
               </div>
             </div>
-            <div className="ml-3 text-white/90 text-center">
-              <div className="flex items-center justify-center space-x-2 mb-2">
+            <div className="ml-3 text-white/90">
+              <div className="flex items-center space-x-2 mb-2">
                 <span className="font-semibold text-base">Otrzymuj oferty i promocje</span>
                 <span className="px-2 py-0.5 bg-white/20 text-white text-xs font-semibold rounded-full">
                   -10%
