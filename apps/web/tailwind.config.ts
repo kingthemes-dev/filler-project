@@ -74,6 +74,8 @@ const config: Config = {
         "slide-up": "slideUp 0.3s ease-out",
         "slide-down": "slideDown 0.3s ease-out",
         "scale-in": "scaleIn 0.2s ease-out",
+        "spin-slow": "spin 3s linear infinite",
+        "gradient-x": "gradient-x 3s ease infinite",
       },
       keyframes: {
         fadeIn: {
@@ -91,6 +93,16 @@ const config: Config = {
         scaleIn: {
           "0%": { transform: "scale(0.95)", opacity: "0" },
           "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "gradient-x": {
+          "0%, 100%": {
+            "background-size": "200% 200%",
+            "background-position": "left center"
+          },
+          "50%": {
+            "background-size": "200% 200%",
+            "background-position": "right center"
+          },
         },
       },
       spacing: {

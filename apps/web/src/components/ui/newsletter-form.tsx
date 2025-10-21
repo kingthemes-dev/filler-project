@@ -85,15 +85,20 @@ export default function NewsletterForm() {
             {/* Email Input + Button */}
             <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-sm group-hover:blur-md transition-all duration-300"></div>
+            {/* Animated border - like Next.js Weekly */}
+            <div className="absolute inset-0 rounded-2xl p-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-gradient-x bg-[length:200%_200%]">
+              <div className="w-full h-full bg-white/95 rounded-2xl"></div>
+            </div>
+            
+            {/* Input field */}
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5 group-hover:text-purple-500 transition-colors" />
+              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5 group-hover:text-purple-500 transition-colors z-10" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Twój adres email"
-                className="w-full pl-12 pr-4 h-14 border-2 border-white/20 rounded-2xl bg-white/95 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-4 focus:ring-purple-500/30 focus:border-purple-300 backdrop-blur-sm text-lg font-medium shadow-xl transition-all duration-300 hover:shadow-2xl"
+                className="w-full pl-12 pr-4 h-14 border-0 rounded-2xl bg-transparent text-gray-900 placeholder:text-gray-500 focus:outline-none text-lg font-medium relative z-10"
                 required
               />
             </div>
