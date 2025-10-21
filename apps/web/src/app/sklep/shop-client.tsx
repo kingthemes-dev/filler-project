@@ -13,6 +13,7 @@ import ShopFilters from '@/components/ui/shop-filters';
 import ActiveFiltersBar from '@/components/ui/active-filters-bar';
 import { wooCommerceOptimized as wooCommerceService } from '@/services/woocommerce-optimized';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
+import Pagination from '@/components/ui/pagination';
 
 import { WooProduct } from '@/types/woocommerce';
 import { useQuery } from '@tanstack/react-query';
@@ -478,63 +479,14 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             
         {/* PRO: Paginacja */}
         {!filterLoading && products.length > 0 && totalProducts > productsPerPage && (
-          <div className="flex justify-center items-center space-x-3 py-6">
-                {/* Poprzednia strona */}
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Poprzednia
-                </button>
-
-                {/* Numery stron */}
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.ceil(totalProducts / productsPerPage) }, (_, i) => i + 1)
-                    .filter(page => {
-                      // Pokaż pierwsze 2, ostatnie 2, i 2 wokół aktualnej strony
-                      const totalPages = Math.ceil(totalProducts / productsPerPage);
-                      return (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      );
-                    })
-                    .map((page, index, array) => {
-                      // Dodaj "..." między grupami stron
-                      const prevPage = array[index - 1];
-                      const showDots = prevPage && page - prevPage > 1;
-                      
-                      return (
-                        <div key={page} className="flex items-center">
-                          {showDots && (
-                            <span className="px-2 text-gray-500">...</span>
-                          )}
-                          <button
-                            onClick={() => setCurrentPage(page)}
-                            className={`min-w-[40px] h-10 rounded-lg font-medium transition-colors ${
-                              currentPage === page
-                                ? 'bg-black text-white'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        </div>
-                      );
-                    })}
-                </div>
-
-                {/* Następna strona */}
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalProducts / productsPerPage), prev + 1))}
-                  disabled={currentPage >= Math.ceil(totalProducts / productsPerPage)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Następna
-                </button>
-              </div>
-            )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(totalProducts / productsPerPage)}
+            onPageChange={setCurrentPage}
+            showInfo={true}
+            className="border-t border-gray-200 mt-8"
+          />
+        )}
             
             {!loading && products.length === 0 && (
               <div className="text-center py-12">
