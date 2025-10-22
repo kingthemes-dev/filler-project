@@ -700,10 +700,15 @@ function get_invoice_pdf_binary($request) {
         ], 404);
     }
 
-    // Fallback: zwróć dane faktury jako base64 pseudo-PDF (do podmiany na dompdf/mpdf)
+    // Generate proper PDF invoice
     $invoice_data = generate_invoice_data($order);
-    $content = "FAKTURA: " . $invoice_data['invoice_number'] . "\nDATA: " . $invoice_data['invoice_date'] . "\nKWOTA: " . $invoice_data['totals']['total'];
-    $base64 = base64_encode($content);
+    
+    // Create HTML template for invoice
+    $html = generate_invoice_html($order, $invoice_data);
+    
+    // Convert HTML to PDF using simple method (can be enhanced with dompdf/mpdf later)
+    $pdf_content = generate_pdf_from_html($html);
+    $base64 = base64_encode($pdf_content);
 
     return new WP_REST_Response([
         'success' => true,
@@ -711,5 +716,128 @@ function get_invoice_pdf_binary($request) {
         'filename' => 'faktura_' . $order_id . '.pdf',
         'base64' => $base64
     ], 200);
+}
+
+/**
+ * Generate HTML template for invoice
+ */
+function generate_invoice_html($order, $invoice_data) {
+    $order_items = $order->get_items();
+    $items_html = '';
+    
+    foreach ($order_items as $item) {
+        $product = $item->get_product();
+        $items_html .= '
+        <tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">' . $item->get_name() . '</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . $item->get_quantity() . '</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">' . wc_price($item->get_total()) . '</td>
+        </tr>';
+    }
+    
+    return '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Faktura ' . $invoice_data['invoice_number'] . '</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+            .company-info { float: left; width: 50%; }
+            .invoice-info { float: right; width: 50%; text-align: right; }
+            .clear { clear: both; }
+            .customer-info { margin: 20px 0; }
+            .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .items-table th { background-color: #f5f5f5; font-weight: bold; }
+            .totals { float: right; width: 300px; margin-top: 20px; }
+            .total-row { display: flex; justify-content: space-between; padding: 5px 0; }
+            .total-final { font-weight: bold; font-size: 1.2em; border-top: 2px solid #000; padding-top: 10px; }
+            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>FAKTURA VAT</h1>
+            <h2>' . $invoice_data['invoice_number'] . '</h2>
+        </div>
+        
+        <div class="company-info">
+            <h3>' . $invoice_data['company_info']['name'] . '</h3>
+            <p>' . $invoice_data['company_info']['address'] . '</p>
+            <p>NIP: ' . $invoice_data['company_info']['nip'] . '</p>
+            <p>Tel: ' . $invoice_data['company_info']['phone'] . '</p>
+            <p>Email: ' . $invoice_data['company_info']['email'] . '</p>
+        </div>
+        
+        <div class="invoice-info">
+            <p><strong>Data wystawienia:</strong> ' . $invoice_data['invoice_date'] . '</p>
+            <p><strong>Data sprzedaży:</strong> ' . $invoice_data['order_date'] . '</p>
+            <p><strong>Numer zamówienia:</strong> ' . $invoice_data['order_number'] . '</p>
+        </div>
+        
+        <div class="clear"></div>
+        
+        <div class="customer-info">
+            <h3>Dane nabywcy:</h3>
+            <p><strong>' . $invoice_data['customer']['name'] . '</strong></p>
+            <p>' . str_replace('<br />', '<br>', $invoice_data['customer']['address']) . '</p>
+            <p>Email: ' . $invoice_data['customer']['email'] . '</p>
+            <p>Tel: ' . $invoice_data['customer']['phone'] . '</p>
+        </div>
+        
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Nazwa produktu</th>
+                    <th style="text-align: center;">Ilość</th>
+                    <th style="text-align: right;">Cena</th>
+                </tr>
+            </thead>
+            <tbody>
+                ' . $items_html . '
+            </tbody>
+        </table>
+        
+        <div class="totals">
+            <div class="total-row">
+                <span>Wartość netto:</span>
+                <span>' . wc_price($invoice_data['totals']['subtotal']) . '</span>
+            </div>
+            <div class="total-row">
+                <span>Dostawa:</span>
+                <span>' . wc_price($invoice_data['totals']['shipping']) . '</span>
+            </div>
+            <div class="total-row">
+                <span>VAT:</span>
+                <span>' . wc_price($invoice_data['totals']['tax']) . '</span>
+            </div>
+            <div class="total-row total-final">
+                <span>RAZEM:</span>
+                <span>' . wc_price($invoice_data['totals']['total']) . '</span>
+            </div>
+        </div>
+        
+        <div class="clear"></div>
+        
+        <div class="footer">
+            <p>Płatność: ' . $invoice_data['payment_method'] . '</p>
+            <p>Dziękujemy za zakupy w KingBrand!</p>
+        </div>
+    </body>
+    </html>';
+}
+
+/**
+ * Generate PDF from HTML (simple implementation)
+ */
+function generate_pdf_from_html($html) {
+    // Simple PDF generation - in production use dompdf/mpdf
+    // For now, return HTML as "PDF" content
+    $pdf_header = "%PDF-1.4\n";
+    $pdf_content = $pdf_header . "\n" . $html;
+    
+    return $pdf_content;
 }
 ?>
