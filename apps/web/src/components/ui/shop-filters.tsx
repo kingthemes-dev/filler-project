@@ -280,7 +280,7 @@ export default function ShopFilters({
       {!showFilters && (
         <motion.div
           className="fixed left-0 top-1/2 transform -translate-y-1/2 z-30 lg:hidden"
-          style={{ top: 'calc(50% - 30px)' }}
+          style={{ top: 'calc(50% - 40px)' }}
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
