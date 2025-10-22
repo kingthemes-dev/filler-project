@@ -74,11 +74,11 @@ export default function CartDrawer() {
 
             {/* Free shipping notice */}
             {items.length > 0 && (
-              <div className="px-6 pt-4" onClick={(e) => e.stopPropagation()}>
+              <div className="px-4 pt-3" onClick={(e) => e.stopPropagation()}>
                 <motion.div
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-lg border border-emerald-200 bg-emerald-50 p-4"
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 p-3"
                 >
                   <div className="flex items-start space-x-3">
                     <div className="mt-0.5">
@@ -165,8 +165,8 @@ export default function CartDrawer() {
                             {item.variant.value}
                           </p>
                         )}
-                        <p className="text-xs font-medium text-black mt-0.5">
-                          {formatPrice(item.sale_price || item.price)} (netto)
+                        <p className="text-xs font-semibold text-black mt-0.5">
+                          {formatPrice(item.sale_price || item.price)}
                         </p>
                       </div>
 
@@ -174,20 +174,20 @@ export default function CartDrawer() {
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
                           aria-label="Zmniejsz ilość"
                         >
-                          <Minus className="w-4 h-4 text-gray-600" />
+                          <Minus className="w-3 h-3 text-gray-700" />
                         </button>
-                        <span className="w-8 text-center text-sm font-medium">
+                        <span className="w-8 text-center text-sm font-semibold text-gray-800 bg-gray-50 px-2 py-1 rounded-md">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
                           aria-label="Zwiększ ilość"
                         >
-                          <Plus className="w-4 h-4 text-gray-600" />
+                          <Plus className="w-3 h-3 text-gray-700" />
                         </button>
                       </div>
 
