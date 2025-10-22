@@ -321,7 +321,7 @@ export default function ShopFilters({
                    <div className="bg-white border border-gray-200/50 shadow-sm rounded-r-2xl h-full flex flex-col relative">
                      {/* Enhanced swipe indicator - right edge with arrow */}
                      <div 
-                       className="fixed top-1/2 transform -translate-y-1/2 w-6 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full transition-all duration-200 flex items-center justify-center z-50"
+                       className="fixed top-1/2 transform -translate-y-1/2 w-6 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full transition-all duration-200 flex items-center justify-center z-30"
                        style={{
                          left: 'calc(min(85vw, 320px) - 6px)', // Sidebar width minus button width
                          ...({
