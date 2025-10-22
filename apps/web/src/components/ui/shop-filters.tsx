@@ -291,19 +291,29 @@ export default function ShopFilters({
                   )}
                 </div>
                 
-                {/* Promocje Checkbox - Ultra Minimalistyczny */}
-                <div className="mt-2">
-                  <label className="flex items-center cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={filters.onSale}
-                      onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                      className="w-3.5 h-3.5 text-red-500 border border-gray-300 rounded-sm focus:ring-1 focus:ring-red-400 focus:ring-offset-0 transition-all duration-200 appearance-none checked:bg-red-500 checked:border-red-500"
-                    />
-                    <span className="ml-2 text-xs text-gray-600 group-hover:text-gray-800 transition-colors duration-200">
-                      Promocje
-                    </span>
-                  </label>
+                {/* Promocje Toggle - Spójne z resztą */}
+                <div className="mt-3">
+                  <button
+                    onClick={() => onFilterChange('onSale', !filters.onSale)}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 group ${
+                      filters.onSale 
+                        ? 'bg-red-50 border border-red-200 text-red-700' 
+                        : 'hover:bg-gray-50 border border-transparent text-gray-700'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">Promocje</span>
+                    <div className={`w-4 h-4 rounded border-2 transition-colors ${
+                      filters.onSale 
+                        ? 'bg-red-500 border-red-500' 
+                        : 'border-gray-300 group-hover:border-gray-400'
+                    }`}>
+                      {filters.onSale && (
+                        <svg className="w-full h-full text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                  </button>
                 </div>
               </div>
 
@@ -512,19 +522,29 @@ export default function ShopFilters({
                   )}
                 </div>
                 
-                {/* Promocje Checkbox - Ultra Minimalistyczny */}
-                <div className="mt-2">
-                  <label className="flex items-center cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={filters.onSale}
-                      onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                      className="w-3.5 h-3.5 text-red-500 border border-gray-300 rounded-sm focus:ring-1 focus:ring-red-400 focus:ring-offset-0 transition-all duration-200 appearance-none checked:bg-red-500 checked:border-red-500"
-                    />
-                    <span className="ml-2 text-xs text-gray-600 group-hover:text-gray-800 transition-colors duration-200">
-                      Promocje
-                    </span>
-                  </label>
+                {/* Promocje Toggle - Spójne z resztą */}
+                <div className="mt-3">
+                  <button
+                    onClick={() => onFilterChange('onSale', !filters.onSale)}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 group ${
+                      filters.onSale 
+                        ? 'bg-red-50 border border-red-200 text-red-700' 
+                        : 'hover:bg-gray-50 border border-transparent text-gray-700'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">Promocje</span>
+                    <div className={`w-4 h-4 rounded border-2 transition-colors ${
+                      filters.onSale 
+                        ? 'bg-red-500 border-red-500' 
+                        : 'border-gray-300 group-hover:border-gray-400'
+                    }`}>
+                      {filters.onSale && (
+                        <svg className="w-full h-full text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                  </button>
                 </div>
               </div>
 
