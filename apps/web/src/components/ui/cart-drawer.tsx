@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Trash2, Plus, Minus, Truck, CreditCard, ArrowRight } from 'lucide-react';
 import { useCartStore, type CartItem } from '@/stores/cart-store';
@@ -11,6 +12,12 @@ import Image from 'next/image';
 export default function CartDrawer() {
   const { isOpen, closeCart, items, total, itemCount, removeItem, updateQuantity } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+  
+  // Swipe gesture state
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [swipeProgress, setSwipeProgress] = useState(0);
   
   console.log('🛒 CartDrawer render - isOpen:', isOpen);
   console.log('🛒 CartDrawer render - items:', items);
@@ -29,6 +36,45 @@ export default function CartDrawer() {
 
   const handleRemoveItem = (item: CartItem) => {
     removeItem(item.id, item.variant?.id);
+  };
+
+  // Swipe gesture functions
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsDragging(true);
+    setSwipeProgress(0);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+    
+    if (touchStart && isOpen) {
+      const distance = e.targetTouches[0].clientX - touchStart;
+      const progress = Math.min(Math.max(distance / 100, 0), 1); // Normalize to 0-1
+      setSwipeProgress(progress);
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) {
+      setSwipeProgress(0);
+      setIsDragging(false);
+      return;
+    }
+    
+    const distance = touchEnd - touchStart;
+    const isRightSwipe = distance > minSwipeDistance;
+
+    if (isRightSwipe && isOpen) {
+      // Swipe right to close
+      closeCart();
+    }
+    
+    setSwipeProgress(0);
+    setIsDragging(false);
   };
 
   return (
@@ -54,6 +100,9 @@ export default function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
