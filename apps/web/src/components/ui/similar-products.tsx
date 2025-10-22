@@ -176,7 +176,7 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
         {/* Products Grid */}
         <div className="relative">
           {/* Desktop Grid */}
-          <div className="hidden lg:grid lg:grid-cols-4 gap-6">
+          <div className="hidden lg:grid lg:grid-cols-4 gap-4 lg:gap-6">
             {similarProducts.map((product, index) => (
               <motion.div
                 key={product.id}

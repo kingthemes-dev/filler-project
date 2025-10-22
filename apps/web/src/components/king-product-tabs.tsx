@@ -197,7 +197,7 @@ export default function KingProductTabs() {
         <div className="min-h-[400px]">
           {activeTabData?.loading ? (
             // Loading state
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {[...Array(4)].map((_, index) => (
                 <div key={`skeleton-${index}`} className="animate-pulse">
                   <div className="bg-gray-200 aspect-square rounded-3xl mb-4"></div>
@@ -210,7 +210,7 @@ export default function KingProductTabs() {
             </div>
           ) : activeTabData?.products && activeTabData.products.length > 0 ? (
             // Products grid
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {activeTabData.products.map((product, index) => (
                 <KingProductCard 
                   key={product?.id || `product-${index}`} 

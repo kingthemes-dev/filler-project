@@ -313,7 +313,7 @@ export default function SearchModal({
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
                         Wyniki wyszukiwania ({searchResults.length})
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
                         {searchResults.map((product) => (
                           <motion.div
                             key={product.id}
@@ -468,7 +468,7 @@ export default function SearchModal({
                           Kategorie
                         </h3>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                         {['Mezoterapia', 'Peelingi', 'Stymulatory', 'Wypełniacze', 'Botoks', 'Retinol'].map((category) => (
                           <button
                             key={category}

@@ -104,7 +104,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
           </div>
         </div>
         
-        <div className="min-h-[400px]">
+        <div>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -114,7 +114,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
               transition={{ duration: 0.3 }}
             >
               {activeTabData.products.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                   {activeTabData.products.slice(0, 4).map((product) => (
                     <KingProductCard
                       key={product.id}
@@ -171,7 +171,7 @@ function ProductTabsSkeleton() {
         </div>
         <div className="h-6 w-32 bg-muted rounded animate-pulse" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <div key={i} className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm animate-pulse">
             <div className="px-6 pb-0">

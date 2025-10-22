@@ -62,6 +62,17 @@ export const UI_SPACING = {
   CONTAINER_MAX_W: '95vw', // consistent across pages
   CONTAINER_PX_MOBILE: 16, // px (Tailwind px-4)
   CONTAINER_PX_DESKTOP: 24, // px (Tailwind px-6)
+  // Global mobile spacing - consistent across all pages
+  SECTION_PY_MOBILE: 16, // py-4 (64px)
+  SECTION_PY_DESKTOP: 24, // py-6 (96px)
+  PAGE_PY_MOBILE: 16, // py-4 (64px)
+  PAGE_PY_DESKTOP: 24, // py-6 (96px)
+  PAGE_PB_MOBILE: 48, // pb-12 (192px)
+  PAGE_PB_DESKTOP: 48, // pb-12 (192px)
+  // Global grid spacing - consistent across all product grids
+  GRID_GAP_MOBILE: 16, // gap-4 (16px)
+  GRID_GAP_DESKTOP: 24, // gap-6 (24px)
+  GRID_BREAKPOINT: 'lg', // lg:gap-6
 } as const;
 
 // =========================================

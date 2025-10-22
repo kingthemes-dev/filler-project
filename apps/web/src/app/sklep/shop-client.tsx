@@ -410,7 +410,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         
         {/* Usunięto górną wyszukiwarkę – pozostaje ta w panelu filtrów */}
         
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Filters sidebar */}
           <ShopFilters
             categories={allCategories.map(c => ({ ...c, count: c.count || 0 }))}
