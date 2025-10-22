@@ -61,10 +61,11 @@ export default function ShopFilters({
     availability: true,
   });
 
-  // Swipe gesture state
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+         // Swipe gesture state
+         const [touchStart, setTouchStart] = useState<number | null>(null);
+         const [touchEnd, setTouchEnd] = useState<number | null>(null);
+         const [isDragging, setIsDragging] = useState(false);
+         const [swipeProgress, setSwipeProgress] = useState(0);
 
   // Restore expanded state from localStorage
   React.useEffect(() => {
@@ -95,33 +96,45 @@ export default function ShopFilters({
   // Swipe gesture functions
   const minSwipeDistance = 50;
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-    setIsDragging(true);
-  };
+         const onTouchStart = (e: React.TouchEvent) => {
+           setTouchEnd(null);
+           setTouchStart(e.targetTouches[0].clientX);
+           setIsDragging(true);
+           setSwipeProgress(0);
+         };
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
+         const onTouchMove = (e: React.TouchEvent) => {
+           setTouchEnd(e.targetTouches[0].clientX);
+           
+           if (touchStart && showFilters) {
+             const distance = touchStart - e.targetTouches[0].clientX;
+             const progress = Math.min(Math.max(distance / 100, 0), 1); // Normalize to 0-1
+             setSwipeProgress(progress);
+           }
+         };
 
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+         const onTouchEnd = () => {
+           if (!touchStart || !touchEnd) {
+             setSwipeProgress(0);
+             setIsDragging(false);
+             return;
+           }
+           
+           const distance = touchStart - touchEnd;
+           const isLeftSwipe = distance > minSwipeDistance;
+           const isRightSwipe = distance < -minSwipeDistance;
 
-    if (isLeftSwipe && showFilters) {
-      // Swipe left to close
-      onToggleFilters();
-    } else if (isRightSwipe && !showFilters) {
-      // Swipe right to open
-      onToggleFilters();
-    }
-    
-    setIsDragging(false);
-  };
+           if (isLeftSwipe && showFilters) {
+             // Swipe left to close
+             onToggleFilters();
+           } else if (isRightSwipe && !showFilters) {
+             // Swipe right to open
+             onToggleFilters();
+           }
+           
+           setSwipeProgress(0);
+           setIsDragging(false);
+         };
 
 
   // Price ranges use PLN directly (not grosze)
@@ -313,9 +326,35 @@ export default function ShopFilters({
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           >
-            <div className="bg-white border border-gray-200/50 shadow-sm rounded-r-2xl h-full flex flex-col relative">
-              {/* Swipe indicator - right edge */}
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-16 bg-gray-300 rounded-l-full opacity-50"></div>
+                   <div className="bg-white border border-gray-200/50 shadow-sm rounded-r-2xl h-full flex flex-col relative">
+                     {/* Enhanced swipe indicator - right edge */}
+                     <div 
+                       className="absolute right-0 top-1/2 transform -translate-y-1/2 w-2 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full transition-all duration-200"
+                       style={{
+                         opacity: isDragging ? 1 : 0.8,
+                         transform: `translateY(-50%) scaleX(${1 + swipeProgress * 0.5})`,
+                         boxShadow: isDragging ? '0 0 20px rgba(59, 130, 246, 0.5)' : 'none'
+                       }}
+                     ></div>
+                     {/* Swipe instruction text */}
+                     <div 
+                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 font-medium transition-all duration-200"
+                       style={{
+                         opacity: isDragging ? 1 : 0.7,
+                         transform: `translateY(-50%) scale(${1 + swipeProgress * 0.1})`
+                       }}
+                     >
+                       ← Swipe
+                     </div>
+                     {/* Progress bar */}
+                     {isDragging && (
+                       <div className="absolute right-0 top-0 w-1 h-full bg-blue-200">
+                         <div 
+                           className="h-full bg-gradient-to-b from-blue-400 to-blue-600 transition-all duration-100"
+                           style={{ height: `${swipeProgress * 100}%` }}
+                         ></div>
+                       </div>
+                     )}
               {/* Header - Fixed */}
               <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center group">
