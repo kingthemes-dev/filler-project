@@ -287,7 +287,7 @@ export default function ShopFilters({
             
             <div className="flex items-center gap-1 transform rotate-180 relative z-10 pl-1" style={{ writingMode: 'vertical-rl' }}>
               <Filter className="w-4 h-4 text-gray-700 transform rotate-90 group-hover:scale-110 transition-transform duration-300" />
-              <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors duration-300">
+              <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors duration-300">
                 Filtry
               </span>
             </div>
