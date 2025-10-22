@@ -171,7 +171,7 @@ export default function CartDrawer() {
                       </div>
 
                       {/* Quantity Controls */}
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity - 1)}
                           className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
