@@ -36,6 +36,7 @@ interface Order {
   };
   paymentMethod: string;
   trackingNumber?: string;
+  isEligibleForInvoice?: boolean; // Whether this order is eligible for invoice generation
 }
 
 export default function MyOrdersPage() {
@@ -74,34 +75,38 @@ export default function MyOrdersPage() {
 
       if (Array.isArray(data)) {
         // Transform WooCommerce orders to our format
-        const transformedOrders = data.map((order: any) => ({
-          id: order.id.toString(),
-          number: order.number,
-          date: order.date_created.split('T')[0],
-          status: mapOrderStatus(order.status),
-          total: parseFloat(order.total), // Keep as PLN (not convert to grosze)
-          items: order.line_items.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            quantity: item.quantity,
-            price: parseFloat(item.price), // Keep as PLN (not convert to grosze)
-            image: item.image?.src || item.product_image || 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp'
-          })),
-          billing: {
-            address: order.billing.address_1,
-            city: order.billing.city,
-            postcode: order.billing.postcode,
-            country: order.billing.country
-          },
-          shipping: {
-            address: order.shipping.address_1,
-            city: order.shipping.city,
-            postcode: order.shipping.postcode,
-            country: order.shipping.country
-          },
-          paymentMethod: mapPaymentMethod(order.payment_method_title || order.payment_method || 'unknown'),
-          trackingNumber: order.meta_data?.find((meta: any) => meta.key === '_tracking_number')?.value || null
-        }));
+        const transformedOrders = data.map((order: any) => {
+          const mappedStatus = mapOrderStatus(order.status);
+          return {
+            id: order.id.toString(),
+            number: order.number,
+            date: order.date_created.split('T')[0],
+            status: mappedStatus,
+            total: parseFloat(order.total), // Keep as PLN (not convert to grosze)
+            items: order.line_items.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              quantity: item.quantity,
+              price: parseFloat(item.price), // Keep as PLN (not convert to grosze)
+              image: item.image?.src || item.product_image || 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp'
+            })),
+            billing: {
+              address: order.billing.address_1,
+              city: order.billing.city,
+              postcode: order.billing.postcode,
+              country: order.billing.country
+            },
+            shipping: {
+              address: order.shipping.address_1,
+              city: order.shipping.city,
+              postcode: order.shipping.postcode,
+              country: order.shipping.country
+            },
+            paymentMethod: mapPaymentMethod(order.payment_method_title || order.payment_method || 'unknown'),
+            trackingNumber: order.meta_data?.find((meta: any) => meta.key === '_tracking_number')?.value || null,
+            isEligibleForInvoice: isOrderEligibleForInvoice(mappedStatus)
+          };
+        });
         setOrders(transformedOrders);
       } else {
         console.error('Error fetching orders:', data);
@@ -217,6 +222,24 @@ export default function MyOrdersPage() {
     }
   };
 
+  // Check if order is eligible for invoice generation
+  const isOrderEligibleForInvoice = (status: Order['status']): boolean => {
+    const eligibleStatuses = ['processing', 'shipped', 'delivered'];
+    return eligibleStatuses.includes(status);
+  };
+
+  // Get tooltip message for disabled invoice buttons
+  const getInvoiceTooltip = (status: Order['status']): string => {
+    switch (status) {
+      case 'pending':
+        return 'Faktura będzie dostępna po opłaceniu zamówienia';
+      case 'cancelled':
+        return 'Faktura niedostępna - zamówienie anulowane';
+      default:
+        return 'Faktura niedostępna dla tego statusu zamówienia';
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pl-PL', {
       year: 'numeric',
@@ -318,6 +341,12 @@ export default function MyOrdersPage() {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
                               {statusInfo.label}
                             </span>
+                            {!order.isEligibleForInvoice && (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-600 flex items-center gap-1">
+                                <span>⚠️</span>
+                                <span>Faktura niedostępna</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -445,13 +474,24 @@ export default function MyOrdersPage() {
 
                         {/* Action Buttons */}
                         <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
-                          <Link
-                            href="/moje-faktury"
-                            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                            <span>Pobierz fakturę</span>
-                          </Link>
+                          {order.isEligibleForInvoice ? (
+                            <Link
+                              href="/moje-faktury"
+                              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <Download className="w-4 h-4" />
+                              <span>Pobierz fakturę</span>
+                            </Link>
+                          ) : (
+                            <button
+                              disabled
+                              title={getInvoiceTooltip(order.status)}
+                              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed transition-colors"
+                            >
+                              <Download className="w-4 h-4" />
+                              <span>Pobierz fakturę</span>
+                            </button>
+                          )}
                           
                           {order.status === 'shipped' && (
                             <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
