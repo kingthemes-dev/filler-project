@@ -131,7 +131,7 @@ export default function ActiveFiltersBar({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="bg-white/95 backdrop-blur-sm sticky top-0 z-40"
+      className="bg-white/95 backdrop-blur-sm sticky top-0 z-30"
     >
       <div className="px-4 sm:px-6 py-5">
         <div className="flex items-center justify-between gap-4">
