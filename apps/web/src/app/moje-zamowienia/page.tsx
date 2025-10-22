@@ -80,14 +80,6 @@ export default function MyOrdersPage() {
           // Use original WooCommerce status for eligibility check (same as /moje-faktury)
           const isEligible = isOrderEligibleForInvoiceWooCommerce(order.status);
           
-          // Debug log for order 484
-          if (order.id === 484) {
-            console.log('🔍 Order 484 debug:', {
-              originalStatus: order.status,
-              mappedStatus: mappedStatus,
-              isEligible: isEligible
-            });
-          }
           
           return {
             id: order.id.toString(),
