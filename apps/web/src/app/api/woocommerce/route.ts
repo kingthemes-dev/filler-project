@@ -351,8 +351,8 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
     // Generate HTML template
     const html = generateInvoiceHtmlTemplate(order);
     
-    // Generate simple PDF using basic PDF structure
-    const pdfContent = generateSimplePdf(html, orderId);
+    // Generate simple PDF using basic PDF structure with real order data
+    const pdfContent = generateSimplePdf(html, orderId, order);
     const base64 = Buffer.from(pdfContent).toString('base64');
     
     return {
@@ -375,9 +375,30 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
 /**
  * Generate simple PDF from HTML
  */
-function generateSimplePdf(html: string, orderId: string): string {
-  // Create a simple PDF structure with HTML content
-  const pdfHeader = `%PDF-1.4
+function generateSimplePdf(html: string, orderId: string, order: any): string {
+  // Extract order data from order object
+  const orderDate = new Date(order.date_created).toLocaleDateString('pl-PL');
+  const invoiceNumber = `FV/${new Date().getFullYear()}/${order.number}`;
+  
+  // Get customer data
+  const customerName = `${order.billing.first_name} ${order.billing.last_name}`;
+  const customerAddress = `${order.billing.address_1}, ${order.billing.postcode} ${order.billing.city}`;
+  const customerEmail = order.billing.email;
+  const customerPhone = order.billing.phone;
+  
+  // Get products data
+  const products = order.line_items.map((item: any) => 
+    `${item.name} | ${item.quantity} | ${parseFloat(item.total).toFixed(2)} zł`
+  ).join('\n0 -15 Td\n(');
+  
+  // Get totals
+  const subtotal = parseFloat(order.total).toFixed(2);
+  const shipping = parseFloat(order.shipping_total || 0).toFixed(2);
+  const tax = parseFloat(order.total_tax || 0).toFixed(2);
+  const total = parseFloat(order.total).toFixed(2);
+  
+  // Create PDF content with proper invoice data
+  const pdfContent = `%PDF-1.4
 1 0 obj
 <<
 /Type /Catalog
@@ -402,6 +423,7 @@ endobj
 /Resources <<
 /Font <<
 /F1 5 0 R
+/F2 6 0 R
 >>
 >>
 >>
@@ -409,15 +431,69 @@ endobj
 
 4 0 obj
 <<
-/Length ${html.length + 100}
+/Length 2000
 >>
 stream
 BT
+/F2 18 Tf
+250 750 Td
+(FAKTURA VAT) Tj
+0 -30 Td
+/F1 14 Tf
+280 720 Td
+(${invoiceNumber}) Tj
+0 -40 Td
 /F1 12 Tf
-72 720 Td
-(FAKTURA ${orderId}) Tj
+72 680 Td
+(Data wystawienia: ${orderDate}) Tj
 0 -20 Td
-(${new Date().toLocaleDateString('pl-PL')}) Tj
+(Data sprzedaży: ${orderDate}) Tj
+0 -20 Td
+(Numer zamówienia: ${order.number}) Tj
+0 -40 Td
+(FIRMA SPRZEDAWCY:) Tj
+0 -20 Td
+(KingBrand Sp. z o.o.) Tj
+0 -15 Td
+(ul. Przykładowa 123, 00-001 Warszawa) Tj
+0 -15 Td
+(NIP: 1234567890) Tj
+0 -15 Td
+(Tel: +48 123 456 789) Tj
+0 -15 Td
+(Email: info@kingbrand.pl) Tj
+0 -40 Td
+(DANE NABYWCY:) Tj
+0 -20 Td
+(Imię i nazwisko: ${customerName}) Tj
+0 -15 Td
+(Adres: ${customerAddress}) Tj
+0 -15 Td
+(Email: ${customerEmail}) Tj
+0 -15 Td
+(Telefon: ${customerPhone}) Tj
+0 -40 Td
+(PRODUKTY:) Tj
+0 -20 Td
+(Nazwa produktu | Ilość | Cena) Tj
+0 -20 Td
+(${products}) Tj
+0 -40 Td
+(PODSUMOWANIE:) Tj
+0 -20 Td
+(Wartość netto: ${subtotal} zł) Tj
+0 -15 Td
+(Dostawa: ${shipping} zł) Tj
+0 -15 Td
+(VAT: ${tax} zł) Tj
+0 -20 Td
+/F2 14 Tf
+(RAZEM: ${total} zł) Tj
+0 -40 Td
+/F1 10 Tf
+(Płatność: ${order.payment_method_title}) Tj
+0 -20 Td
+(Dziękujemy za zakupy w KingBrand!) Tj
 ET
 endstream
 endobj
@@ -430,24 +506,33 @@ endobj
 >>
 endobj
 
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica-Bold
+>>
+endobj
+
 xref
-0 6
+0 7
 0000000000 65535 f 
 0000000009 00000 n 
 0000000058 00000 n 
 0000000115 00000 n 
 0000000274 00000 n 
 0000000500 00000 n 
+0000000600 00000 n 
 trailer
 <<
-/Size 6
+/Size 7
 /Root 1 0 R
 >>
 startxref
-${600 + html.length}
+${2000 + 600}
 %%EOF`;
 
-  return pdfHeader;
+  return pdfContent;
 }
 
 /**
