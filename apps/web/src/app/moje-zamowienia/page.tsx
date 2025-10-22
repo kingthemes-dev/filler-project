@@ -196,12 +196,19 @@ export default function MyOrdersPage() {
 
   const handleViewDetails = (orderId: string) => {
     console.log('🔄 Viewing details for order:', orderId);
+    console.log('🔄 Current selectedOrder:', selectedOrder);
+    console.log('🔄 selectedOrder?.id:', selectedOrder?.id);
+    console.log('🔄 orderId:', orderId);
+    console.log('🔄 Comparison result:', selectedOrder?.id === orderId);
+    
     const order = orders.find(o => o.id === orderId);
     if (order) {
       // Toggle details - if already selected, hide; if not, show
       if (selectedOrder?.id === orderId) {
+        console.log('🔄 Closing details for order:', orderId);
         setSelectedOrder(null);
       } else {
+        console.log('🔄 Opening details for order:', orderId);
         setSelectedOrder(order);
       }
     }
