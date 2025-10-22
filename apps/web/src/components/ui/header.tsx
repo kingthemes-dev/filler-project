@@ -230,7 +230,7 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
-  // Keyboard navigation for mobile menu
+  // Keyboard navigation and focus trap for mobile menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isMobileMenuOpen) {
@@ -240,6 +240,13 @@ export default function Header() {
 
     if (isMobileMenuOpen) {
       window.addEventListener('keydown', handleKeyDown);
+      
+      // Focus trap - focus first focusable element
+      const firstFocusable = document.querySelector('[data-mobile-menu] button, [data-mobile-menu] a, [data-mobile-menu] input');
+      if (firstFocusable) {
+        (firstFocusable as HTMLElement).focus();
+      }
+      
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
   }, [isMobileMenuOpen]);
@@ -610,36 +617,40 @@ export default function Header() {
           )}
         </AnimatePresence>
         
-        {/* Mobile Menu Backdrop */}
+        {/* Mobile Menu - Senior Level Modal */}
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <motion.div
-              className="lg:hidden fixed inset-0 bg-black/50 z-40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Mobile Menu - Cart-like Modal */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              className="lg:hidden fixed inset-y-0 right-0 w-80 max-w-[85vw] bg-white shadow-2xl z-50"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            >
+            <>
+              {/* Backdrop */}
+              <motion.div
+                className="lg:hidden fixed inset-0 bg-black/50 z-40"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              
+              {/* Menu Modal */}
+              <motion.div
+                className="lg:hidden fixed inset-y-0 right-0 w-80 max-w-[85vw] bg-white shadow-2xl z-50"
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                data-mobile-menu
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="mobile-menu-title"
+              >
               <div className="flex flex-col h-full">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900">Menu</h3>
+                  <h3 id="mobile-menu-title" className="text-lg font-bold text-gray-900">Menu</h3>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-300"
+                    aria-label="Zamknij menu"
+                    autoFocus
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -925,7 +936,8 @@ export default function Header() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
         
