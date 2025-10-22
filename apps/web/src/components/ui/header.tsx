@@ -542,7 +542,7 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - identical to cart */}
+              {/* Menu Drawer - FULL WIDTH like cart */}
               <motion.div
                 className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
                          w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
@@ -556,6 +556,7 @@ export default function Header() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
+                style={{ zIndex: 9999 }}
               >
                 {/* Header - identical to cart */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
@@ -612,6 +613,11 @@ export default function Header() {
                         Kontakt
                       </a>
                     </nav>
+                  </div>
+                  
+                  {/* Debug: Show menu content */}
+                  <div className="px-6 py-4 bg-yellow-100 text-xs">
+                    Menu content is visible!
                   </div>
                   
                   {/* Bottom Section - Account & Favorites */}
