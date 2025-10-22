@@ -177,3 +177,15 @@
     -webkit-line-clamp: 3;
   }
 }
+
+/* Swipe handle pulse animation */
+@keyframes swipePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+}
