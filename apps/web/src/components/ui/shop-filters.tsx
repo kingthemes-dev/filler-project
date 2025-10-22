@@ -115,6 +115,9 @@ export default function ShopFilters({
     if (isLeftSwipe && showFilters) {
       // Swipe left to close
       onToggleFilters();
+    } else if (isRightSwipe && !showFilters) {
+      // Swipe right to open
+      onToggleFilters();
     }
     
     setIsDragging(false);
@@ -244,24 +247,47 @@ export default function ShopFilters({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onToggleFilters}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        />
+      )}
+
+      {/* Global swipe area - when sidebar is closed */}
+      {!showFilters && (
+        <div
+          className="fixed left-0 top-0 w-8 h-full z-20 lg:hidden"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         />
       )}
 
       {/* Pinned Filter Icon - when sidebar is closed */}
       {!showFilters && (
         <motion.div
-          className="fixed left-4 top-1/2 transform -translate-y-1/2 z-30 lg:hidden"
+          className="fixed left-0 top-1/2 transform -translate-y-1/2 z-30 lg:hidden"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
           <button
             onClick={onToggleFilters}
-            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-3 py-2 shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300"
+            className="flex items-center gap-2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-r-2xl px-3 py-4 shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300 border-l-0"
           >
-            <Filter className="w-4 h-4 text-gray-700" />
-            <span className="text-sm font-medium text-gray-700">Filtry</span>
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-1 h-8 bg-gray-400 rounded-full"></div>
+              <div className="w-1 h-8 bg-gray-400 rounded-full"></div>
+              <div className="w-1 h-8 bg-gray-400 rounded-full"></div>
+            </div>
+            <div className="flex flex-col items-center gap-1 ml-2">
+              <Filter className="w-4 h-4 text-gray-700" />
+              <span className="text-xs font-medium text-gray-700">Filtry</span>
+            </div>
           </button>
         </motion.div>
       )}
