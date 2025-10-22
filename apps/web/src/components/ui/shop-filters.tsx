@@ -248,7 +248,7 @@ export default function ShopFilters({
             <Filter className="w-4 h-4 mr-2" />
             <span className="font-medium">Filtry{activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ''}</span>
           </div>
-          {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {showFilters ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
         </button>
       </div>
 
