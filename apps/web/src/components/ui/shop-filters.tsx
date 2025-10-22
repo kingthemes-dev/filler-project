@@ -285,7 +285,7 @@ export default function ShopFilters({
             {/* Pulsing background effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-r-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ping"></div>
             
-            <div className="flex items-center gap-2 transform rotate-180 relative z-10 px-2" style={{ writingMode: 'vertical-rl' }}>
+            <div className="flex items-center gap-1 transform rotate-180 relative z-10 px-1" style={{ writingMode: 'vertical-rl' }}>
               <Filter className="w-4 h-4 text-gray-700 transform rotate-90 group-hover:scale-110 transition-transform duration-300" />
               <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600 transition-colors duration-300">
                 Filtry
