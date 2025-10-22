@@ -318,7 +318,7 @@ export default function ShopFilters({
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           >
-                   <div className="bg-white border border-gray-200/50 shadow-sm rounded-r-2xl h-full flex flex-col relative">
+                   <div className="bg-white border border-gray-200/50 shadow-sm rounded-r-2xl h-full flex flex-col relative pr-4">
                      {/* Enhanced swipe indicator - right edge with arrow */}
                      <div 
                        className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full transition-all duration-200 flex items-center justify-center"
