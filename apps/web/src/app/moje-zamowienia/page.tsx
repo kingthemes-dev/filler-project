@@ -77,7 +77,8 @@ export default function MyOrdersPage() {
         // Transform WooCommerce orders to our format
         const transformedOrders = data.map((order: any) => {
           const mappedStatus = mapOrderStatus(order.status);
-          const isEligible = isOrderEligibleForInvoice(mappedStatus);
+          // Use original WooCommerce status for eligibility check (same as /moje-faktury)
+          const isEligible = isOrderEligibleForInvoiceWooCommerce(order.status);
           
           // Debug log for order 484
           if (order.id === 484) {
@@ -233,11 +234,18 @@ export default function MyOrdersPage() {
     }
   };
 
-  // Check if order is eligible for invoice generation
+  // Check if order is eligible for invoice generation (using mapped statuses)
   const isOrderEligibleForInvoice = (status: Order['status']): boolean => {
     // Use the same logic as /moje-faktury - eligible statuses are those that map to completed/processing/on-hold
     const eligibleStatuses = ['processing', 'shipped', 'delivered'];
     return eligibleStatuses.includes(status);
+  };
+
+  // Check if order is eligible for invoice generation (using original WooCommerce statuses)
+  const isOrderEligibleForInvoiceWooCommerce = (wcStatus: string): boolean => {
+    // Use the same logic as /moje-faktury - eligible WooCommerce statuses
+    const eligibleStatuses = ['completed', 'processing', 'on-hold'];
+    return eligibleStatuses.includes(wcStatus);
   };
 
   // Get tooltip message for disabled invoice buttons
