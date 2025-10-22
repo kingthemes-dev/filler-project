@@ -279,8 +279,8 @@ export default function ShopFilters({
             onClick={onToggleFilters}
             className="flex flex-col items-center justify-center w-8 h-20 bg-white/90 backdrop-blur-sm border border-r-0 border-gray-200 rounded-r-full shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300"
           >
-            <Filter className="w-4 h-4 text-gray-700 mb-1" />
-            <span className="text-xs font-medium text-gray-700 writing-mode-vertical-rl transform rotate-180">
+            <Filter className="w-4 h-4 text-gray-700 mb-2" />
+            <span className="text-xs font-medium text-gray-700" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
               Filtry
             </span>
           </button>
