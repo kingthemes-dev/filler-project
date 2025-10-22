@@ -148,51 +148,6 @@ export default function MyOrdersPage() {
     return paymentMap[paymentMethod] || paymentMethod;
   };
 
-  const handleDownloadInvoice = async (orderId: string) => {
-    try {
-      console.log('🔄 Downloading invoice for order:', orderId);
-      
-      // Use Next.js API as proxy to avoid CORS issues
-      const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${orderId}`);
-      
-      if (!response.ok) {
-        throw new Error('Nie udało się pobrać faktury');
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.base64) {
-        // Convert base64 to blob and download
-        const binaryString = atob(data.base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const blob = new Blob([bytes], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        
-        // Create download link
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = data.filename || `faktura_${orderId}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Clean up
-        window.URL.revokeObjectURL(url);
-        
-        console.log('✅ Invoice downloaded successfully');
-      } else {
-        throw new Error('Nieprawidłowy format faktury');
-      }
-      
-    } catch (error) {
-      console.error('❌ Error downloading invoice:', error);
-      alert('Błąd podczas pobierania faktury');
-    }
-  };
 
   const handleViewDetails = (orderId: string) => {
     console.log('🔄 Viewing details for order:', orderId);
@@ -490,14 +445,13 @@ export default function MyOrdersPage() {
 
                         {/* Action Buttons */}
                         <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
-                          <button 
-                            onClick={() => handleDownloadInvoice(order.id)}
+                          <Link
+                            href="/moje-faktury"
                             className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             <Download className="w-4 h-4" />
                             <span>Pobierz fakturę</span>
-                          </button>
-                          
+                          </Link>
                           
                           {order.status === 'shipped' && (
                             <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">

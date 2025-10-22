@@ -14,6 +14,7 @@ export interface Invoice {
   currency: string;
   status: string;
   download_url: string;
+  orderNumber: string;
 }
 
 export default function MyInvoicesPage() {
@@ -46,56 +47,32 @@ export default function MyInvoicesPage() {
     try {
       setLoading(true);
       
-      // Try WCPDF plugin first - get orders with invoices
-      const response = await fetch(`/api/woocommerce?endpoint=orders&customer=${user?.id}&status=completed,processing,pending`);
+      // Get all orders for the customer - we'll show all orders as potential invoices
+      const response = await fetch(`/api/woocommerce?endpoint=orders&customer=${user?.id}`);
       const data = await response.json();
 
       if (Array.isArray(data)) {
-        // Filter orders that have invoices generated
-        const ordersWithInvoices = data.filter((order: any) => 
-          order.meta_data?.some((meta: any) => 
-            meta.key === '_invoice_generated' && meta.value === 'yes'
-          )
-        );
-        
-        // Transform to invoice format
-        const transformedInvoices = ordersWithInvoices.map((order: any) => {
+        // Transform all orders to invoice format (every order can have an invoice generated)
+        const transformedInvoices = data.map((order: any) => {
           const invoiceNumber = order.meta_data?.find((meta: any) => meta.key === '_invoice_number')?.value;
           const invoiceDate = order.meta_data?.find((meta: any) => meta.key === '_invoice_date')?.value;
           
           return {
             id: order.id.toString(),
-            number: invoiceNumber || `FV/${order.id}`,
+            number: invoiceNumber || `FV/${order.number}`,
             date: invoiceDate || order.date_created,
-            total: parseFloat(order.total) * 100, // Convert to grosze
+            total: parseFloat(order.total), // Keep as PLN (not convert to grosze)
             currency: order.currency || 'PLN',
             status: order.status,
-            download_url: `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/?action=generate_wpo_wcpdf&document_type=invoice&order_ids=${order.id}`
+            download_url: `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/?action=generate_wpo_wcpdf&document_type=invoice&order_ids=${order.id}`,
+            orderNumber: order.number
           };
         });
         
         setInvoices(transformedInvoices);
       } else {
-        // Fallback to custom endpoint
-        console.log('🔄 Trying fallback custom invoices endpoint...');
-        const fallbackResponse = await fetch(`/api/woocommerce?endpoint=customers/invoices&customer_id=${user?.id}`);
-        const fallbackData = await fallbackResponse.json();
-        
-        if (fallbackData.success && Array.isArray(fallbackData.invoices)) {
-          const transformedInvoices = fallbackData.invoices.map((invoice: any) => ({
-            id: invoice.id.toString(),
-            number: invoice.number,
-            date: invoice.date,
-            total: parseFloat(invoice.total) * 100, // Convert to grosze
-            currency: invoice.currency || 'PLN',
-            status: invoice.status,
-            download_url: invoice.download_url
-          }));
-          setInvoices(transformedInvoices);
-        } else {
-          console.error('Error fetching invoices:', fallbackData?.error || fallbackData?.message || 'Nie udało się pobrać faktur');
-          setInvoices([]);
-        }
+        console.error('Error fetching orders:', data);
+        setInvoices([]);
       }
     } catch (error) {
       console.error('Error fetching invoices:', (error as any)?.message || error);
@@ -130,8 +107,8 @@ export default function MyInvoicesPage() {
     }
   };
 
-  const formatPrice = (priceInGrosze: number) => {
-    return (priceInGrosze / 100).toFixed(2);
+  const formatPrice = (price: number) => {
+    return price.toFixed(2);
   };
 
   const handleViewInvoice = async (invoice: Invoice) => {
@@ -266,6 +243,9 @@ export default function MyInvoicesPage() {
                           <span className="font-semibold text-gray-900">
                             Faktura {invoice.number}
                           </span>
+                          <span className="text-sm text-gray-500">
+                            (Zamówienie #{invoice.orderNumber})
+                          </span>
                         </div>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
                           {statusInfo.label}
@@ -334,9 +314,14 @@ export default function MyInvoicesPage() {
             >
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Faktura {selectedInvoice.number}
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Faktura {selectedInvoice.number}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Zamówienie #{selectedInvoice.orderNumber}
+                  </p>
+                </div>
                 <button
                   onClick={() => setSelectedInvoice(null)}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
