@@ -326,7 +326,7 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
 }
 
 /**
- * Generate improved invoice PDF locally (temporary solution)
+ * Generate professional invoice PDF using new InvoiceGenerator
  */
 async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
   try {
@@ -348,12 +348,12 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
     
     const order = await orderResponse.json();
     
-    // Generate HTML template
-    const html = generateInvoiceHtmlTemplate(order);
+    // Use new professional invoice generator
+    const { InvoiceGenerator } = await import('@/lib/invoice-generator');
+    const invoiceGenerator = InvoiceGenerator.getInstance();
     
-    // Generate simple PDF using basic PDF structure with real order data
-    const pdfContent = generateSimplePdf(html, orderId, order);
-    const base64 = Buffer.from(pdfContent).toString('base64');
+    const pdfBuffer = await invoiceGenerator.generateInvoicePdf(order);
+    const base64 = pdfBuffer.toString('base64');
     
     return {
       base64,
@@ -362,7 +362,7 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
     };
     
   } catch (error) {
-    console.error('Error generating improved PDF:', error);
+    console.error('Error generating professional PDF:', error);
     // Fallback to original data
     return {
       base64: originalData.base64,
@@ -373,9 +373,9 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
 }
 
 /**
- * Generate simple PDF from HTML
+ * OLD FUNCTION - REMOVED
  */
-function generateSimplePdf(html: string, orderId: string, order: any): string {
+function generateSimplePdf_OLD(html: string, orderId: string, order: any): string {
   // Extract order data from order object
   const orderDate = new Date(order.date_created).toLocaleDateString('pl-PL');
   const invoiceNumber = `FV/${new Date().getFullYear()}/${order.number}`;
