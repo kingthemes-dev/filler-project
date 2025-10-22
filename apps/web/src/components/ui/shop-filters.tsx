@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
+import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DynamicCategoryFilters from './dynamic-category-filters';
 import DynamicAttributeFilters from './dynamic-attribute-filters';
@@ -327,24 +327,16 @@ export default function ShopFilters({
             onTouchEnd={onTouchEnd}
           >
                    <div className="bg-white border border-gray-200/50 shadow-sm rounded-r-2xl h-full flex flex-col relative">
-                     {/* Enhanced swipe indicator - right edge */}
+                     {/* Enhanced swipe indicator - right edge with arrow */}
                      <div 
-                       className="absolute right-0 top-1/2 transform -translate-y-1/2 w-2 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full transition-all duration-200"
+                       className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full transition-all duration-200 flex items-center justify-center"
                        style={{
                          opacity: isDragging ? 1 : 0.8,
                          transform: `translateY(-50%) scaleX(${1 + swipeProgress * 0.5})`,
                          boxShadow: isDragging ? '0 0 20px rgba(59, 130, 246, 0.5)' : 'none'
                        }}
-                     ></div>
-                     {/* Swipe instruction text */}
-                     <div 
-                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-blue-600 font-medium transition-all duration-200"
-                       style={{
-                         opacity: isDragging ? 1 : 0.7,
-                         transform: `translateY(-50%) scale(${1 + swipeProgress * 0.1})`
-                       }}
                      >
-                       ← Swipe
+                       <ArrowLeft className="w-3 h-3 text-white" />
                      </div>
                      {/* Progress bar */}
                      {isDragging && (
