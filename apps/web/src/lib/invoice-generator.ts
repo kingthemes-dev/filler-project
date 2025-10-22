@@ -92,6 +92,11 @@ export class InvoiceGenerator {
   }
 
   public async generateInvoicePdf(orderData: any): Promise<Buffer> {
+    // Check if order is eligible for invoice generation
+    if (!this.isOrderEligibleForInvoice(orderData)) {
+      throw new Error('Faktura może być wystawiona tylko dla opłaconych lub zrealizowanych zamówień');
+    }
+    
     const invoiceData = this.prepareInvoiceData(orderData);
     
     const browser = await puppeteer.launch({
@@ -121,6 +126,22 @@ export class InvoiceGenerator {
     } finally {
       await browser.close();
     }
+  }
+
+  /**
+   * Check if order is eligible for invoice generation
+   * Only paid or completed orders can have invoices
+   */
+  private isOrderEligibleForInvoice(orderData: any): boolean {
+    const eligibleStatuses = ['completed', 'processing', 'on-hold'];
+    return eligibleStatuses.includes(orderData.status);
+  }
+
+  /**
+   * Check if order is eligible for invoice generation (public method)
+   */
+  public isOrderEligibleForInvoicePublic(orderData: any): boolean {
+    return this.isOrderEligibleForInvoice(orderData);
   }
 
   private prepareInvoiceData(orderData: any): InvoiceData {

@@ -15,6 +15,7 @@ export interface Invoice {
   status: string;
   download_url: string;
   orderNumber: string;
+  isEligible?: boolean; // Whether this order is eligible for invoice generation
 }
 
 export default function MyInvoicesPage() {
@@ -47,15 +48,16 @@ export default function MyInvoicesPage() {
     try {
       setLoading(true);
       
-      // Get all orders for the customer - we'll show all orders as potential invoices
+      // Get all orders for the customer
       const response = await fetch(`/api/woocommerce?endpoint=orders&customer=${user?.id}`);
       const data = await response.json();
 
       if (Array.isArray(data)) {
-        // Transform all orders to invoice format (every order can have an invoice generated)
+        // Show all orders, but mark which ones are eligible for invoices
         const transformedInvoices = data.map((order: any) => {
           const invoiceNumber = order.meta_data?.find((meta: any) => meta.key === '_invoice_number')?.value;
           const invoiceDate = order.meta_data?.find((meta: any) => meta.key === '_invoice_date')?.value;
+          const isEligible = isOrderEligibleForInvoice(order.status);
           
           return {
             id: order.id.toString(),
@@ -65,7 +67,8 @@ export default function MyInvoicesPage() {
             currency: order.currency || 'PLN',
             status: order.status,
             download_url: null, // No longer using WCPDF URLs
-            orderNumber: order.number
+            orderNumber: order.number,
+            isEligible: isEligible
           };
         });
         
@@ -86,24 +89,74 @@ export default function MyInvoicesPage() {
     switch (status) {
       case 'completed':
         return {
-          label: 'Zapłacona',
-          color: 'bg-green-100 text-green-800'
+          label: 'Zrealizowane',
+          color: 'bg-green-100 text-green-800',
+          icon: '✅'
         };
       case 'processing':
         return {
           label: 'W trakcie',
-          color: 'bg-blue-100 text-blue-800'
+          color: 'bg-blue-100 text-blue-800',
+          icon: '⏳'
+        };
+      case 'on-hold':
+        return {
+          label: 'Wstrzymane',
+          color: 'bg-yellow-100 text-yellow-800',
+          icon: '⏸️'
         };
       case 'pending':
         return {
-          label: 'Oczekująca',
-          color: 'bg-yellow-100 text-yellow-800'
+          label: 'Oczekujące',
+          color: 'bg-orange-100 text-orange-800',
+          icon: '⏳'
+        };
+      case 'cancelled':
+        return {
+          label: 'Anulowane',
+          color: 'bg-red-100 text-red-800',
+          icon: '❌'
+        };
+      case 'refunded':
+        return {
+          label: 'Zwrócone',
+          color: 'bg-gray-100 text-gray-800',
+          icon: '↩️'
+        };
+      case 'failed':
+        return {
+          label: 'Nieudane',
+          color: 'bg-red-100 text-red-800',
+          icon: '❌'
         };
       default:
         return {
           label: 'Nieznana',
-          color: 'bg-gray-100 text-gray-800'
+          color: 'bg-gray-100 text-gray-800',
+          icon: '❓'
         };
+    }
+  };
+
+  // Check if order is eligible for invoice generation
+  const isOrderEligibleForInvoice = (status: string): boolean => {
+    const eligibleStatuses = ['completed', 'processing', 'on-hold'];
+    return eligibleStatuses.includes(status);
+  };
+
+  // Get tooltip message for disabled invoice buttons
+  const getInvoiceTooltip = (status: string): string => {
+    switch (status) {
+      case 'pending':
+        return 'Faktura będzie dostępna po opłaceniu zamówienia';
+      case 'cancelled':
+        return 'Faktura niedostępna - zamówienie anulowane';
+      case 'refunded':
+        return 'Faktura niedostępna - zamówienie zwrócone';
+      case 'failed':
+        return 'Faktura niedostępna - płatność nieudana';
+      default:
+        return 'Faktura niedostępna dla tego statusu zamówienia';
     }
   };
 
@@ -112,6 +165,12 @@ export default function MyInvoicesPage() {
   };
 
   const handleViewInvoice = async (invoice: Invoice) => {
+    // Check if invoice is eligible for viewing
+    if (!invoice.isEligible) {
+      alert(getInvoiceTooltip(invoice.status));
+      return;
+    }
+
     try {
       // Use your custom invoice system - redirect to download endpoint
       const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${invoice.id}`);
@@ -153,6 +212,12 @@ export default function MyInvoicesPage() {
   };
 
   const handleDownloadInvoice = async (invoice: Invoice) => {
+    // Check if invoice is eligible for download
+    if (!invoice.isEligible) {
+      alert(getInvoiceTooltip(invoice.status));
+      return;
+    }
+
     try {
       console.log('🔄 Downloading invoice for order:', invoice.id);
       
@@ -273,7 +338,8 @@ export default function MyInvoicesPage() {
                             (Zamówienie #{invoice.orderNumber})
                           </span>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color} flex items-center gap-1`}>
+                          <span>{statusInfo.icon}</span>
                           {statusInfo.label}
                         </span>
                       </div>
@@ -287,20 +353,38 @@ export default function MyInvoicesPage() {
                           <Euro className="w-4 h-4" />
                           <span>{formatPrice(invoice.total)} {invoice.currency}</span>
                         </div>
+                        {!invoice.isEligible && (
+                          <div className="flex items-center gap-1 text-orange-600">
+                            <span className="text-xs">⚠️</span>
+                            <span className="text-xs">Faktura niedostępna</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleViewInvoice(invoice)}
-                        className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-black hover:bg-gray-50 rounded-lg transition-colors"
+                        disabled={!invoice.isEligible}
+                        title={!invoice.isEligible ? getInvoiceTooltip(invoice.status) : 'Podgląd faktury'}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          invoice.isEligible
+                            ? 'text-gray-600 hover:text-black hover:bg-gray-50'
+                            : 'text-gray-400 cursor-not-allowed bg-gray-100'
+                        }`}
                       >
                         <Eye className="w-4 h-4" />
                         Podgląd
                       </button>
                       <button
                         onClick={() => handleDownloadInvoice(invoice)}
-                        className="flex items-center gap-2 px-4 py-2 bg-black text-white hover:bg-gray-800 rounded-lg transition-colors"
+                        disabled={!invoice.isEligible}
+                        title={!invoice.isEligible ? getInvoiceTooltip(invoice.status) : 'Pobierz fakturę PDF'}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          invoice.isEligible
+                            ? 'bg-black text-white hover:bg-gray-800'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
                       >
                         <Download className="w-4 h-4" />
                         Pobierz PDF

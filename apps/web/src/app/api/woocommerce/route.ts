@@ -274,39 +274,45 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
   }
 
   try {
-    console.log('🔄 Fetching PDF for order:', orderId);
+    console.log('🔄 Checking order eligibility for invoice generation:', orderId);
     
-    // Call WordPress custom API for PDF
-    const pdfUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/invoice/${orderId}/pdf`;
-    console.log('🔄 Calling WordPress PDF API:', pdfUrl);
+    // First, get order details to check if it's eligible for invoice
+    const orderUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
+    const auth = 'Basic ' + Buffer.from(`${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`).toString('base64');
     
-    const response = await fetch(pdfUrl, {
-      method: 'GET',
+    const orderResponse = await fetch(orderUrl, {
       headers: {
+        'Authorization': auth,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; HeadlessWoo/1.0)',
       },
     });
     
-    console.log('🔄 WordPress PDF API response status:', response.status);
-
-    const raw = await response.text();
-    let data: any = null;
-    try { data = raw ? JSON.parse(raw) : null; } catch (e) { /* not json */ }
-    if (!response.ok) {
-      const msg = (data && (data.error || data.message)) || raw || 'Błąd pobierania PDF';
-      return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: response.status || 502 });
-    }
-
-    if (!data || !data.success) {
-      return NextResponse.json({ success: false, error: 'Nie udało się pobrać PDF' }, { status: 404 });
+    if (!orderResponse.ok) {
+      throw new Error('Nie udało się pobrać danych zamówienia');
     }
     
-    console.log('✅ Successfully fetched PDF for order:', orderId);
+    const orderData = await orderResponse.json();
     
-    // TEMPORARY: Generate improved PDF locally until mu-plugin is updated on server
-    const improvedPdf = await generateImprovedInvoicePdf(orderId, data);
+    // Check if order is eligible for invoice generation
+    const invoiceGenerator = InvoiceGenerator.getInstance();
+    if (!invoiceGenerator.isOrderEligibleForInvoicePublic(orderData)) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Faktura może być wystawiona tylko dla opłaconych lub zrealizowanych zamówień',
+        eligible: false
+      }, { status: 403 });
+    }
+    
+    console.log('✅ Order is eligible for invoice generation');
+    console.log('🔄 Generating improved PDF for order:', orderId);
+    
+    // Generate improved PDF using InvoiceGenerator
+    const improvedPdf = await generateImprovedInvoicePdf(orderId, {
+      base64: '',
+      filename: `faktura_${orderId}.pdf`,
+      mime: 'application/pdf'
+    });
     
     return NextResponse.json({
       success: true,
