@@ -121,7 +121,6 @@ export default async function HomePage() {
                 amplitude={2.6}
                 distance={0.3}
                 enableMouseInteraction={true}
-                sectionId="newsletter-section"
               />
               {/* Overlay for better text readability - but allow mouse interaction */}
               <div className="absolute inset-0 bg-black/40 pointer-events-none" />
