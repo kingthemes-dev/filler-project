@@ -77,6 +77,17 @@ export default function MyOrdersPage() {
         // Transform WooCommerce orders to our format
         const transformedOrders = data.map((order: any) => {
           const mappedStatus = mapOrderStatus(order.status);
+          const isEligible = isOrderEligibleForInvoice(mappedStatus);
+          
+          // Debug log for order 484
+          if (order.id === 484) {
+            console.log('🔍 Order 484 debug:', {
+              originalStatus: order.status,
+              mappedStatus: mappedStatus,
+              isEligible: isEligible
+            });
+          }
+          
           return {
             id: order.id.toString(),
             number: order.number,
@@ -104,7 +115,7 @@ export default function MyOrdersPage() {
             },
             paymentMethod: mapPaymentMethod(order.payment_method_title || order.payment_method || 'unknown'),
             trackingNumber: order.meta_data?.find((meta: any) => meta.key === '_tracking_number')?.value || null,
-            isEligibleForInvoice: isOrderEligibleForInvoice(mappedStatus)
+            isEligibleForInvoice: isEligible
           };
         });
         setOrders(transformedOrders);
@@ -224,6 +235,7 @@ export default function MyOrdersPage() {
 
   // Check if order is eligible for invoice generation
   const isOrderEligibleForInvoice = (status: Order['status']): boolean => {
+    // Use the same logic as /moje-faktury - eligible statuses are those that map to completed/processing/on-hold
     const eligibleStatuses = ['processing', 'shipped', 'delivered'];
     return eligibleStatuses.includes(status);
   };
