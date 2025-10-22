@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal, ArrowLeft } from 'lucide-react';
+import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DynamicCategoryFilters from './dynamic-category-filters';
 import DynamicAttributeFilters from './dynamic-attribute-filters';
@@ -290,20 +290,12 @@ export default function ShopFilters({
         >
           <button
             onClick={onToggleFilters}
-            className="flex flex-col items-center justify-center w-10 h-24 bg-white/90 backdrop-blur-sm border border-r-0 border-gray-200 rounded-r-2xl shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+            className="flex items-center justify-center w-6 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-r-full shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
             style={{
               animation: 'swipePulse 2s ease-in-out infinite'
             }}
           >
-            {/* Pulsing background effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-r-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ping"></div>
-            
-            <div className="flex items-center gap-1 transform rotate-180 relative z-10 pl-1" style={{ writingMode: 'vertical-rl' }}>
-              <Filter className="w-4 h-4 text-gray-700 transform rotate-90 group-hover:scale-110 transition-transform duration-300" />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors duration-300">
-                Filtry
-              </span>
-            </div>
+            <ArrowRight className="w-3 h-3 text-white" />
           </button>
         </motion.div>
       )}
