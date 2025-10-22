@@ -64,7 +64,7 @@ export default function MyInvoicesPage() {
             total: parseFloat(order.total), // Keep as PLN (not convert to grosze)
             currency: order.currency || 'PLN',
             status: order.status,
-            download_url: `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/?action=generate_wpo_wcpdf&document_type=invoice&order_ids=${order.id}`,
+            download_url: null, // No longer using WCPDF URLs
             orderNumber: order.number
           };
         });
@@ -113,16 +113,42 @@ export default function MyInvoicesPage() {
 
   const handleViewInvoice = async (invoice: Invoice) => {
     try {
-      // Use direct WCPDF link for viewing
-      if (invoice.download_url) {
-        window.open(invoice.download_url, '_blank');
-      } else {
-        // Fallback: generate WCPDF link
-        const wcpdfUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/?action=generate_wpo_wcpdf&document_type=invoice&order_ids=${invoice.id}`;
-        window.open(wcpdfUrl, '_blank');
+      // Use your custom invoice system - redirect to download endpoint
+      const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${invoice.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Nie udało się pobrać faktury');
       }
+      
+      const data = await response.json();
+      
+      if (data.success && data.base64) {
+        // Convert base64 to blob and open in new tab
+        const binaryString = atob(data.base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        
+        // Open PDF in new tab for viewing
+        window.open(url, '_blank');
+        
+        // Clean up after a delay
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+        
+        console.log('✅ Invoice opened for viewing');
+      } else {
+        throw new Error('Nieprawidłowy format faktury');
+      }
+      
     } catch (error) {
-      console.error('Error opening invoice:', error);
+      console.error('❌ Error opening invoice:', error);
+      alert('Błąd podczas otwierania faktury');
     }
   };
 
