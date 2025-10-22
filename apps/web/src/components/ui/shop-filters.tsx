@@ -291,7 +291,7 @@ export default function ShopFilters({
         >
           <button
             onClick={onToggleFilters}
-            className="flex items-center justify-center w-6 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-r-full shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+            className="flex items-center justify-center w-6 h-20 bg-gradient-to-r from-gray-800 to-black rounded-r-full shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
             style={{
               animation: 'swipePulse 2s ease-in-out infinite'
             }}
@@ -323,7 +323,7 @@ export default function ShopFilters({
                      {/* Enhanced swipe indicator - right edge with arrow */}
                      <button
                        onClick={onToggleFilters}
-                       className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-20 bg-gradient-to-b from-blue-400 to-blue-600 rounded-l-full transition-all duration-200 flex items-center justify-center cursor-pointer hover:shadow-lg"
+                       className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-20 bg-gradient-to-r from-gray-800 to-black rounded-l-full transition-all duration-200 flex items-center justify-center cursor-pointer hover:shadow-lg"
                        style={{
                          opacity: isDragging ? 1 : 0.8,
                          transform: `translateY(-50%) scaleX(${1 + swipeProgress * 0.5})`,
