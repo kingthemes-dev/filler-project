@@ -24,7 +24,11 @@ export default function Header() {
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [mobileMenuTab, setMobileMenuTab] = useState<'main' | 'filters' | 'account'>('main');
+  const [mobileMenuTab, setMobileMenuTab] = useState<'main' | 'filters'>('main');
+  
+  // Debug logs
+  console.log('📱 Mobile Menu - isOpen:', isMobileMenuOpen);
+  console.log('📱 Mobile Menu - tab:', mobileMenuTab);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   
@@ -82,6 +86,7 @@ export default function Header() {
     const fetchWooCommerceData = async () => {
       if (mobileMenuTab !== 'filters') return;
       
+      console.log('🔄 Fetching WooCommerce data for filters...');
       setIsLoadingData(true);
       try {
         // Pobierz kategorie i zbuduj hierarchię
@@ -647,72 +652,85 @@ export default function Header() {
 
                 {/* Main Navigation */}
                 <div className="flex-1 overflow-y-auto">
-                  <div className="px-6 py-6">
-                    {/* Main Navigation Links */}
-                    <nav className="space-y-4">
-                      <Link 
-                        href="/" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setIsMobileSearchOpen(false);
-                        }}
-                      >
-                        Strona główna
-                      </Link>
+                  {/* Main Menu */}
+                  {mobileMenuTab === 'main' && (
+                    <div className="px-6 py-6">
+                      {/* Debug: Show current tab */}
+                      <div className="text-xs text-gray-500 mb-2">
+                        Current tab: {mobileMenuTab}
+                      </div>
                       
-                      {/* Sklep z filtrami */}
-                      <div className="space-y-2">
+                      {/* Main Navigation Links */}
+                      <nav className="space-y-4">
                         <Link 
-                          href="/sklep" 
+                          href="/" 
                           className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
                           onClick={() => {
                             setIsMobileMenuOpen(false);
                             setIsMobileSearchOpen(false);
                           }}
                         >
-                          Sklep
+                          Strona główna
                         </Link>
                         
-                        {/* Filtry pod Sklep */}
-                        <div className="ml-4 space-y-2">
-                          <button
-                            onClick={() => setMobileMenuTab('filters')}
-                            className="block text-sm text-gray-600 hover:text-black transition-colors py-2 flex items-center"
+                        {/* Sklep z filtrami */}
+                        <div className="space-y-2">
+                          <Link 
+                            href="/sklep" 
+                            className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              setIsMobileSearchOpen(false);
+                            }}
                           >
-                            <ChevronRight className="w-4 h-4 mr-2" />
-                            Filtry i kategorie
-                          </button>
+                            Sklep
+                          </Link>
+                          
+                          {/* Filtry pod Sklep */}
+                          <div className="ml-4 space-y-2">
+                            <button
+                              onClick={() => setMobileMenuTab('filters')}
+                              className="block text-sm text-gray-600 hover:text-black transition-colors py-2 flex items-center"
+                            >
+                              <ChevronRight className="w-4 h-4 mr-2" />
+                              Filtry i kategorie
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <a 
-                        href="/o-nas" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setIsMobileSearchOpen(false);
-                        }}
-                      >
-                        O nas
-                      </a>
-                      <a 
-                        href="/kontakt" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setIsMobileSearchOpen(false);
-                        }}
-                      >
-                        Kontakt
-                      </a>
-                    </nav>
-                  </div>
+                        
+                        <a 
+                          href="/o-nas" 
+                          className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsMobileSearchOpen(false);
+                          }}
+                        >
+                          O nas
+                        </a>
+                        <a 
+                          href="/kontakt" 
+                          className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsMobileSearchOpen(false);
+                          }}
+                        >
+                          Kontakt
+                        </a>
+                      </nav>
+                    </div>
+                  )}
 
                   {/* Filters Section */}
                   {mobileMenuTab === 'filters' && (
                     <div className="px-6 py-6">
                       <div className="space-y-4">
+                        {/* Debug: Show current tab */}
+                        <div className="text-xs text-gray-500 mb-2">
+                          Current tab: {mobileMenuTab}
+                        </div>
+                        
                         {/* Back button */}
                         <button
                           onClick={() => setMobileMenuTab('main')}
@@ -725,6 +743,11 @@ export default function Header() {
                         {/* 1. HIERARCHICZNE KATEGORIE - PRAWDZIWE DANE Z WOOCOMMERCE */}
                         <div className="space-y-1">
                           <h3 className="text-base font-medium text-gray-900 mb-3 uppercase tracking-wide">Kategorie</h3>
+                          
+                          {/* Debug: Show loading state */}
+                          <div className="text-xs text-gray-500 mb-2">
+                            Loading: {isLoadingData ? 'true' : 'false'}
+                          </div>
                           
                           {isLoadingData ? (
                             <div className="bg-white rounded-lg border border-gray-200 p-4">
