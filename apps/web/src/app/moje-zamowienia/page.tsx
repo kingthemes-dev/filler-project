@@ -152,29 +152,42 @@ export default function MyOrdersPage() {
     try {
       console.log('🔄 Downloading invoice for order:', orderId);
       
-      // Try to get invoice from custom WordPress API
-      const response = await fetch(`/api/woocommerce?endpoint=customers/invoices&customer_id=${user?.id}`);
+      // Use Next.js API as proxy to avoid CORS issues
+      const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${orderId}`);
       
       if (!response.ok) {
         throw new Error('Nie udało się pobrać faktury');
       }
       
       const data = await response.json();
-      const invoice = data.invoices?.find((inv: any) => inv.id === parseInt(orderId));
       
-      if (!invoice) {
-        alert('Faktura dla tego zamówienia nie została znaleziona');
-        return;
-      }
-      
-      if (invoice.download_url) {
-        // Open download URL in new tab
-        window.open(invoice.download_url, '_blank');
+      if (data.success && data.base64) {
+        // Convert base64 to blob and download
+        const binaryString = atob(data.base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = data.filename || `faktura_${orderId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        
+        console.log('✅ Invoice downloaded successfully');
       } else {
-        alert('Link do pobierania faktury nie jest dostępny');
+        throw new Error('Nieprawidłowy format faktury');
       }
       
-      console.log('✅ Invoice download initiated for order:', orderId);
     } catch (error) {
       console.error('❌ Error downloading invoice:', error);
       alert('Błąd podczas pobierania faktury');

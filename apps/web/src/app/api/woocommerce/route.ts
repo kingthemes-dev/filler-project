@@ -260,6 +260,68 @@ async function handleCustomerInvoices(req: NextRequest) {
   }
 }
 
+async function handleCustomerInvoicePdf(req: NextRequest) {
+  console.log('🔍 handleCustomerInvoicePdf called');
+  const { searchParams } = new URL(req.url);
+  const orderId = searchParams.get('order_id');
+  console.log('🔍 orderId:', orderId);
+  
+  if (!orderId) {
+    return NextResponse.json(
+      { success: false, error: 'Order ID jest wymagany' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    console.log('🔄 Fetching PDF for order:', orderId);
+    
+    // Call WordPress custom API for PDF
+    const pdfUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/invoice/${orderId}/pdf`;
+    console.log('🔄 Calling WordPress PDF API:', pdfUrl);
+    
+    const response = await fetch(pdfUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; HeadlessWoo/1.0)',
+      },
+    });
+    
+    console.log('🔄 WordPress PDF API response status:', response.status);
+
+    const raw = await response.text();
+    let data: any = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch (e) { /* not json */ }
+    if (!response.ok) {
+      const msg = (data && (data.error || data.message)) || raw || 'Błąd pobierania PDF';
+      return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: response.status || 502 });
+    }
+
+    if (!data || !data.success) {
+      return NextResponse.json({ success: false, error: 'Nie udało się pobrać PDF' }, { status: 404 });
+    }
+    
+    console.log('✅ Successfully fetched PDF for order:', orderId);
+    
+    return NextResponse.json({
+      success: true,
+      base64: data.base64,
+      filename: data.filename,
+      mime: data.mime
+    });
+
+  } catch (error) {
+    console.error('🚨 Error fetching customer invoice PDF:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: 'Nie udało się pobrać PDF'
+    }, { status: 500 });
+  }
+}
+
 async function handleOrderTracking(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const orderId = searchParams.get('order_id');
@@ -1169,6 +1231,12 @@ export async function GET(req: NextRequest) {
   if (endpoint === "customers/invoices") {
     console.log('🔄 Handling customer invoices GET request');
     return await handleCustomerInvoices(req);
+  }
+
+  // Special handling for customer invoice PDF download
+  if (endpoint === "customers/invoice-pdf") {
+    console.log('🔄 Handling customer invoice PDF download');
+    return await handleCustomerInvoicePdf(req);
   }
 
   // Customer profile endpoint
