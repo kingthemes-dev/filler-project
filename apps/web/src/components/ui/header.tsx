@@ -630,12 +630,9 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - identical structure to cart */}
+              {/* Menu Drawer - FULL SCREEN OVERLAY */}
               <motion.div
-                className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
-                         w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
-                         lg:border-l lg:border-gray-200 flex flex-col
-                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
+                className="fixed inset-0 bg-white z-50 flex flex-col lg:hidden"
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
@@ -646,7 +643,7 @@ export default function Header() {
                 aria-labelledby="mobile-menu-title"
                 style={{ zIndex: 9999 }}
               >
-                {/* Header - identical to cart */}
+                {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center space-x-3">
                     <Menu className="w-6 h-6 text-black" />
@@ -663,18 +660,9 @@ export default function Header() {
                     <X className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
-                
-                {/* Debug: Show menu state */}
-                <div className="p-4 bg-yellow-100 text-xs">
-                  Menu is open: {isMobileMenuOpen ? 'true' : 'false'}
-                </div>
 
-                {/* Content - identical to cart structure */}
+                {/* Content */}
                 <div className="flex-1 overflow-y-auto">
-                  {/* Debug: Show current tab */}
-                  <div className="p-4 bg-blue-100 text-xs">
-                    Current tab: {mobileMenuTab}
-                  </div>
                   
                   {/* Main Menu */}
                   {mobileMenuTab === 'main' && (
