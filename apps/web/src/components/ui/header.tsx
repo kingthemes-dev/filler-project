@@ -529,11 +529,11 @@ export default function Header() {
           )}
         </AnimatePresence>
         
-        {/* Mobile Menu - Cart-like Drawer */}
+        {/* Mobile Menu - EXACT COPY FROM CART MODAL */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Backdrop - identical to cart */}
+              {/* Backdrop - tylko na mobile */}
               <motion.div
                 className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                 initial={{ opacity: 0 }}
@@ -542,9 +542,12 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - FULL SCREEN on mobile like cart */}
+              {/* Menu Drawer - EXACT COPY FROM CART */}
               <motion.div
-                className="fixed inset-0 bg-white z-50 flex flex-col lg:hidden"
+                className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
+                         w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
+                         lg:border-l lg:border-gray-200 flex flex-col
+                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
@@ -553,7 +556,6 @@ export default function Header() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
-                style={{ zIndex: 9999 }}
               >
                 {/* Header - identical to cart */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
@@ -573,176 +575,167 @@ export default function Header() {
                   </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto">
+                {/* Content - EXACT COPY FROM CART */}
+                <div className="flex-1 overflow-y-auto p-6 pb-0" onClick={(e) => e.stopPropagation()}>
                   {/* Main Navigation */}
-                  <div className="px-6 py-6" onClick={(e) => e.stopPropagation()}>
-                    <nav className="space-y-4">
-                      <Link 
-                        href="/" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Strona główna
-                      </Link>
-                      
-                      <Link 
-                        href="/sklep" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Sklep
-                      </Link>
-                      
-                      <a 
-                        href="/o-nas" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        O nas
-                      </a>
-                      
-                      <a 
-                        href="/kontakt" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Kontakt
-                      </a>
-                    </nav>
+                  <div className="space-y-4 mb-8">
+                    <Link 
+                      href="/" 
+                      className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Strona główna
+                    </Link>
+                    
+                    <Link 
+                      href="/sklep" 
+                      className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Sklep
+                    </Link>
+                    
+                    <a 
+                      href="/o-nas" 
+                      className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      O nas
+                    </a>
+                    
+                    <a 
+                      href="/kontakt" 
+                      className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Kontakt
+                    </a>
                   </div>
-                  
-                  {/* Additional Content - like cart modal */}
-                  <div className="px-6 py-6" onClick={(e) => e.stopPropagation()}>
-                    <div className="space-y-6">
-                      {/* Categories Section */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-black mb-4">Kategorie</h3>
-                        <div className="space-y-3">
-                          <a href="/sklep?kategoria=kremy" className="block text-gray-700 hover:text-black transition-colors py-2">
-                            Kremy
-                          </a>
-                          <a href="/sklep?kategoria=serum" className="block text-gray-700 hover:text-black transition-colors py-2">
-                            Serum
-                          </a>
-                          <a href="/sklep?kategoria=toniki" className="block text-gray-700 hover:text-black transition-colors py-2">
-                            Toniki
-                          </a>
-                          <a href="/sklep?kategoria=maseczki" className="block text-gray-700 hover:text-black transition-colors py-2">
-                            Maseczki
-                          </a>
-                        </div>
-                      </div>
-                      
-                      {/* Special Offers */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-black mb-4">Oferty specjalne</h3>
-                        <div className="space-y-3">
-                          <a href="/sklep?promocja=true" className="block text-gray-700 hover:text-black transition-colors py-2">
-                            Promocje
-                          </a>
-                          <a href="/sklep?nowosci=true" className="block text-gray-700 hover:text-black transition-colors py-2">
-                            Nowości
-                          </a>
-                          <a href="/sklep?bestsellery=true" className="block text-gray-700 hover:text-black transition-colors py-2">
-                            Bestsellery
-                          </a>
-                        </div>
-                      </div>
+
+                  {/* Categories */}
+                  <div className="space-y-4 mb-8">
+                    <h3 className="text-lg font-semibold text-black">Kategorie</h3>
+                    <div className="space-y-3">
+                      <a href="/sklep?kategoria=kremy" className="block text-gray-700 hover:text-black transition-colors py-2">
+                        Kremy
+                      </a>
+                      <a href="/sklep?kategoria=serum" className="block text-gray-700 hover:text-black transition-colors py-2">
+                        Serum
+                      </a>
+                      <a href="/sklep?kategoria=toniki" className="block text-gray-700 hover:text-black transition-colors py-2">
+                        Toniki
+                      </a>
+                      <a href="/sklep?kategoria=maseczki" className="block text-gray-700 hover:text-black transition-colors py-2">
+                        Maseczki
+                      </a>
                     </div>
                   </div>
-                  
-                  
-                  {/* Bottom Section - Account & Favorites */}
-                  <div className="border-t border-gray-200 mt-auto" onClick={(e) => e.stopPropagation()}>
-                    <div className="p-6 space-y-4">
-                      {/* Account Section */}
-                      {isAuthenticated ? (
-                        <div className="space-y-3">
-                          <Link
-                            href="/moje-konto"
-                            className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            <User className="w-5 h-5" />
-                            <span className="text-sm font-medium">Moje konto</span>
-                          </Link>
-                          
-                          <Link
-                            href="/moje-zamowienia"
-                            className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            <Package className="w-5 h-5" />
-                            <span className="text-sm font-medium">Moje zamówienia</span>
-                          </Link>
-                          
-                          <Link
-                            href="/moje-faktury"
-                            className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            <FileText className="w-5 h-5" />
-                            <span className="text-sm font-medium">Faktury</span>
-                          </Link>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <button
-                            onClick={() => {
-                              window.dispatchEvent(new CustomEvent('openLogin'));
-                              setIsMobileMenuOpen(false);
-                            }}
-                            className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
-                          >
-                            <User className="w-5 h-5" />
-                            <span className="text-sm font-medium">Zarejestruj się</span>
-                          </button>
-                        </div>
-                      )}
-                      
-                      {/* Favorites */}
-                      <button
-                        onClick={() => {
-                          openFavoritesModal();
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
+
+                  {/* Special Offers */}
+                  <div className="space-y-4 mb-8">
+                    <h3 className="text-lg font-semibold text-black">Oferty specjalne</h3>
+                    <div className="space-y-3">
+                      <a href="/sklep?promocja=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                        Promocje
+                      </a>
+                      <a href="/sklep?nowosci=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                        Nowości
+                      </a>
+                      <a href="/sklep?bestsellery=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                        Bestsellery
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer - EXACT COPY FROM CART */}
+                <div className="border-t border-gray-200 p-6 space-y-4 bg-white rounded-bl-2xl" onClick={(e) => e.stopPropagation()}>
+                  {/* Account Section */}
+                  {isAuthenticated ? (
+                    <div className="space-y-3">
+                      <Link 
+                        href="/moje-konto" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <Heart className="w-5 h-5" />
-                        <span className="text-sm font-medium">Ulubione</span>
-                        {favoritesCount > 0 && (
-                          <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                            {favoritesCount}
-                          </span>
-                        )}
-                      </button>
+                        Moje konto
+                      </Link>
                       
-                      {/* Social Media */}
-                      <div className="flex items-center space-x-4 pt-4 border-t border-gray-100">
-                        <a 
-                          href="tel:+48535956932" 
-                          className="text-gray-600 hover:text-black transition-colors"
-                        >
-                          <Phone className="w-5 h-5" />
-                        </a>
-                        <a 
-                          href="https://facebook.com" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-gray-600 hover:text-blue-600 transition-colors"
-                        >
-                          <Facebook className="w-5 h-5" />
-                        </a>
-                        <a 
-                          href="https://instagram.com" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-gray-600 hover:text-pink-600 transition-colors"
-                        >
-                          <Instagram className="w-5 h-5" />
-                        </a>
-                      </div>
+                      <Link 
+                        href="/moje-zamowienia" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Moje zamówienia
+                      </Link>
+                      
+                      <Link 
+                        href="/moje-faktury" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Faktury
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link
+                      href="/moje-konto"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-3 px-4 rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 inline-block text-center"
+                    >
+                      Zarejestruj się
+                    </Link>
+                  )}
+
+                  {/* Favorites */}
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsFavoritesOpen(true);
+                    }}
+                    className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <span className="text-base font-medium text-gray-700">
+                      Lista życzeń
+                    </span>
+                    <div className="flex items-center space-x-2">
+                      <Heart className="w-5 h-5 text-red-500" />
+                      {favoritesCount > 0 && (
+                        <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                          {favoritesCount}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Social Media */}
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex space-x-4">
+                      <a 
+                        href="tel:+48123456789" 
+                        className="text-gray-600 hover:text-black transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Phone className="w-5 h-5" />
+                      </a>
+                      <a 
+                        href="https://facebook.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-600 hover:text-black transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Facebook className="w-5 h-5" />
+                      </a>
+                      <a 
+                        href="https://instagram.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-600 hover:text-black transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Instagram className="w-5 h-5" />
+                      </a>
                     </div>
                   </div>
                 </div>
