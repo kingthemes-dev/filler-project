@@ -170,6 +170,8 @@ function send_invoice_email($order, $invoice_data) {
 
 // Register invoice endpoints
 add_action('rest_api_init', function() {
+    // Debug: Log REST API registration
+    error_log("🔍 Customer invoices REST API endpoints registered");
     register_rest_route('custom/v1', '/invoices', [
         'methods' => 'GET',
         'callback' => 'get_customer_invoices',
@@ -226,6 +228,9 @@ add_action('rest_api_init', function() {
  * Check if user has permission to access customer data
  */
 function check_customer_permission($request) {
+    // Debug: Log permission check
+    error_log("🔍 Customer invoices permission check - customer_id: " . $request->get_param('customer_id'));
+    
     // For now, allow all requests - in production add proper authentication
     return true;
 }
@@ -236,6 +241,9 @@ function check_customer_permission($request) {
 function get_customer_invoices($request) {
     $customer_id = $request->get_param('customer_id');
     
+    // Debug: Log invoice request
+    error_log("🔍 Customer invoices request - customer_id: " . $customer_id);
+
     // Get orders for customer that have invoices generated
     $orders = wc_get_orders([
         'customer_id' => $customer_id,
@@ -251,6 +259,9 @@ function get_customer_invoices($request) {
             ]
         ]
     ]);
+    
+    // Debug: Log found orders
+    error_log("🔍 Found orders with invoices: " . count($orders));
     
     $invoices = [];
     
