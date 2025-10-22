@@ -24,18 +24,6 @@ export default function Header() {
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [mobileMenuTab, setMobileMenuTab] = useState<'main' | 'filters'>('main');
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  
-  // Prawdziwe dane z WooCommerce
-  const [categories, setCategories] = useState<any[]>([]);
-  const [attributes, setAttributes] = useState<any[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(false);
-  
-  // Hierarchia kategorii
-  const [mainCategories, setMainCategories] = useState<any[]>([]);
-  const [subCategories, setSubCategories] = useState<{[key: number]: any[]}>({});
   
   // Safely access stores with error handling
   let itemCount = 0, openCart = () => {}, user = null, isAuthenticated = false, logout = () => {};
@@ -77,69 +65,6 @@ export default function Header() {
     setFavoritesCount(getFavoritesCount());
   }, [getFavoritesCount]);
 
-  // Pobierz prawdziwe dane z WooCommerce - kategorie i atrybuty
-  useEffect(() => {
-    const fetchWooCommerceData = async () => {
-      if (mobileMenuTab !== 'filters') return;
-      
-      setIsLoadingData(true);
-      try {
-        // Pobierz kategorie i zbuduj hierarchię
-        const categoriesResponse = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/categories&per_page=100`);
-        if (categoriesResponse.ok) {
-          const categoriesData = await categoriesResponse.json();
-          console.log('📂 All categories loaded:', categoriesData);
-          
-          const allCategories = Array.isArray(categoriesData) ? categoriesData : [];
-          
-          // Buduj hierarchię: główne kategorie (parent = 0) i podkategorie
-          const mainCats = allCategories.filter(cat => cat.parent === 0 && cat.name !== 'Wszystkie kategorie');
-          const subCats: {[key: number]: any[]} = {};
-          
-          // Grupuj podkategorie według parent_id
-          allCategories.forEach(cat => {
-            if (cat.parent !== 0) {
-              if (!subCats[cat.parent]) {
-                subCats[cat.parent] = [];
-              }
-              subCats[cat.parent].push(cat);
-            }
-          });
-          
-          console.log('📂 Main categories:', mainCats);
-          console.log('📂 Subcategories:', subCats);
-          
-          setMainCategories(mainCats);
-          setSubCategories(subCats);
-          setCategories(allCategories);
-        }
-
-        // Pobierz atrybuty (bez pojemności)
-        const attributesResponse = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/attributes&per_page=100`);
-        if (attributesResponse.ok) {
-          const attributesData = await attributesResponse.json();
-          console.log('🏷️ Attributes loaded:', attributesData);
-          
-          // Filtruj atrybuty - usuń pojemność
-          const filteredAttributes = Array.isArray(attributesData) 
-            ? attributesData.filter(attr => 
-                attr.slug !== 'pojemnosc' && 
-                attr.slug !== 'capacity' && 
-                !attr.name.toLowerCase().includes('pojemność')
-              ) 
-            : [];
-          
-          setAttributes(filteredAttributes);
-        }
-      } catch (error) {
-        console.error('❌ Error loading WooCommerce data:', error);
-      } finally {
-        setIsLoadingData(false);
-      }
-    };
-
-    fetchWooCommerceData();
-  }, [mobileMenuTab]);
 
   // Update favorites count when favorites array changes
   useEffect(() => {
@@ -213,12 +138,6 @@ export default function Header() {
     };
   }, [shopHoverTimeout]);
 
-  // Reset mobile menu tab when menu closes
-  useEffect(() => {
-    if (!isMobileMenuOpen) {
-      setMobileMenuTab('main');
-    }
-  }, [isMobileMenuOpen]);
 
   // Block body scroll when mobile menu is open
   useEffect(() => {
@@ -230,7 +149,7 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
-  // Keyboard navigation and focus trap for mobile menu
+  // Keyboard navigation for mobile menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isMobileMenuOpen) {
@@ -240,13 +159,6 @@ export default function Header() {
 
     if (isMobileMenuOpen) {
       window.addEventListener('keydown', handleKeyDown);
-      
-      // Focus trap - focus first focusable element
-      const firstFocusable = document.querySelector('[data-mobile-menu] button, [data-mobile-menu] a, [data-mobile-menu] input');
-      if (firstFocusable) {
-        (firstFocusable as HTMLElement).focus();
-      }
-      
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
   }, [isMobileMenuOpen]);
@@ -617,7 +529,7 @@ export default function Header() {
           )}
         </AnimatePresence>
         
-        {/* Mobile Menu - Identical to Cart Modal */}
+        {/* Mobile Menu - Cart-like Drawer */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
@@ -630,9 +542,12 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - FULL SCREEN OVERLAY */}
+              {/* Menu Drawer - identical to cart */}
               <motion.div
-                className="fixed inset-0 bg-white z-50 flex flex-col lg:hidden"
+                className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
+                         w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
+                         lg:border-l lg:border-gray-200 flex flex-col
+                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
@@ -641,9 +556,8 @@ export default function Header() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
-                style={{ zIndex: 9999 }}
               >
-                {/* Header */}
+                {/* Header - identical to cart */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center space-x-3">
                     <Menu className="w-6 h-6 text-black" />
@@ -663,190 +577,42 @@ export default function Header() {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto">
-                  
-                  {/* Main Menu */}
-                  {mobileMenuTab === 'main' && (
-                    <div className="px-6 py-6" onClick={(e) => e.stopPropagation()}>
-                      {/* Main Navigation Links */}
-                      <nav className="space-y-4">
-                        <Link 
-                          href="/" 
-                          className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsMobileSearchOpen(false);
-                          }}
-                        >
-                          Strona główna
-                        </Link>
-                        
-                        {/* Sklep z filtrami */}
-                        <div className="space-y-2">
-                          <Link 
-                            href="/sklep" 
-                            className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              setIsMobileSearchOpen(false);
-                            }}
-                          >
-                            Sklep
-                          </Link>
-                          
-                          {/* Filtry pod Sklep */}
-                          <div className="ml-4 space-y-2">
-                            <button
-                              onClick={() => setMobileMenuTab('filters')}
-                              className="block text-sm text-gray-600 hover:text-black transition-colors py-2 flex items-center"
-                            >
-                              <ChevronRight className="w-4 h-4 mr-2" />
-                              Filtry i kategorie
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <a 
-                          href="/o-nas" 
-                          className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsMobileSearchOpen(false);
-                          }}
-                        >
-                          O nas
-                        </a>
-                        <a 
-                          href="/kontakt" 
-                          className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsMobileSearchOpen(false);
-                          }}
-                        >
-                          Kontakt
-                        </a>
-                      </nav>
-                    </div>
-                  )}
-
-                  {/* Filters Section */}
-                  {mobileMenuTab === 'filters' && (
-                    <div className="px-6 py-6" onClick={(e) => e.stopPropagation()}>
-                      <div className="space-y-4">
-                        {/* Back button */}
-                        <button
-                          onClick={() => setMobileMenuTab('main')}
-                          className="flex items-center text-sm text-gray-600 hover:text-black transition-colors mb-4"
-                        >
-                          <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-                          Powrót do menu
-                        </button>
-                        
-                        {/* 1. HIERARCHICZNE KATEGORIE - PRAWDZIWE DANE Z WOOCOMMERCE */}
-                        <div className="space-y-1">
-                          <h3 className="text-base font-medium text-gray-900 mb-3 uppercase tracking-wide">Kategorie</h3>
-                          
-                          {isLoadingData ? (
-                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                              <div className="animate-pulse flex items-center space-x-3">
-                                <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                                <div className="h-4 bg-gray-200 rounded flex-1"></div>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              {/* Wszystkie kategorie na górze */}
-                              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                <Link
-                                  href="/sklep"
-                                  className="w-full flex items-center justify-between py-3 px-4 hover:bg-gray-50 transition-colors"
-                                  onClick={() => setIsMobileMenuOpen(false)}
-                                >
-                                  <span className="text-sm font-medium text-gray-900">
-                                    Wszystkie kategorie <span className="text-sm text-gray-500">(65)</span>
-                                  </span>
-                                </Link>
-                              </div>
-                              
-                              {mainCategories.map((category) => (
-                                <div key={category.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                {/* Główna kategoria - TYLKO rozwijanie */}
-                                <div className="flex items-center">
-                                  <button
-                                    className="flex-1 flex items-center justify-between py-3 px-4 hover:bg-gray-50 transition-colors"
-                                    onClick={() => setExpandedCategory(expandedCategory === `cat-${category.id}` ? null : `cat-${category.id}`)}
-                                  >
-                                    <span className="text-sm font-medium text-gray-900">
-                                      {category.name} <span className="text-sm text-gray-500">({category.count || 0})</span>
-                                    </span>
-                                  </button>
-                                  
-                                  {/* Przycisk rozwijania podkategorii */}
-                                  {subCategories[category.id] && subCategories[category.id].length > 0 && (
-                                    <button
-                                      className="p-3 hover:bg-gray-50 transition-colors"
-                                      onClick={() => setExpandedCategory(expandedCategory === `cat-${category.id}` ? null : `cat-${category.id}`)}
-                                    >
-                                      {expandedCategory === `cat-${category.id}` ? (
-                                        <ChevronDown className="w-4 h-4 text-gray-600" />
-                                      ) : (
-                                        <ChevronRight className="w-4 h-4 text-gray-600" />
-                                      )}
-                                    </button>
-                                  )}
-                                </div>
-                                
-                                {/* Podkategorie */}
-                                {expandedCategory === `cat-${category.id}` && subCategories[category.id] && (
-                                  <div className="border-t border-gray-100 bg-gray-50">
-                                    <div className="py-2 space-y-1">
-                                      {subCategories[category.id].map((subCategory) => (
-                                        <Link
-                                          key={subCategory.id}
-                                          href={`/sklep?category=${subCategory.slug}`}
-                                          className="block w-full text-left py-2 px-6 hover:bg-gray-100 transition-colors text-sm font-medium text-gray-700"
-                                          onClick={() => setIsMobileMenuOpen(false)}
-                                        >
-                                          {subCategory.name} {subCategory.count && <span className="text-gray-500">({subCategory.count})</span>}
-                                        </Link>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                </div>
-                              ))}
-                            </>
-                          )}
-                        </div>
-
-                        {/* 2. ATRYBUTY - PRAWDZIWE DANE Z WOOCOMMERCE */}
-                        {attributes.map((attribute) => (
-                          <div key={attribute.id} className="space-y-1">
-                            <h3 className="text-base font-medium text-gray-900 mb-3 uppercase tracking-wide">{attribute.name}</h3>
-                            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                              <button
-                                className="w-full flex items-center justify-between py-3 px-4 hover:bg-gray-50 transition-colors"
-                                onClick={() => setExpandedSection(expandedSection === `attr-${attribute.id}` ? null : `attr-${attribute.id}`)}
-                              >
-                                <span className="text-sm font-medium text-gray-900">{attribute.name}</span>
-                                {expandedSection === `attr-${attribute.id}` ? (
-                                  <ChevronDown className="w-4 h-4 text-gray-600" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-gray-600" />
-                                )}
-                              </button>
-                              
-                              {expandedSection === `attr-${attribute.id}` && (
-                                <AttributeTerms attributeId={attribute.id} onClose={() => setIsMobileMenuOpen(false)} />
-                              )}
-                            </div>
-                          </div>
-                        ))}
-
-                      </div>
-                    </div>
-                  )}
-
+                  {/* Main Navigation */}
+                  <div className="px-6 py-6" onClick={(e) => e.stopPropagation()}>
+                    <nav className="space-y-4">
+                      <Link 
+                        href="/" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Strona główna
+                      </Link>
+                      
+                      <Link 
+                        href="/sklep" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Sklep
+                      </Link>
+                      
+                      <a 
+                        href="/o-nas" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        O nas
+                      </a>
+                      
+                      <a 
+                        href="/kontakt" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Kontakt
+                      </a>
+                    </nav>
+                  </div>
                   
                   {/* Bottom Section - Account & Favorites */}
                   <div className="border-t border-gray-200 mt-auto" onClick={(e) => e.stopPropagation()}>
@@ -962,49 +728,3 @@ export default function Header() {
   );
 }
 
-// Komponent do ładowania terminów atrybutów
-function AttributeTerms({ attributeId, onClose }: { attributeId: number; onClose: () => void }) {
-  const [terms, setTerms] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchTerms = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`${window.location.origin}/api/woocommerce?endpoint=products/attributes/${attributeId}/terms&per_page=100`);
-        if (response.ok) {
-          const termsData = await response.json();
-          console.log(`🏷️ Terms for attribute ${attributeId}:`, termsData);
-          setTerms(Array.isArray(termsData) ? termsData : []);
-        }
-      } catch (error) {
-        console.error(`❌ Error loading terms for attribute ${attributeId}:`, error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTerms();
-  }, [attributeId]);
-
-  if (isLoading) {
-    return null;
-  }
-
-  return (
-    <div className="border-t border-gray-100 bg-gray-50">
-      <div className="py-2 space-y-1">
-        {terms.map((term) => (
-          <Link
-            key={term.id}
-            href={`/sklep?attribute=${term.slug}`}
-            className="block w-full text-left py-2 px-6 hover:bg-gray-100 transition-colors text-sm font-medium text-gray-700"
-            onClick={onClose}
-          >
-            {term.name} {term.count && <span className="text-gray-500">({term.count})</span>}
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
