@@ -258,6 +258,34 @@ export default function ShopFilters({
                     </motion.button>
                   )}
                 </div>
+                
+                {/* Promocje Checkbox - Minimalistyczny */}
+                <div className="mt-3">
+                  <label className="flex items-center cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={filters.onSale}
+                        onChange={(e) => onFilterChange('onSale', e.target.checked)}
+                        className="w-4 h-4 text-red-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300 appearance-none checked:bg-red-500 checked:border-red-500"
+                      />
+                      {filters.onSale && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute inset-0 flex items-center justify-center"
+                        >
+                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </motion.div>
+                      )}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900 transition-colors duration-300">
+                      Promocje
+                    </span>
+                  </label>
+                </div>
               </div>
 
               {/* Categories Filter */}
@@ -422,83 +450,6 @@ export default function ShopFilters({
                 </AnimatePresence>
               </div>
 
-              {/* Special Offers */}
-              <div className="mb-4 sm:mb-6">
-                <motion.button
-                  onClick={() => toggleSection('availability')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Oferty specjalne</h4>
-                  <motion.div
-                    animate={{ rotate: expandedSections.availability ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                  </motion.div>
-                </motion.button>
-                
-                <AnimatePresence>
-                  {expandedSections.availability && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-3"
-                    >
-                      <motion.label 
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`flex items-center p-4 rounded-xl cursor-pointer transition-all duration-300 border-2 group ${
-                          filters.onSale 
-                            ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200 shadow-lg shadow-red-100/50' 
-                            : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent hover:border-gray-200 hover:shadow-md'
-                        }`}
-                      >
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={filters.onSale}
-                            onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                            className="w-5 h-5 text-red-600 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300 appearance-none checked:bg-red-500 checked:border-red-500"
-                          />
-                          {filters.onSale && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="absolute inset-0 flex items-center justify-center"
-                            >
-                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold transition-colors duration-300 ${filters.onSale ? 'text-red-700' : 'text-gray-700 group-hover:text-gray-800'}`}>
-                              Promocje
-                            </span>
-                            {filters.onSale && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full"
-                              >
-                                AKTYWNE
-                              </motion.span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1 group-hover:text-gray-600 transition-colors duration-300">Produkty w promocji</p>
-                        </div>
-                      </motion.label>
-                      
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
 
               </div>
             </div>
@@ -537,6 +488,34 @@ export default function ShopFilters({
                       <X className="w-4 h-4" />
                     </motion.button>
                   )}
+                </div>
+                
+                {/* Promocje Checkbox - Minimalistyczny */}
+                <div className="mt-3">
+                  <label className="flex items-center cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={filters.onSale}
+                        onChange={(e) => onFilterChange('onSale', e.target.checked)}
+                        className="w-4 h-4 text-red-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300 appearance-none checked:bg-red-500 checked:border-red-500"
+                      />
+                      {filters.onSale && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute inset-0 flex items-center justify-center"
+                        >
+                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </motion.div>
+                      )}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900 transition-colors duration-300">
+                      Promocje
+                    </span>
+                  </label>
                 </div>
               </div>
 
@@ -698,83 +677,6 @@ export default function ShopFilters({
                 </AnimatePresence>
               </div>
 
-              {/* Special Offers */}
-              <div className="mb-4 sm:mb-6">
-                <motion.button
-                  onClick={() => toggleSection('availability')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Oferty specjalne</h4>
-                  <motion.div
-                    animate={{ rotate: expandedSections.availability ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                  </motion.div>
-                </motion.button>
-                
-                <AnimatePresence>
-                  {expandedSections.availability && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-3"
-                    >
-                      <motion.label 
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`flex items-center p-4 rounded-xl cursor-pointer transition-all duration-300 border-2 group ${
-                          filters.onSale 
-                            ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-200 shadow-lg shadow-red-100/50' 
-                            : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent hover:border-gray-200 hover:shadow-md'
-                        }`}
-                      >
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={filters.onSale}
-                            onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                            className="w-5 h-5 text-red-600 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300 appearance-none checked:bg-red-500 checked:border-red-500"
-                          />
-                          {filters.onSale && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="absolute inset-0 flex items-center justify-center"
-                            >
-                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold transition-colors duration-300 ${filters.onSale ? 'text-red-700' : 'text-gray-700 group-hover:text-gray-800'}`}>
-                              Promocje
-                            </span>
-                            {filters.onSale && (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-medium rounded-full"
-                              >
-                                AKTYWNE
-                              </motion.span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1 group-hover:text-gray-600 transition-colors duration-300">Produkty w promocji</p>
-                        </div>
-                      </motion.label>
-                      
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
           </div>
         </div>
       </div>
