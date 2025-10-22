@@ -305,11 +305,14 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
     
     console.log('✅ Successfully fetched PDF for order:', orderId);
     
+    // TEMPORARY: Generate improved PDF locally until mu-plugin is updated on server
+    const improvedPdf = await generateImprovedInvoicePdf(orderId, data);
+    
     return NextResponse.json({
       success: true,
-      base64: data.base64,
-      filename: data.filename,
-      mime: data.mime
+      base64: improvedPdf.base64,
+      filename: improvedPdf.filename,
+      mime: improvedPdf.mime
     });
 
   } catch (error) {
@@ -320,6 +323,163 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
       error: 'Nie udało się pobrać PDF'
     }, { status: 500 });
   }
+}
+
+/**
+ * Generate improved invoice PDF locally (temporary solution)
+ */
+async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
+  try {
+    // Get order details from WooCommerce API
+    const orderUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
+    const auth = 'Basic ' + Buffer.from(`${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`).toString('base64');
+    
+    const orderResponse = await fetch(orderUrl, {
+      headers: {
+        'Authorization': auth,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!orderResponse.ok) {
+      throw new Error('Nie udało się pobrać danych zamówienia');
+    }
+    
+    const order = await orderResponse.json();
+    
+    // Generate HTML template
+    const html = generateInvoiceHtmlTemplate(order);
+    
+    // Convert HTML to base64 (simple implementation)
+    const base64 = Buffer.from(html).toString('base64');
+    
+    return {
+      base64,
+      filename: `faktura_${orderId}.pdf`,
+      mime: 'application/pdf'
+    };
+    
+  } catch (error) {
+    console.error('Error generating improved PDF:', error);
+    // Fallback to original data
+    return {
+      base64: originalData.base64,
+      filename: originalData.filename,
+      mime: originalData.mime
+    };
+  }
+}
+
+/**
+ * Generate HTML template for invoice
+ */
+function generateInvoiceHtmlTemplate(order: any) {
+  const orderDate = new Date(order.date_created).toLocaleDateString('pl-PL');
+  const invoiceNumber = `FV/${new Date().getFullYear()}/${order.number}`;
+  
+  const itemsHtml = order.line_items.map((item: any) => `
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
+      <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.quantity}</td>
+      <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${parseFloat(item.total).toFixed(2)} zł</td>
+    </tr>
+  `).join('');
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Faktura ${invoiceNumber}</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+            .company-info { float: left; width: 50%; }
+            .invoice-info { float: right; width: 50%; text-align: right; }
+            .clear { clear: both; }
+            .customer-info { margin: 20px 0; }
+            .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .items-table th { background-color: #f5f5f5; font-weight: bold; }
+            .totals { float: right; width: 300px; margin-top: 20px; }
+            .total-row { display: flex; justify-content: space-between; padding: 5px 0; }
+            .total-final { font-weight: bold; font-size: 1.2em; border-top: 2px solid #000; padding-top: 10px; }
+            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>FAKTURA VAT</h1>
+            <h2>${invoiceNumber}</h2>
+        </div>
+        
+        <div class="company-info">
+            <h3>KingBrand Sp. z o.o.</h3>
+            <p>ul. Przykładowa 123, 00-001 Warszawa</p>
+            <p>NIP: 1234567890</p>
+            <p>Tel: +48 123 456 789</p>
+            <p>Email: info@kingbrand.pl</p>
+        </div>
+        
+        <div class="invoice-info">
+            <p><strong>Data wystawienia:</strong> ${orderDate}</p>
+            <p><strong>Data sprzedaży:</strong> ${orderDate}</p>
+            <p><strong>Numer zamówienia:</strong> ${order.number}</p>
+        </div>
+        
+        <div class="clear"></div>
+        
+        <div class="customer-info">
+            <h3>Dane nabywcy:</h3>
+            <p><strong>${order.billing.first_name} ${order.billing.last_name}</strong></p>
+            <p>${order.billing.address_1}</p>
+            <p>${order.billing.postcode} ${order.billing.city}</p>
+            <p>Email: ${order.billing.email}</p>
+            <p>Tel: ${order.billing.phone}</p>
+        </div>
+        
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Nazwa produktu</th>
+                    <th style="text-align: center;">Ilość</th>
+                    <th style="text-align: right;">Cena</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemsHtml}
+            </tbody>
+        </table>
+        
+        <div class="totals">
+            <div class="total-row">
+                <span>Wartość netto:</span>
+                <span>${parseFloat(order.total).toFixed(2)} zł</span>
+            </div>
+            <div class="total-row">
+                <span>Dostawa:</span>
+                <span>0.00 zł</span>
+            </div>
+            <div class="total-row">
+                <span>VAT:</span>
+                <span>0.00 zł</span>
+            </div>
+            <div class="total-row total-final">
+                <span>RAZEM:</span>
+                <span>${parseFloat(order.total).toFixed(2)} zł</span>
+            </div>
+        </div>
+        
+        <div class="clear"></div>
+        
+        <div class="footer">
+            <p>Płatność: ${order.payment_method_title}</p>
+            <p>Dziękujemy za zakupy w KingBrand!</p>
+        </div>
+    </body>
+    </html>
+  `;
 }
 
 async function handleOrderTracking(req: NextRequest) {
