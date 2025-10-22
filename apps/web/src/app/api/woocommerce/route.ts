@@ -191,6 +191,10 @@ async function handleCustomerInvoices(req: NextRequest) {
   const customerId = searchParams.get('customer_id');
   console.log('🔍 customerId:', customerId);
   
+  // Debug environment variables
+  console.log('🔍 NEXT_PUBLIC_WORDPRESS_URL:', process.env.NEXT_PUBLIC_WORDPRESS_URL);
+  console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+  
   if (!customerId) {
     return NextResponse.json(
       { success: false, error: 'Customer ID jest wymagany' },
@@ -1161,6 +1165,12 @@ export async function GET(req: NextRequest) {
     }
   }
   
+  // Special handling for customer invoices - GET requests (must be before general customers/ endpoint)
+  if (endpoint === "customers/invoices") {
+    console.log('🔄 Handling customer invoices GET request');
+    return await handleCustomerInvoices(req);
+  }
+
   // Customer profile endpoint
   if (endpoint.startsWith('customers/')) {
     const customerId = endpoint.replace('customers/', '');
@@ -1236,11 +1246,6 @@ export async function GET(req: NextRequest) {
     return handleShopEndpoint(req);
   }
 
-  // Special handling for customer invoices - GET requests
-  if (endpoint === "customers/invoices") {
-    console.log('🔄 Handling customer invoices GET request');
-    return await handleCustomerInvoices(req);
-  }
   
   if (!WC_URL || !CK || !CS) {
     return NextResponse.json(
