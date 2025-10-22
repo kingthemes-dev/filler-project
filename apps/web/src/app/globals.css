@@ -19,7 +19,7 @@
   
   /* Mobile product grid - minimal spacing */
   .mobile-grid {
-    @apply gap-2 sm:gap-4;
+    @apply gap-4 lg:gap-6;
   }
   
   /* Mobile compact spacing */
