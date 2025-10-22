@@ -233,7 +233,6 @@ export default function ShopFilters({
 
               {/* Search Filter */}
               <div className="mb-4 sm:mb-6">
-                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Wyszukiwanie</h4>
                 <div className="relative group" data-testid="filter-search">
                   <input
                     type="text"
@@ -514,7 +513,6 @@ export default function ShopFilters({
           <div className="space-y-4 sm:space-y-6">
               {/* Search Filter */}
               <div className="mb-4 sm:mb-6">
-                <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Wyszukiwanie</h4>
                 <div className="relative group" data-testid="filter-search">
                   <input
                     type="text"
