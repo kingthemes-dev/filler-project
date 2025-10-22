@@ -256,7 +256,7 @@ export default function ShopFilters({
       {/* Global swipe area - when sidebar is closed */}
       {!showFilters && (
         <div
-          className="fixed left-0 top-0 w-8 h-full z-20 lg:hidden"
+          className="fixed left-0 top-0 w-6 h-full z-20 lg:hidden"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -277,16 +277,12 @@ export default function ShopFilters({
         >
           <button
             onClick={onToggleFilters}
-            className="flex items-center gap-2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-r-2xl px-3 py-4 shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300 border-l-0"
+            className="flex items-center justify-center w-8 h-16 bg-white/90 backdrop-blur-sm border border-r-0 border-gray-200 rounded-r-full shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300"
           >
             <div className="flex flex-col items-center gap-1">
-              <div className="w-1 h-8 bg-gray-400 rounded-full"></div>
-              <div className="w-1 h-8 bg-gray-400 rounded-full"></div>
-              <div className="w-1 h-8 bg-gray-400 rounded-full"></div>
-            </div>
-            <div className="flex flex-col items-center gap-1 ml-2">
-              <Filter className="w-4 h-4 text-gray-700" />
-              <span className="text-xs font-medium text-gray-700">Filtry</span>
+              <div className="w-0.5 h-6 bg-gray-500 rounded-full"></div>
+              <div className="w-0.5 h-6 bg-gray-500 rounded-full"></div>
+              <div className="w-0.5 h-6 bg-gray-500 rounded-full"></div>
             </div>
           </button>
         </motion.div>
