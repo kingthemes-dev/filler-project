@@ -102,14 +102,14 @@ export default async function HomePage() {
       {/* Newsletter Section with Threads Animation */}
       <section className="py-16 sm:py-24" id="newsletter-section">
         <PageContainer>
-          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-900 via-black to-gray-800 min-h-[500px]">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl min-h-[500px]">
             {/* Background Image - Desktop Only */}
             <div className="absolute inset-0 z-0 hidden md:block">
               <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                 style={{
-                  backgroundImage: 'url(/images/hero/newslettter.webp?v=' + Date.now() + ')',
-                  filter: 'brightness(0.3) contrast(1.2)'
+                  backgroundImage: 'url(/images/hero/hero-bg.webp?v=' + Date.now() + ')',
+                  filter: 'brightness(0.4) contrast(1.1)'
                 }}
               />
             </div>
