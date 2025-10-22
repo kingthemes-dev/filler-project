@@ -220,6 +220,30 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
+  // Block body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isMobileMenuOpen]);
+
+  // Keyboard navigation for mobile menu
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isMobileMenuOpen]);
+
   return (
     <>
       <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50 will-change-transform overflow-visible relative`}>
@@ -586,106 +610,118 @@ export default function Header() {
           )}
         </AnimatePresence>
         
-        {/* Mobile Menu with Tabs */}
+        {/* Mobile Menu Backdrop */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="lg:hidden bg-white border-t border-gray-200 shadow-lg"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Menu - Classic Design */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              className="lg:hidden fixed inset-y-0 right-0 w-80 max-w-[85vw] bg-white shadow-2xl z-50"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-              <div className="flex flex-col h-[80vh]">
-                {/* Tab Headers - Klikalne karty */}
-                <div className="flex border-b border-gray-200">
+              <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900">Menu</h3>
                   <button
-                    onClick={() => setMobileMenuTab('main')}
-                    className={`flex-1 px-4 py-4 text-center font-medium transition-colors text-sm ${
-                      mobileMenuTab === 'main'
-                        ? 'bg-gray-50 text-black border-b-2 border-black'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-300"
                   >
-                    Menu
+                    <X className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={() => setMobileMenuTab('filters')}
-                    className={`flex-1 px-4 py-4 text-center font-medium transition-colors text-sm ${
-                      mobileMenuTab === 'filters'
-                        ? 'bg-gray-50 text-black border-b-2 border-black'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Sklep
-                  </button>
-                  <button
-                    onClick={() => setMobileMenuTab('account')}
-                    className={`flex-1 px-4 py-4 text-center font-medium transition-colors text-sm ${
-                      mobileMenuTab === 'account'
-                        ? 'bg-gray-50 text-black border-b-2 border-black'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    Konto
-                  </button>
-              </div>
+                </div>
 
-                {/* Tab Content */}
+                {/* Main Navigation */}
                 <div className="flex-1 overflow-y-auto">
-                  {/* Main Navigation Tab */}
-                  {mobileMenuTab === 'main' && (
-                    <div className="px-6 py-6">
-                      {/* Main Navigation Links */}
-                <nav className="space-y-4">
-                  <Link 
-                    href="/" 
+                  <div className="px-6 py-6">
+                    {/* Main Navigation Links */}
+                    <nav className="space-y-4">
+                      <Link 
+                        href="/" 
                         className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsMobileSearchOpen(false);
-                    }}
-                  >
-                    Strona główna
-                  </Link>
-                  <a 
-                    href="/sklep" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsMobileSearchOpen(false);
-                    }}
-                  >
-                    Sklep
-                  </a>
-                  <a 
-                    href="/o-nas" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsMobileSearchOpen(false);
-                    }}
-                  >
-                    O nas
-                  </a>
-                  <a 
-                    href="/kontakt" 
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsMobileSearchOpen(false);
+                        }}
+                      >
+                        Strona główna
+                      </Link>
+                      
+                      {/* Sklep z filtrami */}
+                      <div className="space-y-2">
+                        <Link 
+                          href="/sklep" 
                           className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsMobileSearchOpen(false);
-                    }}
-                  >
-                    Kontakt
-                  </a>
-                </nav>
-                    </div>
-                  )}
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsMobileSearchOpen(false);
+                          }}
+                        >
+                          Sklep
+                        </Link>
+                        
+                        {/* Filtry pod Sklep */}
+                        <div className="ml-4 space-y-2">
+                          <button
+                            onClick={() => setMobileMenuTab('filters')}
+                            className="block text-sm text-gray-600 hover:text-black transition-colors py-2 flex items-center"
+                          >
+                            <ChevronRight className="w-4 h-4 mr-2" />
+                            Filtry i kategorie
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <a 
+                        href="/o-nas" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsMobileSearchOpen(false);
+                        }}
+                      >
+                        O nas
+                      </a>
+                      <a 
+                        href="/kontakt" 
+                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setIsMobileSearchOpen(false);
+                        }}
+                      >
+                        Kontakt
+                      </a>
+                    </nav>
+                  </div>
 
-                  {/* Filters Tab */}
+                  {/* Filters Section */}
                   {mobileMenuTab === 'filters' && (
                     <div className="px-6 py-6">
                       <div className="space-y-4">
+                        {/* Back button */}
+                        <button
+                          onClick={() => setMobileMenuTab('main')}
+                          className="flex items-center text-sm text-gray-600 hover:text-black transition-colors mb-4"
+                        >
+                          <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+                          Powrót do menu
+                        </button>
+                        
                         {/* 1. HIERARCHICZNE KATEGORIE - PRAWDZIWE DANE Z WOOCOMMERCE */}
                         <div className="space-y-1">
                           <h3 className="text-base font-medium text-gray-900 mb-3 uppercase tracking-wide">Kategorie</h3>
@@ -791,97 +827,74 @@ export default function Header() {
                     </div>
                   )}
 
-                  {/* Account Tab */}
-                  {mobileMenuTab === 'account' && (
-                    <div className="px-6 py-6">
-                      {/* Account Options */}
-                    {isAuthenticated ? (
-                      <div className="space-y-3">
-                        {/* Moje konto */}
-                        <Link
-                          href="/moje-konto"
-                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <Settings className="w-5 h-5" />
-                          <span className="text-sm font-medium">Moje konto</span>
-                        </Link>
-                        
-                        {/* Moje zamówienia */}
-                  <Link
-                    href="/moje-zamowienia"
-                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                          <Package className="w-5 h-5" />
-                    <span className="text-sm font-medium">Moje zamówienia</span>
-                  </Link>
-                        
-                        {/* Ulubione */}
-                        <button
-                          onClick={() => {
-                            openFavoritesModal();
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
-                        >
-                          <Heart className="w-5 h-5" />
-                          <span className="text-sm font-medium">Ulubione</span>
-                          {favoritesCount > 0 && (
-                            <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                              {favoritesCount}
-                            </span>
-                          )}
-                        </button>
-                        
-                        {/* Faktury */}
-                        <Link
-                          href="/moje-faktury"
-                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <FileText className="w-5 h-5" />
-                          <span className="text-sm font-medium">Faktury</span>
-                        </Link>
-                        
-                        {/* Separator */}
-                        <div className="border-t border-gray-100 my-3" />
-                        
-                        {/* Wyloguj się */}
-                  <button
-                    onClick={() => {
-                      logout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                          className="flex items-center space-x-3 text-red-600 hover:text-red-700 transition-colors py-3 w-full text-left"
-                  >
-                          <LogOut className="w-5 h-5" />
-                    <span className="text-sm font-medium">Wyloguj się</span>
-                  </button>
-                      </div>
-                    ) : (
-                      /* Not logged in - show login option */
-                      <div className="space-y-3">
-                        <button
-                          onClick={() => {
-                            window.dispatchEvent(new CustomEvent('openLogin'));
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
-                        >
-                          <User className="w-5 h-5" />
-                          <span className="text-sm font-medium">Zaloguj się</span>
-                        </button>
-                      </div>
-                    )}
-                    </div>
-                  )}
                   
-                  {/* Footer - Numer telefonu i Social Media */}
-                  <div className="border-t border-gray-200 mt-6 pt-6 px-6 pb-6">
-                    <div className="space-y-4">
-                      {/* Ikony kontaktowe - do lewej z marginesami */}
-                      <div className="flex items-center space-x-4">
+                  {/* Bottom Section - Account & Favorites */}
+                  <div className="border-t border-gray-200 mt-auto">
+                    <div className="p-6 space-y-4">
+                      {/* Account Section */}
+                      {isAuthenticated ? (
+                        <div className="space-y-3">
+                          <Link
+                            href="/moje-konto"
+                            className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <User className="w-5 h-5" />
+                            <span className="text-sm font-medium">Moje konto</span>
+                          </Link>
+                          
+                          <Link
+                            href="/moje-zamowienia"
+                            className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <Package className="w-5 h-5" />
+                            <span className="text-sm font-medium">Moje zamówienia</span>
+                          </Link>
+                          
+                          <Link
+                            href="/moje-faktury"
+                            className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <FileText className="w-5 h-5" />
+                            <span className="text-sm font-medium">Faktury</span>
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <button
+                            onClick={() => {
+                              window.dispatchEvent(new CustomEvent('openLogin'));
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
+                          >
+                            <User className="w-5 h-5" />
+                            <span className="text-sm font-medium">Zarejestruj się</span>
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Favorites */}
+                      <button
+                        onClick={() => {
+                          openFavoritesModal();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 w-full text-left"
+                      >
+                        <Heart className="w-5 h-5" />
+                        <span className="text-sm font-medium">Ulubione</span>
+                        {favoritesCount > 0 && (
+                          <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            {favoritesCount}
+                          </span>
+                        )}
+                      </button>
+                      
+                      {/* Social Media */}
+                      <div className="flex items-center space-x-4 pt-4 border-t border-gray-100">
                         <a 
                           href="tel:+48535956932" 
                           className="text-gray-600 hover:text-black transition-colors"
