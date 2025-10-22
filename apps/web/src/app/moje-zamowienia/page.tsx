@@ -498,20 +498,6 @@ export default function MyOrdersPage() {
                             <span>Pobierz fakturę</span>
                           </button>
                           
-                          {order.status === 'delivered' && (
-                            <button 
-                              onClick={() => {
-                                // This button should always show details, not toggle
-                                if (selectedOrder?.id !== order.id) {
-                                  setSelectedOrder(order);
-                                }
-                              }}
-                              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span>Zobacz szczegóły</span>
-                            </button>
-                          )}
                           
                           {order.status === 'shipped' && (
                             <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
