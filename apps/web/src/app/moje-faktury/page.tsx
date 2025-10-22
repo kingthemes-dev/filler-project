@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { FileText, Download, Calendar, Euro, Eye } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
-import { generateInvoicePDF } from '@/components/ui/invoice-pdf-generator';
 
 export interface Invoice {
   id: string;
@@ -150,9 +149,50 @@ export default function MyInvoicesPage() {
     }
   };
 
-  const handleDownloadInvoice = (invoice: Invoice) => {
-    // Generate and download PDF
-    generateInvoicePDF(invoice);
+  const handleDownloadInvoice = async (invoice: Invoice) => {
+    try {
+      console.log('🔄 Downloading invoice for order:', invoice.id);
+      
+      // Use Next.js API as proxy to avoid CORS issues
+      const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${invoice.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Nie udało się pobrać faktury');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.base64) {
+        // Convert base64 to blob and download
+        const binaryString = atob(data.base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = data.filename || `faktura_${invoice.id}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        
+        console.log('✅ Invoice downloaded successfully');
+      } else {
+        throw new Error('Nieprawidłowy format faktury');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error downloading invoice:', error);
+      alert('Błąd podczas pobierania faktury');
+    }
   };
 
   if (loading) {

@@ -196,8 +196,15 @@ export default function MyOrdersPage() {
 
   const handleViewDetails = (orderId: string) => {
     console.log('🔄 Viewing details for order:', orderId);
-    // For now, just show an alert - can be expanded later
-    alert(`Szczegóły zamówienia ${orderId} - funkcja w trakcie rozwoju`);
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      // Toggle details - if already selected, hide; if not, show
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(null);
+      } else {
+        setSelectedOrder(order);
+      }
+    }
   };
 
 
@@ -358,7 +365,7 @@ export default function MyOrdersPage() {
                           {formatPrice(order.total)}
                         </span>
                         <button
-                          onClick={() => setSelectedOrder(selectedOrder?.id === order.id ? null : order)}
+                          onClick={() => handleViewDetails(order.id)}
                           className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
                         >
                           <Eye className="w-4 h-4" />
