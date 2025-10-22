@@ -1090,6 +1090,8 @@ async function handleCoupons(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  console.log('🔍 GET request received:', req.url);
+  
   // Check if required environment variables are available
   if (!WC_URL || !CK || !CS) {
     return NextResponse.json(
