@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Triangle, Color } from 'ogl';
 
 interface ThreadsProps {
@@ -8,7 +8,6 @@ interface ThreadsProps {
   amplitude?: number;
   distance?: number;
   enableMouseInteraction?: boolean;
-  sectionId?: string;
 }
 
 const vertexShader = `
@@ -133,25 +132,13 @@ const Threads: React.FC<ThreadsProps> = ({
   amplitude = 1,
   distance = 0,
   enableMouseInteraction = false,
-  sectionId,
   ...rest
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const animationFrameId = useRef<number | undefined>(undefined);
-  const [shouldRender, setShouldRender] = useState(false);
+  const animationFrameId = useRef<number>();
 
   useEffect(() => {
-    // Only render on desktop (md+) and when user doesn't prefer reduced motion
-    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-    const prefersReduced = typeof window !== 'undefined' && 
-      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    
-    if (!isDesktop || prefersReduced) return;
-    setShouldRender(true);
-  }, []);
-
-  useEffect(() => {
-    if (!shouldRender || !containerRef.current) return;
+    if (!containerRef.current) return;
     const container = containerRef.current;
 
     const renderer = new Renderer({ alpha: true });
@@ -159,15 +146,6 @@ const Threads: React.FC<ThreadsProps> = ({
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    
-    // Ensure canvas can receive mouse events
-    gl.canvas.style.pointerEvents = 'auto';
-    gl.canvas.style.position = 'absolute';
-    gl.canvas.style.top = '0';
-    gl.canvas.style.left = '0';
-    gl.canvas.style.width = '100%';
-    gl.canvas.style.height = '100%';
-    
     container.appendChild(gl.canvas);
 
     const geometry = new Triangle(gl);
@@ -206,19 +184,13 @@ const Threads: React.FC<ThreadsProps> = ({
       const x = (e.clientX - rect.left) / rect.width;
       const y = 1.0 - (e.clientY - rect.top) / rect.height;
       targetMouse = [x, y];
-      console.log('Mouse move:', { x, y, targetMouse });
     }
     function handleMouseLeave() {
       targetMouse = [0.5, 0.5];
     }
-    
-    // Use section element for mouse interaction if sectionId is provided
-    const targetElement = sectionId ? document.getElementById(sectionId) : container;
-    
-    if (enableMouseInteraction && targetElement) {
-      console.log('Adding mouse event listeners to:', targetElement);
-      targetElement.addEventListener('mousemove', handleMouseMove);
-      targetElement.addEventListener('mouseleave', handleMouseLeave);
+    if (enableMouseInteraction) {
+      container.addEventListener('mousemove', handleMouseMove);
+      container.addEventListener('mouseleave', handleMouseLeave);
     }
 
     function update(t: number) {
@@ -243,9 +215,9 @@ const Threads: React.FC<ThreadsProps> = ({
       if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
       window.removeEventListener('resize', resize);
 
-      if (enableMouseInteraction && targetElement) {
-        targetElement.removeEventListener('mousemove', handleMouseMove);
-        targetElement.removeEventListener('mouseleave', handleMouseLeave);
+      if (enableMouseInteraction) {
+        container.removeEventListener('mousemove', handleMouseMove);
+        container.removeEventListener('mouseleave', handleMouseLeave);
       }
       if (container.contains(gl.canvas)) container.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
