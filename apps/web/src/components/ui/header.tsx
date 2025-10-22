@@ -542,12 +542,9 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - FULL WIDTH like cart */}
+              {/* Menu Drawer - FULL SCREEN on mobile like cart */}
               <motion.div
-                className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
-                         w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
-                         lg:border-l lg:border-gray-200 flex flex-col
-                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
+                className="fixed inset-0 bg-white z-50 flex flex-col lg:hidden"
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
@@ -615,10 +612,46 @@ export default function Header() {
                     </nav>
                   </div>
                   
-                  {/* Debug: Show menu content */}
-                  <div className="px-6 py-4 bg-yellow-100 text-xs">
-                    Menu content is visible!
+                  {/* Additional Content - like cart modal */}
+                  <div className="px-6 py-6" onClick={(e) => e.stopPropagation()}>
+                    <div className="space-y-6">
+                      {/* Categories Section */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-4">Kategorie</h3>
+                        <div className="space-y-3">
+                          <a href="/sklep?kategoria=kremy" className="block text-gray-700 hover:text-black transition-colors py-2">
+                            Kremy
+                          </a>
+                          <a href="/sklep?kategoria=serum" className="block text-gray-700 hover:text-black transition-colors py-2">
+                            Serum
+                          </a>
+                          <a href="/sklep?kategoria=toniki" className="block text-gray-700 hover:text-black transition-colors py-2">
+                            Toniki
+                          </a>
+                          <a href="/sklep?kategoria=maseczki" className="block text-gray-700 hover:text-black transition-colors py-2">
+                            Maseczki
+                          </a>
+                        </div>
+                      </div>
+                      
+                      {/* Special Offers */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-black mb-4">Oferty specjalne</h3>
+                        <div className="space-y-3">
+                          <a href="/sklep?promocja=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                            Promocje
+                          </a>
+                          <a href="/sklep?nowosci=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                            Nowości
+                          </a>
+                          <a href="/sklep?bestsellery=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                            Bestsellery
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                  
                   
                   {/* Bottom Section - Account & Favorites */}
                   <div className="border-t border-gray-200 mt-auto" onClick={(e) => e.stopPropagation()}>
