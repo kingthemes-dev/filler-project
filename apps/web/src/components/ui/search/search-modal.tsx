@@ -273,7 +273,7 @@ export default function SearchModal({
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
                       placeholder={placeholder}
-                      className="block w-full pl-12 pr-12 py-4 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white placeholder-gray-500"
+                      className="block w-full pl-12 pr-12 h-12 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white placeholder-gray-500"
                     />
                     {query && (
                       <button
