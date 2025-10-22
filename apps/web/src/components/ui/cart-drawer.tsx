@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Trash2, Plus, Minus, Truck, CreditCard, ArrowRight } from 'lucide-react';
 import { useCartStore, type CartItem } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { formatPrice } from '@/utils/format-price';
+import { analytics } from '@headless-woo/shared/utils/analytics';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -19,9 +20,38 @@ export default function CartDrawer() {
   const [isDragging, setIsDragging] = useState(false);
   const [swipeProgress, setSwipeProgress] = useState(0);
   
+  // Loading states
+  const [isUpdating, setIsUpdating] = useState(false);
+  
   console.log('🛒 CartDrawer render - isOpen:', isOpen);
   console.log('🛒 CartDrawer render - items:', items);
   console.log('🛒 CartDrawer render - itemCount:', itemCount);
+
+  // Analytics tracking
+  useEffect(() => {
+    if (isOpen) {
+      analytics.track('cart_opened', { 
+        itemCount, 
+        totalValue: total,
+        isAuthenticated 
+      });
+    }
+  }, [isOpen, itemCount, total, isAuthenticated]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        closeCart();
+        analytics.track('cart_closed', { method: 'keyboard_escape' });
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, closeCart]);
 
   // Free shipping config (netto)
   const FREE_SHIPPING_THRESHOLD = 200; // PLN netto
@@ -30,12 +60,46 @@ export default function CartDrawer() {
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - nettoTotal);
   const progress = Math.min(100, (nettoTotal / FREE_SHIPPING_THRESHOLD) * 100);
 
-  const handleQuantityChange = (item: CartItem, newQuantity: number) => {
-    updateQuantity(item.id, newQuantity, item.variant?.id);
+  const handleQuantityChange = async (item: CartItem, newQuantity: number) => {
+    try {
+      if (newQuantity < 0) return;
+      setIsUpdating(true);
+      await updateQuantity(item.id, newQuantity, item.variant?.id);
+      
+      // Analytics tracking
+      analytics.track('cart_quantity_updated', {
+        productId: item.id,
+        productName: item.name,
+        oldQuantity: item.quantity,
+        newQuantity,
+        variantId: item.variant?.id
+      });
+    } catch (error) {
+      console.error('Quantity update failed:', error);
+      // Could add toast notification here
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleRemoveItem = (item: CartItem) => {
-    removeItem(item.id, item.variant?.id);
+  const handleRemoveItem = async (item: CartItem) => {
+    try {
+      setIsUpdating(true);
+      await removeItem(item.id, item.variant?.id);
+      
+      // Analytics tracking
+      analytics.track('cart_item_removed', {
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        variantId: item.variant?.id
+      });
+    } catch (error) {
+      console.error('Remove item failed:', error);
+      // Could add toast notification here
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // Swipe gesture functions
@@ -223,17 +287,19 @@ export default function CartDrawer() {
                       <div className="flex items-center space-x-1">
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                          className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+                          disabled={isUpdating}
+                          className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Zmniejsz ilość"
                         >
                           <Minus className="w-3 h-3 text-gray-700" />
                         </button>
                         <span className="w-8 text-center text-sm font-semibold text-gray-800 bg-gray-50 px-2 py-1 rounded-md">
-                          {item.quantity}
+                          {isUpdating ? '...' : item.quantity}
                         </span>
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                          className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200"
+                          disabled={isUpdating}
+                          className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Zwiększ ilość"
                         >
                           <Plus className="w-3 h-3 text-gray-700" />
