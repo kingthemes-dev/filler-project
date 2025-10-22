@@ -434,55 +434,29 @@ export default function ShopFilters({
 
 
 
-                  {/* Dynamic Attributes Filter */}
-                  <div className="mb-4 sm:mb-6">
-                    <motion.button
-                      onClick={() => toggleSection('attributes')}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                    >
-                      <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Atrybuty</h4>
-                      <motion.div
-                        animate={{ rotate: expandedSections.attributes ? 180 : 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                      >
-                        <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                      </motion.div>
-                    </motion.button>
-                    
-                    <AnimatePresence>
-                      {expandedSections.attributes && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <DynamicAttributeFilters
-                            onFilterChange={onFilterChange}
-                            selectedFilters={filters}
-                            totalProducts={totalProducts}
-                            currentFilters={{
-                              categories: filters.categories,
-                              search: filters.search as string,
-                              minPrice: filters.minPrice,
-                              maxPrice: filters.maxPrice,
-                              // PRO: Include all dynamic attributes for tree-like recalculation
-                              attributes: Object.keys(filters).filter(key => key.startsWith('pa_')),
-                              // PRO: Pass actual attribute values for better tree-like filtering
-                              attributeValues: Object.keys(filters)
-                                .filter(key => key.startsWith('pa_'))
-                                .reduce((acc, key) => {
-                                  acc[key] = filters[key];
-                                  return acc;
-                                }, {} as Record<string, any>)
-                            }}
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                           {/* Dynamic Attributes Filter */}
+                           <div className="mb-4 sm:mb-6">
+                             <DynamicAttributeFilters
+                               onFilterChange={onFilterChange}
+                               selectedFilters={filters}
+                               totalProducts={totalProducts}
+                               currentFilters={{
+                                 categories: filters.categories,
+                                 search: filters.search as string,
+                                 minPrice: filters.minPrice,
+                                 maxPrice: filters.maxPrice,
+                                 // PRO: Include all dynamic attributes for tree-like recalculation
+                                 attributes: Object.keys(filters).filter(key => key.startsWith('pa_')),
+                                 // PRO: Pass actual attribute values for better tree-like filtering
+                                 attributeValues: Object.keys(filters)
+                                   .filter(key => key.startsWith('pa_'))
+                                   .reduce((acc, key) => {
+                                     acc[key] = filters[key];
+                                     return acc;
+                                   }, {} as Record<string, any>)
+                               }}
+                             />
+                           </div>
 
                   {/* Price Range Filter */}
               <div className="mb-4 sm:mb-6">
@@ -678,53 +652,27 @@ export default function ShopFilters({
                 </AnimatePresence>
               </div>
 
-              {/* Dynamic Attributes Filter */}
-              <div className="mb-4 sm:mb-6">
-                <motion.button
-                  onClick={() => toggleSection('attributes')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Atrybuty</h4>
-                  <motion.div
-                    animate={{ rotate: expandedSections.attributes ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                  </motion.div>
-                </motion.button>
-                
-                <AnimatePresence>
-                  {expandedSections.attributes && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <DynamicAttributeFilters
-                        onFilterChange={onFilterChange}
-                        selectedFilters={filters}
-                        totalProducts={totalProducts}
-                        currentFilters={{
-                          categories: filters.categories,
-                          search: filters.search as string,
-                          minPrice: filters.minPrice,
-                          maxPrice: filters.maxPrice,
-                          attributes: Object.keys(filters).filter(key => key.startsWith('pa_')),
-                          attributeValues: Object.keys(filters)
-                            .filter(key => key.startsWith('pa_'))
-                            .reduce((acc, key) => {
-                              acc[key] = filters[key];
-                              return acc;
-                            }, {} as Record<string, any>)
-                        }}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                     {/* Dynamic Attributes Filter */}
+                     <div className="mb-4 sm:mb-6">
+                       <DynamicAttributeFilters
+                         onFilterChange={onFilterChange}
+                         selectedFilters={filters}
+                         totalProducts={totalProducts}
+                         currentFilters={{
+                           categories: filters.categories,
+                           search: filters.search as string,
+                           minPrice: filters.minPrice,
+                           maxPrice: filters.maxPrice,
+                           attributes: Object.keys(filters).filter(key => key.startsWith('pa_')),
+                           attributeValues: Object.keys(filters)
+                             .filter(key => key.startsWith('pa_'))
+                             .reduce((acc, key) => {
+                               acc[key] = filters[key];
+                               return acc;
+                             }, {} as Record<string, any>)
+                         }}
+                       />
+                     </div>
 
               {/* Price Range Filter */}
               <div className="mb-4 sm:mb-6">
