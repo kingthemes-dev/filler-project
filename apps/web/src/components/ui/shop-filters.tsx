@@ -61,6 +61,11 @@ export default function ShopFilters({
     availability: true,
   });
 
+  // Swipe gesture state
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   // Restore expanded state from localStorage
   React.useEffect(() => {
     try {
@@ -85,6 +90,34 @@ export default function ShopFilters({
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  // Swipe gesture functions
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsDragging(true);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && showFilters) {
+      // Swipe left to close
+      onToggleFilters();
+    }
+    
+    setIsDragging(false);
   };
 
 
@@ -214,6 +247,25 @@ export default function ShopFilters({
         />
       )}
 
+      {/* Pinned Filter Icon - when sidebar is closed */}
+      {!showFilters && (
+        <motion.div
+          className="fixed left-4 top-1/2 transform -translate-y-1/2 z-30 lg:hidden"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <button
+            onClick={onToggleFilters}
+            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-3 py-2 shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300"
+          >
+            <Filter className="w-4 h-4 text-gray-700" />
+            <span className="text-sm font-medium text-gray-700">Filtry</span>
+          </button>
+        </motion.div>
+      )}
+
       {/* Mobile Filter Panel - Animated */}
       <AnimatePresence>
         {showFilters && (
@@ -228,8 +280,13 @@ export default function ShopFilters({
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
-            <div className="bg-white border border-gray-200/50 shadow-sm rounded-r-2xl h-full flex flex-col">
+            <div className="bg-white border border-gray-200/50 shadow-sm rounded-r-2xl h-full flex flex-col relative">
+              {/* Swipe indicator - right edge */}
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-16 bg-gray-300 rounded-l-full opacity-50"></div>
               {/* Header - Fixed */}
               <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center group">
