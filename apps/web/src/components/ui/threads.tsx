@@ -143,9 +143,18 @@ const Threads: React.FC<ThreadsProps> = ({
 
     const renderer = new Renderer({ alpha: true });
     const gl = renderer.gl;
-    gl.clearColor(0, 0, 0, 0);
+    gl.clearColor(0, 0, 0, 0); // Transparent background
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    
+    // Ensure canvas is transparent
+    gl.canvas.style.background = 'transparent';
+    gl.canvas.style.position = 'absolute';
+    gl.canvas.style.top = '0';
+    gl.canvas.style.left = '0';
+    gl.canvas.style.width = '100%';
+    gl.canvas.style.height = '100%';
+    
     container.appendChild(gl.canvas);
 
     const geometry = new Triangle(gl);
