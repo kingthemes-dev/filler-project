@@ -870,14 +870,14 @@ export default function KingProductCard({
           </div>
         </CardHeader>
         
-        <CardContent className="px-3 sm:px-4 py-2 flex-grow">
-          <div className="text-xs sm:text-sm text-gray-500 mb-2 flex items-center">
+        <CardContent className="px-3 sm:px-4 py-1 flex-grow">
+          <div className="text-[10px] sm:text-sm text-gray-500 mb-1 flex items-center">
             {getMainCategory() || 'Bez kategorii'}
           </div>
-          <p className="font-bold text-foreground text-base sm:text-lg mb-2 line-clamp-2">
+          <p className="font-bold text-foreground text-base sm:text-lg mb-1 line-clamp-2">
             {product.name}
           </p>
-          <div className="text-lg sm:text-xl font-bold text-foreground mb-2">
+          <div className="text-lg sm:text-xl font-bold text-foreground mb-1">
             {price}
           </div>
           
