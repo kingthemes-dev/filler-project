@@ -186,8 +186,10 @@ async function handlePasswordResetConfirm(body: { key: string; login: string; pa
 
 
 async function handleCustomerInvoices(req: NextRequest) {
+  console.log('🔍 handleCustomerInvoices called');
   const { searchParams } = new URL(req.url);
   const customerId = searchParams.get('customer_id');
+  console.log('🔍 customerId:', customerId);
   
   if (!customerId) {
     return NextResponse.json(
