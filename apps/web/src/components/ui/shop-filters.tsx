@@ -259,29 +259,16 @@ export default function ShopFilters({
                   )}
                 </div>
                 
-                {/* Promocje Checkbox - Minimalistyczny */}
-                <div className="mt-3">
+                {/* Promocje Checkbox - Ultra Minimalistyczny */}
+                <div className="mt-2">
                   <label className="flex items-center cursor-pointer group">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={filters.onSale}
-                        onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                        className="w-4 h-4 text-red-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300 appearance-none checked:bg-red-500 checked:border-red-500"
-                      />
-                      {filters.onSale && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute inset-0 flex items-center justify-center"
-                        >
-                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </motion.div>
-                      )}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900 transition-colors duration-300">
+                    <input
+                      type="checkbox"
+                      checked={filters.onSale}
+                      onChange={(e) => onFilterChange('onSale', e.target.checked)}
+                      className="w-3.5 h-3.5 text-red-500 border border-gray-300 rounded-sm focus:ring-1 focus:ring-red-400 focus:ring-offset-0 transition-all duration-200 appearance-none checked:bg-red-500 checked:border-red-500"
+                    />
+                    <span className="ml-2 text-xs text-gray-600 group-hover:text-gray-800 transition-colors duration-200">
                       Promocje
                     </span>
                   </label>
@@ -490,29 +477,16 @@ export default function ShopFilters({
                   )}
                 </div>
                 
-                {/* Promocje Checkbox - Minimalistyczny */}
-                <div className="mt-3">
+                {/* Promocje Checkbox - Ultra Minimalistyczny */}
+                <div className="mt-2">
                   <label className="flex items-center cursor-pointer group">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={filters.onSale}
-                        onChange={(e) => onFilterChange('onSale', e.target.checked)}
-                        className="w-4 h-4 text-red-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-300 appearance-none checked:bg-red-500 checked:border-red-500"
-                      />
-                      {filters.onSale && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute inset-0 flex items-center justify-center"
-                        >
-                          <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </motion.div>
-                      )}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-700 group-hover:text-gray-900 transition-colors duration-300">
+                    <input
+                      type="checkbox"
+                      checked={filters.onSale}
+                      onChange={(e) => onFilterChange('onSale', e.target.checked)}
+                      className="w-3.5 h-3.5 text-red-500 border border-gray-300 rounded-sm focus:ring-1 focus:ring-red-400 focus:ring-offset-0 transition-all duration-200 appearance-none checked:bg-red-500 checked:border-red-500"
+                    />
+                    <span className="ml-2 text-xs text-gray-600 group-hover:text-gray-800 transition-colors duration-200">
                       Promocje
                     </span>
                   </label>
