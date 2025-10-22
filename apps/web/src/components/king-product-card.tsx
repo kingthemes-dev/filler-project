@@ -900,7 +900,7 @@ export default function KingProductCard({
                   return (
                     <span
                       key={`${attrIndex}-${optionIndex}`}
-                      className="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full"
+                      className="bg-gray-100 text-gray-600 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
                     >
                       {optionValue}
                     </span>
