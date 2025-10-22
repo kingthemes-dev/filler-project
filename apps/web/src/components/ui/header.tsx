@@ -25,10 +25,6 @@ export default function Header() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [mobileMenuTab, setMobileMenuTab] = useState<'main' | 'filters'>('main');
-  
-  // Debug logs
-  console.log('📱 Mobile Menu - isOpen:', isMobileMenuOpen);
-  console.log('📱 Mobile Menu - tab:', mobileMenuTab);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   
@@ -86,7 +82,6 @@ export default function Header() {
     const fetchWooCommerceData = async () => {
       if (mobileMenuTab !== 'filters') return;
       
-      console.log('🔄 Fetching WooCommerce data for filters...');
       setIsLoadingData(true);
       try {
         // Pobierz kategorie i zbuduj hierarchię
@@ -628,7 +623,7 @@ export default function Header() {
           )}
         </AnimatePresence>
 
-        {/* Mobile Menu - Classic Design */}
+        {/* Mobile Menu - Cart-like Modal */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
@@ -655,11 +650,6 @@ export default function Header() {
                   {/* Main Menu */}
                   {mobileMenuTab === 'main' && (
                     <div className="px-6 py-6">
-                      {/* Debug: Show current tab */}
-                      <div className="text-xs text-gray-500 mb-2">
-                        Current tab: {mobileMenuTab}
-                      </div>
-                      
                       {/* Main Navigation Links */}
                       <nav className="space-y-4">
                         <Link 
@@ -726,11 +716,6 @@ export default function Header() {
                   {mobileMenuTab === 'filters' && (
                     <div className="px-6 py-6">
                       <div className="space-y-4">
-                        {/* Debug: Show current tab */}
-                        <div className="text-xs text-gray-500 mb-2">
-                          Current tab: {mobileMenuTab}
-                        </div>
-                        
                         {/* Back button */}
                         <button
                           onClick={() => setMobileMenuTab('main')}
@@ -743,11 +728,6 @@ export default function Header() {
                         {/* 1. HIERARCHICZNE KATEGORIE - PRAWDZIWE DANE Z WOOCOMMERCE */}
                         <div className="space-y-1">
                           <h3 className="text-base font-medium text-gray-900 mb-3 uppercase tracking-wide">Kategorie</h3>
-                          
-                          {/* Debug: Show loading state */}
-                          <div className="text-xs text-gray-500 mb-2">
-                            Loading: {isLoadingData ? 'true' : 'false'}
-                          </div>
                           
                           {isLoadingData ? (
                             <div className="bg-white rounded-lg border border-gray-200 p-4">
