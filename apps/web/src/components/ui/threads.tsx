@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Triangle, Color } from 'ogl';
 
 interface ThreadsProps {
@@ -138,9 +138,20 @@ const Threads: React.FC<ThreadsProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameId = useRef<number | undefined>(undefined);
+  const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    // Only render on desktop (md+) and when user doesn't prefer reduced motion
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+    const prefersReduced = typeof window !== 'undefined' && 
+      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    if (!isDesktop || prefersReduced) return;
+    setShouldRender(true);
+  }, []);
+
+  useEffect(() => {
+    if (!shouldRender || !containerRef.current) return;
     const container = containerRef.current;
 
     const renderer = new Renderer({ alpha: true });

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 import { WooShippingMethod } from '@/types/woocommerce';
 import { sentryMetrics } from '@/utils/sentry-metrics';
-import { InvoiceGenerator } from '@/lib/invoice-generator';
 
 // Redis client (optional)
 let redis: any = null;
@@ -296,8 +295,8 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
     const orderData = await orderResponse.json();
     
     // Check if order is eligible for invoice generation
-    const invoiceGenerator = InvoiceGenerator.getInstance();
-    if (!invoiceGenerator.isOrderEligibleForInvoicePublic(orderData)) {
+    const eligibleStatuses = ['completed', 'processing', 'on-hold'];
+    if (!eligibleStatuses.includes(orderData.status)) {
       return NextResponse.json({ 
         success: false,
         error: 'Faktura może być wystawiona tylko dla opłaconych lub zrealizowanych zamówień',
@@ -355,11 +354,32 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
     
     const order = await orderResponse.json();
     
-    // Use new professional invoice generator
-    const { InvoiceGenerator } = await import('@/lib/invoice-generator');
-    const invoiceGenerator = InvoiceGenerator.getInstance();
+    // Generate simple PDF using jsPDF
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
     
-    const pdfBuffer = await invoiceGenerator.generateInvoicePdf(order);
+    // Add title
+    doc.setFontSize(20);
+    doc.text('FAKTURA VAT', 20, 30);
+    
+    // Add order details
+    doc.setFontSize(12);
+    doc.text(`Zamówienie: ${order.number}`, 20, 50);
+    doc.text(`Data: ${new Date(order.date_created).toLocaleDateString('pl-PL')}`, 20, 60);
+    
+    // Add customer info
+    doc.text(`Klient: ${order.billing.first_name} ${order.billing.last_name}`, 20, 80);
+    doc.text(`Adres: ${order.billing.address_1}`, 20, 90);
+    
+    // Add total
+    doc.setFontSize(14);
+    doc.text(`RAZEM: ${order.total} zł`, 20, 120);
+    
+    // Add footer
+    doc.setFontSize(10);
+    doc.text('Dziękujemy za zakupy w KingBrand!', 20, 150);
+    
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
     const base64 = pdfBuffer.toString('base64');
     
     return {

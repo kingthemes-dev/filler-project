@@ -103,8 +103,8 @@ export default async function HomePage() {
       <section className="py-16 sm:py-24" id="newsletter-section">
         <PageContainer>
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-900 via-black to-gray-800 min-h-[500px]">
-            {/* Threads Animation Background */}
-            <div className="absolute inset-0 z-0">
+            {/* Threads Animation Background - Desktop Only */}
+            <div className="absolute inset-0 z-0 hidden md:block">
               <Threads
                 color={[1, 1, 1]} // White color like on screen
                 amplitude={2.6}
@@ -113,6 +113,16 @@ export default async function HomePage() {
                 sectionId="newsletter-section"
               />
               {/* Overlay for better text readability - but allow mouse interaction */}
+              <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+            </div>
+            
+            {/* Mobile Fallback - Simple CSS Animation */}
+            <div className="absolute inset-0 z-0 md:hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_0%,transparent_50%)] animate-pulse"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%)] bg-[length:20px_20px] animate-pulse"></div>
+              </div>
+              {/* Overlay for better text readability */}
               <div className="absolute inset-0 bg-black/40 pointer-events-none" />
             </div>
             
