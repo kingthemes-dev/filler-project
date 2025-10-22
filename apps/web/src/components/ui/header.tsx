@@ -644,6 +644,7 @@ export default function Header() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
+                style={{ zIndex: 9999 }}
               >
                 {/* Header - identical to cart */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
@@ -662,9 +663,19 @@ export default function Header() {
                     <X className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
+                
+                {/* Debug: Show menu state */}
+                <div className="p-4 bg-yellow-100 text-xs">
+                  Menu is open: {isMobileMenuOpen ? 'true' : 'false'}
+                </div>
 
                 {/* Content - identical to cart structure */}
                 <div className="flex-1 overflow-y-auto">
+                  {/* Debug: Show current tab */}
+                  <div className="p-4 bg-blue-100 text-xs">
+                    Current tab: {mobileMenuTab}
+                  </div>
+                  
                   {/* Main Menu */}
                   {mobileMenuTab === 'main' && (
                     <div className="px-6 py-6" onClick={(e) => e.stopPropagation()}>
