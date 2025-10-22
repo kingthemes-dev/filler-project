@@ -277,13 +277,12 @@ export default function ShopFilters({
         >
           <button
             onClick={onToggleFilters}
-            className="flex items-center justify-center w-8 h-16 bg-white/90 backdrop-blur-sm border border-r-0 border-gray-200 rounded-r-full shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300"
+            className="flex flex-col items-center justify-center w-8 h-20 bg-white/90 backdrop-blur-sm border border-r-0 border-gray-200 rounded-r-full shadow-lg hover:bg-white hover:shadow-xl transition-all duration-300"
           >
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-0.5 h-6 bg-gray-500 rounded-full"></div>
-              <div className="w-0.5 h-6 bg-gray-500 rounded-full"></div>
-              <div className="w-0.5 h-6 bg-gray-500 rounded-full"></div>
-            </div>
+            <Filter className="w-4 h-4 text-gray-700 mb-1" />
+            <span className="text-xs font-medium text-gray-700 writing-mode-vertical-rl transform rotate-180">
+              Filtry
+            </span>
           </button>
         </motion.div>
       )}
