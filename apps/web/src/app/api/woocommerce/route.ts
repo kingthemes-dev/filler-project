@@ -201,6 +201,7 @@ async function handleCustomerInvoices(req: NextRequest) {
     
     // Call WordPress custom API
     const invoicesUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/invoices?customer_id=${customerId}`;
+    console.log('🔄 Calling WordPress API:', invoicesUrl);
     
     const response = await fetch(invoicesUrl, {
       method: 'GET',
@@ -210,6 +211,8 @@ async function handleCustomerInvoices(req: NextRequest) {
         'User-Agent': 'Mozilla/5.0 (compatible; HeadlessWoo/1.0)',
       },
     });
+    
+    console.log('🔄 WordPress API response status:', response.status);
 
     const raw = await response.text();
     let data: any = null;
