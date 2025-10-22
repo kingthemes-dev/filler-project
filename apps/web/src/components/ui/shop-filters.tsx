@@ -125,6 +125,17 @@ export default function ShopFilters({
   // Focus trap and initial focus for mobile panel
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  
+  // Block body scroll when mobile panel is open
+  useEffect(() => {
+    if (showFilters) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showFilters]);
+  
   useEffect(() => {
     if (showFilters && panelRef.current) {
       // initial focus
@@ -160,10 +171,13 @@ export default function ShopFilters({
         </button>
       </div>
 
-      {/* Mobile Backdrop - przezroczysty */}
+      {/* Mobile Backdrop - przyciemniony jak w koszyku */}
       {showFilters && (
-        <div 
-          className="fixed inset-0 bg-transparent z-40 lg:hidden"
+        <motion.div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           onClick={onToggleFilters}
         />
       )}
@@ -171,7 +185,7 @@ export default function ShopFilters({
       {/* Filter Panel */}
       <div className={`${showFilters ? 'block' : 'hidden lg:block'} lg:sticky lg:top-24 lg:self-start`}>
         <div
-          className={`bg-white border border-gray-200/50 p-4 sm:p-6 shadow-sm rounded-r-2xl lg:rounded-2xl ${
+          className={`bg-white border border-gray-200/50 shadow-sm rounded-r-2xl lg:rounded-2xl ${
             showFilters 
               ? 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform translate-x-0 transition-transform duration-300 ease-out lg:relative lg:inset-auto lg:w-80 lg:max-w-none lg:transform-none lg:transition-none lg:shadow-md lg:backdrop-blur-md' 
               : 'fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 transform -translate-x-full transition-transform duration-300 ease-out lg:relative lg:inset-auto lg:w-80 lg:max-w-none lg:transform-none lg:transition-none lg:shadow-md lg:backdrop-blur-md lg:block lg:translate-x-0'
@@ -182,33 +196,38 @@ export default function ShopFilters({
           tabIndex={-1}
           ref={panelRef}
         >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <div className="flex items-center group">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
-                    <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 id="filters-heading" className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Filtry</h3>
-                    <span className="text-xs sm:text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-300">
-                      {totalProducts} produktów
-                    </span>
-                  </div>
+          {/* Scrollable content container */}
+          <div className="h-full flex flex-col">
+            {/* Header - Fixed */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center group">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
+                  <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
                 </div>
-                <div className="flex items-center gap-2">
-                  {/* Mobile Close Button */}
-                  <motion.button
-                    onClick={onToggleFilters}
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="lg:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-300"
-                    aria-label="Zamknij filtry"
-                    ref={closeBtnRef}
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
+                <div className="ml-3">
+                  <h3 id="filters-heading" className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Filtry</h3>
+                  <span className="text-xs sm:text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-300">
+                    {totalProducts} produktów
+                  </span>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                {/* Mobile Close Button */}
+                <motion.button
+                  onClick={onToggleFilters}
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="lg:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-300"
+                  aria-label="Zamknij filtry"
+                  ref={closeBtnRef}
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
 
 
 
@@ -488,6 +507,8 @@ export default function ShopFilters({
 
             </div>
           </div>
+        </div>
+      </div>
     </>
   );
 }
