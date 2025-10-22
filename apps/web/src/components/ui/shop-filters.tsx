@@ -572,6 +572,21 @@ export default function ShopFilters({
           ref={desktopSidebarRef}
           className="bg-white border border-gray-200/50 shadow-sm rounded-2xl p-4 sm:p-6 lg:shadow-md lg:backdrop-blur-md max-h-[calc(100vh-6rem)] overflow-y-auto"
         >
+          {/* Desktop Header */}
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+            <div className="flex items-center group">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
+                <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Filtry</h3>
+                <span className="text-xs sm:text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-300">
+                  {totalProducts} produktów
+                </span>
+              </div>
+            </div>
+          </div>
+          
           {/* Desktop content - same as mobile but without scroll container */}
           <div className="space-y-4 sm:space-y-6">
               {/* Search Filter */}
