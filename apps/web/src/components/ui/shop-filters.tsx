@@ -135,6 +135,38 @@ export default function ShopFilters({
       };
     }
   }, [showFilters]);
+
+  // Desktop sidebar scroll management
+  const desktopSidebarRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const desktopSidebar = desktopSidebarRef.current;
+    if (!desktopSidebar) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Prevent page scroll when mouse is over desktop sidebar
+      e.preventDefault();
+      desktopSidebar.scrollTop += e.deltaY;
+    };
+
+    const handleMouseEnter = () => {
+      // Add wheel event listener to prevent page scroll
+      desktopSidebar.addEventListener('wheel', handleWheel, { passive: false });
+    };
+
+    const handleMouseLeave = () => {
+      // Remove wheel event listener to restore page scroll
+      desktopSidebar.removeEventListener('wheel', handleWheel);
+    };
+
+    desktopSidebar.addEventListener('mouseenter', handleMouseEnter);
+    desktopSidebar.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      desktopSidebar.removeEventListener('mouseenter', handleMouseEnter);
+      desktopSidebar.removeEventListener('mouseleave', handleMouseLeave);
+      desktopSidebar.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
   
   useEffect(() => {
     if (showFilters && panelRef.current) {
@@ -446,7 +478,10 @@ export default function ShopFilters({
       
       {/* Desktop version - always visible */}
       <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
-        <div className="bg-white border border-gray-200/50 shadow-sm rounded-2xl p-4 sm:p-6 lg:shadow-md lg:backdrop-blur-md">
+        <div 
+          ref={desktopSidebarRef}
+          className="bg-white border border-gray-200/50 shadow-sm rounded-2xl p-4 sm:p-6 lg:shadow-md lg:backdrop-blur-md max-h-[calc(100vh-6rem)] overflow-y-auto"
+        >
           {/* Desktop content - same as mobile but without scroll container */}
           <div className="space-y-4 sm:space-y-6">
               {/* Search Filter */}
