@@ -13,7 +13,7 @@ export interface Invoice {
   total: number;
   currency: string;
   status: string;
-  download_url: string;
+  download_url: string | null; // Can be null since we don't use WCPDF URLs anymore
   orderNumber: string;
   isEligible?: boolean; // Whether this order is eligible for invoice generation
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 import { WooShippingMethod } from '@/types/woocommerce';
 import { sentryMetrics } from '@/utils/sentry-metrics';
+import { InvoiceGenerator } from '@/lib/invoice-generator';
 
 // Redis client (optional)
 let redis: any = null;

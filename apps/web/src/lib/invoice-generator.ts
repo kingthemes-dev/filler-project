@@ -122,7 +122,7 @@ export class InvoiceGenerator {
         }
       });
       
-      return pdf;
+      return Buffer.from(pdf);
     } finally {
       await browser.close();
     }
