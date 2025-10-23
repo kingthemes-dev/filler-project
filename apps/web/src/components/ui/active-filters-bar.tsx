@@ -192,63 +192,49 @@ export default function ActiveFiltersBar({
           </div>
         </div>
 
-        {/* Desktop Layout - Horizontal */}
+        {/* Desktop Layout - Only Badges */}
         <div className="hidden sm:flex items-center justify-between gap-4">
-          {/* Left side - Filter info */}
-          <div className="flex items-center gap-4 min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Aktywne filtry
-                </h3>
-                <p className="text-xs text-gray-500">
-                  {totalProducts} produktów
-                </p>
-              </div>
-            </div>
-
-            {/* Filter chips */}
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="flex flex-wrap gap-2 min-w-0">
-                <AnimatePresence mode="popLayout">
-                  {filterChips.map((chip, index) => (
-                    <motion.div
-                      key={chip.id}
-                      layout
-                      initial={{ opacity: 0, scale: 0.8, x: -20 }}
-                      animate={{ opacity: 1, scale: 1, x: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                      transition={{ 
-                        duration: 0.2, 
-                        delay: index * 0.05,
-                        layout: { duration: 0.3 }
-                      }}
-                      className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 ${
-                        chip.type === 'search' 
-                          ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
-                          : chip.type === 'category'
-                          ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                          : chip.type === 'price'
-                          ? 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200'
-                          : chip.type === 'sale'
-                          ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                          : 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200'
-                      }`}
+          {/* Filter chips only */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex flex-wrap gap-2 min-w-0">
+              <AnimatePresence mode="popLayout">
+                {filterChips.map((chip, index) => (
+                  <motion.div
+                    key={chip.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.8, x: -20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                    transition={{ 
+                      duration: 0.2, 
+                      delay: index * 0.05,
+                      layout: { duration: 0.3 }
+                    }}
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 ${
+                      chip.type === 'search' 
+                        ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
+                        : chip.type === 'category'
+                        ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                        : chip.type === 'price'
+                        ? 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200'
+                        : chip.type === 'sale'
+                        ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                        : 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200'
+                    }`}
+                  >
+                    <span className="truncate max-w-[120px]">{chip.label}</span>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={chip.onRemove}
+                      className="flex-shrink-0 hover:bg-white/50 rounded-full p-0.5 transition-colors duration-200"
+                      aria-label={`Usuń filtr ${chip.label}`}
                     >
-                      <span className="truncate max-w-[120px]">{chip.label}</span>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={chip.onRemove}
-                        className="flex-shrink-0 hover:bg-white/50 rounded-full p-0.5 transition-colors duration-200"
-                        aria-label={`Usuń filtr ${chip.label}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </motion.button>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
+                      <X className="w-3 h-3" />
+                    </motion.button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </div>
 
