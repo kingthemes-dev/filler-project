@@ -690,7 +690,7 @@ export default function Header() {
                         >
                           <div className="flex items-center space-x-3">
                             <User className="w-5 h-5 text-blue-500" />
-                            <span className="text-sm font-medium text-gray-700">Zarejestruj się</span>
+                            <span className="text-sm font-medium text-gray-700">Zaloguj się</span>
                           </div>
                         </Link>
                   )}
