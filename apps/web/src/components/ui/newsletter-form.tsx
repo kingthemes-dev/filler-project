@@ -116,17 +116,26 @@ export default function NewsletterForm() {
               {/* Divider line */}
               <div className="w-px bg-white/60"></div>
               
-              {/* Button - simple style */}
+              {/* Button - Expert Senior Dev Design */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-[1] px-6 bg-black text-white border-0 font-semibold text-lg hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="group flex-[1] px-6 bg-gradient-to-r from-black via-gray-900 to-black text-white border-0 font-bold text-lg hover:from-gray-800 hover:via-black hover:to-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl relative overflow-hidden"
               >
-                {isLoading ? (
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  "Odbierz 10%!"
-                )}
+                {/* Shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12 group-hover:skew-x-12" />
+                
+                {/* Content */}
+                <span className="relative z-10 flex items-center gap-2">
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Odbierz 10%!</span>
+                      <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    </>
+                  )}
+                </span>
               </button>
             </div>
         
