@@ -140,7 +140,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 id={`tab-${tab.id}`}
                 aria-label={`${tab.label} - ${tab.products.length} produktów`}
               >
-                <span className={`flex items-center gap-2 text-lg sm:text-xl lg:text-2xl font-bold transition-colors whitespace-nowrap ${
+                <span className={`flex items-center gap-2 text-xl sm:text-2xl lg:text-3xl font-bold transition-colors whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'text-black' 
                     : 'text-gray-600 hover:text-gray-800'
