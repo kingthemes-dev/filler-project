@@ -711,7 +711,7 @@ export default function Header() {
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      setIsFavoritesOpen(true);
+                      openFavoritesModal();
                     }}
                     className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                   >
