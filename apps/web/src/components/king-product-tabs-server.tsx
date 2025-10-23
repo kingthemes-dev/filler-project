@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import KingProductCard from './king-product-card';
 import { WooProduct } from '@/types/woocommerce';
@@ -23,6 +23,24 @@ interface KingProductTabsServerProps {
 
 export default function KingProductTabsServer({ data }: KingProductTabsServerProps) {
   const [activeTab, setActiveTab] = useState('nowosci');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Keyboard navigation for tabs
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
+      const nextIndex = event.key === 'ArrowLeft' 
+        ? (currentIndex - 1 + tabs.length) % tabs.length
+        : (currentIndex + 1) % tabs.length;
+      setActiveTab(tabs[nextIndex].id);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   // Helpers: merge and deduplicate by id
   const mergeUnique = (arrays: WooProduct[][]): WooProduct[] => {
@@ -70,36 +88,99 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
 
   const activeTabData = tabs.find(tab => tab.id === activeTab) || tabs[0];
 
+  // Enhanced tab change with transition state
+  const handleTabChange = useCallback((tabId: string) => {
+    if (tabId === activeTab) return;
+    
+    setIsTransitioning(true);
+    setActiveTab(tabId);
+    
+    // Reset transition state after animation
+    setTimeout(() => setIsTransitioning(false), 300);
+  }, [activeTab]);
+
   return (
     <section className="py-12 sm:py-16 bg-white">
       <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-          {/* Mobile: Horizontal scrollable tabs */}
-          <div className="flex space-x-4 sm:space-x-6 lg:space-x-8 mb-4 lg:mb-0 overflow-x-auto pb-2 scrollbar-hide">
-            {tabs.map((tab) => (
+          {/* Senior Level Tabs - Enhanced UI/UX with Accessibility */}
+          <div 
+            className="flex space-x-6 sm:space-x-8 lg:space-x-10 mb-6 lg:mb-0 overflow-x-auto pb-3 scrollbar-hide"
+            role="tablist"
+            aria-label="Kategorie produktów"
+          >
+            {tabs.map((tab, index) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="relative group flex-shrink-0"
+                onClick={() => handleTabChange(tab.id)}
+                className="relative group flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2 rounded-lg px-2 py-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isTransitioning}
+                aria-pressed={activeTab === tab.id}
+                aria-selected={activeTab === tab.id}
+                role="tab"
+                tabIndex={activeTab === tab.id ? 0 : -1}
+                aria-controls={`tabpanel-${tab.id}`}
+                id={`tab-${tab.id}`}
+                aria-label={`${tab.label} - ${tab.products.length} produktów`}
               >
-                <span className="text-lg sm:text-xl lg:text-2xl font-bold transition-colors text-black whitespace-nowrap">
+                <span className={`text-lg sm:text-xl lg:text-2xl font-bold transition-all duration-300 whitespace-nowrap ${
+                  activeTab === tab.id 
+                    ? 'text-black' 
+                    : 'text-gray-600 hover:text-gray-800 group-hover:scale-105'
+                }`}>
                   {tab.label}
                 </span>
-                <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left transition-transform duration-300 ${
-                  activeTab === tab.id ? 'scale-x-100' : 'scale-x-0'
-                }`} />
+                
+                {/* Enhanced animated underline with gradient */}
+                <motion.div
+                  className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-black via-gray-800 to-black origin-left"
+                  initial={false}
+                  animate={{
+                    scaleX: activeTab === tab.id ? 1 : 0,
+                    transition: { duration: 0.4, ease: "easeInOut" }
+                  }}
+                />
+                
+                {/* Hover effect for inactive tabs */}
+                {activeTab !== tab.id && (
+                  <motion.div
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-300 origin-left"
+                    initial={{ scaleX: 0 }}
+                    whileHover={{ scaleX: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  />
+                )}
+                
+                {/* Active tab indicator - subtle background */}
+                {activeTab === tab.id && (
+                  <motion.div
+                    className="absolute inset-0 bg-gray-50 rounded-lg -z-10"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
               </button>
             ))}
           </div>
 
-          {/* View All Products - Desktop: link on the right */}
+          {/* View All Products - Senior Level Desktop Link */}
           <div className="hidden md:block">
             <Link 
               href="/sklep" 
-              className="relative text-base sm:text-lg text-black hover:text-black transition-colors group whitespace-nowrap"
+              className="relative inline-flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-700 hover:text-black transition-all duration-300 group whitespace-nowrap px-4 py-2 rounded-lg hover:bg-gray-50"
             >
-              Wszystkie produkty
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out" />
+              <span>Wszystkie produkty</span>
+              <motion.div
+                className="w-4 h-4 text-gray-500 group-hover:text-black"
+                whileHover={{ x: 2 }}
+                transition={{ duration: 0.2 }}
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </motion.div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-gray-400 to-black origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out" />
             </Link>
           </div>
         </div>
@@ -112,8 +193,25 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
+              role="tabpanel"
+              id={`tabpanel-${activeTab}`}
+              aria-labelledby={`tab-${activeTab}`}
+              aria-live="polite"
             >
-              {activeTabData.products.length > 0 ? (
+              {isTransitioning ? (
+                // Loading state during transition
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+                  {[...Array(4)].map((_, index) => (
+                    <div key={`loading-${index}`} className="animate-pulse">
+                      <div className="bg-gray-200 aspect-square rounded-2xl mb-4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : activeTabData.products.length > 0 ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                   {activeTabData.products.slice(0, 4).map((product) => (
                     <KingProductCard
@@ -145,13 +243,26 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
             </motion.div>
           </AnimatePresence>
           
-          {/* View All Products - Mobile: full width outline button */}
-          <div className="mt-6 md:hidden">
+          {/* View All Products - Senior Level Mobile Button */}
+          <div className="mt-8 md:hidden">
             <Link
               href="/sklep"
-              className="block w-full bg-transparent border-2 border-gray-300 text-gray-700 hover:border-black hover:text-black transition-all duration-300 text-center py-3 px-4 rounded-xl font-medium"
+              className="group relative block w-full bg-gradient-to-r from-gray-50 to-white border-2 border-gray-200 hover:border-black hover:from-black hover:to-gray-800 text-gray-700 hover:text-white transition-all duration-300 text-center py-4 px-6 rounded-2xl font-semibold shadow-sm hover:shadow-lg transform hover:scale-[1.02]"
             >
-              Wszystkie produkty
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                Wszystkie produkty
+                <motion.div
+                  className="w-4 h-4"
+                  whileHover={{ x: 2 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </motion.div>
+              </span>
+              {/* Hover background overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black to-gray-800 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
           </div>
         </div>
