@@ -711,20 +711,7 @@ export default function Header() {
                         <span className="text-sm font-medium">Faktury</span>
                       </Link>
                     </div>
-                  ) : (
-                    <div className="mb-4">
-                      <button
-                        onClick={() => { 
-                          setIsMobileMenuOpen(false);
-                          window.dispatchEvent(new CustomEvent('openLogin'));
-                        }}
-                        className="w-full flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                      >
-                        <User className="w-5 h-5" />
-                        <span className="text-sm font-medium">Zaloguj się</span>
-                      </button>
-                    </div>
-                  )}
+                  ) : null}
 
                   {/* Action Buttons - WITH HOVER EFFECTS */}
                   <div className="space-y-2 mb-4 -mt-1">
@@ -746,6 +733,20 @@ export default function Header() {
                         </span>
                       )}
                     </button>
+
+                    {/* Login Button (if not authenticated) - AT THE END */}
+                    {!isAuthenticated && (
+                      <button
+                        onClick={() => { 
+                          setIsMobileMenuOpen(false);
+                          window.dispatchEvent(new CustomEvent('openLogin'));
+                        }}
+                        className="w-full flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                      >
+                        <User className="w-5 h-5" />
+                        <span className="text-sm font-medium">Zaloguj się</span>
+                      </button>
+                    )}
 
                     {/* Logout Button (if authenticated) - AT THE END */}
                     {isAuthenticated && (
