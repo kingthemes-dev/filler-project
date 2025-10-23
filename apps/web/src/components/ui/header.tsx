@@ -686,7 +686,7 @@ export default function Header() {
                     <div className="space-y-2 mb-4">
                       <Link 
                         href="/moje-konto" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />
@@ -695,7 +695,7 @@ export default function Header() {
 
                       <Link 
                         href="/moje-zamowienia" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Package className="w-5 h-5" />
@@ -704,7 +704,7 @@ export default function Header() {
 
                       <Link 
                         href="/moje-faktury" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <FileText className="w-5 h-5" />
