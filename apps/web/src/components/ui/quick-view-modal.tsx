@@ -305,11 +305,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
               {/* Content */}
               <div className="flex flex-col lg:flex-row max-h-[90vh] overflow-hidden">
-                {/* Images Section */}
-                <div className="lg:w-1/2 p-6">
+                {/* Images Section - scrollable */}
+                <div className="lg:w-1/2 p-6 overflow-y-auto">
                   <div className="space-y-4">
-                    {/* Main Image - 50% smaller */}
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg max-w-md mx-auto">
+                    {/* Main Image - even smaller */}
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg max-w-xs mx-auto">
                       <motion.div
                         key={selectedImageIndex}
                         initial={{ opacity: 0 }}
