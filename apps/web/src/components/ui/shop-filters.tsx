@@ -252,7 +252,7 @@ export default function ShopFilters({
       {/* Mobile Backdrop - przyciemniony jak w koszyku */}
       {showFilters && (
         <motion.div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-[115] lg:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -302,7 +302,7 @@ export default function ShopFilters({
       <AnimatePresence>
         {showFilters && (
           <motion.div
-            className="fixed inset-y-0 left-0 w-80 max-w-[85vw] z-50 lg:hidden"
+            className="fixed inset-y-0 left-0 w-80 max-w-[85vw] z-[120] lg:hidden"
             id="filters-panel"
             role="region"
             aria-labelledby="filters-heading"
