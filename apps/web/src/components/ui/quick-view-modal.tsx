@@ -291,26 +291,25 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-900">Szybki podgląd</h2>
+              {/* Close Button - Top Right */}
+              <div className="absolute top-4 right-4 z-10">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={onClose}
-                  className="rounded-full p-2 hover:bg-gray-100"
+                  className="rounded-full p-2 hover:bg-gray-100 bg-white/90 backdrop-blur-sm"
                 >
                   <X className="w-5 h-5" />
                 </Button>
               </div>
 
               {/* Content */}
-              <div className="flex flex-col lg:flex-row max-h-[calc(90vh-80px)] overflow-hidden">
+              <div className="flex flex-col lg:flex-row max-h-[90vh] overflow-hidden">
                 {/* Images Section */}
                 <div className="lg:w-1/2 p-6">
                   <div className="space-y-4">
-                    {/* Main Image */}
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg">
+                    {/* Main Image - 50% smaller */}
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg max-w-md mx-auto">
                       <motion.div
                         key={selectedImageIndex}
                         initial={{ opacity: 0 }}
@@ -376,16 +375,16 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 </div>
 
                 {/* Product Details */}
-                <div className="lg:w-1/2 p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-                  <div className="space-y-6">
+                <div className="lg:w-1/2 p-6 overflow-y-auto max-h-[90vh]">
+                  <div className="space-y-3">
                     {/* Product Title & Badges */}
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
                         {product.name}
                       </h1>
                       
                       {/* Rating */}
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
                         <div className="flex items-center space-x-1">
                           {Array.from({ length: 5 }, (_, i) => (
                             <Star
@@ -398,7 +397,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                             />
                           ))}
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1">
                           {product.average_rating && parseFloat(product.average_rating) > 0 ? (
                             <>
                               <span className="text-lg font-semibold text-gray-900">
@@ -417,7 +416,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       </div>
                       
                       {/* Badges */}
-                      <div className="flex items-center space-x-2 flex-wrap">
+                      <div className="flex items-center space-x-1 flex-wrap">
                         {isOnSale && (
                           <span className="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
                             -{discountPercentage}%
@@ -450,7 +449,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       
                       {/* AUTO: Product Attributes - All attributes in gray badges */}
                       {product.attributes && product.attributes.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1">
                           {product.attributes.map((attr: any, attrIndex: number) => {
                             if (!attr.options || !Array.isArray(attr.options)) return null;
                             
@@ -475,14 +474,14 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     </div>
 
                     {/* Product Attributes & Variants */}
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {/* Show variants if product has them */}
                       {product?.type === 'variable' && variations.length > 0 && (
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
                             Wybierz wariant
                           </h3>
-                          <div className="flex flex-wrap gap-3">
+                          <div className="flex flex-wrap gap-2">
                             {variations.map((variation, index) => {
                               const capacityAttr = variation.attributes?.find((attr: any) => 
                                 attr.slug === 'pa_pojemnosc' || attr.name?.toLowerCase().includes('pojemność')
@@ -522,7 +521,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
                     {/* Price - only show if no variations */}
                     {variations.length === 0 && (
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
                         {isOnSale ? (
                           <>
                             <span className="text-3xl font-bold text-red-600">
@@ -540,17 +539,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       </div>
                     )}
 
-                    {/* Short Description */}
-                    {product.short_description && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-700 text-sm leading-relaxed">
-                          {product.short_description.replace(/<[^>]*>/g, '')}
-                        </p>
-                      </div>
-                    )}
-
                     {/* Quantity & Actions */}
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
                       {/* Quantity Selector */}
                       <div className="flex items-center border border-gray-200 rounded-lg h-[56px] w-fit">
                         <Button
@@ -607,6 +597,15 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                         </Button>
                       </div>
                     </div>
+
+                    {/* Short Description - moved under buttons */}
+                    {product.short_description && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-gray-700 text-sm leading-relaxed">
+                          {product.short_description.replace(/<[^>]*>/g, '')}
+                        </p>
+                      </div>
+                    )}
                   </div>
               </div>
           </motion.div>
