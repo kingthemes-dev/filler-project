@@ -323,7 +323,7 @@ export default function ShopFilters({
                        className="absolute right-0 top-1/2 transform -translate-y-1/2 w-6 h-20 bg-gradient-to-r from-gray-800 to-black rounded-l-full transition-all duration-200 flex items-center justify-center cursor-pointer hover:shadow-lg"
                        style={{
                          opacity: isDragging ? 1 : 0.8,
-                         transform: `translateY(-50%) scaleX(${1 + swipeProgress * 0.5})`,
+                         transform: `translateY(-50%) translateX(1px) scaleX(${1 + swipeProgress * 0.5})`,
                          boxShadow: isDragging ? '0 0 20px rgba(59, 130, 246, 0.5)' : 'none'
                        }}
                      >
@@ -339,7 +339,7 @@ export default function ShopFilters({
                        </div>
                      )}
               {/* Header - Fixed */}
-              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center justify-between p-4 sm:p-6 flex-shrink-0">
                 <div className="flex items-center group">
                   <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
                     <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
