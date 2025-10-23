@@ -131,7 +131,7 @@ export default function ActiveFiltersBar({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="bg-white/95 backdrop-blur-sm sticky top-0 z-30 border border-gray-200 rounded-xl shadow-sm mx-0"
+      className="bg-white/95 backdrop-blur-sm sticky top-0 z-30 border border-gray-200 rounded-xl shadow-sm mx-0 mb-1"
     >
       <div className="px-4 sm:px-6 py-5">
         {/* Mobile Layout - Button left, filters right */}
