@@ -223,13 +223,15 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
             </div>
           </AnimatePresence>
           
-          {/* View All Products - Clean Mobile Button */}
+          {/* View All Products - Interactive Black Gradient Button */}
           <div className="mt-8 md:hidden">
             <Link
               href="/sklep"
-              className="block w-full bg-transparent border-2 border-gray-300 text-gray-700 hover:border-black hover:text-black transition-colors text-center py-3 px-4 rounded-lg font-medium"
+              className="group relative block w-full bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white hover:text-white transition-all duration-300 text-center py-4 px-6 rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              Wszystkie produkty
+              <span className="relative z-10">Wszystkie produkty</span>
+              {/* Subtle shine effect on hover */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
             </Link>
           </div>
         </div>
