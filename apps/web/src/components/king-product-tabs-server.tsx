@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import KingProductCard from './king-product-card';
 import { WooProduct } from '@/types/woocommerce';
 import Link from 'next/link';
@@ -123,76 +123,38 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 id={`tab-${tab.id}`}
                 aria-label={`${tab.label} - ${tab.products.length} produktów`}
               >
-                <span className={`text-lg sm:text-xl lg:text-2xl font-bold transition-all duration-300 whitespace-nowrap ${
+                <span className={`text-lg sm:text-xl lg:text-2xl font-bold transition-colors whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'text-black' 
-                    : 'text-gray-600 hover:text-gray-800 group-hover:scale-105'
+                    : 'text-gray-600 hover:text-gray-800'
                 }`}>
                   {tab.label}
                 </span>
                 
-                {/* Enhanced animated underline with gradient */}
-                <motion.div
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-black via-gray-800 to-black origin-left"
-                  initial={false}
-                  animate={{
-                    scaleX: activeTab === tab.id ? 1 : 0,
-                    transition: { duration: 0.4, ease: "easeInOut" }
-                  }}
-                />
-                
-                {/* Hover effect for inactive tabs */}
-                {activeTab !== tab.id && (
-                  <motion.div
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-300 origin-left"
-                    initial={{ scaleX: 0 }}
-                    whileHover={{ scaleX: 1 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                  />
-                )}
-                
-                {/* Active tab indicator - subtle background */}
-                {activeTab === tab.id && (
-                  <motion.div
-                    className="absolute inset-0 bg-gray-50 rounded-lg -z-10"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                )}
+                {/* Simple clean underline */}
+                <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left transition-transform duration-300 ${
+                  activeTab === tab.id ? 'scale-x-100' : 'scale-x-0'
+                }`} />
               </button>
             ))}
           </div>
 
-          {/* View All Products - Senior Level Desktop Link */}
+          {/* View All Products - Clean Desktop Link */}
           <div className="hidden md:block">
             <Link 
               href="/sklep" 
-              className="relative inline-flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-700 hover:text-black transition-all duration-300 group whitespace-nowrap px-4 py-2 rounded-lg hover:bg-gray-50"
+              className="relative text-base sm:text-lg font-semibold text-gray-700 hover:text-black transition-colors whitespace-nowrap"
             >
-              <span>Wszystkie produkty</span>
-              <motion.div
-                className="w-4 h-4 text-gray-500 group-hover:text-black"
-                whileHover={{ x: 2 }}
-                transition={{ duration: 0.2 }}
-              >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </motion.div>
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-gray-400 to-black origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out" />
+              Wszystkie produkty
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left scale-x-0 hover:scale-x-100 transition-transform duration-300" />
             </Link>
           </div>
         </div>
         
         <div>
           <AnimatePresence mode="wait">
-            <motion.div
+            <div
               key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
               role="tabpanel"
               id={`tabpanel-${activeTab}`}
               aria-labelledby={`tab-${activeTab}`}
@@ -240,29 +202,16 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                   </p>
                 </div>
               )}
-            </motion.div>
+            </div>
           </AnimatePresence>
           
-          {/* View All Products - Senior Level Mobile Button */}
+          {/* View All Products - Clean Mobile Button */}
           <div className="mt-8 md:hidden">
             <Link
               href="/sklep"
-              className="group relative block w-full bg-gradient-to-r from-gray-50 to-white border-2 border-gray-200 hover:border-black hover:from-black hover:to-gray-800 text-gray-700 hover:text-white transition-all duration-300 text-center py-4 px-6 rounded-2xl font-semibold shadow-sm hover:shadow-lg transform hover:scale-[1.02]"
+              className="block w-full bg-transparent border-2 border-gray-300 text-gray-700 hover:border-black hover:text-black transition-colors text-center py-3 px-4 rounded-lg font-medium"
             >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                Wszystkie produkty
-                <motion.div
-                  className="w-4 h-4"
-                  whileHover={{ x: 2 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </motion.div>
-              </span>
-              {/* Hover background overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black to-gray-800 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              Wszystkie produkty
             </Link>
           </div>
         </div>
