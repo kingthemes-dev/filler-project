@@ -145,18 +145,29 @@ export default function CartDrawer() {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop - tylko na mobile */}
+          {/* Backdrop - COVER HEADER */}
           <motion.div
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/60 z-[115] lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
             onClick={closeCart}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              zIndex: 115
+            }}
           />
 
-          {/* Cart Drawer */}
+          {/* Cart Drawer - HIGHER Z-INDEX */}
           <motion.div
-            className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
+            className="fixed right-0 top-0 h-full bg-white shadow-2xl z-[120] 
                      w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
                      lg:border-l lg:border-gray-200 flex flex-col
                      rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
@@ -185,9 +196,9 @@ export default function CartDrawer() {
               </button>
             </div>
 
-            {/* Free shipping notice */}
+            {/* Free shipping notice - CONSISTENT MARGINS */}
             {items.length > 0 && (
-              <div className="px-4 pt-3" onClick={(e) => e.stopPropagation()}>
+              <div className="px-6 pt-3" onClick={(e) => e.stopPropagation()}>
                 <motion.div
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
