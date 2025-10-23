@@ -175,7 +175,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
             >
               {isTransitioning ? (
                 // Loading state during transition
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                   {[...Array(4)].map((_, index) => (
                     <div key={`loading-${index}`} className="animate-pulse">
                       <div className="bg-gray-200 aspect-square rounded-2xl mb-4"></div>
@@ -187,7 +187,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                   ))}
                 </div>
               ) : activeTabData.products.length > 0 ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                   {activeTabData.products.slice(0, 4).map((product) => (
                     <KingProductCard
                       key={product.id}
