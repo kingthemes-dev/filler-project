@@ -556,11 +556,11 @@ export default function Header() {
           )}
         </AnimatePresence>
         
-        {/* Mobile Menu - EXACT COPY FROM CART MODAL */}
+        {/* Mobile Menu - COMPLETELY NEW */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Backdrop - tylko na mobile */}
+              {/* Backdrop */}
               <motion.div
                 className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                 initial={{ opacity: 0 }}
@@ -569,13 +569,12 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - FIXED FOR IPHONE 14 PRO */}
+              {/* Menu Drawer - NEW DESIGN */}
               <motion.div
                 className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
                          w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
                          lg:border-l lg:border-gray-200 flex flex-col
-                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl
-                         overflow-hidden"
+                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
@@ -584,15 +583,9 @@ export default function Header() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
-                style={{ 
-                  zIndex: 9999,
-                  maxWidth: '100vw',
-                  width: '100%',
-                  overflow: 'hidden'
-                }}
               >
-                {/* Header - identical to cart */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
                   <div className="flex items-center space-x-3">
                     <Menu className="w-6 h-6 text-black" />
                     <h2 id="mobile-menu-title" className="text-xl font-bold text-black">
@@ -603,19 +596,18 @@ export default function Header() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     aria-label="Zamknij menu"
-                    autoFocus
                   >
                     <X className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
 
-                {/* Content - EXACT COPY FROM CART */}
-                <div className="flex-1 overflow-y-auto p-6 pb-0" onClick={(e) => e.stopPropagation()}>
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6">
                   {/* Main Navigation */}
                   <div className="space-y-4 mb-8">
                     <Link 
                       href="/" 
-                      className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                      className="block text-lg font-medium text-gray-900 hover:text-black transition-colors py-3 border-b border-gray-100"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Strona główna
@@ -623,7 +615,7 @@ export default function Header() {
                     
                     <Link 
                       href="/sklep" 
-                      className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                      className="block text-lg font-medium text-gray-900 hover:text-black transition-colors py-3 border-b border-gray-100"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Sklep
@@ -631,7 +623,7 @@ export default function Header() {
                     
                     <a 
                       href="/o-nas" 
-                      className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                      className="block text-lg font-medium text-gray-900 hover:text-black transition-colors py-3 border-b border-gray-100"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       O nas
@@ -639,7 +631,7 @@ export default function Header() {
                     
                     <a 
                       href="/kontakt" 
-                      className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                      className="block text-lg font-medium text-gray-900 hover:text-black transition-colors py-3 border-b border-gray-100"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Kontakt
@@ -648,18 +640,18 @@ export default function Header() {
 
                   {/* Categories */}
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-black">Kategorie</h3>
+                    <h3 className="text-lg font-semibold text-black mb-4">Kategorie</h3>
                     <div className="space-y-3">
-                      <a href="/sklep?kategoria=kremy" className="block text-gray-700 hover:text-black transition-colors py-2">
+                      <a href="/sklep?kategoria=kremy" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
                         Kremy
                       </a>
-                      <a href="/sklep?kategoria=serum" className="block text-gray-700 hover:text-black transition-colors py-2">
+                      <a href="/sklep?kategoria=serum" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
                         Serum
                       </a>
-                      <a href="/sklep?kategoria=toniki" className="block text-gray-700 hover:text-black transition-colors py-2">
+                      <a href="/sklep?kategoria=toniki" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
                         Toniki
                       </a>
-                      <a href="/sklep?kategoria=maseczki" className="block text-gray-700 hover:text-black transition-colors py-2">
+                      <a href="/sklep?kategoria=maseczki" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
                         Maseczki
                       </a>
                     </div>
@@ -667,48 +659,51 @@ export default function Header() {
 
                   {/* Special Offers */}
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-black">Oferty specjalne</h3>
+                    <h3 className="text-lg font-semibold text-black mb-4">Oferty specjalne</h3>
                     <div className="space-y-3">
-                      <a href="/sklep?promocja=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                      <a href="/sklep?promocja=true" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
                         Promocje
                       </a>
-                      <a href="/sklep?nowosci=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                      <a href="/sklep?nowosci=true" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
                         Nowości
                       </a>
-                      <a href="/sklep?bestsellery=true" className="block text-gray-700 hover:text-black transition-colors py-2">
+                      <a href="/sklep?bestsellery=true" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
                         Bestsellery
                       </a>
                     </div>
                   </div>
                 </div>
 
-                {/* Footer - EXACT COPY FROM CART */}
-                <div className="border-t border-gray-200 p-6 space-y-4 bg-white rounded-bl-2xl" onClick={(e) => e.stopPropagation()}>
+                {/* Footer */}
+                <div className="border-t border-gray-200 p-6 space-y-4 bg-gray-50">
                   {/* Account Section */}
                   {isAuthenticated ? (
                     <div className="space-y-3">
                       <Link 
                         href="/moje-konto" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        Moje konto
+                        <User className="w-5 h-5" />
+                        <span className="text-sm font-medium">Moje konto</span>
                       </Link>
                       
                       <Link 
                         href="/moje-zamowienia" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        Moje zamówienia
+                        <Package className="w-5 h-5" />
+                        <span className="text-sm font-medium">Moje zamówienia</span>
                       </Link>
                       
                       <Link 
                         href="/moje-faktury" 
-                        className="block text-base font-medium text-gray-700 hover:text-black transition-colors py-3"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        Faktury
+                        <FileText className="w-5 h-5" />
+                        <span className="text-sm font-medium">Faktury</span>
                       </Link>
                     </div>
                   ) : (
@@ -727,19 +722,17 @@ export default function Header() {
                       setIsMobileMenuOpen(false);
                       setIsFavoritesOpen(true);
                     }}
-                    className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                   >
-                    <span className="text-base font-medium text-gray-700">
-                      Lista życzeń
-                    </span>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <Heart className="w-5 h-5 text-red-500" />
-                      {favoritesCount > 0 && (
-                        <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                          {favoritesCount}
-                        </span>
-                      )}
+                      <span className="text-sm font-medium text-gray-700">Lista życzeń</span>
                     </div>
+                    {favoritesCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                        {favoritesCount}
+                      </span>
+                    )}
                   </button>
 
                   {/* Social Media */}
