@@ -354,14 +354,14 @@ export default function ProductClient({ slug }: ProductClientProps) {
                 </div>
 
                 <div className="flex space-x-3 flex-1">
-                  <button onClick={handleAddToCart} disabled={product.stock_status === 'outofstock' || product.stock_status === 'onbackorder' || (variations.length > 0 && !selectedCapacity)} className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white py-3 px-4 rounded-lg text-sm font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2">
+                  <button onClick={handleAddToCart} disabled={product.stock_status === 'outofstock' || product.stock_status === 'onbackorder' || (variations.length > 0 && !selectedCapacity)} className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white h-[48px] px-4 rounded-lg text-sm font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2">
                     <ShoppingCart className="w-4 h-4" />
                     <span className="whitespace-nowrap">
                       {product.stock_status === 'outofstock' ? 'Brak w magazynie' : product.stock_status === 'onbackorder' ? 'Na zamówienie' : (variations.length > 0 && !selectedCapacity) ? 'Wybierz pojemność' : 'Dodaj do koszyka'}
                     </span>
                   </button>
 
-                  <button onClick={() => toggleFavorite(product)} className={`p-4 border border-gray-300 transition-colors rounded-lg ${isFavorite(product.id) ? 'text-red-500 border-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  <button onClick={() => toggleFavorite(product)} className={`h-[48px] w-[48px] border border-gray-300 transition-colors rounded-lg flex items-center justify-center ${isFavorite(product.id) ? 'text-red-500 border-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}>
                     <Heart className={`w-5 h-5 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
                   </button>
                 </div>
