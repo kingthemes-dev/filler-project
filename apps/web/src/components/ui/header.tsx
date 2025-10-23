@@ -190,6 +190,24 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobileMenuOpen) {
+        const target = event.target as HTMLElement;
+        // Check if click is outside menu and not on menu elements
+        if (!target.closest('[data-mobile-menu]') && !target.closest('.mobile-menu-backdrop')) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isMobileMenuOpen]);
+
   return (
     <>
       <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50 will-change-transform overflow-visible relative`}>
@@ -560,14 +578,24 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Backdrop - DIM BACKGROUND */}
+              {/* Backdrop - FULL SCREEN DIM */}
               <motion.div
-                className="fixed inset-0 bg-black/60 z-[115] lg:hidden"
+                className="fixed inset-0 bg-black/60 z-[115] lg:hidden mobile-menu-backdrop"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
                 onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '100vw',
+                  height: '100vh',
+                  zIndex: 115
+                }}
               />
 
               {/* Menu Drawer - FROM TOP OF PAGE, 100% HEIGHT */}
