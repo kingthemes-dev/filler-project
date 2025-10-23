@@ -714,33 +714,33 @@ export default function Header() {
                     )}
                   </button>
 
-                  {/* Social Media */}
-                  <div className="pt-4 border-t border-gray-200">
-                    <div className="flex space-x-4">
+                  {/* Social Media - COMPACT */}
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex justify-center space-x-3">
                       <a 
                         href="tel:+48123456789" 
-                        className="text-gray-600 hover:text-black transition-colors"
+                        className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <Phone className="w-5 h-5" />
+                        <Phone className="w-4 h-4" />
                       </a>
                       <a 
                         href="https://facebook.com" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-black transition-colors"
+                        className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <Facebook className="w-5 h-5" />
+                        <Facebook className="w-4 h-4" />
                       </a>
                       <a 
                         href="https://instagram.com" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-black transition-colors"
+                        className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <Instagram className="w-5 h-5" />
+                        <Instagram className="w-4 h-4" />
                       </a>
                     </div>
                   </div>
