@@ -134,29 +134,8 @@ export default function ActiveFiltersBar({
       className="bg-white/95 backdrop-blur-sm sticky top-0 z-30"
     >
       <div className="px-4 sm:px-6 py-5">
-        {/* Mobile Layout - Stacked */}
+        {/* Mobile Layout - Only Badges */}
         <div className="flex flex-col gap-4 sm:hidden">
-          {/* Header with Clear button */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900">
-                Aktywne filtry
-              </h3>
-              <p className="text-xs text-gray-500">
-                {totalProducts} produktów
-              </p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onClearFilters}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-xs flex-shrink-0"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Wyczyść</span>
-            </motion.button>
-          </div>
-
           {/* Filter chips - Full width on mobile */}
           <div className="flex flex-wrap gap-2">
             <AnimatePresence mode="popLayout">
@@ -197,6 +176,19 @@ export default function ActiveFiltersBar({
                 </motion.div>
               ))}
             </AnimatePresence>
+          </div>
+          
+          {/* Clear button for mobile */}
+          <div className="flex justify-end">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onClearFilters}
+              className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-xs"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Wyczyść wszystkie</span>
+            </motion.button>
           </div>
         </div>
 
