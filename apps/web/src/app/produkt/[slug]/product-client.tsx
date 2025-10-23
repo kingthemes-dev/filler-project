@@ -377,7 +377,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
 
           {/* Tabs */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} className="mt-16">
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
               <div className="p-4">
                 <nav className="flex space-x-2" role="tablist" aria-label="Zakładki produktu">
                   <button onClick={() => setActiveTab('description')} role="tab" aria-selected={activeTab === 'description'} aria-controls="tab-description" id="tab-description-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'description' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 ' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Opis produktu</button>
@@ -388,7 +388,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
 
               <div className="p-8">
                 {activeTab === 'description' && (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200" role="tabpanel" id="tab-description" aria-labelledby="tab-description-trigger">
+                  <div role="tabpanel" id="tab-description" aria-labelledby="tab-description-trigger">
                     <div className="text-gray-700 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: product.description }} />
                   </div>
                 )}
