@@ -263,6 +263,65 @@ export default function Header() {
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopOpen ? 'rotate-180' : ''}`} />
               </Link>
               
+              {/* Shop Dropdown - 4 Main Categories */}
+              <AnimatePresence>
+                {isShopOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-4 z-50"
+                  >
+                    <div className="space-y-1">
+                      <Link 
+                        href="/sklep?category=wypelniacze" 
+                        className="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                        onClick={() => setIsShopOpen(false)}
+                      >
+                        <span className="font-medium">Wypełniacze</span>
+                        <span className="text-xs text-gray-500">(8)</span>
+                      </Link>
+                      <Link 
+                        href="/sklep?category=stymulatory" 
+                        className="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                        onClick={() => setIsShopOpen(false)}
+                      >
+                        <span className="font-medium">Stymulatory</span>
+                        <span className="text-xs text-gray-500">(43)</span>
+                      </Link>
+                      <Link 
+                        href="/sklep?category=mezoterapia" 
+                        className="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                        onClick={() => setIsShopOpen(false)}
+                      >
+                        <span className="font-medium">Mezoterapia</span>
+                        <span className="text-xs text-gray-500">(11)</span>
+                      </Link>
+                      <Link 
+                        href="/sklep?category=peelingi" 
+                        className="flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                        onClick={() => setIsShopOpen(false)}
+                      >
+                        <span className="font-medium">Peelingi</span>
+                        <span className="text-xs text-gray-500">(6)</span>
+                      </Link>
+                    </div>
+                    
+                    {/* View All Categories */}
+                    <div className="border-t border-gray-200 mt-2 pt-2">
+                      <Link 
+                        href="/sklep" 
+                        className="flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                        onClick={() => setIsShopOpen(false)}
+                      >
+                        <span className="font-medium">Zobacz wszystkie kategorie</span>
+                        <ChevronRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <a 
               href="/o-nas" 
@@ -752,10 +811,12 @@ export default function Header() {
                     {isAuthenticated && (
                       <button
                         onClick={() => { logout(); setIsMobileMenuOpen(false); }}
-                        className="w-full flex items-center space-x-3 text-red-600 hover:text-red-700 bg-red-100 hover:bg-transparent hover:border hover:border-red-300 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-l-red-300 rounded-lg"
+                        className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-red-600"
                       >
-                        <LogOut className="w-5 h-5" />
-                        <span className="text-sm font-medium">Wyloguj się</span>
+                        <div className="flex items-center space-x-3">
+                          <LogOut className="w-5 h-5" />
+                          <span className="text-sm font-medium">Wyloguj się</span>
+                        </div>
                       </button>
                     )}
                   </div>
