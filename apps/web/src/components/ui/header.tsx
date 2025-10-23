@@ -610,11 +610,11 @@ export default function Header() {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6">
-                  {/* Main Navigation */}
+                  {/* Main Navigation - SAME FONT AS CATEGORIES */}
                   <div className="space-y-4 mb-8">
                     <Link 
                       href="/" 
-                      className="block text-lg font-medium text-gray-900 hover:text-black transition-colors py-3 border-b border-gray-100"
+                      className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Strona główna
@@ -622,7 +622,7 @@ export default function Header() {
                     
                     <Link 
                       href="/sklep" 
-                      className="block text-lg font-medium text-gray-900 hover:text-black transition-colors py-3 border-b border-gray-100"
+                      className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Sklep
@@ -630,7 +630,7 @@ export default function Header() {
                     
                     <a 
                       href="/o-nas" 
-                      className="block text-lg font-medium text-gray-900 hover:text-black transition-colors py-3 border-b border-gray-100"
+                      className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       O nas
@@ -638,46 +638,11 @@ export default function Header() {
                     
                     <a 
                       href="/kontakt" 
-                      className="block text-lg font-medium text-gray-900 hover:text-black transition-colors py-3 border-b border-gray-100"
+                      className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Kontakt
                     </a>
-                  </div>
-
-                  {/* Categories */}
-                  <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-black mb-4">Kategorie</h3>
-                    <div className="space-y-3">
-                      <a href="/sklep?kategoria=kremy" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
-                        Kremy
-                      </a>
-                      <a href="/sklep?kategoria=serum" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
-                        Serum
-                      </a>
-                      <a href="/sklep?kategoria=toniki" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
-                        Toniki
-                      </a>
-                      <a href="/sklep?kategoria=maseczki" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
-                        Maseczki
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Special Offers */}
-                  <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-black mb-4">Oferty specjalne</h3>
-                    <div className="space-y-3">
-                      <a href="/sklep?promocja=true" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
-                        Promocje
-                      </a>
-                      <a href="/sklep?nowosci=true" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
-                        Nowości
-                      </a>
-                      <a href="/sklep?bestsellery=true" className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300">
-                        Bestsellery
-                      </a>
-                    </div>
                   </div>
                 </div>
 
