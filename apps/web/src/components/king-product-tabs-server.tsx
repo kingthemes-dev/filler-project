@@ -130,7 +130,11 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className="relative group flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2 rounded-lg px-2 py-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`group flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2 rounded-xl px-4 py-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  activeTab === tab.id 
+                    ? 'bg-black text-white shadow-lg' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+                }`}
                 disabled={isTransitioning}
                 aria-pressed={activeTab === tab.id}
                 aria-selected={activeTab === tab.id}
@@ -140,19 +144,10 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 id={`tab-${tab.id}`}
                 aria-label={`${tab.label} - ${tab.products.length} produktów`}
               >
-                <span className={`flex items-center gap-2 text-xl sm:text-2xl lg:text-3xl font-bold transition-colors whitespace-nowrap ${
-                  activeTab === tab.id 
-                    ? 'text-black' 
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}>
+                <span className="flex items-center gap-2 text-lg sm:text-xl lg:text-2xl font-bold whitespace-nowrap">
                   {getTabIcon(tab.id)}
                   {tab.label}
                 </span>
-                
-                {/* Simple clean underline */}
-                <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left transition-transform duration-300 ${
-                  activeTab === tab.id ? 'scale-x-100' : 'scale-x-0'
-                }`} />
               </button>
             ))}
           </div>
