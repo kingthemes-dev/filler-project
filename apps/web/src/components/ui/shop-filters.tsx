@@ -436,7 +436,7 @@ export default function ShopFilters({
                   <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Kategorie</h4>
                   
                   {/* Delicate horizontal line on mobile */}
-                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                   
                   <motion.div
                     animate={{ rotate: expandedSections.categories ? 180 : 0 }}
@@ -525,6 +525,10 @@ export default function ShopFilters({
                   className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
                 >
                   <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Zakres cen</h4>
+                  
+                  {/* Delicate horizontal line on mobile */}
+                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                  
                   <motion.div
                     animate={{ rotate: expandedSections.price ? 180 : 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -686,7 +690,7 @@ export default function ShopFilters({
                   <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Kategorie</h4>
                   
                   {/* Delicate horizontal line on mobile */}
-                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                   
                   <motion.div
                     animate={{ rotate: expandedSections.categories ? 180 : 0 }}
@@ -725,7 +729,7 @@ export default function ShopFilters({
                   <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Atrybuty</h4>
                   
                   {/* Delicate horizontal line on mobile */}
-                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                   
                   <motion.div
                     animate={{ rotate: expandedSections.attributes ? 180 : 0 }}
@@ -775,6 +779,10 @@ export default function ShopFilters({
                   className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
                 >
                   <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Zakres cen</h4>
+                  
+                  {/* Delicate horizontal line on mobile */}
+                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                  
                   <motion.div
                     animate={{ rotate: expandedSections.price ? 180 : 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
