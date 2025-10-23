@@ -850,10 +850,12 @@ export default function Header() {
                           setIsMobileMenuOpen(false);
                           window.dispatchEvent(new CustomEvent('openLogin'));
                         }}
-                        className="w-full flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                        className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-black"
                       >
-                        <User className="w-5 h-5" />
-                        <span className="text-sm font-medium">Zaloguj się</span>
+                        <div className="flex items-center space-x-3">
+                          <User className="w-5 h-5" />
+                          <span className="text-sm font-medium">Zaloguj się</span>
+                        </div>
                       </button>
                     )}
 
