@@ -560,12 +560,13 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Backdrop - COVER ACTION BAR */}
+              {/* Backdrop - DIM BACKGROUND */}
               <motion.div
-                className="fixed inset-0 bg-black/50 z-[115] lg:hidden"
+                className="fixed inset-0 bg-black/60 z-[115] lg:hidden"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
