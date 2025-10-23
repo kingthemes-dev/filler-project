@@ -244,7 +244,7 @@ export default function SearchModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
             onClick={closeModal}
           />
 
@@ -254,7 +254,7 @@ export default function SearchModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -50, scale: 0.95 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed inset-x-0 top-0 z-[101] bg-white shadow-2xl flex flex-col"
+            className="fixed top-0 left-[10%] right-[10%] z-[101] bg-white shadow-2xl flex flex-col rounded-2xl"
             style={{ height: '100vh' }}
           >
             {/* Header */}
