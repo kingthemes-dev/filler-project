@@ -681,12 +681,12 @@ export default function Header() {
 
                 {/* Footer - SENIOR DEV LEVEL */}
                 <div className="border-t border-gray-200 p-4 bg-gray-50">
-                  {/* Account Section - CONSISTENT STYLING */}
+                  {/* Account Section - WITH HOVER EFFECTS */}
                   {isAuthenticated ? (
                     <div className="space-y-1 mb-4">
                       <Link 
                         href="/moje-konto" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />
@@ -695,7 +695,7 @@ export default function Header() {
 
                       <Link 
                         href="/moje-zamowienia" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Package className="w-5 h-5" />
@@ -704,7 +704,7 @@ export default function Header() {
 
                       <Link 
                         href="/moje-faktury" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <FileText className="w-5 h-5" />
@@ -718,7 +718,7 @@ export default function Header() {
                           setIsMobileMenuOpen(false);
                           window.dispatchEvent(new CustomEvent('openLogin'));
                         }}
-                        className="w-full flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                        className="w-full flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                       >
                         <User className="w-5 h-5" />
                         <span className="text-sm font-medium">Zaloguj się</span>
@@ -726,19 +726,8 @@ export default function Header() {
                     </div>
                   )}
 
-                  {/* Action Buttons - CONSISTENT STYLING */}
+                  {/* Action Buttons - WITH HOVER EFFECTS */}
                   <div className="space-y-2 mb-4">
-                    {/* Logout Button (if authenticated) */}
-                    {isAuthenticated && (
-                      <button
-                        onClick={() => { logout(); setIsMobileMenuOpen(false); }}
-                        className="w-full flex items-center space-x-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-red-300 rounded-r-lg"
-                      >
-                        <LogOut className="w-5 h-5" />
-                        <span className="text-sm font-medium">Wyloguj się</span>
-                      </button>
-                    )}
-
                     {/* Favorites Button */}
                     <button
                       onClick={() => {
@@ -757,6 +746,17 @@ export default function Header() {
                         </span>
                       )}
                     </button>
+
+                    {/* Logout Button (if authenticated) - AT THE END */}
+                    {isAuthenticated && (
+                      <button
+                        onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                        className="w-full flex items-center space-x-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-red-300 rounded-r-lg"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span className="text-sm font-medium">Wyloguj się</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Social Media - CONSISTENT SPACING */}
