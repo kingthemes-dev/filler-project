@@ -178,8 +178,8 @@ export default function ActiveFiltersBar({
             </AnimatePresence>
           </div>
           
-          {/* Clear button for mobile */}
-          <div className="flex justify-end">
+          {/* Clear button for mobile - aligned with page margins */}
+          <div className="flex justify-end -mr-4 sm:-mr-6">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
