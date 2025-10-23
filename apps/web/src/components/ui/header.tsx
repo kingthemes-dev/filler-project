@@ -615,10 +615,10 @@ export default function Header() {
                 style={{ 
                   top: 0,
                   right: 0,
-                  height: '70vh',
+                  height: '80vh',
                   width: '100%',
                   maxWidth: '364px',
-                  maxHeight: '70vh',
+                  maxHeight: '80vh',
                   overflow: 'auto',
                   zIndex: 120,
                   position: 'fixed'
