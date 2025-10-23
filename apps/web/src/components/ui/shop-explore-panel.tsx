@@ -54,9 +54,19 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           ? cats.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug, parent: c.parent || 0, count: counters[c.id] ?? c.count }))
           : [];
         const selectedCatId = (normCats.find(c => (c.parent || 0) === 0)?.id) || null;
+        
+        // 3) Pobierz atrybuty bezpośrednio z API (nie z shop endpoint)
+        const [capacitiesRes, brandsRes] = await Promise.all([
+          fetch('/api/woocommerce?endpoint=products/attributes/pa_pojemność/terms&per_page=100', { cache: 'no-store' }),
+          fetch('/api/woocommerce?endpoint=products/attributes/pa_marka/terms&per_page=100', { cache: 'no-store' })
+        ]);
+        
+        const capacities = capacitiesRes.ok ? await capacitiesRes.json() : [];
+        const brands = brandsRes.ok ? await brandsRes.json() : [];
+        
         const attrs = {
-          capacities: shop.attributes?.capacities || [],
-          brands: shop.attributes?.brands || []
+          capacities: capacities || [],
+          brands: brands || []
         };
         
         setCategories(normCats);
