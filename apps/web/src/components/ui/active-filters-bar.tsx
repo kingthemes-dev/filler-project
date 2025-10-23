@@ -134,10 +134,21 @@ export default function ActiveFiltersBar({
       className="bg-white/95 backdrop-blur-sm sticky top-0 z-30"
     >
       <div className="px-4 sm:px-6 py-5">
-        {/* Mobile Layout - Only Badges */}
-        <div className="flex flex-col gap-4 sm:hidden">
-          {/* Filter chips - Full width on mobile */}
-          <div className="flex flex-wrap gap-2">
+        {/* Mobile Layout - Button left, filters right */}
+        <div className="flex items-center gap-5 sm:hidden">
+          {/* Clear button - left side */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onClearFilters}
+            className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-xs flex-shrink-0"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Wyczyść filtry</span>
+          </motion.button>
+          
+          {/* Filter chips - right side */}
+          <div className="flex flex-wrap gap-2 min-w-0 flex-1">
             <AnimatePresence mode="popLayout">
               {filterChips.map((chip, index) => (
                 <motion.div
@@ -177,24 +188,22 @@ export default function ActiveFiltersBar({
               ))}
             </AnimatePresence>
           </div>
-          
-          {/* Clear button for mobile - aligned with page margins */}
-          <div className="flex justify-end -mr-4 sm:-mr-6">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onClearFilters}
-              className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-xs"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Wyczyść wszystkie</span>
-            </motion.button>
-          </div>
         </div>
 
-        {/* Desktop Layout - Only Badges */}
-        <div className="hidden sm:flex items-center justify-between gap-4">
-          {/* Filter chips only */}
+        {/* Desktop Layout - Button left, filters right */}
+        <div className="hidden sm:flex items-center gap-5">
+          {/* Clear button - left side */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onClearFilters}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-sm flex-shrink-0"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Wyczyść filtry</span>
+          </motion.button>
+          
+          {/* Filter chips - right side */}
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="flex flex-wrap gap-2 min-w-0">
               <AnimatePresence mode="popLayout">
@@ -237,19 +246,11 @@ export default function ActiveFiltersBar({
               </AnimatePresence>
             </div>
           </div>
-
-          {/* Right side - Clear all button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onClearFilters}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-sm flex-shrink-0"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>Wyczyść wszystkie</span>
-          </motion.button>
         </div>
       </div>
+      
+      {/* Horizontal line under filters */}
+      <div className="w-full h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200"></div>
     </motion.div>
   );
 }
