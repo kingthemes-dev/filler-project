@@ -5,6 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import KingProductCard from './king-product-card';
 import { WooProduct } from '@/types/woocommerce';
 import Link from 'next/link';
+import { Sparkles, Tag, Star, TrendingUp } from 'lucide-react';
 
 interface TabData {
   id: string;
@@ -79,6 +80,22 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
     return bestselleryRaw.slice(0, 8);
   }, [data.bestsellery]);
 
+  // Icon mapping for tabs
+  const getTabIcon = (tabId: string) => {
+    switch (tabId) {
+      case 'nowosci':
+        return <Sparkles className="w-4 h-4" />;
+      case 'promocje':
+        return <Tag className="w-4 h-4" />;
+      case 'polecane':
+        return <Star className="w-4 h-4" />;
+      case 'bestsellery':
+        return <TrendingUp className="w-4 h-4" />;
+      default:
+        return null;
+    }
+  };
+
   const tabs: TabData[] = [
     { id: 'nowosci', label: 'Nowości', products: nowosci },
     { id: 'promocje', label: 'Promocje', products: promocje },
@@ -123,11 +140,12 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 id={`tab-${tab.id}`}
                 aria-label={`${tab.label} - ${tab.products.length} produktów`}
               >
-                <span className={`text-lg sm:text-xl lg:text-2xl font-bold transition-colors whitespace-nowrap ${
+                <span className={`flex items-center gap-2 text-lg sm:text-xl lg:text-2xl font-bold transition-colors whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'text-black' 
                     : 'text-gray-600 hover:text-gray-800'
                 }`}>
+                  {getTabIcon(tab.id)}
                   {tab.label}
                 </span>
                 
