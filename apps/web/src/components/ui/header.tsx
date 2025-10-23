@@ -719,7 +719,7 @@ export default function Header() {
                         onClick={() => setIsShopExpanded(!isShopExpanded)}
                         className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
                       >
-                        <span className="text-sm font-medium">Sklep</span>
+                        <span>Sklep</span>
                         <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopExpanded ? 'rotate-180' : ''}`} />
                       </button>
                       
