@@ -131,24 +131,24 @@ export default function ActiveFiltersBar({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="bg-white/95 backdrop-blur-sm sticky top-0 z-30 border border-gray-200 rounded-xl mx-4 sm:mx-6 mt-4 shadow-sm"
+      className="bg-white/95 backdrop-blur-sm sticky top-0 z-30 border border-gray-200 rounded-xl shadow-sm mx-0"
     >
       <div className="px-4 sm:px-6 py-5">
         {/* Mobile Layout - Button left, filters right */}
-        <div className="flex items-center gap-5 sm:hidden">
+        <div className="flex items-center gap-3 sm:hidden">
           {/* Clear button - left side */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClearFilters}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-xs flex-shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-xs flex-shrink-0"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Wyczyść filtry</span>
           </motion.button>
           
           {/* Filter chips - right side */}
-          <div className="flex flex-wrap gap-2 min-w-0 flex-1">
+          <div className="flex flex-wrap gap-1.5 min-w-0 flex-1">
             <AnimatePresence mode="popLayout">
               {filterChips.map((chip, index) => (
                 <motion.div
@@ -162,7 +162,7 @@ export default function ActiveFiltersBar({
                     delay: index * 0.05,
                     layout: { duration: 0.3 }
                   }}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-200 ${
                     chip.type === 'search' 
                       ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
                       : chip.type === 'category'
@@ -191,21 +191,21 @@ export default function ActiveFiltersBar({
         </div>
 
         {/* Desktop Layout - Button left, filters right */}
-        <div className="hidden sm:flex items-center gap-5">
+        <div className="hidden sm:flex items-center gap-3">
           {/* Clear button - left side */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClearFilters}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-sm flex-shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-sm flex-shrink-0"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Wyczyść filtry</span>
           </motion.button>
           
           {/* Filter chips - right side */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="flex flex-wrap gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <div className="flex flex-wrap gap-1.5 min-w-0">
               <AnimatePresence mode="popLayout">
                 {filterChips.map((chip, index) => (
                   <motion.div
@@ -219,7 +219,7 @@ export default function ActiveFiltersBar({
                       delay: index * 0.05,
                       layout: { duration: 0.3 }
                     }}
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-200 ${
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-200 ${
                       chip.type === 'search' 
                         ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
                         : chip.type === 'category'
