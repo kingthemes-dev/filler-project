@@ -388,8 +388,8 @@ export default function ProductClient({ slug }: ProductClientProps) {
 
               <div className="p-8">
                 {activeTab === 'description' && (
-                  <div className="prose prose-gray max-w-none" role="tabpanel" id="tab-description" aria-labelledby="tab-description-trigger">
-                    <div className="text-gray-700 leading-relaxed text-sm" style={{ fontSize: '14px', lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: product.description }} />
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200" role="tabpanel" id="tab-description" aria-labelledby="tab-description-trigger">
+                    <div className="text-gray-700 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: product.description }} />
                   </div>
                 )}
 
