@@ -595,8 +595,8 @@ export default function Header() {
                   position: 'fixed'
                 }}
               >
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                {/* Header - COMPACT */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-200">
                   <div className="flex items-center space-x-3">
                     <Menu className="w-6 h-6 text-black" />
                     <h2 id="mobile-menu-title" className="text-xl font-bold text-black">
@@ -612,10 +612,10 @@ export default function Header() {
                   </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  {/* Main Navigation - SAME FONT AS CATEGORIES */}
-                  <div className="space-y-3 mb-6">
+                {/* Content - COMPACT */}
+                <div className="flex-1 overflow-y-auto p-3">
+                  {/* Main Navigation - COMPACT */}
+                  <div className="space-y-2 mb-4">
                     <Link 
                       href="/" 
                       className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
@@ -650,32 +650,32 @@ export default function Header() {
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="border-t border-gray-200 p-4 space-y-3 bg-gray-50">
-                  {/* Account Section */}
+                {/* Footer - COMPACT */}
+                <div className="border-t border-gray-200 p-3 space-y-2 bg-gray-50">
+                  {/* Account Section - COMPACT */}
                   {isAuthenticated ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <Link 
                         href="/moje-konto" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-2"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />
                         <span className="text-sm font-medium">Moje konto</span>
                       </Link>
-                      
+
                       <Link 
                         href="/moje-zamowienia" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-2"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Package className="w-5 h-5" />
                         <span className="text-sm font-medium">Moje zamówienia</span>
                       </Link>
-                      
+
                       <Link 
                         href="/moje-faktury" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-2"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <FileText className="w-5 h-5" />
