@@ -569,9 +569,9 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - FIXED HEIGHT TO FIT SCREEN */}
+              {/* Menu Drawer - ABOVE ACTION BAR */}
               <motion.div
-                className="fixed right-0 top-0 bg-white shadow-2xl z-50 
+                className="fixed right-0 top-0 bg-white shadow-2xl z-[80] 
                          w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
                          lg:border-l lg:border-gray-200 flex flex-col
                          rounded-l-2xl lg:rounded-l-2xl"
@@ -590,7 +590,8 @@ export default function Header() {
                   width: '100%',
                   maxWidth: '364px',
                   maxHeight: '100vh',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  zIndex: 9999
                 }}
               >
                 {/* Header */}
