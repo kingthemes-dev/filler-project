@@ -91,6 +91,9 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#000000',
+  // Fix for iPhone 14 Pro horizontal scroll
+  viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
 };
 
 export default function RootLayout({

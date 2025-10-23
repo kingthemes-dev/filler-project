@@ -139,12 +139,39 @@ export default function Header() {
   }, [shopHoverTimeout]);
 
 
-  // Block body scroll when mobile menu is open
+  // Block body scroll when mobile menu is open - FIXED FOR IPHONE 14 PRO
   useEffect(() => {
     if (isMobileMenuOpen) {
+      // Prevent horizontal scroll on iPhone 14 Pro
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.top = '0';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.bottom = '0';
+      
+      // Prevent viewport zoom and scroll
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.position = 'fixed';
+      document.documentElement.style.width = '100%';
+      document.documentElement.style.height = '100%';
+      
       return () => {
         document.body.style.overflow = 'unset';
+        document.body.style.position = 'unset';
+        document.body.style.width = 'unset';
+        document.body.style.height = 'unset';
+        document.body.style.top = 'unset';
+        document.body.style.left = 'unset';
+        document.body.style.right = 'unset';
+        document.body.style.bottom = 'unset';
+        
+        document.documentElement.style.overflow = 'unset';
+        document.documentElement.style.position = 'unset';
+        document.documentElement.style.width = 'unset';
+        document.documentElement.style.height = 'unset';
       };
     }
   }, [isMobileMenuOpen]);
@@ -542,12 +569,13 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - EXACT COPY FROM CART */}
+              {/* Menu Drawer - FIXED FOR IPHONE 14 PRO */}
               <motion.div
                 className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
                          w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
                          lg:border-l lg:border-gray-200 flex flex-col
-                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
+                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl
+                         overflow-hidden"
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
@@ -556,6 +584,12 @@ export default function Header() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
+                style={{ 
+                  zIndex: 9999,
+                  maxWidth: '100vw',
+                  width: '100%',
+                  overflow: 'hidden'
+                }}
               >
                 {/* Header - identical to cart */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200" onClick={(e) => e.stopPropagation()}>
