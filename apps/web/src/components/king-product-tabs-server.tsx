@@ -122,7 +122,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Senior Level Tabs - Enhanced UI/UX with Accessibility */}
           <div 
-            className="flex space-x-4 sm:space-x-6 lg:space-x-8 mb-6 lg:mb-0 overflow-x-auto pb-3 scrollbar-hide"
+            className="flex flex-wrap gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-0 sm:flex-nowrap sm:overflow-x-auto sm:pb-3 scrollbar-hide"
             role="tablist"
             aria-label="Kategorie produktów"
           >
