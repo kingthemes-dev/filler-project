@@ -132,8 +132,8 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 onClick={() => handleTabChange(tab.id)}
                 className={`group flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2 rounded-xl px-4 py-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                   activeTab === tab.id 
-                    ? 'bg-black text-white shadow-lg' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-black to-gray-800 text-white shadow-lg hover:from-gray-800 hover:to-black' 
+                    : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 hover:text-gray-900'
                 }`}
                 disabled={isTransitioning}
                 aria-pressed={activeTab === tab.id}
