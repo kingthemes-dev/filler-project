@@ -308,34 +308,9 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               <div className="flex flex-col lg:flex-row max-h-[calc(90vh-80px)] overflow-hidden">
                 {/* Images Section */}
                 <div className="lg:w-1/2 p-6">
-                  <div className={`grid gap-4 ${galleryImages.length > 1 ? 'grid-cols-5' : 'grid-cols-1'}`}>
-                    {/* Thumbnails - only show if more than 1 image */}
-                    {galleryImages.length > 1 && (
-                      <div className="col-span-1 space-y-2">
-                        {galleryImages.map((image, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setSelectedImageIndex(index)}
-                            className={`w-full aspect-square rounded-lg overflow-hidden border-2 transition-colors shadow-sm ${
-                              selectedImageIndex === index
-                                ? 'border-black'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            <Image
-                              src={getSafeImageSrc(image.src)}
-                              alt={image.alt || image.name || product.name || 'Zdjęcie produktu'}
-                              width={100}
-                              height={100}
-                              className="w-full h-full object-cover"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    
+                  <div className="space-y-4">
                     {/* Main Image */}
-                    <div className={`relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg ${galleryImages.length > 1 ? 'col-span-4' : 'col-span-1'}`}>
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg">
                       <motion.div
                         key={selectedImageIndex}
                         initial={{ opacity: 0 }}
@@ -372,6 +347,31 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       )}
 
                     </div>
+                    
+                    {/* Thumbnails - only show if more than 1 image, positioned under main image */}
+                    {galleryImages.length > 1 && (
+                      <div className="flex gap-2 justify-center">
+                        {galleryImages.map((image, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setSelectedImageIndex(index)}
+                            className={`w-16 h-16 aspect-square rounded-lg overflow-hidden border-2 transition-colors shadow-sm ${
+                              selectedImageIndex === index
+                                ? 'border-black'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <Image
+                              src={getSafeImageSrc(image.src)}
+                              alt={image.alt || image.name || product.name || 'Zdjęcie produktu'}
+                              width={64}
+                              height={64}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
