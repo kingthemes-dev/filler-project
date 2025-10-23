@@ -792,7 +792,7 @@ export default function Header() {
                 <div className="border-t border-gray-200 p-4 bg-gray-50 mt-4">
                   {/* Account Section - CONSISTENT SPACING */}
                   {isAuthenticated ? (
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-1 mb-4">
                       <Link 
                         href="/moje-konto" 
                         className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
@@ -823,7 +823,7 @@ export default function Header() {
                   ) : null}
 
                   {/* Action Buttons - WITH HOVER EFFECTS */}
-                  <div className="space-y-2 mb-4 -mt-1">
+                  <div className="space-y-1 mb-4 -mt-1">
                     {/* Favorites Button */}
                     <button
                       onClick={() => {
