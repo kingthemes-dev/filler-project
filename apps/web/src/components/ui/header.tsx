@@ -751,7 +751,7 @@ export default function Header() {
                     {isAuthenticated && (
                       <button
                         onClick={() => { logout(); setIsMobileMenuOpen(false); }}
-                        className="w-full flex items-center space-x-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-red-300 rounded-r-lg"
+                        className="w-full flex items-center space-x-3 text-red-600 hover:text-red-700 bg-red-100 hover:bg-transparent hover:border-2 hover:border-red-300 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-l-red-300 rounded-r-lg"
                       >
                         <LogOut className="w-5 h-5" />
                         <span className="text-sm font-medium">Wyloguj się</span>
