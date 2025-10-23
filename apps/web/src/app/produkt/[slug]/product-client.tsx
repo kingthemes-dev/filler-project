@@ -347,16 +347,16 @@ export default function ProductClient({ slug }: ProductClientProps) {
 
               {/* Quantity & Add to Cart */}
               <div className="flex items-center space-x-4">
-                <div className="flex items-center border border-gray-300 rounded-lg bg-white h-[56px]">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-3 hover:bg-gray-100 transition-colors text-gray-700 font-medium h-full flex items-center justify-center">-</button>
-                  <span className="px-4 py-3 min-w-[60px] text-center font-medium text-gray-900 border-x border-gray-300 h-full flex items-center justify-center">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} className="p-3 hover:bg-gray-100 transition-colors text-gray-700 font-medium h-full flex items-center justify-center">+</button>
+                <div className="flex items-center border border-gray-300 rounded-lg bg-white h-[48px] w-fit">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:bg-gray-100 transition-colors text-gray-700 font-medium h-full flex items-center justify-center">-</button>
+                  <span className="px-3 py-2 min-w-[40px] text-center font-medium text-gray-900 border-x border-gray-300 h-full flex items-center justify-center">{quantity}</span>
+                  <button onClick={() => setQuantity(quantity + 1)} className="p-2 hover:bg-gray-100 transition-colors text-gray-700 font-medium h-full flex items-center justify-center">+</button>
                 </div>
 
                 <div className="flex space-x-3 flex-1">
-                  <button onClick={handleAddToCart} disabled={product.stock_status === 'outofstock' || product.stock_status === 'onbackorder' || (variations.length > 0 && !selectedCapacity)} className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white py-4 px-6 rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900  transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2">
-                    <ShoppingCart className="w-5 h-5" />
-                    <span>
+                  <button onClick={handleAddToCart} disabled={product.stock_status === 'outofstock' || product.stock_status === 'onbackorder' || (variations.length > 0 && !selectedCapacity)} className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white py-3 px-4 rounded-lg text-sm font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    <span className="whitespace-nowrap">
                       {product.stock_status === 'outofstock' ? 'Brak w magazynie' : product.stock_status === 'onbackorder' ? 'Na zamówienie' : (variations.length > 0 && !selectedCapacity) ? 'Wybierz pojemność' : 'Dodaj do koszyka'}
                     </span>
                   </button>
