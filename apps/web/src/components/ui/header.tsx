@@ -641,13 +641,13 @@ export default function Header() {
                   </button>
                 </div>
 
-                {/* Content - COMPACT */}
-                <div className="flex-1 overflow-y-auto p-3">
-                  {/* Main Navigation - COMPACT */}
-                  <div className="space-y-2 mb-4">
+                {/* Content - SENIOR DEV LEVEL */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  {/* Main Navigation - CONSISTENT SPACING */}
+                  <div className="space-y-1 mb-6">
                     <Link 
                       href="/" 
-                      className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
+                      className="block text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Strona główna
@@ -655,7 +655,7 @@ export default function Header() {
                     
                     <Link 
                       href="/sklep" 
-                      className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
+                      className="block text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Sklep
@@ -663,7 +663,7 @@ export default function Header() {
                     
                     <a 
                       href="/o-nas" 
-                      className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
+                      className="block text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       O nas
@@ -671,7 +671,7 @@ export default function Header() {
                     
                     <a 
                       href="/kontakt" 
-                      className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
+                      className="block text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Kontakt
@@ -679,14 +679,14 @@ export default function Header() {
                   </div>
                 </div>
 
-                {/* Footer - COMPACT */}
-                <div className="border-t border-gray-200 p-3 space-y-2 bg-gray-50">
-                  {/* Account Section - COMPACT */}
+                {/* Footer - SENIOR DEV LEVEL */}
+                <div className="border-t border-gray-200 p-4 bg-gray-50">
+                  {/* Account Section - CONSISTENT STYLING */}
                   {isAuthenticated ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1 mb-4">
                       <Link 
                         href="/moje-konto" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-2"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <User className="w-5 h-5" />
@@ -695,7 +695,7 @@ export default function Header() {
 
                       <Link 
                         href="/moje-zamowienia" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-2"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Package className="w-5 h-5" />
@@ -704,60 +704,64 @@ export default function Header() {
 
                       <Link 
                         href="/moje-faktury" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-2"
+                        className="flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <FileText className="w-5 h-5" />
                         <span className="text-sm font-medium">Faktury</span>
                       </Link>
-                      
-                      <button
-                        onClick={() => { logout(); setIsMobileMenuOpen(false); }}
-                        className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <LogOut className="w-5 h-5 text-red-500" />
-                          <span className="text-sm font-medium text-gray-700">Wyloguj się</span>
-                        </div>
-                      </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => { 
-                        setIsMobileMenuOpen(false);
-                        window.dispatchEvent(new CustomEvent('openLogin'));
-                      }}
-                      className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <User className="w-5 h-5 text-blue-500" />
-                        <span className="text-sm font-medium text-gray-700">Zaloguj się</span>
-                      </div>
-                    </button>
+                    <div className="mb-4">
+                      <button
+                        onClick={() => { 
+                          setIsMobileMenuOpen(false);
+                          window.dispatchEvent(new CustomEvent('openLogin'));
+                        }}
+                        className="w-full flex items-center space-x-3 text-gray-700 hover:text-black transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                      >
+                        <User className="w-5 h-5" />
+                        <span className="text-sm font-medium">Zaloguj się</span>
+                      </button>
+                    </div>
                   )}
 
-                  {/* Favorites */}
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      openFavoritesModal();
-                    }}
-                    className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Heart className="w-5 h-5 text-red-500" />
-                      <span className="text-sm font-medium text-gray-700">Lista życzeń</span>
-                    </div>
-                    {favoritesCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                        {favoritesCount}
-                      </span>
+                  {/* Action Buttons - CONSISTENT STYLING */}
+                  <div className="space-y-2 mb-4">
+                    {/* Logout Button (if authenticated) */}
+                    {isAuthenticated && (
+                      <button
+                        onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                        className="w-full flex items-center space-x-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-red-300 rounded-r-lg"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span className="text-sm font-medium">Wyloguj się</span>
+                      </button>
                     )}
-                  </button>
 
-                  {/* Social Media - COMPACT */}
+                    {/* Favorites Button */}
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        openFavoritesModal();
+                      }}
+                      className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Heart className="w-5 h-5 text-red-500" />
+                        <span className="text-sm font-medium">Lista życzeń</span>
+                      </div>
+                      {favoritesCount > 0 && (
+                        <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                          {favoritesCount}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Social Media - CONSISTENT SPACING */}
                   <div className="pt-3 border-t border-gray-200">
-                    <div className="flex justify-center space-x-3">
+                    <div className="flex justify-center space-x-4">
                       <a 
                         href="tel:+48123456789" 
                         className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
