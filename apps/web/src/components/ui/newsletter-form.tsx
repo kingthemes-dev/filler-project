@@ -95,8 +95,10 @@ export default function NewsletterForm() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input + Button - Simple design without animations */}
             <div className="flex h-14 rounded-2xl overflow-hidden border border-white/60">
-              {/* Input field - smaller width */}
-              <div className="flex-[2] relative bg-gray-800">
+              {/* Input field - smaller width with highlight effect */}
+              <div className={`flex-[2] relative transition-all duration-300 ${
+                email ? 'bg-gray-700 ring-2 ring-white/30' : 'bg-gray-800'
+              }`}>
                 <input
                   type="email"
                   value={email}
@@ -111,6 +113,10 @@ export default function NewsletterForm() {
                   className="w-full h-full pl-4 pr-4 border-0 bg-transparent text-white placeholder:text-white/60 focus:outline-none text-lg font-medium"
                   required
                 />
+                {/* Highlight effect when typing */}
+                {email && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none" />
+                )}
               </div>
               
               {/* Divider line */}
@@ -126,12 +132,12 @@ export default function NewsletterForm() {
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform -skew-x-12 group-hover:skew-x-12" />
                 
                 {/* Content */}
-                <span className="relative z-10 flex items-center gap-2">
+                <span className="relative z-10 flex items-center gap-2 whitespace-nowrap">
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
-                      <span>Odbierz 10%!</span>
+                      <span className="text-sm sm:text-base lg:text-lg">Odbierz 10%!</span>
                       <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                     </>
                   )}
