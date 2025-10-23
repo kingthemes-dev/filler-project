@@ -26,6 +26,8 @@ export default function Header() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isShopExpanded, setIsShopExpanded] = useState(false);
   const [isBrandsExpanded, setIsBrandsExpanded] = useState(false);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [brandsLoading, setBrandsLoading] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Safely access stores with error handling
@@ -62,6 +64,27 @@ export default function Header() {
   const { getItemCount } = useWishlist();
   wishlistCount = getItemCount();
 
+  // Fetch brands from API
+  const fetchBrands = async () => {
+    if (brands.length > 0) return; // Don't fetch if already loaded
+    
+    setBrandsLoading(true);
+    try {
+      const response = await fetch('/api/woocommerce?endpoint=products/attributes/pa_marka/terms');
+      if (response.ok) {
+        const data = await response.json();
+        const brandNames = data.map((brand: any) => brand.name).slice(0, 10); // Limit to 10 brands
+        setBrands(brandNames);
+      }
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+      // Fallback to hardcoded brands
+      setBrands(['Allergan', 'Merz', 'Galderma', 'Teoxane', 'Juvederm', 'Restylane', 'Sculptra', 'Radiesse', 'Belotero', 'Ellanse']);
+    } finally {
+      setBrandsLoading(false);
+    }
+  };
+
   // Fix hydration issue by syncing favorites count after mount
   useEffect(() => {
     setIsMounted(true);
@@ -75,6 +98,13 @@ export default function Header() {
       setFavoritesCount(favorites.length);
     }
   }, [favorites.length, isMounted]);
+
+  // Fetch brands when brands section is expanded
+  useEffect(() => {
+    if (isBrandsExpanded && brands.length === 0) {
+      fetchBrands();
+    }
+  }, [isBrandsExpanded, brands.length]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -766,7 +796,10 @@ export default function Header() {
                           >
                             <div className="max-h-32 overflow-y-auto space-y-2">
                               <div className="flex flex-wrap gap-1.5">
-                                {['Allergan', 'Merz', 'Galderma', 'Teoxane', 'Juvederm', 'Restylane', 'Sculptra', 'Radiesse', 'Belotero', 'Ellanse'].map((brand) => (
+                                {brandsLoading ? (
+                                  <div className="text-sm text-gray-500">Ładowanie marek...</div>
+                                ) : (
+                                  brands.map((brand) => (
                                   <button
                                     key={brand}
                                     onClick={() => {
@@ -777,8 +810,9 @@ export default function Header() {
                                     className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black rounded-full transition-colors whitespace-nowrap"
                                   >
                                     {brand}
-                                  </button>
-                                ))}
+                                    </button>
+                                  ))
+                                )}
                               </div>
                             </div>
                           </motion.div>
