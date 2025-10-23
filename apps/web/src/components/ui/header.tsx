@@ -11,6 +11,7 @@ import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
 import EmailNotificationCenter from './email/email-notification-center';
 import SearchBar from './search/search-bar';
+import SearchModal from './search/search-modal';
 import ShopExplorePanel from './shop-explore-panel';
 
 
@@ -19,7 +20,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEmailCenterOpen, setIsEmailCenterOpen] = useState(false);
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -89,21 +90,6 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
 
-  // Close mobile search when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isMobileSearchOpen) {
-        const target = event.target as HTMLElement;
-        // Check if click is outside mobile search container
-        if (!target.closest('.mobile-search-container')) {
-          setIsMobileSearchOpen(false);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMobileSearchOpen]);
 
   // Close shop dropdown when clicking outside
   useEffect(() => {
@@ -354,10 +340,10 @@ export default function Header() {
 
           {/* Mobile Icons with Labels */}
           <div className="lg:hidden col-start-3 flex items-center gap-3 justify-end min-w-0 flex-shrink-0">
-            {/* Mobile Search Icon */}
+            {/* Mobile Search Icon - Direct to Modal */}
             <button 
-              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors mobile-search-container"
-              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
+              onClick={() => setIsSearchModalOpen(true)}
               aria-label="Szukaj produktów"
             >
               <Search className="w-6 h-6" />
@@ -614,25 +600,12 @@ export default function Header() {
           </div>
         </div>
         
-        {/* Mobile Search Bar */}
-        <AnimatePresence>
-          {isMobileSearchOpen && (
-            <motion.div
-              className="lg:hidden bg-white border-t border-gray-200 shadow-lg mobile-search-container"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-            >
-              <div className="px-4 py-4">
-                <SearchBar 
-                  placeholder="Szukaj produktów..."
-                  className="w-full text-sm"
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Search Modal - Direct from Mobile Icon */}
+        <SearchModal
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+          placeholder="Szukaj produktów..."
+        />
         
         {/* Mobile Menu - COMPLETELY NEW */}
         <AnimatePresence>
