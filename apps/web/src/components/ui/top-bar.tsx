@@ -10,7 +10,7 @@ const announcements = [
 
 export default function TopBar() {
   return (
-    <div className="bg-gradient-to-r from-gray-900 via-black to-gray-800 text-white overflow-hidden relative" data-topbar>
+    <div className="bg-gradient-to-r from-gray-900 via-black to-gray-800 text-white overflow-hidden relative z-10" data-topbar>
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent"></div>
