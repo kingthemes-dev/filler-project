@@ -683,13 +683,16 @@ export default function Header() {
                       </Link>
                     </div>
                   ) : (
-                    <Link
-                      href="/moje-konto"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="w-full bg-gradient-to-r from-gray-800 to-black text-white py-3 px-4 rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 inline-block text-center"
-                    >
-                      Zarejestruj się
-                    </Link>
+                        <Link
+                          href="/moje-konto"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <User className="w-5 h-5 text-blue-500" />
+                            <span className="text-sm font-medium text-gray-700">Zarejestruj się</span>
+                          </div>
+                        </Link>
                   )}
 
                   {/* Favorites */}
