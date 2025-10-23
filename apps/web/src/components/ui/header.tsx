@@ -735,31 +735,35 @@ export default function Header() {
                           >
                             <Link 
                               href="/sklep?category=wypelniacze" 
-                              className="block text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                              className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              Wypełniacze (8)
+                              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3 flex-shrink-0"></div>
+                              <span>Wypełniacze (8)</span>
                             </Link>
                             <Link 
                               href="/sklep?category=stymulatory" 
-                              className="block text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                              className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              Stymulatory (43)
+                              <div className="w-2 h-2 bg-green-500 rounded-full mr-3 flex-shrink-0"></div>
+                              <span>Stymulatory (43)</span>
                             </Link>
                             <Link 
                               href="/sklep?category=mezoterapia" 
-                              className="block text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                              className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              Mezoterapia (11)
+                              <div className="w-2 h-2 bg-purple-500 rounded-full mr-3 flex-shrink-0"></div>
+                              <span>Mezoterapia (11)</span>
                             </Link>
                             <Link 
                               href="/sklep?category=peelingi" 
-                              className="block text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                              className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              Peelingi (6)
+                              <div className="w-2 h-2 bg-orange-500 rounded-full mr-3 flex-shrink-0"></div>
+                              <span>Peelingi (6)</span>
                             </Link>
                           </motion.div>
                         )}
