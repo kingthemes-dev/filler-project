@@ -569,9 +569,9 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - FIXED NO GAP */}
+              {/* Menu Drawer - FIXED HEIGHT TO FIT SCREEN */}
               <motion.div
-                className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
+                className="fixed right-0 top-0 bg-white shadow-2xl z-50 
                          w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
                          lg:border-l lg:border-gray-200 flex flex-col
                          rounded-l-2xl lg:rounded-l-2xl"
@@ -588,7 +588,9 @@ export default function Header() {
                   right: 0,
                   height: '100vh',
                   width: '100%',
-                  maxWidth: '364px'
+                  maxWidth: '364px',
+                  maxHeight: '100vh',
+                  overflow: 'hidden'
                 }}
               >
                 {/* Header */}
@@ -609,9 +611,9 @@ export default function Header() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-4">
                   {/* Main Navigation - SAME FONT AS CATEGORIES */}
-                  <div className="space-y-4 mb-8">
+                  <div className="space-y-3 mb-6">
                     <Link 
                       href="/" 
                       className="block text-gray-700 hover:text-black transition-colors py-2 pl-4 border-l-2 border-transparent hover:border-gray-300"
@@ -647,7 +649,7 @@ export default function Header() {
                 </div>
 
                 {/* Footer */}
-                <div className="border-t border-gray-200 p-6 space-y-4 bg-gray-50">
+                <div className="border-t border-gray-200 p-4 space-y-3 bg-gray-50">
                   {/* Account Section */}
                   {isAuthenticated ? (
                     <div className="space-y-3">
