@@ -569,12 +569,12 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - NEW DESIGN */}
+              {/* Menu Drawer - FIXED NO GAP */}
               <motion.div
                 className="fixed right-0 top-0 h-full bg-white shadow-2xl z-50 
                          w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
                          lg:border-l lg:border-gray-200 flex flex-col
-                         rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
+                         rounded-l-2xl lg:rounded-l-2xl"
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
@@ -583,6 +583,13 @@ export default function Header() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
+                style={{ 
+                  top: 0,
+                  right: 0,
+                  height: '100vh',
+                  width: '100%',
+                  maxWidth: '364px'
+                }}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
