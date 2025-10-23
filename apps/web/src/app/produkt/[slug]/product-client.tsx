@@ -249,26 +249,30 @@ export default function ProductClient({ slug }: ProductClientProps) {
         <div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Images */}
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="flex gap-4">
-              <div className="flex flex-col gap-3">
-                {(product.images || []).map((image: { src: string }, index: number) => (
-                  <button key={index} onClick={() => setActiveImageIndex(index)} className={`w-20 h-20 bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 ${activeImageIndex === index ? 'ring-2 ring-black ring-offset-1' : 'hover:shadow-md '}`}>
-                    {image?.src ? (
-                      <Image src={image.src} alt={`${product.name} ${index + 1}`} width={100} height={100} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center"><span className="text-xs text-gray-500">?</span></div>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex-1 aspect-square bg-white rounded-lg overflow-hidden shadow-sm relative">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="space-y-4">
+              {/* Main Image */}
+              <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm relative">
                 {product.images?.[activeImageIndex]?.src ? (
                   <Image src={product.images[activeImageIndex].src} alt={product.name} width={500} height={500} priority sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-center justify-center"><span className="text-gray-500">Brak obrazka</span></div>
                 )}
               </div>
+
+              {/* Thumbnails - only show if more than 1 image, positioned under main image */}
+              {(product.images || []).length > 1 && (
+                <div className="flex gap-2 justify-center">
+                  {(product.images || []).map((image: { src: string }, index: number) => (
+                    <button key={index} onClick={() => setActiveImageIndex(index)} className={`w-16 h-16 bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 ${activeImageIndex === index ? 'ring-2 ring-black ring-offset-1' : 'hover:shadow-md'}`}>
+                      {image?.src ? (
+                        <Image src={image.src} alt={`${product.name} ${index + 1}`} width={64} height={64} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center"><span className="text-xs text-gray-500">?</span></div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </motion.div>
 
             {/* Info */}
