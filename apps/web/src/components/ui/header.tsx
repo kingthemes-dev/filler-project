@@ -23,6 +23,7 @@ export default function Header() {
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [isShopExpanded, setIsShopExpanded] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Safely access stores with error handling
@@ -712,13 +713,58 @@ export default function Header() {
                       Strona główna
                     </Link>
                     
-                    <Link 
-                      href="/sklep" 
-                      className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Sklep
-                    </Link>
+                    {/* Shop with Expandable Categories */}
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setIsShopExpanded(!isShopExpanded)}
+                        className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                      >
+                        <span className="text-sm font-medium">Sklep</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {/* Shop Categories - Expandable */}
+                      <AnimatePresence>
+                        {isShopExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                            className="ml-4 space-y-1"
+                          >
+                            <Link 
+                              href="/sklep?category=wypelniacze" 
+                              className="block text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              Wypełniacze (8)
+                            </Link>
+                            <Link 
+                              href="/sklep?category=stymulatory" 
+                              className="block text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              Stymulatory (43)
+                            </Link>
+                            <Link 
+                              href="/sklep?category=mezoterapia" 
+                              className="block text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              Mezoterapia (11)
+                            </Link>
+                            <Link 
+                              href="/sklep?category=peelingi" 
+                              className="block text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              Peelingi (6)
+                            </Link>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                     
                     <a 
                       href="/o-nas" 
