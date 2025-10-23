@@ -254,8 +254,8 @@ export default function SearchModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -50, scale: 0.95 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed top-0 left-[10%] right-[10%] z-[101] bg-white shadow-2xl flex flex-col rounded-2xl"
-            style={{ height: '100vh' }}
+            className="fixed top-[10%] bottom-[10%] left-[10%] right-[10%] z-[101] bg-white shadow-2xl flex flex-col rounded-xl"
+            style={{ height: '80vh' }}
           >
             {/* Header */}
             <div className="border-b border-gray-200 bg-white">
