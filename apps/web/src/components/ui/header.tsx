@@ -727,7 +727,7 @@ export default function Header() {
                   )}
 
                   {/* Action Buttons - WITH HOVER EFFECTS */}
-                  <div className="space-y-2 mb-4">
+                  <div className="space-y-2 mb-4 -mt-1">
                     {/* Favorites Button */}
                     <button
                       onClick={() => {
