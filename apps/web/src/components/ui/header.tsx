@@ -560,18 +560,18 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Backdrop */}
+              {/* Backdrop - HIGHER Z-INDEX */}
               <motion.div
-                className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                className="fixed inset-0 bg-black/50 z-[90] lg:hidden"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMobileMenuOpen(false)}
               />
 
-              {/* Menu Drawer - ABOVE ACTION BAR */}
+              {/* Menu Drawer - HIGHEST Z-INDEX */}
               <motion.div
-                className="fixed right-0 top-0 bg-white shadow-2xl z-[80] 
+                className="fixed right-0 top-0 bg-white shadow-2xl z-[100] 
                          w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
                          lg:border-l lg:border-gray-200 flex flex-col
                          rounded-l-2xl lg:rounded-l-2xl"
@@ -591,7 +591,7 @@ export default function Header() {
                   maxWidth: '364px',
                   maxHeight: '100vh',
                   overflow: 'hidden',
-                  zIndex: 9999
+                  zIndex: 100
                 }}
               >
                 {/* Header */}
