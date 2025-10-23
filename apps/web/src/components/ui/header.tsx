@@ -693,16 +693,18 @@ export default function Header() {
                       </button>
                     </div>
                   ) : (
-                    <Link
-                      href="/moje-konto"
-                      onClick={() => setIsMobileMenuOpen(false)}
+                    <button
+                      onClick={() => { 
+                        setIsMobileMenuOpen(false);
+                        window.dispatchEvent(new CustomEvent('openLogin'));
+                      }}
                       className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                     >
                       <div className="flex items-center space-x-3">
                         <User className="w-5 h-5 text-blue-500" />
                         <span className="text-sm font-medium text-gray-700">Zaloguj się</span>
                       </div>
-                    </Link>
+                    </button>
                   )}
 
                   {/* Favorites */}
