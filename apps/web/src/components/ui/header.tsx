@@ -25,6 +25,7 @@ export default function Header() {
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isShopExpanded, setIsShopExpanded] = useState(false);
+  const [isBrandsExpanded, setIsBrandsExpanded] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Safely access stores with error handling
@@ -738,6 +739,48 @@ export default function Header() {
                               <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
                               <span>Peelingi (6)</span>
                             </Link>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Marki - Expandable */}
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setIsBrandsExpanded(!isBrandsExpanded)}
+                        className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                      >
+                        <span>Marki</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isBrandsExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {/* Brands - Compact Scrollable */}
+                      <AnimatePresence>
+                        {isBrandsExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                            className="ml-4"
+                          >
+                            <div className="max-h-32 overflow-y-auto space-y-2">
+                              <div className="flex flex-wrap gap-1.5">
+                                {['Allergan', 'Merz', 'Galderma', 'Teoxane', 'Juvederm', 'Restylane', 'Sculptra', 'Radiesse', 'Belotero', 'Ellanse'].map((brand) => (
+                                  <button
+                                    key={brand}
+                                    onClick={() => {
+                                      setIsMobileMenuOpen(false);
+                                      // Navigate to brand filter
+                                      window.location.href = `/sklep?brand=${encodeURIComponent(brand.toLowerCase())}`;
+                                    }}
+                                    className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black rounded-full transition-colors whitespace-nowrap"
+                                  >
+                                    {brand}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
