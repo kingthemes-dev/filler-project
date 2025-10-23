@@ -299,18 +299,18 @@ export default function CartDrawer() {
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity - 1)}
                           disabled={isUpdating}
-                          className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Zmniejsz ilość"
                         >
                           <Minus className="w-3 h-3 text-gray-700" />
                         </button>
-                        <span className="w-8 text-center text-sm font-semibold text-gray-800 bg-gray-50 px-2 py-1 rounded-md">
+                        <span className="w-6 text-center text-sm font-semibold text-gray-800 bg-gray-50 px-1 py-1 rounded-md">
                           {isUpdating ? '...' : item.quantity}
                         </span>
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity + 1)}
                           disabled={isUpdating}
-                          className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Zwiększ ilość"
                         >
                           <Plus className="w-3 h-3 text-gray-700" />

@@ -552,23 +552,23 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     {/* Quantity & Actions */}
                     <div className="flex items-center space-x-3">
                       {/* Quantity Selector */}
-                      <div className="flex items-center border border-gray-200 rounded-lg h-[56px]">
+                      <div className="flex items-center border border-gray-200 rounded-lg h-[56px] w-fit">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                          className="rounded-l-lg rounded-r-none h-full px-4"
+                          className="rounded-l-lg rounded-r-none h-full px-3"
                         >
                           <Minus className="w-4 h-4" />
                         </Button>
-                        <span className="px-4 py-2 min-w-[60px] text-center h-full flex items-center justify-center">
+                        <span className="px-3 py-2 min-w-[40px] text-center h-full flex items-center justify-center">
                           {quantity}
                         </span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setQuantity(quantity + 1)}
-                          className="rounded-r-lg rounded-l-none h-full px-4"
+                          className="rounded-r-lg rounded-l-none h-full px-3"
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
