@@ -619,7 +619,7 @@ export default function Header() {
                   width: '100%',
                   maxWidth: '364px',
                   maxHeight: '70vh',
-                  overflow: 'hidden',
+                  overflow: 'auto',
                   zIndex: 120,
                   position: 'fixed'
                 }}
