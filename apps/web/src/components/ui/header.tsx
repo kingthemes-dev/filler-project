@@ -680,7 +680,7 @@ export default function Header() {
                 </div>
 
                 {/* Footer - SENIOR DEV LEVEL */}
-                <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="border-t border-gray-200 p-4 bg-gray-50 mt-4">
                   {/* Account Section - CONSISTENT SPACING */}
                   {isAuthenticated ? (
                     <div className="space-y-2 mb-4">
