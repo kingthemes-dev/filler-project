@@ -28,6 +28,8 @@ export default function Header() {
   const [isBrandsExpanded, setIsBrandsExpanded] = useState(false);
   const [brands, setBrands] = useState<string[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(false);
+  const [categories, setCategories] = useState<Array<{id: number, name: string, slug: string, count: number}>>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Safely access stores with error handling
@@ -85,6 +87,41 @@ export default function Header() {
     }
   };
 
+  // Fetch categories from API (same as desktop dropdown)
+  const fetchCategories = async () => {
+    if (categories.length > 0) return; // Don't fetch if already loaded
+    
+    setCategoriesLoading(true);
+    try {
+      const response = await fetch('/api/woocommerce?endpoint=products/categories&per_page=100');
+      if (response.ok) {
+        const data = await response.json();
+        // Filter main categories (parent = 0) and limit to 4 main ones
+        const mainCategories = data
+          .filter((cat: any) => cat.parent === 0)
+          .slice(0, 4)
+          .map((cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            slug: cat.slug,
+            count: cat.count || 0
+          }));
+        setCategories(mainCategories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Fallback to hardcoded categories
+      setCategories([
+        { id: 1, name: 'Wypełniacze', slug: 'wypelniacze', count: 8 },
+        { id: 2, name: 'Stymulatory', slug: 'stymulatory', count: 43 },
+        { id: 3, name: 'Mezoterapia', slug: 'mezoterapia', count: 11 },
+        { id: 4, name: 'Peelingi', slug: 'peelingi', count: 6 }
+      ]);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
   // Fix hydration issue by syncing favorites count after mount
   useEffect(() => {
     setIsMounted(true);
@@ -105,6 +142,13 @@ export default function Header() {
       fetchBrands();
     }
   }, [isBrandsExpanded, brands.length]);
+
+  // Fetch categories when shop section is expanded
+  useEffect(() => {
+    if (isShopExpanded && categories.length === 0) {
+      fetchCategories();
+    }
+  }, [isShopExpanded, categories.length]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -737,38 +781,21 @@ export default function Header() {
                             transition={{ duration: 0.2, ease: 'easeInOut' }}
                             className="ml-4 space-y-1"
                           >
-                            <Link 
-                              href="/sklep?category=wypelniacze" 
-                              className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
-                              <span>Wypełniacze (8)</span>
-                            </Link>
-                            <Link 
-                              href="/sklep?category=stymulatory" 
-                              className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
-                              <span>Stymulatory (43)</span>
-                            </Link>
-                            <Link 
-                              href="/sklep?category=mezoterapia" 
-                              className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
-                              <span>Mezoterapia (11)</span>
-                            </Link>
-                            <Link 
-                              href="/sklep?category=peelingi" 
-                              className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
-                              <span>Peelingi (6)</span>
-                            </Link>
+                            {categoriesLoading ? (
+                              <div className="text-sm text-gray-500">Ładowanie kategorii...</div>
+                            ) : (
+                              categories.map((category) => (
+                                <Link 
+                                  key={category.id}
+                                  href={`/sklep?category=${category.slug}`}
+                                  className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
+                                  onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
+                                  <span>{category.name} ({category.count})</span>
+                                </Link>
+                              ))
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
