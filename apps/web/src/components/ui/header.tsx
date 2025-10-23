@@ -738,7 +738,7 @@ export default function Header() {
                               className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              <div className="w-2 h-2 bg-blue-500 rounded-full mr-3 flex-shrink-0"></div>
+                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
                               <span>Wypełniacze (8)</span>
                             </Link>
                             <Link 
@@ -746,7 +746,7 @@ export default function Header() {
                               className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              <div className="w-2 h-2 bg-green-500 rounded-full mr-3 flex-shrink-0"></div>
+                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
                               <span>Stymulatory (43)</span>
                             </Link>
                             <Link 
@@ -754,7 +754,7 @@ export default function Header() {
                               className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              <div className="w-2 h-2 bg-purple-500 rounded-full mr-3 flex-shrink-0"></div>
+                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
                               <span>Mezoterapia (11)</span>
                             </Link>
                             <Link 
@@ -762,7 +762,7 @@ export default function Header() {
                               className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              <div className="w-2 h-2 bg-orange-500 rounded-full mr-3 flex-shrink-0"></div>
+                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
                               <span>Peelingi (6)</span>
                             </Link>
                           </motion.div>
