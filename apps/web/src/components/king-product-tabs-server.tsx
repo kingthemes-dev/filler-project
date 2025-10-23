@@ -84,13 +84,13 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   const getTabIcon = (tabId: string) => {
     switch (tabId) {
       case 'nowosci':
-        return <Sparkles className="w-4 h-4" />;
+        return <Sparkles className="w-5 h-5" />;
       case 'promocje':
-        return <Tag className="w-4 h-4" />;
+        return <Tag className="w-5 h-5" />;
       case 'polecane':
-        return <Star className="w-4 h-4" />;
+        return <Star className="w-5 h-5" />;
       case 'bestsellery':
-        return <TrendingUp className="w-4 h-4" />;
+        return <TrendingUp className="w-5 h-5" />;
       default:
         return null;
     }
