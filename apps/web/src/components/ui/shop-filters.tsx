@@ -108,7 +108,7 @@ export default function ShopFilters({
            
            if (touchStart && showFilters) {
              const distance = touchStart - e.targetTouches[0].clientX;
-             const progress = Math.min(Math.max(distance / 100, 0), 1); // Normalize to 0-1
+             const progress = Math.min(Math.max(distance / 150, 0), 1); // Increased threshold for smoother movement
              setSwipeProgress(progress);
            }
          };
@@ -122,13 +122,10 @@ export default function ShopFilters({
            
            const distance = touchStart - touchEnd;
            const isLeftSwipe = distance > minSwipeDistance;
-           const isRightSwipe = distance < -minSwipeDistance;
-
-           if (isLeftSwipe && showFilters) {
-             // Swipe left to close
-             onToggleFilters();
-           } else if (isRightSwipe && !showFilters) {
-             // Swipe right to open
+           
+           // Only close if swipe is significant enough (increased threshold)
+           if (isLeftSwipe && distance > minSwipeDistance * 2) {
+             // Swipe left to close - only if significant swipe
              onToggleFilters();
            }
            
