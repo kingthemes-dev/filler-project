@@ -737,7 +737,7 @@ export default function Header() {
                       className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-r-lg"
                     >
                       <div className="flex items-center space-x-3">
-                        <Heart className="w-5 h-5 text-red-500" />
+                        <Heart className="w-5 h-5 text-gray-700" />
                         <span className="text-sm font-medium">Lista życzeń</span>
                       </div>
                       {favoritesCount > 0 && (
