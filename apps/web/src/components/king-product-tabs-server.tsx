@@ -123,7 +123,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Shadcn/ui Tabs with Custom Styling */}
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-transparent border border-gray-200 p-1 rounded-2xl h-auto relative overflow-hidden">
+            <TabsList className="grid w-full grid-cols-4 bg-transparent border border-gray-200 p-0 rounded-2xl h-auto relative overflow-hidden">
               {/* Animated background indicator */}
               <div 
                 className="absolute top-0 bottom-0 bg-gradient-to-r from-black to-gray-800 rounded-xl transition-all duration-500 ease-out"
