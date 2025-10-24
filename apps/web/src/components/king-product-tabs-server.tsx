@@ -137,7 +137,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="relative z-10 flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-500 ease-out data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:bg-transparent data-[state=inactive]:border-0 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-50 data-[state=active]:hover:text-white data-[state=active]:hover:bg-gradient-to-r data-[state=active]:hover:from-black data-[state=active]:hover:to-gray-800 rounded-xl"
+                  className="relative z-10 flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-500 ease-out data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:bg-transparent data-[state=inactive]:border-0 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-50 data-[state=active]:hover:text-white data-[state=active]:hover:bg-gradient-to-r data-[state=active]:hover:from-black data-[state=active]:hover:to-gray-800 !border-0 !border-transparent rounded-xl"
                   disabled={isTransitioning}
                 >
                   {getTabIcon(tab.id)}
