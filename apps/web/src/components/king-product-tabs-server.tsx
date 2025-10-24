@@ -123,12 +123,21 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Shadcn/ui Tabs with Custom Styling */}
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-1 rounded-xl h-auto">
+            <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-1 rounded-2xl h-auto relative overflow-hidden">
+              {/* Animated background indicator */}
+              <div 
+                className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-gray-800 rounded-xl transition-all duration-500 ease-out shadow-lg"
+                style={{
+                  left: `${(tabs.findIndex(tab => tab.id === activeTab) * 100) / tabs.length + 0.5}%`,
+                  width: `${100 / tabs.length - 1}%`,
+                  transform: 'translateX(0)',
+                }}
+              />
               {tabs.map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-black data-[state=active]:to-gray-800 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-200 data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:text-gray-900"
+                  className="relative z-10 flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-500 ease-out data-[state=active]:text-white data-[state=inactive]:text-gray-700 hover:text-gray-900 hover:bg-gray-200/50 rounded-xl"
                   disabled={isTransitioning}
                 >
                   {getTabIcon(tab.id)}
