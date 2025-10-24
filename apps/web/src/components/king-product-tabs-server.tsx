@@ -6,6 +6,7 @@ import KingProductCard from './king-product-card';
 import { WooProduct } from '@/types/woocommerce';
 import Link from 'next/link';
 import { Sparkles, Tag, Star, TrendingUp } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface TabData {
   id: string;
@@ -120,115 +121,105 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
     <section className="py-12 sm:py-16 bg-white">
       <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-          {/* Senior Level Tabs - Enhanced UI/UX with Accessibility */}
-          <div 
-            className="flex flex-wrap gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-0 sm:flex-nowrap sm:overflow-x-auto sm:pb-3 scrollbar-hide"
-            role="tablist"
-            aria-label="Kategorie produktów"
-          >
-            {tabs.map((tab, index) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`group flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2 rounded-xl px-4 py-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  activeTab === tab.id 
-                    ? 'bg-gradient-to-r from-black to-gray-800 text-white shadow-lg hover:from-gray-800 hover:to-black' 
-                    : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 hover:text-gray-900'
-                }`}
-                disabled={isTransitioning}
-                aria-pressed={activeTab === tab.id}
-                aria-selected={activeTab === tab.id}
-                role="tab"
-                tabIndex={activeTab === tab.id ? 0 : -1}
-                aria-controls={`tabpanel-${tab.id}`}
-                id={`tab-${tab.id}`}
-                aria-label={`${tab.label} - ${tab.products.length} produktów`}
-              >
-                <span className="flex items-center gap-2 text-lg sm:text-xl lg:text-2xl font-bold whitespace-nowrap">
+          {/* Shadcn/ui Tabs with Custom Styling */}
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-1 rounded-xl h-auto">
+              {tabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-black data-[state=active]:to-gray-800 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-200 data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:text-gray-900"
+                  disabled={isTransitioning}
+                >
                   {getTabIcon(tab.id)}
-                  {tab.label}
-                </span>
-              </button>
-            ))}
-          </div>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.charAt(0)}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-          {/* View All Products - Clean Desktop Link */}
-          <div className="hidden md:block">
-            <Link 
-              href="/sklep" 
-              className="relative text-base sm:text-lg font-semibold text-gray-700 hover:text-black transition-colors whitespace-nowrap"
-            >
-              Wszystkie produkty
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left scale-x-0 hover:scale-x-100 transition-transform duration-300" />
-            </Link>
-          </div>
+            {/* View All Products - Clean Desktop Link */}
+            <div className="hidden md:block mt-4">
+              <Link 
+                href="/sklep" 
+                className="relative text-base sm:text-lg font-semibold text-gray-700 hover:text-black transition-colors whitespace-nowrap"
+              >
+                Wszystkie produkty
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left scale-x-0 hover:scale-x-100 transition-transform duration-300" />
+              </Link>
+            </div>
+          </Tabs>
         </div>
         
-        <div>
-          <AnimatePresence mode="wait">
-            <div
-              key={activeTab}
-              role="tabpanel"
-              id={`tabpanel-${activeTab}`}
-              aria-labelledby={`tab-${activeTab}`}
-              aria-live="polite"
-            >
-              {isTransitioning ? (
-                // Loading state during transition
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                  {[...Array(4)].map((_, index) => (
-                    <div key={`loading-${index}`} className="animate-pulse">
-                      <div className="bg-gray-200 aspect-square rounded-2xl mb-4"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                      </div>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          {tabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id} className="mt-6">
+              <AnimatePresence mode="wait">
+                <div
+                  key={activeTab}
+                  role="tabpanel"
+                  id={`tabpanel-${activeTab}`}
+                  aria-labelledby={`tab-${activeTab}`}
+                  aria-live="polite"
+                >
+                  {isTransitioning ? (
+                    // Loading state during transition
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                      {[...Array(4)].map((_, index) => (
+                        <div key={`loading-${index}`} className="animate-pulse">
+                          <div className="bg-gray-200 aspect-square rounded-2xl mb-4"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : tab.products.length > 0 ? (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                      {tab.products.slice(0, 4).map((product) => (
+                        <KingProductCard
+                          key={product.id}
+                          product={product}
+                          variant="default"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="text-gray-400 mb-4">
+                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {tab.id === 'bestsellery' ? 'Brak danych bestsellerów' : 
+                         tab.id === 'promocje' ? 'Brak produktów w promocji' :
+                         tab.id === 'polecane' ? 'Brak polecanych produktów' :
+                         'Brak nowych produktów'}
+                      </h3>
+                      <p className="text-gray-500">
+                        {tab.id === 'bestsellery' ? 'Sprawdź ponownie później' : 
+                         'Wkrótce pojawią się nowe produkty'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              ) : activeTabData.products.length > 0 ? (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                  {activeTabData.products.slice(0, 4).map((product) => (
-                    <KingProductCard
-                      key={product.id}
-                      product={product}
-                      variant="default"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="text-gray-400 mb-4">
-                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {activeTab === 'bestsellery' ? 'Brak danych bestsellerów' : 
-                     activeTab === 'promocje' ? 'Brak produktów w promocji' :
-                     activeTab === 'polecane' ? 'Brak polecanych produktów' :
-                     'Brak nowych produktów'}
-                  </h3>
-                  <p className="text-gray-500">
-                    {activeTab === 'bestsellery' ? 'Sprawdź ponownie później' : 
-                     'Wkrótce pojawią się nowe produkty'}
-                  </p>
-                </div>
-              )}
-            </div>
-          </AnimatePresence>
+              </AnimatePresence>
+            </TabsContent>
+          ))}
+        </Tabs>
           
-          {/* View All Products - Interactive Black Gradient Button */}
-          <div className="mt-8 md:hidden">
-            <Link
-              href="/sklep"
-              className="group relative block w-full bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white hover:text-white transition-all duration-300 text-center py-4 px-6 rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <span className="relative z-10">Wszystkie produkty</span>
-              {/* Subtle shine effect on hover */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-            </Link>
-          </div>
+        {/* View All Products - Interactive Black Gradient Button */}
+        <div className="mt-8 md:hidden">
+          <Link
+            href="/sklep"
+            className="group relative block w-full bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white hover:text-white transition-all duration-300 text-center py-4 px-6 rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <span className="relative z-10">Wszystkie produkty</span>
+            {/* Subtle shine effect on hover */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+          </Link>
         </div>
       </div>
     </section>
