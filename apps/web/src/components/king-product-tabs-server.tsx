@@ -126,7 +126,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
             <TabsList className="grid w-full grid-cols-4 bg-transparent border border-gray-200 p-1 rounded-2xl h-auto relative overflow-hidden">
               {/* Animated background indicator */}
               <div 
-                className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-gray-800 rounded-xl transition-all duration-500 ease-out"
+                className="absolute top-0 bottom-0 bg-gradient-to-r from-black to-gray-800 rounded-xl transition-all duration-500 ease-out"
                 style={{
                   left: `${(tabs.findIndex(tab => tab.id === activeTab) * 100) / tabs.length + 0.5}%`,
                   width: `${100 / tabs.length - 1}%`,
