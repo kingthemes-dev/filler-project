@@ -126,7 +126,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
             <TabsList className="grid w-full grid-cols-4 bg-gray-100 border border-gray-200 p-1 rounded-2xl h-auto relative overflow-hidden">
               {/* Animated background indicator */}
               <div 
-                className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-gray-800 rounded-xl transition-all duration-500 ease-out shadow-lg"
+                className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-gray-800 rounded-xl transition-all duration-500 ease-out"
                 style={{
                   left: `${(tabs.findIndex(tab => tab.id === activeTab) * 100) / tabs.length + 0.5}%`,
                   width: `${100 / tabs.length - 1}%`,
@@ -137,7 +137,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="relative z-10 flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-500 ease-out data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:bg-transparent data-[state=inactive]:border-0 hover:text-gray-900 hover:bg-gray-50 rounded-xl"
+                  className="relative z-10 flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-500 ease-out data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:bg-transparent data-[state=inactive]:border-0 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-50 data-[state=active]:hover:text-white data-[state=active]:hover:bg-gradient-to-r data-[state=active]:hover:from-black data-[state=active]:hover:to-gray-800 rounded-xl"
                   disabled={isTransitioning}
                 >
                   {getTabIcon(tab.id)}
