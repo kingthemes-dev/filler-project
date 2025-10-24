@@ -6,7 +6,7 @@ import KingProductCard from './king-product-card';
 import { WooProduct } from '@/types/woocommerce';
 import Link from 'next/link';
 import { Sparkles, Tag, Star, TrendingUp } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+// Removed shadcn/ui tabs import - using custom implementation
 
 interface TabData {
   id: string;
@@ -121,9 +121,10 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
     <section className="py-12 sm:py-16 bg-white">
       <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-          {/* Shadcn/ui Tabs with Custom Styling */}
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" defaultValue="nowosci">
-            <TabsList className="grid w-full grid-cols-4 !bg-transparent border border-gray-200 !p-0 rounded-2xl h-auto relative overflow-hidden">
+          {/* Custom Tabs Implementation - No shadcn/ui */}
+          <div className="w-full">
+            {/* Custom Tabs Container */}
+            <div className="grid w-full grid-cols-4 bg-transparent border border-gray-200 p-0 rounded-2xl h-auto relative overflow-hidden">
               {/* Animated background indicator */}
               <div 
                 className="absolute top-0 bottom-0 bg-gradient-to-r from-black to-gray-800 rounded-xl transition-all duration-500 ease-out"
@@ -134,18 +135,22 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 }}
               />
               {tabs.map((tab) => (
-                <TabsTrigger
+                <button
                   key={tab.id}
-                  value={tab.id}
-                  className="relative z-10 flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-500 ease-out data-[state=active]:text-white data-[state=inactive]:text-gray-700 data-[state=inactive]:bg-transparent data-[state=inactive]:border-0 data-[state=inactive]:hover:text-gray-900 data-[state=inactive]:hover:bg-gray-50 data-[state=active]:hover:text-white data-[state=active]:hover:bg-gradient-to-r data-[state=active]:hover:from-black data-[state=active]:hover:to-gray-800 !border-0 !border-transparent rounded-xl"
+                  onClick={() => handleTabChange(tab.id)}
+                  className="relative z-10 flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-500 ease-out border-0 border-transparent rounded-xl"
                   disabled={isTransitioning}
+                  style={{
+                    color: activeTab === tab.id ? 'white' : '#374151',
+                    backgroundColor: 'transparent'
+                  }}
                 >
                   {getTabIcon(tab.id)}
                   <span className="hidden sm:inline">{tab.label}</span>
                   <span className="sm:hidden">{tab.label.charAt(0)}</span>
-                </TabsTrigger>
+                </button>
               ))}
-            </TabsList>
+            </div>
 
             {/* View All Products - Clean Desktop Link */}
             <div className="hidden md:block mt-4">
@@ -157,67 +162,62 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left scale-x-0 hover:scale-x-100 transition-transform duration-300" />
               </Link>
             </div>
-          </Tabs>
+          </div>
         </div>
         
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" defaultValue="nowosci">
-          {tabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id} className="mt-6">
-              <AnimatePresence mode="wait">
-                <div
-                  key={activeTab}
-                  role="tabpanel"
-                  id={`tabpanel-${activeTab}`}
-                  aria-labelledby={`tab-${activeTab}`}
-                  aria-live="polite"
-                >
-                  {isTransitioning ? (
-                    // Loading state during transition
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                      {[...Array(4)].map((_, index) => (
-                        <div key={`loading-${index}`} className="animate-pulse">
-                          <div className="bg-gray-200 aspect-square rounded-2xl mb-4"></div>
-                          <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : tab.products.length > 0 ? (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                      {tab.products.slice(0, 4).map((product) => (
-                        <KingProductCard
-                          key={product.id}
-                          product={product}
-                          variant="default"
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <div className="text-gray-400 mb-4">
-                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                        </svg>
+        {/* Custom Tab Content - No shadcn/ui */}
+        <div className="mt-6">
+          <AnimatePresence mode="wait">
+            <div
+              key={activeTab}
+              role="tabpanel"
+              aria-live="polite"
+            >
+              {isTransitioning ? (
+                // Loading state during transition
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                  {[...Array(4)].map((_, index) => (
+                    <div key={`loading-${index}`} className="animate-pulse">
+                      <div className="bg-gray-200 aspect-square rounded-2xl mb-4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                       </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        {tab.id === 'bestsellery' ? 'Brak danych bestsellerów' : 
-                         tab.id === 'promocje' ? 'Brak produktów w promocji' :
-                         tab.id === 'polecane' ? 'Brak polecanych produktów' :
-                         'Brak nowych produktów'}
-                      </h3>
-                      <p className="text-gray-500">
-                        {tab.id === 'bestsellery' ? 'Sprawdź ponownie później' : 
-                         'Wkrótce pojawią się nowe produkty'}
-                      </p>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </AnimatePresence>
-            </TabsContent>
-          ))}
-        </Tabs>
+              ) : activeTabData.products.length > 0 ? (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                  {activeTabData.products.slice(0, 4).map((product) => (
+                    <KingProductCard
+                      key={product.id}
+                      product={product}
+                      variant="default"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {activeTab === 'bestsellery' ? 'Brak danych bestsellerów' : 
+                     activeTab === 'promocje' ? 'Brak produktów w promocji' :
+                     activeTab === 'polecane' ? 'Brak polecanych produktów' :
+                     'Brak nowych produktów'}
+                  </h3>
+                  <p className="text-gray-500">
+                    {activeTab === 'bestsellery' ? 'Sprawdź ponownie później' : 
+                     'Wkrótce pojawią się nowe produkty'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </AnimatePresence>
+        </div>
           
         {/* View All Products - Interactive Black Gradient Button */}
         <div className="mt-8 md:hidden">
