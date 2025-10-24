@@ -122,7 +122,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
       <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Shadcn/ui Tabs with Custom Styling */}
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" defaultValue="nowosci">
             <TabsList className="grid w-full grid-cols-4 !bg-transparent border border-gray-200 !p-0 rounded-2xl h-auto relative overflow-hidden">
               {/* Animated background indicator */}
               <div 
@@ -160,7 +160,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
           </Tabs>
         </div>
         
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full" defaultValue="nowosci">
           {tabs.map((tab) => (
             <TabsContent key={tab.id} value={tab.id} className="mt-6">
               <AnimatePresence mode="wait">
