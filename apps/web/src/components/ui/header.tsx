@@ -719,7 +719,7 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="bg-white border-t border-gray-200 overflow-hidden"
+              className="bg-white border-t border-gray-200 overflow-hidden rounded-b-2xl"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -845,7 +845,7 @@ export default function Header() {
                         )}
 
                         {/* Social Media */}
-                        <div className="pt-3">
+                        <div className="pt-3 pb-6">
                           <div className="flex justify-center space-x-4">
                             <a 
                               href="tel:+48123456789" 
