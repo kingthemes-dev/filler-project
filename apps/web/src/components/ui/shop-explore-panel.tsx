@@ -139,9 +139,10 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           onMouseLeave={(e) => {
             // Only close if we're actually leaving the dropdown area
             // Don't close if we're moving to a child element
-            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-              onClose();
+            if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) {
+              return; // Moving to child element, don't close
             }
+            onClose();
           }}
         >
           <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-8">
