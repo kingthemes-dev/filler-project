@@ -1004,13 +1004,13 @@ export default function Header() {
                                           {subcategories.length > 0 && (
                                             <button
                                               onClick={() => toggleCategory(category.id)}
-                                              className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors mr-2"
+                                              className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 transition-all duration-200 mr-3"
                                             >
                                               <motion.div
                                                 animate={{ rotate: isExpanded ? 45 : 0 }}
                                                 transition={{ duration: 0.2 }}
                                               >
-                                                <Plus className="w-4 h-4 text-gray-500" />
+                                                <Plus className="w-4 h-4 text-blue-600" />
                                               </motion.div>
                                             </button>
                                           )}
