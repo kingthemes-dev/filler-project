@@ -270,7 +270,7 @@ export default function Header() {
   return (
     <>
       <header 
-          className={`sticky top-4 z-50 will-change-transform overflow-hidden transition-all duration-300 mx-auto max-w-[95vw] rounded-3xl ${
+          className={`sticky top-4 z-50 will-change-transform overflow-hidden transition-all duration-300 mx-auto max-w-[95vw] ${isShopOpen ? 'rounded-t-3xl rounded-b-none border-b-0' : 'rounded-3xl'} ${
           isScrolled 
             ? 'bg-white/80 backdrop-blur-md shadow-md border border-gray-200/50' 
             : 'bg-white/80 backdrop-blur-md border border-gray-200/50'
