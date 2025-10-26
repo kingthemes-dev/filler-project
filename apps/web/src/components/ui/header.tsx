@@ -517,21 +517,59 @@ export default function Header() {
               )}
             </button>
 
-            {/* Mobile Menu Icon */}
-            <button
+            {/* Mobile Menu Icon - ANIMATED HAMBURGER */}
+            <motion.button
               onClick={() => {
                 setIsMobileMenuOpen(true);
                 setMobileMenuView('main');
               }}
-              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
+              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors relative w-8 h-8"
               aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+              {/* Hamburger Lines */}
+              <div className="relative w-6 h-6 flex flex-col justify-center items-center">
+                {/* Top Line */}
+                <motion.div
+                  className="absolute w-5 h-0.5 bg-current rounded-full"
+                  animate={{
+                    rotate: isMobileMenuOpen ? 45 : 0,
+                    y: isMobileMenuOpen ? 0 : -6,
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.4, 0, 0.2, 1],
+                  }}
+                />
+                
+                {/* Middle Line */}
+                <motion.div
+                  className="absolute w-5 h-0.5 bg-current rounded-full"
+                  animate={{
+                    opacity: isMobileMenuOpen ? 0 : 1,
+                    scale: isMobileMenuOpen ? 0 : 1,
+                  }}
+                  transition={{
+                    duration: 0.2,
+                    ease: [0.4, 0, 0.2, 1],
+                  }}
+                />
+                
+                {/* Bottom Line */}
+                <motion.div
+                  className="absolute w-5 h-0.5 bg-current rounded-full"
+                  animate={{
+                    rotate: isMobileMenuOpen ? -45 : 0,
+                    y: isMobileMenuOpen ? 0 : 6,
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.4, 0, 0.2, 1],
+                  }}
+                />
+              </div>
+            </motion.button>
           </div>
 
           {/* Desktop icons - hidden on mobile */}
@@ -795,13 +833,42 @@ export default function Header() {
                             Menu
                           </h2>
                         </div>
-                        <button
+                        <motion.button
                           onClick={closeMobileMenu}
-                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors relative w-8 h-8"
                           aria-label="Zamknij menu"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         >
-                          <X className="w-5 h-5 text-gray-600" />
-                        </button>
+                          {/* Animated Close Button */}
+                          <div className="relative w-5 h-5 flex flex-col justify-center items-center">
+                            {/* Top Line */}
+                            <motion.div
+                              className="absolute w-4 h-0.5 bg-gray-600 rounded-full"
+                              animate={{
+                                rotate: 45,
+                                y: 0,
+                              }}
+                              transition={{
+                                duration: 0.3,
+                                ease: [0.4, 0, 0.2, 1],
+                              }}
+                            />
+                            
+                            {/* Bottom Line */}
+                            <motion.div
+                              className="absolute w-4 h-0.5 bg-gray-600 rounded-full"
+                              animate={{
+                                rotate: -45,
+                                y: 0,
+                              }}
+                              transition={{
+                                duration: 0.3,
+                                ease: [0.4, 0, 0.2, 1],
+                              }}
+                            />
+                          </div>
+                        </motion.button>
                       </div>
 
                       {/* Main Navigation */}
