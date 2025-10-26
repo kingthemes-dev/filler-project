@@ -270,7 +270,7 @@ export default function SearchModal({
           >
             {/* Header */}
             <div className="border-b border-gray-200 bg-white rounded-t-xl">
-              <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+              <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4">
                 <div className="flex items-center gap-4">
                   {/* Search Input */}
                   <div className="relative flex-1">
@@ -304,7 +304,7 @@ export default function SearchModal({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-20">
+              <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-20">
                 {isLoading && (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
