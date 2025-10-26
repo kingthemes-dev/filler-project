@@ -56,9 +56,12 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         const selectedCatId = (normCats.find(c => (c.parent || 0) === 0)?.id) || null;
         
         // 3) Pobierz atrybuty z King Shop API (produkcja) lub fallback
-        const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
+        const wordpressUrl = 'https://qvwltjhdjw.cfolks.pl'; // Hardcoded for now
+        console.log('🔍 Fetching attributes from:', `${wordpressUrl}/wp-json/king-shop/v1/attributes`);
         const attrsResponse = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`, { cache: 'no-store' });
+        console.log('🔍 Attributes response status:', attrsResponse.status);
         const attrsData = attrsResponse.ok ? await attrsResponse.json() : { attributes: {} };
+        console.log('🔍 Attributes data:', attrsData);
         
         const attrs = {
           capacities: attrsData.attributes?.pojemnosc?.terms || [],
