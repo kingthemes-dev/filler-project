@@ -169,8 +169,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                         }}
                         className={`${category.id === 15 ? 'hidden' : ''} flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group ${
                           selectedCat === category.id
-                            ? 'border-blue-300 bg-blue-50/80 text-blue-900'
-                            : 'border-gray-200 bg-white/80 hover:border-blue-300 hover:bg-blue-50/80 text-gray-900'
+                            ? 'border-blue-300 bg-blue-50/20 text-blue-900'
+                            : 'border-gray-200 bg-transparent hover:border-blue-300 hover:bg-blue-50/20 text-gray-900'
                         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20`}
                       >
                         <div className="flex items-center justify-between w-full">
@@ -240,7 +240,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       >
                         <Link
                           href={`/sklep?category=${encodeURIComponent(sc.slug)}`}
-                          className="block px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white/80 hover:border-blue-300 hover:bg-blue-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
+                          className="block px-4 py-3 rounded-xl border border-gray-200 text-sm bg-transparent hover:border-blue-300 hover:bg-blue-50/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
                           onClick={onClose}
                         >
                           <div className="flex items-center justify-between">
@@ -287,7 +287,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                         >
                           <Link
                             href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-white/80 px-1.5 py-1.5 text-xs text-gray-900 shadow-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group w-full min-h-[24px]"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-transparent px-1.5 py-1.5 text-xs text-gray-900 hover:bg-blue-50/20 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group w-full min-h-[24px]"
                             onClick={onClose}
                             title={brand.label}
                           >
