@@ -32,6 +32,15 @@ export default function Header() {
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   
+  // 🚀 SENIOR LEVEL - Slide Navigation State
+  const [mobileMenuView, setMobileMenuView] = useState<'main' | 'sklep' | 'marki'>('main');
+  
+  // Reset view when closing mobile menu
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    setMobileMenuView('main');
+  };
+  
   // Safely access stores with error handling
   let itemCount = 0, openCart = () => {}, user = null, isAuthenticated = false, logout = () => {};
   let openFavoritesModal = () => {}, getFavoritesCount = () => 0, favorites = [];
@@ -78,7 +87,7 @@ export default function Header() {
       if (response.ok) {
         const data = await response.json();
         const brandNames = data.attributes?.marka?.terms?.map((brand: any) => brand.name) || [];
-        setBrands(brandNames.slice(0, 20)); // Limit to 20 brands
+        setBrands(brandNames); // All brands - no limit
       } else {
         throw new Error('Failed to fetch brands');
       }
@@ -697,7 +706,7 @@ export default function Header() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
                 style={{
                   position: 'fixed',
                   top: 0,
@@ -710,7 +719,7 @@ export default function Header() {
                 }}
               />
 
-              {/* Menu Drawer - FROM TOP OF PAGE, 100% HEIGHT */}
+              {/* 🚀 SENIOR LEVEL - Slide Navigation Container */}
               <motion.div
                 className="fixed right-0 top-0 bg-white shadow-2xl z-[120] 
                          w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
@@ -731,260 +740,287 @@ export default function Header() {
                   width: '100%',
                   maxWidth: '364px',
                   maxHeight: '90vh',
-                  overflow: 'auto',
+                  overflow: 'hidden',
                   zIndex: 120,
                   position: 'fixed'
                 }}
               >
-                {/* Header - COMPACT */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                  <div className="flex items-center space-x-3">
-                    <Menu className="w-6 h-6 text-black" />
-                    <h2 id="mobile-menu-title" className="text-xl font-bold text-black">
-                      Menu
-                    </h2>
-                  </div>
-                  <button
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    aria-label="Zamknij menu"
-                  >
-                    <X className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                {/* Content - SENIOR DEV LEVEL */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  {/* Main Navigation - CONSISTENT SPACING */}
-                  <div className="space-y-1 mb-6">
-                    <Link 
-                      href="/" 
-                      className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                      onClick={() => setIsMobileMenuOpen(false)}
+                {/* 🚀 SENIOR LEVEL - Slide Navigation Content */}
+                <AnimatePresence mode="wait">
+                  {/* MAIN VIEW */}
+                  {mobileMenuView === 'main' && (
+                    <motion.div
+                      key="main"
+                      initial={{ x: 0, opacity: 1 }}
+                      exit={{ x: '-100%', opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="flex flex-col h-full"
                     >
-                      Strona główna
-                    </Link>
-                    
-                    {/* Shop with Expandable Categories */}
-                    <div className="space-y-1">
-                      <button
-                        onClick={() => setIsShopExpanded(!isShopExpanded)}
-                        className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                      >
-                        <span>Sklep</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopExpanded ? 'rotate-180' : ''}`} />
-                      </button>
-                      
-                      {/* Shop Categories - Expandable */}
-                      <AnimatePresence>
-                        {isShopExpanded && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="ml-4 space-y-1"
-                          >
-                            {categoriesLoading ? (
-                              <div className="text-sm text-gray-500">Ładowanie kategorii...</div>
-                            ) : (
-                              categories.map((category) => (
-                                <Link 
-                                  key={category.id}
-                                  href={`/sklep?category=${category.slug}`}
-                                  className="flex items-center text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-4 text-sm rounded-lg"
-                                  onClick={() => setIsMobileMenuOpen(false)}
-                                >
-                                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 flex-shrink-0"></div>
-                                  <span>{category.name} ({category.count})</span>
-                                </Link>
-                              ))
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    {/* Marki - Expandable */}
-                    <div className="space-y-1">
-                      <button
-                        onClick={() => setIsBrandsExpanded(!isBrandsExpanded)}
-                        className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                      >
-                        <span>Marki</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isBrandsExpanded ? 'rotate-180' : ''}`} />
-                      </button>
-                      
-                      {/* Brands - Compact Scrollable */}
-                      <AnimatePresence>
-                        {isBrandsExpanded && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="ml-4"
-                          >
-                            <div className="max-h-32 overflow-y-auto space-y-2">
-                              <div className="flex flex-wrap gap-1.5">
-                                {brandsLoading ? (
-                                  <div className="text-sm text-gray-500">Ładowanie marek...</div>
-                                ) : (
-                                  brands.map((brand) => (
-                                  <button
-                                    key={brand}
-                                    onClick={() => {
-                                      setIsMobileMenuOpen(false);
-                                      // Navigate to brand filter
-                                      window.location.href = `/sklep?brand=${encodeURIComponent(brand.toLowerCase())}`;
-                                    }}
-                                    className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black rounded-full transition-colors whitespace-nowrap"
-                                  >
-                                    {brand}
-                                    </button>
-                                  ))
-                                )}
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    
-                    <a 
-                      href="/o-nas" 
-                      className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      O nas
-                    </a>
-                    
-                    <a 
-                      href="/kontakt" 
-                      className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Kontakt
-                    </a>
-                  </div>
-                </div>
-
-                {/* Footer - SENIOR DEV LEVEL */}
-                <div className="border-t border-gray-200 p-4 bg-gray-50 mt-4">
-                  {/* Account Section - CONSISTENT SPACING */}
-                  {isAuthenticated ? (
-                    <div className="space-y-1 mb-2">
-                      <Link 
-                        href="/moje-konto" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <User className="w-5 h-5" />
-                        <span className="text-sm font-medium">Moje konto</span>
-                      </Link>
-
-                      <Link 
-                        href="/moje-zamowienia" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <Package className="w-5 h-5" />
-                        <span className="text-sm font-medium">Moje zamówienia</span>
-                      </Link>
-
-                      <Link 
-                        href="/moje-faktury" 
-                        className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <FileText className="w-5 h-5" />
-                        <span className="text-sm font-medium">Faktury</span>
-                      </Link>
-                    </div>
-                  ) : null}
-
-                  {/* Action Buttons - WITH HOVER EFFECTS */}
-                  <div className="space-y-1 mb-4 -mt-1">
-                    {/* Favorites Button */}
-                    <button
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        openFavoritesModal();
-                      }}
-                      className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Heart className="w-5 h-5 text-gray-700" />
-                        <span className="text-sm font-medium">Lista życzeń</span>
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <div className="flex items-center space-x-3">
+                          <Menu className="w-6 h-6 text-black" />
+                          <h2 id="mobile-menu-title" className="text-xl font-bold text-black">
+                            Menu
+                          </h2>
+                        </div>
+                        <button
+                          onClick={closeMobileMenu}
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          aria-label="Zamknij menu"
+                        >
+                          <X className="w-5 h-5 text-gray-600" />
+                        </button>
                       </div>
-                      {favoritesCount > 0 && (
-                        <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                          {favoritesCount}
-                        </span>
-                      )}
-                    </button>
 
-                    {/* Login Button (if not authenticated) - AT THE END */}
-                    {!isAuthenticated && (
-                      <button
-                        onClick={() => { 
-                          setIsMobileMenuOpen(false);
-                          window.dispatchEvent(new CustomEvent('openLogin'));
-                        }}
-                        className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-black"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <User className="w-5 h-5" />
-                          <span className="text-sm font-medium">Zaloguj się</span>
+                      {/* Main Navigation */}
+                      <div className="flex-1 overflow-y-auto p-4 pb-0">
+                        <div className="space-y-1 mb-6">
+                          <a 
+                            href="/" 
+                            className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            onClick={closeMobileMenu}
+                          >
+                            Strona główna
+                          </a>
+                          
+                          {/* Sklep - Slide to Sklep View */}
+                          <button
+                            onClick={() => setMobileMenuView('sklep')}
+                            className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                          >
+                            <span>Sklep</span>
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                          
+                          <a 
+                            href="/o-nas" 
+                            className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            onClick={closeMobileMenu}
+                          >
+                            O nas
+                          </a>
+                          
+                          <a 
+                            href="/kontakt" 
+                            className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            onClick={closeMobileMenu}
+                          >
+                            Kontakt
+                          </a>
                         </div>
-                      </button>
-                    )}
+                      </div>
 
-                    {/* Logout Button (if authenticated) - AT THE END */}
-                    {isAuthenticated && (
-                      <button
-                        onClick={() => { logout(); setIsMobileMenuOpen(false); }}
-                        className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-red-600"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <LogOut className="w-5 h-5" />
-                          <span className="text-sm font-medium">Wyloguj się</span>
+                      {/* Footer */}
+                      <div className="border-t border-gray-200 p-4 bg-gray-50">
+                        {isAuthenticated ? (
+                          <div className="space-y-1 mb-2">
+                            <Link 
+                              href="/moje-konto" 
+                              className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
+                              onClick={closeMobileMenu}
+                            >
+                              <User className="w-5 h-5" />
+                              <span className="text-sm font-medium">Moje konto</span>
+                            </Link>
+
+                            <Link 
+                              href="/moje-zamowienia" 
+                              className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
+                              onClick={closeMobileMenu}
+                            >
+                              <Package className="w-5 h-5" />
+                              <span className="text-sm font-medium">Moje zamówienia</span>
+                            </Link>
+
+                            <Link 
+                              href="/moje-faktury" 
+                              className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
+                              onClick={closeMobileMenu}
+                            >
+                              <FileText className="w-5 h-5" />
+                              <span className="text-sm font-medium">Faktury</span>
+                            </Link>
+
+                            <button
+                              onClick={() => { openFavoritesModal(); closeMobileMenu(); }}
+                              className="w-full flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
+                            >
+                              <Heart className="w-5 h-5" />
+                              <span className="text-sm font-medium">Lista życzeń</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="mb-2">
+                            <Link 
+                              href="/moje-konto" 
+                              className="w-full flex items-center justify-center space-x-2 p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-black"
+                              onClick={closeMobileMenu}
+                            >
+                              <User className="w-5 h-5" />
+                              <span className="text-sm font-medium">Zaloguj się</span>
+                            </Link>
+                          </div>
+                        )}
+
+                        {/* Social Media */}
+                        <div className="pt-3 border-t border-gray-200">
+                          <div className="flex justify-center space-x-4">
+                            <a 
+                              href="tel:+48123456789" 
+                              className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                              onClick={closeMobileMenu}
+                            >
+                              <Phone className="w-4 h-4" />
+                            </a>
+                            <a 
+                              href="https://facebook.com" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                              onClick={closeMobileMenu}
+                            >
+                              <Facebook className="w-4 h-4" />
+                            </a>
+                            <a 
+                              href="https://instagram.com" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                              onClick={closeMobileMenu}
+                            >
+                              <Instagram className="w-4 h-4" />
+                            </a>
+                          </div>
                         </div>
-                      </button>
-                    )}
-                  </div>
 
-                  {/* Social Media - CONSISTENT SPACING */}
-                  <div className="pt-3 border-t border-gray-200">
-                    <div className="flex justify-center space-x-4">
-                      <a 
-                        href="tel:+48123456789" 
-                        className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <Phone className="w-4 h-4" />
-                      </a>
-                      <a 
-                        href="https://facebook.com" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <Facebook className="w-4 h-4" />
-                      </a>
-                      <a 
-                        href="https://instagram.com" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <Instagram className="w-4 h-4" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
+                        {/* Logout Button */}
+                        {isAuthenticated && (
+                          <button
+                            onClick={() => { logout(); closeMobileMenu(); }}
+                            className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-red-600 mt-2"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <LogOut className="w-5 h-5" />
+                              <span className="text-sm font-medium">Wyloguj się</span>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* SKLEP VIEW */}
+                  {mobileMenuView === 'sklep' && (
+                    <motion.div
+                      key="sklep"
+                      initial={{ x: '100%', opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      exit={{ x: '-100%', opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="flex flex-col h-full"
+                    >
+                      {/* Header with Back Button */}
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <button
+                          onClick={() => setMobileMenuView('main')}
+                          className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+                        >
+                          <ChevronRight className="w-5 h-5 rotate-180" />
+                          <span className="text-lg font-semibold">Sklep</span>
+                        </button>
+                        <button
+                          onClick={closeMobileMenu}
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          aria-label="Zamknij menu"
+                        >
+                          <X className="w-5 h-5 text-gray-600" />
+                        </button>
+                      </div>
+
+                      {/* Categories */}
+                      <div className="flex-1 overflow-y-auto p-4">
+                        <div className="space-y-2">
+                          {categoriesLoading ? (
+                            <div className="text-sm text-gray-500">Ładowanie kategorii...</div>
+                          ) : (
+                            categories.slice(0, 4).map((category) => (
+                              <Link
+                                key={category.id}
+                                href={`/sklep?category=${category.slug}`}
+                                className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                                onClick={closeMobileMenu}
+                              >
+                                {category.name}
+                              </Link>
+                            ))
+                          )}
+                          
+                          {/* Marki - Slide to Marki View */}
+                          <button
+                            onClick={() => setMobileMenuView('marki')}
+                            className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                          >
+                            <span>Marki</span>
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* MARKI VIEW */}
+                  {mobileMenuView === 'marki' && (
+                    <motion.div
+                      key="marki"
+                      initial={{ x: '100%', opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      exit={{ x: '-100%', opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="flex flex-col h-full"
+                    >
+                      {/* Header with Back Button */}
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <button
+                          onClick={() => setMobileMenuView('sklep')}
+                          className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+                        >
+                          <ChevronRight className="w-5 h-5 rotate-180" />
+                          <span className="text-lg font-semibold">Marki</span>
+                        </button>
+                        <button
+                          onClick={closeMobileMenu}
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          aria-label="Zamknij menu"
+                        >
+                          <X className="w-5 h-5 text-gray-600" />
+                        </button>
+                      </div>
+
+                      {/* Brands Grid */}
+                      <div className="flex-1 overflow-y-auto p-4">
+                        <div className="flex flex-wrap gap-2">
+                          {brandsLoading ? (
+                            <div className="text-sm text-gray-500">Ładowanie marek...</div>
+                          ) : (
+                            brands.map((brand) => (
+                              <button
+                                key={brand}
+                                onClick={() => {
+                                  closeMobileMenu();
+                                  window.location.href = `/sklep?brand=${encodeURIComponent(brand.toLowerCase())}`;
+                                }}
+                                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black rounded-full transition-colors whitespace-nowrap"
+                              >
+                                {brand}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             </>
           )}
