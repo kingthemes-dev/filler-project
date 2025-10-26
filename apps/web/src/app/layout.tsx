@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import TopBar from '@/components/ui/top-bar';
 import Header from '@/components/ui/header';
 import { ConditionalFooter } from '@/components/conditional-footer';
 import CartDrawer from '@/components/ui/cart-drawer';
@@ -223,7 +222,6 @@ export default function RootLayout({
                         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TJSTQLNM" height="0" width="0" style={{display:'none',visibility:'hidden'}}></iframe></noscript>
                         <ErrorBoundary>
                           <PerformanceTracker />
-                          <TopBar />
                           <Header />
                           <ReactQueryProvider>
                             <main>
