@@ -975,7 +975,9 @@ export default function Header() {
                                     Wszystkie kategorie
                                   </span>
                                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border">
-                                    {categories.reduce((total, cat) => total + cat.count, 0)}
+                                    {categories
+                                      .filter(cat => cat.parent === 0)
+                                      .reduce((total, cat) => total + cat.count, 0)}
                                   </span>
                                 </Link>
                               </div>
