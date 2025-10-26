@@ -4,14 +4,16 @@ import { useState, useEffect, Suspense } from 'react';
 import PageContainer from '@/components/ui/page-container';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Search, Filter, SortAsc } from 'lucide-react';
+import { Search, SortAsc } from 'lucide-react';
 import { WooCommerceService } from '@/services/woocommerce-optimized';
 import { wooSearchService } from '@/services/woocommerce-search';
 import { WooProduct } from '@/types/woocommerce';
 import SearchTracking from '@/components/seo/search-tracking';
 import { logger } from '@/utils/logger';
 import KingProductCard from '@/components/king-product-card';
-import { Button } from '@/components/ui/button';
+import ShopFilters from '@/components/ui/shop-filters';
+import { wooCommerceOptimized } from '@/services/woocommerce-optimized';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 function SearchResultsContent() {
   const searchParams = useSearchParams();
