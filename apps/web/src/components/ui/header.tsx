@@ -34,6 +34,7 @@ export default function Header() {
   
   // 🚀 SENIOR LEVEL - Slide Navigation State
   const [mobileMenuView, setMobileMenuView] = useState<'main' | 'sklep' | 'marki'>('main');
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   const [totalProductsCount, setTotalProductsCount] = useState<number>(0);
   
   // Reset view when closing mobile menu
