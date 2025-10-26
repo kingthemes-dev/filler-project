@@ -368,7 +368,7 @@ export default function CartDrawer() {
                   </div>
 
                   {/* Bottom row - Quick Payment Options (only for authenticated users) */}
-                  {isAuthenticated && (
+                  {isAuthenticated ? (
                     <div className="space-y-2">
                       {/* Google Pay */}
                       <Link
@@ -396,6 +396,37 @@ export default function CartDrawer() {
                         </svg>
                         <span>Apple Pay</span>
                       </Link>
+                    </div>
+                  ) : (
+                    {/* Login Prompt for Quick Payments */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                            Zaloguj się dla szybszych płatności
+                          </h4>
+                          <p className="text-xs text-blue-700 mb-3">
+                            Oszczędź czas z Google Pay i Apple Pay
+                          </p>
+                          <Link
+                            href="/moje-konto"
+                            className="inline-flex items-center space-x-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                            onClick={closeCart}
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                            <span>Zaloguj się</span>
+                          </Link>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
