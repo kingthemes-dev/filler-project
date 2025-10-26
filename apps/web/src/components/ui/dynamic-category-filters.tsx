@@ -93,7 +93,7 @@ export default function DynamicCategoryFilters({
                 </button>
               )}
               
-              <label className="flex items-center flex-1 cursor-pointer">
+              <div className="flex items-center flex-1">
                 <input
                   type="checkbox"
                   name="categories"
@@ -102,9 +102,20 @@ export default function DynamicCategoryFilters({
                   onChange={() => onCategoryChange(category.slug)}
                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
                 />
-                <span className="ml-3 text-xs sm:text-sm font-semibold text-gray-800">{category.name}</span>
+                <span 
+                  className="ml-3 text-xs sm:text-sm font-semibold text-gray-800 cursor-pointer hover:text-gray-600 transition-colors"
+                  onClick={() => {
+                    if (category.subcategories.length > 0) {
+                      toggleCategory(category.id);
+                    } else {
+                      onCategoryChange(category.slug);
+                    }
+                  }}
+                >
+                  {category.name}
+                </span>
                 <span className="ml-auto text-xs text-gray-500">({category.count})</span>
-              </label>
+              </div>
             </div>
           </div>
 
