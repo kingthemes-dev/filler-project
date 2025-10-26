@@ -945,7 +945,7 @@ export default function Header() {
                   ) : (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Ostatnio wyszukiwane</h3>
-                      <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
                         {recentSearches.length > 0 ? (
                           recentSearches.map((search, index) => (
                             <button
@@ -954,14 +954,13 @@ export default function Header() {
                                 setSearchQuery(search);
                                 searchProducts(search);
                               }}
-                              className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black rounded-full transition-colors whitespace-nowrap"
                             >
-                              <div className="font-medium text-gray-900">{search}</div>
-                              <div className="text-sm text-gray-500">Kliknij aby wyszukać ponownie</div>
+                              {search}
                             </button>
                           ))
                         ) : (
-                          <div className="text-center py-8">
+                          <div className="text-center py-8 w-full">
                             <div className="text-gray-500">Brak ostatnich wyszukiwań</div>
                           </div>
                         )}
