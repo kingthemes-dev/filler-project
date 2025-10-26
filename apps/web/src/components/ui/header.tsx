@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { UI_SPACING } from '@/config/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube, Plus, Tag } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube, Plus, Tag, Star } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
+import Image from 'next/image';
 import EmailNotificationCenter from './email/email-notification-center';
 import SearchBar from './search/search-bar';
 import SearchModal from './search/search-modal';
@@ -509,6 +510,12 @@ export default function Header() {
               onExpand={() => setIsSearchExpanded(true)}
               value={searchQuery}
               onChange={setSearchQuery}
+              isExpanded={isSearchExpanded}
+              onClose={() => {
+                setIsSearchExpanded(false);
+                setSearchQuery('');
+                setSearchResults([]);
+              }}
             />
           </div>
 
@@ -816,23 +823,6 @@ export default function Header() {
                   className="p-6"
                 >
                   <div className="max-w-4xl mx-auto">
-                  {/* Search Input - tylko wyświetlanie query z headera */}
-                  <div className="relative mb-6">
-                    <div className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-xl bg-gray-50 text-gray-600">
-                      {searchQuery || "Szukaj produktów..."}
-                    </div>
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
-                    <button
-                      onClick={() => {
-                        setIsSearchExpanded(false);
-                        setSearchQuery('');
-                        setSearchResults([]);
-                      }}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <X className="h-5 w-5 text-gray-500" />
-                    </button>
-                  </div>
                   
                   {/* Search Results */}
                   {searchQuery ? (
@@ -851,16 +841,66 @@ export default function Header() {
                               <Link
                                 key={product.id}
                                 href={`/produkt/${product.slug}`}
-                                className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group"
                                 onClick={() => setIsSearchExpanded(false)}
                               >
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900">{product.name}</div>
-                                  <div className="text-sm text-gray-500">{product.short_description?.replace(/<[^>]*>/g, '')}</div>
+                                {/* Product Image */}
+                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 mr-4">
+                                  <Image
+                                    src={product.images?.[0]?.src || '/images/placeholder-product.jpg'}
+                                    alt={product.name}
+                                    width={64}
+                                    height={64}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                  />
                                 </div>
-                                <div className="text-right">
-                                  <div className="font-semibold text-gray-900">
-                                    {product.price ? `${product.price} zł` : 'Brak ceny'}
+                                
+                                {/* Product Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1 group-hover:text-blue-600 transition-colors">
+                                        {product.name}
+                                      </h3>
+                                      
+                                      {/* Category */}
+                                      {product.categories?.[0] && (
+                                        <div className="text-xs text-gray-500 mb-2">
+                                          {product.categories[0].name}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Rating */}
+                                      <div className="flex items-center gap-1 mb-2">
+                                        <div className="flex items-center">
+                                          {[1, 2, 3, 4, 5].map((star) => (
+                                            <Star
+                                              key={star}
+                                              className={`w-3 h-3 ${
+                                                star <= (product.average_rating || 0)
+                                                  ? 'text-yellow-400 fill-current'
+                                                  : 'text-gray-300'
+                                              }`}
+                                            />
+                                          ))}
+                                        </div>
+                                        <span className="text-xs text-gray-500 ml-1">
+                                          ({product.rating_count || 0})
+                                        </span>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Price */}
+                                    <div className="text-right flex-shrink-0 ml-4">
+                                      <div className="font-bold text-gray-900 text-sm">
+                                        {product.price ? `${product.price} zł` : 'Brak ceny'}
+                                      </div>
+                                      {product.sale_price && (
+                                        <div className="text-xs text-red-500 line-through">
+                                          {product.regular_price} zł
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </Link>
