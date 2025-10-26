@@ -963,6 +963,23 @@ export default function Header() {
                             <div className="text-sm text-gray-500 text-center py-8">Brak kategorii</div>
                           ) : (
                             <>
+                              {/* Wszystkie kategorie - Na górze */}
+                              <div className="border border-gray-100 rounded-lg overflow-hidden">
+                                <Link
+                                  href="/sklep"
+                                  className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                                  onClick={closeMobileMenu}
+                                >
+                                  <div className="w-6 h-6 mr-2"></div>
+                                  <span className="text-sm font-medium text-gray-900 flex-1">
+                                    Wszystkie kategorie
+                                  </span>
+                                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border">
+                                    {categories.reduce((total, cat) => total + cat.count, 0)}
+                                  </span>
+                                </Link>
+                              </div>
+
                               {/* Categories - Filter Style */}
                               {categories
                                 .filter(cat => cat.parent === 0)
