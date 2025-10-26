@@ -271,10 +271,10 @@ export default function Header() {
     <>
       <header className={`sticky top-4 z-50 will-change-transform overflow-visible rounded-2xl transition-all duration-300 ${
         isScrolled 
-          ? 'bg-white/80 backdrop-blur-md shadow-md border border-gray-200/50 mx-4' 
-          : 'bg-white mx-4 shadow-sm'
+          ? 'bg-white/80 backdrop-blur-md shadow-md border border-gray-200/50' 
+          : 'bg-white'
       }`}>
-        <div className={`max-w-[95vw] mx-auto mobile-container`}>
+        <div className="max-w-[var(--container-max-w)] mx-auto px-4 mobile-container" style={{ ['--container-max-w' as any]: '95vw' }}>
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
           {/* Logo */}
           <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity">
