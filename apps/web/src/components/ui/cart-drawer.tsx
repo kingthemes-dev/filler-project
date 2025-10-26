@@ -198,7 +198,7 @@ export default function CartDrawer() {
 
             {/* Free shipping notice - CONSISTENT MARGINS */}
             {items.length > 0 && (
-              <div className="px-6 pt-3" onClick={(e) => e.stopPropagation()}>
+              <div className="mobile-container pt-3" onClick={(e) => e.stopPropagation()}>
                 <motion.div
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}

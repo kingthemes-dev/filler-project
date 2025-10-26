@@ -11,7 +11,7 @@ type PageContainerProps = {
 export default function PageContainer({ children, className = '' }: PageContainerProps) {
   return (
     <div
-      className={`max-w-[var(--container-max-w)] mx-auto px-4 sm:px-6 ${className}`}
+      className={`max-w-[var(--container-max-w)] mx-auto mobile-container ${className}`}
       style={{ ['--container-max-w' as any]: UI_SPACING.CONTAINER_MAX_W }}
     >
       {children}

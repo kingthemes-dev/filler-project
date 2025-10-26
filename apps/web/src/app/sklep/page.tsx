@@ -140,7 +140,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     return (
       <HydrationBoundary state={dehydratedState}>
         <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-center max-w-md mx-auto mobile-container">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
               Błąd ładowania sklepu
             </h1>
