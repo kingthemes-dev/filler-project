@@ -108,9 +108,9 @@ class DynamicCategoriesService {
   /**
    * Pobiera terminy dla konkretnego atrybutu
    */
-  async getAttributeTerms(attributeId: number): Promise<WooAttributeTerm[]> {
+  async getAttributeTerms(attributeSlug: string): Promise<WooAttributeTerm[]> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes/${attributeId}/terms&per_page=100`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes/${attributeSlug}/terms&per_page=100`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -119,7 +119,7 @@ class DynamicCategoriesService {
       const data = await response.json();
       return Array.isArray(data) ? data : (data.terms || []);
     } catch (error) {
-      console.error(`Error fetching terms for attribute ${attributeId}:`, error);
+      console.error(`Error fetching terms for attribute ${attributeSlug}:`, error);
       return [];
     }
   }
@@ -201,7 +201,7 @@ class DynamicCategoriesService {
       const attributesWithTerms: { [key: string]: { name: string; slug: string; terms: WooAttributeTerm[] } } = {};
       
       for (const attribute of attributes) {
-        const terms = await this.getAttributeTerms(attribute.id);
+        const terms = await this.getAttributeTerms(attribute.slug);
         attributesWithTerms[attribute.slug] = {
           name: attribute.name,
           slug: attribute.slug,
