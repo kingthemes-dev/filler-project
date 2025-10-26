@@ -124,7 +124,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
           {/* Custom Tabs Implementation - No shadcn/ui */}
           <div className="w-full">
             {/* Custom Tabs Container */}
-            <div className="grid w-full grid-cols-4 bg-transparent border border-gray-200 p-0 rounded-2xl h-auto relative overflow-hidden">
+            <div className="grid grid-cols-4 bg-transparent border border-gray-200 p-0 rounded-2xl h-auto relative overflow-hidden">
               {/* Animated background indicator */}
               <div 
                 className="absolute top-0 bottom-0 bg-gradient-to-r from-black to-gray-800 rounded-xl transition-all duration-500 ease-out"
