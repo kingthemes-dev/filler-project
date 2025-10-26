@@ -1075,6 +1075,70 @@ async function handleOrderCreation(body: any) {
   }
 }
 
+// Handle attribute terms endpoint - PRO Architecture: Get terms for specific attribute
+async function handleAttributeTermsEndpoint(req: NextRequest, endpoint: string) {
+  const { searchParams } = new URL(req.url);
+  
+  if (!WC_URL || !CK || !CS) {
+    return NextResponse.json(
+      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    // Extract attribute slug from endpoint (e.g., "attributes/pa_marka/terms" -> "pa_marka")
+    const attributeSlug = endpoint.split('/')[1];
+    
+    // Call WooCommerce API directly for attribute terms
+    const termsUrl = `${WC_URL}/products/attributes/${attributeSlug}/terms?${searchParams.toString()}`;
+    
+    console.log('🏷️ Attribute terms endpoint - calling WooCommerce API:', termsUrl);
+    
+    const response = await fetch(termsUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${CK}:${CS}`).toString('base64')}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Filler-Store/1.0'
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      console.error('❌ WooCommerce API error for attribute terms:', response.status, response.statusText);
+      return NextResponse.json(
+        { error: 'Błąd pobierania termów atrybutu', details: response.statusText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    
+    console.log('✅ Attribute terms received from WooCommerce:', {
+      attribute: attributeSlug,
+      terms_count: Array.isArray(data) ? data.length : 0
+    });
+
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "Cache-Control": "public, max-age=300, s-maxage=600, stale-while-revalidate=900",
+        "X-Cache": "MISS",
+      },
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error in handleAttributeTermsEndpoint:', error);
+    return NextResponse.json(
+      { error: 'Błąd serwera', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 // Handle attributes endpoint - PRO Architecture: Dynamic attributes based on filters
 async function handleAttributesEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -1658,6 +1722,11 @@ export async function GET(req: NextRequest) {
   // Special handling for attributes endpoint - PRO Architecture
   if (endpoint === "attributes") {
     return handleAttributesEndpoint(req);
+  }
+  
+  // Special handling for attribute terms endpoint
+  if (endpoint.startsWith("attributes/") && endpoint.includes("/terms")) {
+    return handleAttributeTermsEndpoint(req, endpoint);
   }
   
   // Special handling for shop endpoint - use new King Shop API
