@@ -293,13 +293,13 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             onClick={(e) => e.stopPropagation()}
           >
               {/* Content */}
-              <div className="flex flex-col lg:flex-row max-h-[80vh] overflow-hidden relative">
+              <div className="flex flex-col lg:flex-row h-full relative">
                 {/* Close Button - Top Right of Content */}
                 <div className="absolute top-4 right-4 z-10">
                   <ModalCloseButton onClick={onClose} />
                 </div>
-                {/* Images Section - scrollable */}
-                <div className="lg:w-1/2 p-6 overflow-y-auto">
+                {/* Images Section */}
+                <div className="lg:w-1/2 p-6 flex-shrink-0">
                   <div className="space-y-4">
                     {/* Main Image - square */}
                     <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg max-w-sm mx-auto">
@@ -368,7 +368,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 </div>
 
                 {/* Product Details */}
-                <div className="lg:w-1/2 p-6 overflow-y-auto max-h-[90vh]">
+                <div className="lg:w-1/2 p-6 overflow-y-auto">
                   <div className="space-y-3">
                     {/* Product Title & Badges */}
                     <div className="space-y-2">
