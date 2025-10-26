@@ -11,7 +11,6 @@ import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
 import Image from 'next/image';
 import EmailNotificationCenter from './email/email-notification-center';
-import SearchBar from './search/search-bar';
 import ShopExplorePanel from './shop-explore-panel';
 
 
