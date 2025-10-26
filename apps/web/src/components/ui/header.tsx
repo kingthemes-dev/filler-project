@@ -270,10 +270,10 @@ export default function Header() {
   return (
     <>
       <header 
-        className={`sticky top-4 z-50 will-change-transform overflow-hidden transition-all duration-300 mx-auto max-w-[95vw] rounded-3xl ${
+          className={`sticky top-4 z-50 will-change-transform overflow-hidden transition-all duration-300 mx-auto max-w-[95vw] rounded-3xl ${
           isScrolled 
             ? 'bg-white/80 backdrop-blur-md shadow-md border border-gray-200/50' 
-            : 'bg-white'
+            : 'bg-white/80 backdrop-blur-md border border-gray-200/50'
         }`}
       >
         <div className="px-4">
@@ -404,18 +404,17 @@ export default function Header() {
             </a>
           </nav>
 
-          {/* Search Bar - desktop only (flex-1 on desktop) */}
+          {/* Search Icon - desktop only */}
           <div
-            className="hidden lg:flex mx-4 lg:mx-0 min-w-0 lg:flex-1 w-full max-w-none lg:px-[var(--search-pad)]"
-            style={{ ['--search-pad' as any]: `${UI_SPACING.SEARCH_SIDE_PADDING_DESKTOP}px` }}
+            className="hidden lg:flex items-center justify-center mx-4"
             onMouseEnter={() => setIsShopOpen(false)}
           >
             <button
               onClick={() => setIsSearchModalOpen(true)}
-              className="flex items-center w-full max-w-md mx-auto pl-10 pr-4 py-3 text-left bg-white border border-gray-300 rounded-lg hover:border-gray-400 transition-colors group relative"
+              className="text-gray-700 hover:text-black transition-colors"
+              aria-label="Szukaj"
             >
-              <Search className="absolute left-4 h-5 w-5 text-gray-400 group-hover:text-gray-600" />
-              <span className="text-sm text-gray-500">Szukaj produktów...</span>
+              <Search className="w-6 h-6" />
             </button>
           </div>
 
