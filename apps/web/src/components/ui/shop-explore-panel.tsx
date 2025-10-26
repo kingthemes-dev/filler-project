@@ -129,7 +129,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           id="shop-explore-panel"
           role="dialog"
           aria-modal="true"
-          className="absolute top-full left-0 w-full bg-white/80 backdrop-blur-md border-l border-r border-b border-gray-200/50 z-50 rounded-b-3xl mt-[1px]"
+          className="absolute top-full left-0 right-0 w-full bg-white/80 backdrop-blur-md border-l border-r border-b border-gray-200/50 z-50 rounded-b-3xl mx-auto"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
