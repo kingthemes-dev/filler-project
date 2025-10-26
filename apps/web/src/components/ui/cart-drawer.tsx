@@ -198,7 +198,7 @@ export default function CartDrawer() {
 
             {/* Free shipping notice - CONSISTENT MARGINS */}
             {items.length > 0 && (
-              <div className="pt-3 px-3" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 pt-3" onClick={(e) => e.stopPropagation()}>
                 <motion.div
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -236,9 +236,9 @@ export default function CartDrawer() {
             )}
 
             {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto p-6 pb-0" onClick={(e) => e.stopPropagation()}>
+            <div className="flex-1 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               {items.length === 0 ? (
-                <div className="text-center py-12">
+                <div className="text-center py-12 px-6">
                   <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     Twój koszyk jest pusty
@@ -255,7 +255,7 @@ export default function CartDrawer() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 px-6">
                   {items.map((item, index) => (
                     <div
                       key={`${item.id}-${item.variant?.id || 'default'}-${index}`}
