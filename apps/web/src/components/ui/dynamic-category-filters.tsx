@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { dynamicCategoriesService, HierarchicalCategory } from '@/services/dynamic-categories';
 
 interface DynamicCategoryFiltersProps {
@@ -108,12 +108,11 @@ export default function DynamicCategoryFilters({
                   onClick={() => toggleCategory(category.id)}
                   className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors ml-2"
                 >
-                  <motion.div
-                    animate={{ rotate: isCategoryExpanded(category.id) ? 90 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronRight className="w-4 h-4 text-gray-500" />
-                  </motion.div>
+                  {isCategoryExpanded(category.id) ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                  )}
                 </button>
               )}
             </div>
