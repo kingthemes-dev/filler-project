@@ -110,14 +110,28 @@ class DynamicCategoriesService {
    */
   async getAttributeTerms(attributeSlug: string): Promise<WooAttributeTerm[]> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes/${attributeSlug}/terms&per_page=100`);
+      // Use King Shop API directly - same as mobile menu and desktop dropdown
+      const wordpressUrl = 'https://qvwltjhdjw.cfolks.pl';
+      const response = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`, { cache: 'no-store' });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      return Array.isArray(data) ? data : (data.terms || []);
+      
+      // Extract terms for specific attribute
+      const attributeData = data.attributes?.[attributeSlug];
+      if (attributeData?.terms) {
+        return attributeData.terms.map((term: any) => ({
+          id: term.id,
+          name: term.name,
+          slug: term.slug,
+          count: term.count || 0
+        }));
+      }
+      
+      return [];
     } catch (error) {
       console.error(`Error fetching terms for attribute ${attributeSlug}:`, error);
       return [];
