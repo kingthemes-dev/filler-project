@@ -238,42 +238,6 @@ export default function Header() {
   }, [shopHoverTimeout]);
 
 
-  // Block body scroll when mobile menu is open - FIXED FOR IPHONE 14 PRO
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      // Prevent horizontal scroll on iPhone 14 Pro
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.height = '100%';
-      document.body.style.top = '0';
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.bottom = '0';
-      
-      // Prevent viewport zoom and scroll
-      document.documentElement.style.overflow = 'hidden';
-      document.documentElement.style.position = 'fixed';
-      document.documentElement.style.width = '100%';
-      document.documentElement.style.height = '100%';
-      
-      return () => {
-        document.body.style.overflow = 'unset';
-        document.body.style.position = 'unset';
-        document.body.style.width = 'unset';
-        document.body.style.height = 'unset';
-        document.body.style.top = 'unset';
-        document.body.style.left = 'unset';
-        document.body.style.right = 'unset';
-        document.body.style.bottom = 'unset';
-        
-        document.documentElement.style.overflow = 'unset';
-        document.documentElement.style.position = 'unset';
-        document.documentElement.style.width = 'unset';
-        document.documentElement.style.height = 'unset';
-      };
-    }
-  }, [isMobileMenuOpen]);
 
   // Keyboard navigation for mobile menu
   useEffect(() => {
@@ -289,27 +253,10 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isMobileMenuOpen) {
-        const target = event.target as HTMLElement;
-        // Check if click is outside menu and not on menu elements
-        if (!target.closest('[data-mobile-menu]') && !target.closest('.mobile-menu-backdrop')) {
-          closeMobileMenu();
-        }
-      }
-    };
-
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isMobileMenuOpen]);
 
   return (
     <>
-      <header className="bg-white sticky top-0 z-50 will-change-transform overflow-visible relative">
+      <header className="bg-white sticky top-0 z-50 will-change-transform overflow-visible">
         <div className={`max-w-[95vw] mx-auto px-4 sm:px-8`}>
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
           {/* Logo */}
@@ -764,30 +711,20 @@ export default function Header() {
         
 
         
-        {/* Mobile Menu - COMPLETELY NEW */}
+        {/* Mobile Menu - Header Expansion */}
         <AnimatePresence>
           {isMobileMenuOpen && (
-            <>
-              {/* 🚀 MOBILE MENU - Slide from Header */}
-              <motion.div
-                className="fixed bg-white z-[120] flex flex-col"
-                initial={{ y: '-100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '-100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                data-mobile-menu
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="mobile-menu-title"
-                style={{ 
-                  top: '80px', // Start from header height
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 'calc(100vh - 80px)', // Full height minus header
-                  width: '100vw'
-                }}
-              >
+            <motion.div
+              className="bg-white border-t border-gray-200 overflow-hidden"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              data-mobile-menu
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="mobile-menu-title"
+            >
                 {/* 🚀 SENIOR LEVEL - Slide Navigation Content */}
                 <AnimatePresence mode="wait">
                   {/* MAIN VIEW */}
@@ -1207,7 +1144,6 @@ export default function Header() {
                   )}
                 </AnimatePresence>
               </motion.div>
-            </>
           )}
         </AnimatePresence>
         
