@@ -93,12 +93,6 @@ export default function Header() {
     }
   };
 
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-  };
-
   // Debounced search effect
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -513,6 +507,8 @@ export default function Header() {
               placeholder="Szukaj produktów..."
               className="w-full text-sm"
               onExpand={() => setIsSearchExpanded(true)}
+              value={searchQuery}
+              onChange={setSearchQuery}
             />
           </div>
 
@@ -802,24 +798,29 @@ export default function Header() {
               
               {/* Search Panel */}
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 overflow-hidden"
+                initial={{ height: 0, opacity: 0, y: -20 }}
+                animate={{ height: 'auto', opacity: 1, y: 0 }}
+                exit={{ height: 0, opacity: 0, y: -20 }}
+                transition={{ 
+                  duration: 0.4, 
+                  ease: [0.4, 0, 0.2, 1],
+                  opacity: { duration: 0.3 },
+                  y: { duration: 0.4 }
+                }}
+                className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-50 overflow-hidden"
               >
-              <div className="p-6">
-                <div className="max-w-4xl mx-auto">
-                  {/* Search Input */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
+                  className="p-6"
+                >
+                  <div className="max-w-4xl mx-auto">
+                  {/* Search Input - tylko wyświetlanie query z headera */}
                   <div className="relative mb-6">
-                    <input
-                      type="text"
-                      placeholder="Szukaj produktów..."
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                      className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      autoFocus
-                    />
+                    <div className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-xl bg-gray-50 text-gray-600">
+                      {searchQuery || "Szukaj produktów..."}
+                    </div>
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
                     <button
                       onClick={() => {
@@ -891,8 +892,8 @@ export default function Header() {
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
+                  </div>
+                </motion.div>
               </motion.div>
             </>
           )}
