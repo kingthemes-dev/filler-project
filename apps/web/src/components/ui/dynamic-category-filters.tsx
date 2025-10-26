@@ -79,7 +79,16 @@ export default function DynamicCategoryFilters({
           {/* Główna kategoria */}
           <div className="bg-gray-50">
             <div className="flex items-center p-2 sm:p-3 hover:bg-gray-100 transition-colors">
-              <div className="flex items-center flex-1">
+              <div 
+                className="flex items-center flex-1 cursor-pointer"
+                onClick={() => {
+                  if (category.subcategories.length > 0) {
+                    toggleCategory(category.id);
+                  } else {
+                    onCategoryChange(category.slug);
+                  }
+                }}
+              >
                 <input
                   type="checkbox"
                   name="categories"
@@ -87,17 +96,9 @@ export default function DynamicCategoryFilters({
                   checked={isCategorySelected(category.slug)}
                   onChange={() => onCategoryChange(category.slug)}
                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                  onClick={(e) => e.stopPropagation()}
                 />
-                <span 
-                  className="ml-3 text-xs sm:text-sm font-semibold text-gray-800 cursor-pointer hover:text-gray-600 transition-colors"
-                  onClick={() => {
-                    if (category.subcategories.length > 0) {
-                      toggleCategory(category.id);
-                    } else {
-                      onCategoryChange(category.slug);
-                    }
-                  }}
-                >
+                <span className="ml-3 text-xs sm:text-sm font-semibold text-gray-800 hover:text-gray-600 transition-colors">
                   {category.name}
                 </span>
                 <span className="ml-2 text-xs text-gray-500">({category.count})</span>
