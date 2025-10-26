@@ -145,7 +145,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             onClose();
           }}
         >
-          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 py-8">
+          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-4 pb-8">
             <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Kategorie główne - Nowoczesny Dropdown */}
               <div className="md:col-span-3 space-y-4">
