@@ -297,7 +297,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 <div className="lg:w-1/2 p-4 sm:p-6 flex-shrink-0">
                   <div className="space-y-2 sm:space-y-4">
                     {/* Main Image - square */}
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg max-w-sm mx-auto">
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg w-full sm:max-w-sm sm:mx-auto">
                       <motion.div
                         key={selectedImageIndex}
                         initial={{ opacity: 0 }}
