@@ -50,7 +50,7 @@ export default function Header() {
     setExpandedCategories(new Set());
   };
 
-  // Handle ESC key for search
+  // Handle ESC key and click outside for search
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isSearchExpanded) {
@@ -60,8 +60,21 @@ export default function Header() {
       }
     };
 
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isSearchExpanded) {
+        const target = event.target as HTMLElement;
+        // Sprawdź czy kliknięcie nie było w search barze ani w search panelu
+        if (!target.closest('[data-search-container]') && !target.closest('[data-search-panel]')) {
+          setIsSearchExpanded(false);
+          setSearchQuery('');
+          setSearchResults([]);
+        }
+      }
+    };
+
     if (isSearchExpanded) {
       document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('click', handleClickOutside);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -69,6 +82,7 @@ export default function Header() {
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleClickOutside);
       document.body.style.overflow = 'unset';
     };
   }, [isSearchExpanded]);
@@ -532,6 +546,7 @@ export default function Header() {
             className="hidden lg:flex mx-4 lg:mx-0 min-w-0 lg:flex-1 w-full max-w-none lg:px-[var(--search-pad)]"
             style={{ ['--search-pad' as any]: `${UI_SPACING.SEARCH_SIDE_PADDING_DESKTOP}px` }}
             onMouseEnter={() => setIsShopOpen(false)}
+            data-search-container
           >
             <SearchBar 
               placeholder="Szukaj produktów..."
@@ -828,7 +843,7 @@ export default function Header() {
                   background: 'rgba(0, 0, 0, 0.4)',
                   backdropFilter: 'blur(8px) saturate(180%)',
                   WebkitBackdropFilter: 'blur(8px) saturate(180%)',
-                  top: 'calc(80px + 200px)' // header height + estimated search panel height
+                  top: '280px' // poniżej search panelu
                 }}
                 onClick={() => {
                   setIsSearchExpanded(false);
@@ -849,6 +864,7 @@ export default function Header() {
                   y: { duration: 0.4 }
                 }}
                 className="absolute top-full left-0 right-0 z-50 overflow-hidden rounded-b-2xl"
+                data-search-panel
                 style={{
                   background: 'rgba(255, 255, 255, 0.95)',
                   backdropFilter: 'blur(20px) saturate(180%)',
