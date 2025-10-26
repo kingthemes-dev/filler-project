@@ -119,7 +119,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
 
   return (
     <section className="py-12 sm:py-16 bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container">
+      <div className="max-w-[95vw] mx-auto px-4 sm:px-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Custom Tabs Implementation - No shadcn/ui */}
           <div className="w-full">
@@ -249,10 +249,10 @@ function ProductTabsSkeleton() {
       <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <div key={i} className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm animate-pulse">
-            <div className="mobile-container pb-0">
+            <div className="px-4 sm:px-6 pb-0">
               <div className="aspect-square bg-muted rounded-lg" />
             </div>
-            <div className="mobile-container pt-3">
+            <div className="px-4 sm:px-6 pt-3">
               <div className="h-4 bg-muted rounded mb-2" />
               <div className="h-3 bg-muted rounded w-2/3" />
             </div>
