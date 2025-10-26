@@ -289,11 +289,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
               {/* Content */}
-              <div className="flex flex-col lg:flex-row max-h-[90vh] overflow-hidden relative">
+              <div className="flex flex-col lg:flex-row max-h-[80vh] overflow-hidden relative">
                 {/* Close Button - Top Right of Content */}
                 <div className="absolute top-4 right-4 z-10">
                   <ModalCloseButton onClick={onClose} />
@@ -301,8 +301,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 {/* Images Section - scrollable */}
                 <div className="lg:w-1/2 p-6 overflow-y-auto">
                   <div className="space-y-4">
-                    {/* Main Image - full height with padding */}
-                    <div className="relative h-[calc(90vh-3rem)] rounded-xl overflow-hidden bg-gray-50 shadow-lg w-full">
+                    {/* Main Image - square */}
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg max-w-sm mx-auto">
                       <motion.div
                         key={selectedImageIndex}
                         initial={{ opacity: 0 }}
