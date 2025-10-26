@@ -64,16 +64,18 @@
 
 ### For Brands (Marki)
 ```javascript
-// ✅ WORKING - Use King Shop API
-const response = await fetch('/wp-json/king-shop/v1/attributes');
+// ✅ WORKING - Use King Shop API (production URL)
+const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
+const response = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`);
 const data = await response.json();
-const brands = data.attributes.marka.terms; // Array of brand objects
+const brands = data.attributes.marka.terms; // Array of brand objects (30 brands)
 ```
 
 ### For Capacities (Pojemności)
 ```javascript
-// ✅ WORKING - Use King Shop API
-const response = await fetch('/wp-json/king-shop/v1/attributes');
+// ✅ WORKING - Use King Shop API (production URL)
+const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
+const response = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`);
 const data = await response.json();
 const capacities = data.attributes.pojemnosc.terms; // Array of capacity objects
 ```
@@ -91,10 +93,11 @@ const [capacitiesRes, brandsRes] = await Promise.all([
 
 ### Solution
 ```javascript
-// ✅ WORKING - Use King Shop API directly
-const response = await fetch('/wp-json/king-shop/v1/attributes');
+// ✅ WORKING - Use King Shop API with production URL
+const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
+const response = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`);
 const data = await response.json();
-const brands = data.attributes.marka.terms;
+const brands = data.attributes.marka.terms; // 30 brands available
 const capacities = data.attributes.pojemnosc.terms;
 ```
 
