@@ -1090,15 +1090,14 @@ async function handleAttributeTermsEndpoint(req: NextRequest, endpoint: string) 
     // Extract attribute slug from endpoint (e.g., "attributes/pa_marka/terms" -> "pa_marka")
     const attributeSlug = endpoint.split('/')[1];
     
-    // Call WooCommerce API directly for attribute terms
-    const termsUrl = `${WC_URL}/products/attributes/${attributeSlug}/terms?${searchParams.toString()}`;
+    // Call WordPress REST API for attribute terms (WooCommerce API doesn't support terms)
+    const termsUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wp/v2/product_attribute_term?attribute=${attributeSlug}&${searchParams.toString()}`;
     
-    console.log('🏷️ Attribute terms endpoint - calling WooCommerce API:', termsUrl);
+    console.log('🏷️ Attribute terms endpoint - calling WordPress API:', termsUrl);
     
     const response = await fetch(termsUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${Buffer.from(`${CK}:${CS}`).toString('base64')}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': 'Filler-Store/1.0'
