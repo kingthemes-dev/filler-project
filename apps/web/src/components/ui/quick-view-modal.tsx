@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, ShoppingCart, Star, Plus, Minus, Droplets } from 'lucide-react';
+import { X, ShoppingCart, Star, Plus, Minus, Droplets } from 'lucide-react';
 import ModalCloseButton from './modal-close-button';
 import { useCartStore } from '@/stores/cart-store';
-import { useFavoritesStore } from '@/stores/favorites-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import wooCommerceService from '@/services/woocommerce-optimized';
@@ -36,7 +35,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const [selectedCapacity, setSelectedCapacity] = useState<string>('');
 
   const { addItem, openCart } = useCartStore();
-  const { toggleFavorite, isFavorite } = useFavoritesStore();
 
   // Helper function to get variation price
   const getVariationPrice = (capacity: string): number => {
@@ -178,9 +176,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     }
   };
 
-  const handleToggleFavorite = () => {
-    toggleFavorite(product);
-  };
 
   const isOnSale = product.sale_price && product.sale_price !== product.regular_price;
   const discountPercentage = isOnSale && product.regular_price 
@@ -573,21 +568,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           )}
                         </Button>
 
-                        <Button
-                          variant="outline"
-                          onClick={handleToggleFavorite}
-                          className={`h-[56px] px-4 rounded-lg border-2 ${
-                            isFavorite(product.id) 
-                              ? 'text-red-500 border-red-500 hover:bg-red-50' 
-                              : 'text-gray-600 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <Heart 
-                            className={`w-5 h-5 ${
-                              isFavorite(product.id) ? 'fill-current' : ''
-                            }`} 
-                          />
-                        </Button>
                       </div>
                     </div>
 
