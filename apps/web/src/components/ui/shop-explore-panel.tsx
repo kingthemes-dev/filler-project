@@ -129,14 +129,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           id="shop-explore-panel"
           role="dialog"
           aria-modal="true"
-          className="fixed top-[80px] left-[50%] -translate-x-[50%] w-[95vw] bg-white/80 backdrop-blur-md shadow-2xl border border-gray-200/50 border-t-0 z-50 rounded-b-3xl"
+          className="fixed top-[80px] left-[50%] -translate-x-[50%] w-[95vw] bg-white/80 backdrop-blur-md shadow-2xl z-50 rounded-b-3xl"
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
         >
           {/* Gradient overlay at top for smooth transition */}
-          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/80 to-transparent pointer-events-none z-10" />
+          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white via-white/80 to-transparent pointer-events-none z-10" />
           
           <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-8 pb-8 relative">
             {/* Close button */}
