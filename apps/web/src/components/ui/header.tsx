@@ -827,8 +827,21 @@ export default function Header() {
                           </div>
                         )}
 
+                        {/* Logout Button */}
+                        {isAuthenticated && (
+                          <button
+                            onClick={() => { logout(); closeMobileMenu(); }}
+                            className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-red-600 mt-2"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <LogOut className="w-5 h-5" />
+                              <span className="text-sm font-medium">Wyloguj się</span>
+                            </div>
+                          </button>
+                        )}
+
                         {/* Social Media */}
-                        <div className="pt-3 border-t border-gray-200">
+                        <div className="pt-3">
                           <div className="flex justify-center space-x-4">
                             <a 
                               href="tel:+48123456789" 
@@ -857,19 +870,6 @@ export default function Header() {
                             </a>
                           </div>
                         </div>
-
-                        {/* Logout Button */}
-                        {isAuthenticated && (
-                          <button
-                            onClick={() => { logout(); closeMobileMenu(); }}
-                            className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-red-600 mt-2"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <LogOut className="w-5 h-5" />
-                              <span className="text-sm font-medium">Wyloguj się</span>
-                            </div>
-                          </button>
-                        )}
                       </div>
                     </motion.div>
                   )}
