@@ -66,17 +66,21 @@ export default function Header() {
   const { getItemCount } = useWishlist();
   wishlistCount = getItemCount();
 
-  // Fetch brands from API
+  // Fetch brands from API - SAME AS DESKTOP DROPDOWN
   const fetchBrands = async () => {
     if (brands.length > 0) return; // Don't fetch if already loaded
     
     setBrandsLoading(true);
     try {
-      const response = await fetch('/api/woocommerce?endpoint=products/attributes/pa_marka/terms');
+      // Use the same endpoint as desktop dropdown
+      const wordpressUrl = 'https://qvwltjhdjw.cfolks.pl';
+      const response = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
-        const brandNames = data.map((brand: any) => brand.name).slice(0, 10); // Limit to 10 brands
-        setBrands(brandNames);
+        const brandNames = data.attributes?.marka?.terms?.map((brand: any) => brand.name) || [];
+        setBrands(brandNames.slice(0, 10)); // Limit to 10 brands
+      } else {
+        throw new Error('Failed to fetch brands');
       }
     } catch (error) {
       console.error('Error fetching brands:', error);
