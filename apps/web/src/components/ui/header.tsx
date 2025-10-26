@@ -1062,7 +1062,7 @@ export default function Header() {
                                                   ease: 'easeOut'
                                                 }}
                                               >
-                                                <div className="flex items-center p-3 pl-7 hover:bg-white/80 hover:shadow-sm transition-all duration-200 border-b border-gray-100 last:border-b-0 group">
+                                                <div className="flex items-center p-3 pl-8 hover:bg-white/80 hover:shadow-sm transition-all duration-200 border-b border-gray-100 last:border-b-0 group">
                                                   {/* Subcategory indicator */}
                                                   <div className="w-2 h-2 rounded-full bg-blue-400 mr-3 group-hover:bg-blue-500 transition-colors"></div>
                                                   
