@@ -154,12 +154,12 @@ export default function Header() {
     }
   }, [isBrandsExpanded, brands.length]);
 
-  // Fetch categories when shop section is expanded
+  // Fetch categories when shop section is expanded OR when mobile menu opens
   useEffect(() => {
-    if (isShopExpanded && categories.length === 0) {
+    if ((isShopExpanded || isMobileMenuOpen) && categories.length === 0) {
       fetchCategories();
     }
-  }, [isShopExpanded, categories.length]);
+  }, [isShopExpanded, isMobileMenuOpen, categories.length]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -944,6 +944,8 @@ export default function Header() {
                         <div className="space-y-2">
                           {categoriesLoading ? (
                             <div className="text-sm text-gray-500">Ładowanie kategorii...</div>
+                          ) : categories.length === 0 ? (
+                            <div className="text-sm text-gray-500">Brak kategorii - {categories.length} kategorii</div>
                           ) : (
                             <>
                               {/* Main Categories (parent = 0) */}
