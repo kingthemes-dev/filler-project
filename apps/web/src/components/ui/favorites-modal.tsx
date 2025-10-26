@@ -62,13 +62,10 @@ export default function FavoritesModal() {
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
-                  <Heart className="w-6 h-6 text-red-500 fill-current" />
+                  <Heart className="w-6 h-6 text-gray-900" />
                   <h2 className="text-2xl font-bold text-gray-900">
-                    Moje ulubione
+                    Ulubione
                   </h2>
-                  <Badge variant="secondary" className="ml-2">
-                    {favorites.length}
-                  </Badge>
                   {isLoading && (
                     <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                   )}
