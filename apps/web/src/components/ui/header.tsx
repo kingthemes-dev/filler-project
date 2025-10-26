@@ -257,7 +257,7 @@ export default function Header() {
   return (
     <>
       <header className="bg-white sticky top-0 z-50 will-change-transform overflow-visible lg:rounded-none rounded-b-2xl">
-        <div className={`max-w-[95vw] mx-auto px-2 sm:px-8`}>
+        <div className={`max-w-[95vw] mx-auto mobile-container`}>
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
           {/* Logo */}
           <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity">
