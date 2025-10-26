@@ -467,8 +467,12 @@ export default function Header() {
             {/* Mobile Menu Icon - ANIMATED HAMBURGER */}
             <motion.button
               onClick={() => {
-                setIsMobileMenuOpen(true);
-                setMobileMenuView('main');
+                if (isMobileMenuOpen) {
+                  closeMobileMenu();
+                } else {
+                  setIsMobileMenuOpen(true);
+                  setMobileMenuView('main');
+                }
               }}
               className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors relative w-8 h-8"
               aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
@@ -725,49 +729,6 @@ export default function Header() {
               aria-modal="true"
               aria-labelledby="mobile-menu-title"
             >
-                {/* Header with Close Button */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">F</span>
-                    </div>
-                    <span className="text-lg font-bold text-black">Filler</span>
-                  </div>
-                  <motion.button
-                    onClick={closeMobileMenu}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors relative w-8 h-8"
-                    aria-label="Zamknij menu"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    {/* Animated Close Button */}
-                    <div className="relative w-5 h-5 flex flex-col justify-center items-center">
-                      <motion.div
-                        className="absolute w-4 h-0.5 bg-gray-600 rounded-full"
-                        animate={{
-                          rotate: 45,
-                          y: 0,
-                        }}
-                        transition={{
-                          duration: 0.3,
-                          ease: [0.4, 0, 0.2, 1],
-                        }}
-                      />
-                      <motion.div
-                        className="absolute w-4 h-0.5 bg-gray-600 rounded-full"
-                        animate={{
-                          rotate: -45,
-                          y: 0,
-                        }}
-                        transition={{
-                          duration: 0.3,
-                          ease: [0.4, 0, 0.2, 1],
-                        }}
-                      />
-                    </div>
-                  </motion.button>
-                </div>
-
                 {/* 🚀 SENIOR LEVEL - Slide Navigation Content */}
                 <AnimatePresence mode="wait">
                   {/* MAIN VIEW */}
