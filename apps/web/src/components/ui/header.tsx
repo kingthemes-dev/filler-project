@@ -78,14 +78,14 @@ export default function Header() {
       if (response.ok) {
         const data = await response.json();
         const brandNames = data.attributes?.marka?.terms?.map((brand: any) => brand.name) || [];
-        setBrands(brandNames.slice(0, 10)); // Limit to 10 brands
+        setBrands(brandNames.slice(0, 20)); // Limit to 20 brands
       } else {
         throw new Error('Failed to fetch brands');
       }
     } catch (error) {
       console.error('Error fetching brands:', error);
       // Fallback to hardcoded brands
-      setBrands(['Allergan', 'Merz', 'Galderma', 'Teoxane', 'Juvederm', 'Restylane', 'Sculptra', 'Radiesse', 'Belotero', 'Ellanse']);
+      setBrands(['Allergan', 'Merz', 'Galderma', 'Teoxane', 'Juvederm', 'Restylane', 'Sculptra', 'Radiesse', 'Belotero', 'Ellanse', 'Aestetic dermal', 'BioPlus Co', 'Caregen', 'Dexlevo', 'Dongkook', 'Dr. PPS', 'Filmed', 'Guna', 'Hyalual', 'Medytox']);
     } finally {
       setBrandsLoading(false);
     }
