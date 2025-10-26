@@ -34,11 +34,26 @@ export default function Header() {
   
   // 🚀 SENIOR LEVEL - Slide Navigation State
   const [mobileMenuView, setMobileMenuView] = useState<'main' | 'sklep' | 'marki'>('main');
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   
   // Reset view when closing mobile menu
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
     setMobileMenuView('main');
+    setExpandedCategories(new Set());
+  };
+
+  // Toggle category expansion
+  const toggleCategory = (categoryId: number) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
   };
   
   // Safely access stores with error handling
@@ -939,65 +954,95 @@ export default function Header() {
                         </button>
                       </div>
 
-                      {/* Categories with Hierarchy */}
+                      {/* Perfect UI - Categories with Collapsible Design */}
                       <div className="flex-1 overflow-y-auto p-4">
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           {categoriesLoading ? (
-                            <div className="text-sm text-gray-500">Ładowanie kategorii...</div>
+                            <div className="text-sm text-gray-500 text-center py-8">Ładowanie kategorii...</div>
                           ) : categories.length === 0 ? (
-                            <div className="text-sm text-gray-500">Brak kategorii - {categories.length} kategorii</div>
+                            <div className="text-sm text-gray-500 text-center py-8">Brak kategorii</div>
                           ) : (
                             <>
-                              {/* Main Categories (parent = 0) */}
+                              {/* Main Categories - Perfect UI */}
                               {categories
                                 .filter(cat => cat.parent === 0)
-                                .slice(0, 4)
                                 .map((category) => {
                                   const subcategories = categories.filter(sub => sub.parent === category.id);
+                                  const isExpanded = expandedCategories.has(category.id);
+                                  
                                   return (
-                                    <div key={category.id} className="space-y-1">
-                                      {/* Main Category */}
-                                      <Link
-                                        href={`/sklep?category=${category.slug}`}
-                                        className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg font-medium"
-                                        onClick={closeMobileMenu}
-                                      >
-                                        {category.name} ({category.count})
-                                      </Link>
-                                      
-                                      {/* Subcategories */}
-                                      {subcategories.length > 0 && (
-                                        <div className="ml-4 space-y-1">
-                                          {subcategories.slice(0, 3).map((subcategory) => (
-                                            <Link
-                                              key={subcategory.id}
-                                              href={`/sklep?category=${subcategory.slug}`}
-                                              className="block text-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-3 rounded-lg"
-                                              onClick={closeMobileMenu}
-                                            >
-                                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 inline-block"></div>
-                                              {subcategory.name} ({subcategory.count})
-                                            </Link>
-                                          ))}
-                                          {subcategories.length > 3 && (
-                                            <div className="text-xs text-gray-500 ml-6">
-                                              +{subcategories.length - 3} więcej...
-                                            </div>
+                                    <div key={category.id} className="border-b border-gray-100 last:border-b-0">
+                                      {/* Main Category - Collapsible */}
+                                      <div className="flex items-center">
+                                        <button
+                                          onClick={() => toggleCategory(category.id)}
+                                          className="flex-1 flex items-center justify-between text-gray-800 hover:text-black hover:bg-gray-50 transition-colors py-4 px-4 rounded-lg group"
+                                        >
+                                          <div className="flex items-center space-x-3">
+                                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                            <span className="font-medium text-base">{category.name}</span>
+                                            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                              {category.count}
+                                            </span>
+                                          </div>
+                                          {subcategories.length > 0 && (
+                                            <ChevronDown 
+                                              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                                                isExpanded ? 'rotate-180' : ''
+                                              }`} 
+                                            />
                                           )}
-                                        </div>
+                                        </button>
+                                      </div>
+                                      
+                                      {/* Subcategories - Animated */}
+                                      {subcategories.length > 0 && (
+                                        <motion.div
+                                          initial={false}
+                                          animate={{ 
+                                            height: isExpanded ? 'auto' : 0,
+                                            opacity: isExpanded ? 1 : 0
+                                          }}
+                                          transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                          className="overflow-hidden"
+                                        >
+                                          <div className="pl-6 pb-2 space-y-1">
+                                            {subcategories.map((subcategory) => (
+                                              <Link
+                                                key={subcategory.id}
+                                                href={`/sklep?category=${subcategory.slug}`}
+                                                className="block text-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-3 rounded-lg"
+                                                onClick={closeMobileMenu}
+                                              >
+                                                <div className="flex items-center space-x-2">
+                                                  <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                                                  <span>{subcategory.name}</span>
+                                                  <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">
+                                                    {subcategory.count}
+                                                  </span>
+                                                </div>
+                                              </Link>
+                                            ))}
+                                          </div>
+                                        </motion.div>
                                       )}
                                     </div>
                                   );
                                 })}
                               
-                              {/* Marki - Slide to Marki View */}
-                              <button
-                                onClick={() => setMobileMenuView('marki')}
-                                className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg mt-4"
-                              >
-                                <span>Marki</span>
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
+                              {/* Marki - Perfect Button */}
+                              <div className="pt-4 border-t border-gray-200 mt-4">
+                                <button
+                                  onClick={() => setMobileMenuView('marki')}
+                                  className="w-full flex items-center justify-between text-gray-800 hover:text-black hover:bg-gray-50 transition-colors py-4 px-4 rounded-lg group"
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                    <span className="font-medium text-base">Marki</span>
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                </button>
+                              </div>
                             </>
                           )}
                         </div>
