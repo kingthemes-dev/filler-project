@@ -768,50 +768,24 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Backdrop - FULL SCREEN DIM */}
+              {/* 🚀 FULL SCREEN MOBILE MENU - Slide from Top */}
               <motion.div
-                className="fixed inset-0 bg-black/60 z-[115] lg:hidden mobile-menu-backdrop"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                onClick={closeMobileMenu}
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  width: '100vw',
-                  height: '100vh',
-                  zIndex: 115
-                }}
-              />
-
-              {/* 🚀 SENIOR LEVEL - Slide Navigation Container */}
-              <motion.div
-                className="fixed right-0 top-0 bg-white shadow-2xl z-[120] 
-                         w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
-                         lg:border-l lg:border-gray-200 flex flex-col
-                         rounded-l-2xl lg:rounded-l-2xl"
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
+                className="fixed inset-0 bg-white z-[120] flex flex-col"
+                initial={{ y: '-100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '-100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                 data-mobile-menu
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
                 style={{ 
-                  top: '-25px',
+                  top: 0,
+                  left: 0,
                   right: 0,
-                  height: '90vh',
-                  width: '100%',
-                  maxWidth: '364px',
-                  maxHeight: '90vh',
-                  overflow: 'hidden',
-                  zIndex: 120,
-                  position: 'fixed'
+                  bottom: 0,
+                  height: '100vh',
+                  width: '100vw'
                 }}
               >
                 {/* 🚀 SENIOR LEVEL - Slide Navigation Content */}
@@ -825,8 +799,8 @@ export default function Header() {
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                       className="flex flex-col h-full"
                     >
-                      {/* Header */}
-                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                      {/* Header - Aligned with Main Header */}
+                      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
                         <div className="flex items-center space-x-3">
                           <Menu className="w-6 h-6 text-black" />
                           <h2 id="mobile-menu-title" className="text-xl font-bold text-black">
