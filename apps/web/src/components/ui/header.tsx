@@ -255,7 +255,7 @@ export default function Header() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
+        closeMobileMenu();
       }
     };
 
@@ -272,7 +272,7 @@ export default function Header() {
         const target = event.target as HTMLElement;
         // Check if click is outside menu and not on menu elements
         if (!target.closest('[data-mobile-menu]') && !target.closest('.mobile-menu-backdrop')) {
-          setIsMobileMenuOpen(false);
+          closeMobileMenu();
         }
       }
     };
@@ -486,7 +486,10 @@ export default function Header() {
 
             {/* Mobile Menu Icon */}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => {
+                setIsMobileMenuOpen(true);
+                setMobileMenuView('main');
+              }}
               className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
               aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
             >
