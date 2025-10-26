@@ -135,11 +135,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
         >
+          {/* Gradient overlay at top for smooth transition */}
+          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/80 to-transparent pointer-events-none z-10" />
+          
           <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-8 pb-8 relative">
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-20"
               aria-label="Zamknij"
             >
               <X className="w-6 h-6" />
