@@ -34,7 +34,7 @@ export default function Header() {
   
   // 🚀 SENIOR LEVEL - Slide Navigation State
   const [mobileMenuView, setMobileMenuView] = useState<'main' | 'sklep' | 'marki'>('main');
-  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+  const [totalProductsCount, setTotalProductsCount] = useState<number>(0);
   
   // Reset view when closing mobile menu
   const closeMobileMenu = () => {
@@ -121,11 +121,12 @@ export default function Header() {
     
     setCategoriesLoading(true);
     try {
-      const response = await fetch('/api/woocommerce?endpoint=products/categories&per_page=100');
-      if (response.ok) {
-        const data = await response.json();
+      // Fetch categories
+      const categoriesResponse = await fetch('/api/woocommerce?endpoint=products/categories&per_page=100');
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json();
         // Get all categories with hierarchy
-        const allCategories = data.map((cat: any) => ({
+        const allCategories = categoriesData.map((cat: any) => ({
           id: cat.id,
           name: cat.name,
           slug: cat.slug,
@@ -133,6 +134,15 @@ export default function Header() {
           parent: cat.parent || 0
         }));
         setCategories(allCategories);
+        
+        // Fetch total products count separately
+        const productsResponse = await fetch('/api/woocommerce?endpoint=products&per_page=1');
+        if (productsResponse.ok) {
+          const totalHeader = productsResponse.headers.get('X-WP-Total');
+          if (totalHeader) {
+            setTotalProductsCount(parseInt(totalHeader));
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -143,6 +153,7 @@ export default function Header() {
         { id: 3, name: 'Mezoterapia', slug: 'mezoterapia', count: 11, parent: 0 },
         { id: 4, name: 'Peelingi', slug: 'peelingi', count: 6, parent: 0 }
       ]);
+      setTotalProductsCount(68); // Fallback total
     } finally {
       setCategoriesLoading(false);
     }
@@ -975,9 +986,7 @@ export default function Header() {
                                     Wszystkie kategorie
                                   </span>
                                   <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border">
-                                    {categories
-                                      .filter(cat => cat.parent === 0)
-                                      .reduce((total, cat) => total + cat.count, 0)}
+                                    {totalProductsCount || '...'}
                                   </span>
                                 </Link>
                               </div>
