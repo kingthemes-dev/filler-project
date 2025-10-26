@@ -721,7 +721,7 @@ export default function Header() {
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
                 style={{ 
-                  top: 0,
+                  top: '50px',
                   right: 0,
                   height: '90vh',
                   width: '100%',
