@@ -269,10 +269,10 @@ export default function Header() {
 
   return (
     <>
-      <header className={`sticky top-0 z-50 will-change-transform overflow-visible lg:rounded-none rounded-b-2xl transition-all duration-300 ${
+      <header className={`sticky top-4 z-50 will-change-transform overflow-visible rounded-2xl transition-all duration-300 ${
         isScrolled 
-          ? 'bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/50' 
-          : 'bg-white'
+          ? 'bg-white/80 backdrop-blur-md shadow-md border border-gray-200/50 mx-4' 
+          : 'bg-white mx-4 shadow-sm'
       }`}>
         <div className={`max-w-[95vw] mx-auto mobile-container`}>
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
