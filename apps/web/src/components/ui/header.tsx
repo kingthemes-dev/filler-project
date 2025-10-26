@@ -404,20 +404,6 @@ export default function Header() {
             </a>
           </nav>
 
-          {/* Search Icon - desktop only */}
-          <div
-            className="hidden lg:flex items-center justify-center mx-4"
-            onMouseEnter={() => setIsShopOpen(false)}
-          >
-            <button
-              onClick={() => setIsSearchModalOpen(true)}
-              className="text-gray-700 hover:text-black transition-colors"
-              aria-label="Szukaj"
-            >
-              <Search className="w-6 h-6" />
-            </button>
-          </div>
-
           {/* Mobile Icons with Labels */}
           <div className="lg:hidden col-start-3 flex items-center gap-3 justify-end min-w-0 flex-shrink-0">
             {/* Mobile Search Icon */}
@@ -538,6 +524,16 @@ export default function Header() {
             className="hidden lg:flex items-center space-x-6 justify-end pr-2 overflow-visible"
             onMouseEnter={() => setIsShopOpen(false)}
           >
+            {/* Search Icon */}
+            <button 
+              onClick={() => setIsSearchModalOpen(true)}
+              className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
+              title="Szukaj"
+              aria-label="Szukaj"
+            >
+              <Search className="w-6 h-6" />
+            </button>
+
             {/* Email Notification Center - Admin Only */}
             {isAuthenticated && user?.role === 'admin' && (
               <button 
