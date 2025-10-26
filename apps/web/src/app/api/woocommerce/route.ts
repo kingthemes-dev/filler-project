@@ -1725,7 +1725,8 @@ export async function GET(req: NextRequest) {
   }
   
   // Special handling for attribute terms endpoint
-  if (endpoint.startsWith("attributes/") && endpoint.includes("/terms")) {
+  if (endpoint.includes("attributes/") && endpoint.includes("/terms")) {
+    console.log('🏷️ Detected attribute terms endpoint:', endpoint);
     return handleAttributeTermsEndpoint(req, endpoint);
   }
   
