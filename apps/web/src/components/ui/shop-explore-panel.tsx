@@ -128,23 +128,23 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         <motion.div
           id="shop-explore-panel"
           role="dialog"
-          aria-modal="false"
-          className="shop-dropdown-container absolute top-full left-0 right-0 bg-white shadow-2xl border-t border-gray-200 z-50 rounded-b-3xl backdrop-blur-sm"
-          initial={{ opacity: 0, y: -12, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -12, scale: 0.95 }}
+          aria-modal="true"
+          className="fixed top-[80px] left-0 right-0 bg-white shadow-2xl border-t border-gray-200 z-50 backdrop-blur-sm"
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          onMouseEnter={() => {}} // Keep dropdown open when hovering over it
-          onMouseLeave={(e) => {
-            // Only close if we're actually leaving the dropdown area
-            // Don't close if we're moving to a child element
-            if (e.relatedTarget && e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) {
-              return; // Moving to child element, don't close
-            }
-            onClose();
-          }}
         >
-          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-4 pb-8">
+          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-4 pb-8 relative">
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
+              aria-label="Zamknij"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
             <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Kategorie główne - Nowoczesny Dropdown */}
               <div className="md:col-span-3 space-y-4">

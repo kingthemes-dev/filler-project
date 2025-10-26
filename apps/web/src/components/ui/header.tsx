@@ -1095,9 +1095,10 @@ export default function Header() {
           )}
         </AnimatePresence>
         
-        {/* Shop Dropdown - rendered outside container for full width */}
-        <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       </header>
+      
+      {/* Shop Dropdown Modal - rendered outside header */}
+      <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
       
       {/* Email Notification Center */}
       <EmailNotificationCenter 
