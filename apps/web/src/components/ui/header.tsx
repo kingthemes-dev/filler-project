@@ -986,9 +986,6 @@ export default function Header() {
                                   <span className="text-sm font-medium text-gray-900 flex-1">
                                     Wszystkie kategorie
                                   </span>
-                                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border">
-                                    {totalProductsCount || '...'}
-                                  </span>
                                 </Link>
                               </div>
 
