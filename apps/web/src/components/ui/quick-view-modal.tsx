@@ -284,7 +284,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
               {/* Content */}
@@ -363,7 +363,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 </div>
 
                 {/* Product Details */}
-                <div className="lg:w-1/2 p-6 overflow-y-auto">
+                <div className="lg:w-1/2 p-6">
                   <div className="space-y-3">
                     {/* Product Title & Badges */}
                     <div className="space-y-2">
