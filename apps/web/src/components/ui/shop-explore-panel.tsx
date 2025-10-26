@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, User, Heart, ShoppingCart, ChevronRight, Sparkles, Filter } from 'lucide-react';
 import woo from '@/services/woocommerce-optimized';
 import Link from 'next/link';
-import SearchBar from './search/search-bar';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
