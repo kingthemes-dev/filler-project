@@ -79,20 +79,6 @@ export default function DynamicCategoryFilters({
           {/* Główna kategoria */}
           <div className="bg-gray-50">
             <div className="flex items-center p-2 sm:p-3">
-              {category.subcategories.length > 0 && (
-                <button
-                  onClick={() => toggleCategory(category.id)}
-                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors mr-2"
-                >
-                  <motion.div
-                    animate={{ rotate: isCategoryExpanded(category.id) ? 90 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronRight className="w-4 h-4 text-gray-500" />
-                  </motion.div>
-                </button>
-              )}
-              
               <div className="flex items-center flex-1">
                 <input
                   type="checkbox"
@@ -114,8 +100,22 @@ export default function DynamicCategoryFilters({
                 >
                   {category.name}
                 </span>
-                <span className="ml-auto text-xs text-gray-500">({category.count})</span>
+                <span className="ml-2 text-xs text-gray-500">({category.count})</span>
               </div>
+              
+              {category.subcategories.length > 0 && (
+                <button
+                  onClick={() => toggleCategory(category.id)}
+                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors ml-2"
+                >
+                  <motion.div
+                    animate={{ rotate: isCategoryExpanded(category.id) ? 90 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                  </motion.div>
+                </button>
+              )}
             </div>
           </div>
 
