@@ -71,11 +71,23 @@ export default function SearchBar({
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
               onClick={onClose}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-100 transition-colors group"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full transition-all duration-200 group"
+              whileHover={{ 
+                scale: 1.15,
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+                boxShadow: "0 4px 12px rgba(239, 68, 68, 0.2)"
+              }}
+              whileTap={{ 
+                scale: 0.85,
+                backgroundColor: "rgba(239, 68, 68, 0.2)"
+              }}
             >
-              <X className="h-4 w-4 text-gray-500 group-hover:text-gray-700 transition-colors" />
+              <motion.div
+                whileHover={{ rotate: 90 }}
+                transition={{ duration: 0.2 }}
+              >
+                <X className="h-4 w-4 text-gray-500 group-hover:text-red-500 transition-colors duration-200" />
+              </motion.div>
             </motion.button>
           )}
         </AnimatePresence>
