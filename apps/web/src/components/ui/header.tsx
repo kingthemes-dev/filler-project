@@ -982,7 +982,7 @@ export default function Header() {
 
                               {/* Categories - Filter Style */}
                               {categories
-                                .filter(cat => cat.parent === 0)
+                                .filter(cat => cat.parent === 0 && cat.name !== 'Wszystkie kategorie')
                                 .map((category) => {
                                   const subcategories = categories.filter(sub => sub.parent === category.id);
                                   const isExpanded = expandedCategories.has(category.id);
