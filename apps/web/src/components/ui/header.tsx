@@ -817,18 +817,18 @@ export default function Header() {
         <AnimatePresence>
           {isSearchExpanded && (
             <>
-              {/* Glassmorphism Backdrop */}
+              {/* Glassmorphism Backdrop - tylko poniżej search panelu */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="fixed top-[var(--header-height)] left-0 right-0 bottom-0 z-40"
+                className="fixed left-0 right-0 bottom-0 z-40"
                 style={{ 
                   background: 'rgba(0, 0, 0, 0.4)',
                   backdropFilter: 'blur(8px) saturate(180%)',
                   WebkitBackdropFilter: 'blur(8px) saturate(180%)',
-                  ['--header-height' as any]: '80px'
+                  top: 'calc(80px + 200px)' // header height + estimated search panel height
                 }}
                 onClick={() => {
                   setIsSearchExpanded(false);
