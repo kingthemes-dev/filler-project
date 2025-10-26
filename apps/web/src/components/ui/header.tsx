@@ -26,6 +26,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -72,6 +73,32 @@ export default function Header() {
     };
   }, [isSearchExpanded]);
 
+  // Load recent searches from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('recentSearches');
+      if (saved) {
+        try {
+          setRecentSearches(JSON.parse(saved));
+        } catch (error) {
+          console.error('Error parsing recent searches:', error);
+        }
+      }
+    }
+  }, []);
+
+  // Save search to recent searches
+  const saveToRecentSearches = (query: string) => {
+    if (!query.trim()) return;
+    
+    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
+    setRecentSearches(updated);
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('recentSearches', JSON.stringify(updated));
+    }
+  };
+
   // Search products function
   const searchProducts = async (query: string) => {
     if (!query.trim()) {
@@ -85,6 +112,8 @@ export default function Header() {
       if (response.ok) {
         const products = await response.json();
         setSearchResults(products);
+        // Save to recent searches
+        saveToRecentSearches(query);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -788,13 +817,13 @@ export default function Header() {
         <AnimatePresence>
           {isSearchExpanded && (
             <>
-              {/* Backdrop - tylko pod headerem */}
+              {/* Backdrop - tylko pod headerem z blur efektem */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="fixed top-[var(--header-height)] left-0 right-0 bottom-0 bg-black/20 z-40"
+                className="fixed top-[var(--header-height)] left-0 right-0 bottom-0 bg-black/30 backdrop-blur-sm z-40"
                 onClick={() => {
                   setIsSearchExpanded(false);
                   setSearchQuery('');
@@ -814,7 +843,7 @@ export default function Header() {
                   opacity: { duration: 0.3 },
                   y: { duration: 0.4 }
                 }}
-                className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-50 overflow-hidden"
+                className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-50 overflow-hidden rounded-b-2xl"
               >
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
@@ -917,18 +946,25 @@ export default function Header() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Ostatnio wyszukiwane</h3>
                       <div className="space-y-2">
-                        <button className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                          <div className="font-medium text-gray-900">Kremy przeciwzmarszczkowe</div>
-                          <div className="text-sm text-gray-500">Wyszukane 2 dni temu</div>
-                        </button>
-                        <button className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                          <div className="font-medium text-gray-900">Serum z kwasem hialuronowym</div>
-                          <div className="text-sm text-gray-500">Wyszukane 5 dni temu</div>
-                        </button>
-                        <button className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                          <div className="font-medium text-gray-900">Mezoterapia mikroigłowa</div>
-                          <div className="text-sm text-gray-500">Wyszukane tydzień temu</div>
-                        </button>
+                        {recentSearches.length > 0 ? (
+                          recentSearches.map((search, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setSearchQuery(search);
+                                searchProducts(search);
+                              }}
+                              className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="font-medium text-gray-900">{search}</div>
+                              <div className="text-sm text-gray-500">Kliknij aby wyszukać ponownie</div>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <div className="text-gray-500">Brak ostatnich wyszukiwań</div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
