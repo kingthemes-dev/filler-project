@@ -1043,20 +1043,20 @@ export default function Header() {
                                         >
                                           <div className="bg-white border-t border-gray-100">
                                             {subcategories.map((subcategory) => (
-                                              <Link
-                                                key={subcategory.id}
-                                                href={`/sklep?category=${subcategory.slug}`}
-                                                className="flex items-center p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0"
-                                                onClick={closeMobileMenu}
-                                              >
-                                                <div className="w-6 h-6 mr-2"></div>
-                                                <span className="text-sm text-gray-700 flex-1">
-                                                  {subcategory.name}
-                                                </span>
-                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                                  {subcategory.count}
-                                                </span>
-                                              </Link>
+                                     <Link
+                                       key={subcategory.id}
+                                       href={`/sklep?category=${subcategory.slug}`}
+                                       className="flex items-center p-3 pl-8 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0"
+                                       onClick={closeMobileMenu}
+                                     >
+                                       <div className="w-6 h-6 mr-2"></div>
+                                       <span className="text-sm text-gray-700 flex-1">
+                                         {subcategory.name}
+                                       </span>
+                                       <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                         {subcategory.count}
+                                       </span>
+                                     </Link>
                                             ))}
                                           </div>
                                         </motion.div>
