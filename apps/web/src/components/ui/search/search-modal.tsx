@@ -265,12 +265,12 @@ export default function SearchModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -50, scale: 0.95 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed top-[15%] bottom-[7.5%] left-[10%] right-[10%] z-[101] bg-white shadow-2xl flex flex-col rounded-xl"
+            className="fixed top-[10%] bottom-[5%] left-[5%] right-[5%] z-[101] bg-white shadow-2xl flex flex-col rounded-xl"
             style={{ height: '85vh' }}
           >
             {/* Header */}
             <div className="border-b border-gray-200 bg-white rounded-t-xl">
-              <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4">
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
                 <div className="flex items-center gap-4">
                   {/* Search Input */}
                   <div className="relative flex-1">
@@ -304,7 +304,7 @@ export default function SearchModal({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-20">
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-20">
                 {isLoading && (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
