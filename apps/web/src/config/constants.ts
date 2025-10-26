@@ -59,7 +59,7 @@ export const APP_CONFIG = {
 export const UI_SPACING = {
   HEADER_NAV_GAP_DESKTOP: 75, // px gap between logo and menu on desktop
   SEARCH_SIDE_PADDING_DESKTOP: 32, // px internal left/right padding for desktop search container
-  CONTAINER_MAX_W: '95vw', // consistent across pages
+  CONTAINER_MAX_W: '90vw', // consistent across pages
   CONTAINER_PX_MOBILE: 16, // px (Tailwind px-4)
   CONTAINER_PX_DESKTOP: 24, // px (Tailwind px-6)
   // Global mobile spacing - consistent across all pages
