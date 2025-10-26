@@ -74,7 +74,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-white py-8 pb-16">
-      <div className="container mx-auto px-4">
+      <div className="max-w-[95vw] mx-auto mobile-container">
         {/* Header with Title and Breadcrumbs */}
         <div className="max-w-6xl mx-auto mb-8">
           <div className="flex items-center justify-between">

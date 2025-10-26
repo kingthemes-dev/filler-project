@@ -829,7 +829,7 @@ function CheckoutPageInner() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto px-6 py-8 pb-16">
+      <div className="max-w-[95vw] mx-auto mobile-container py-8 pb-16">
         
         {/* Quick Payment Banner */}
         {quickPaymentSelected && (
