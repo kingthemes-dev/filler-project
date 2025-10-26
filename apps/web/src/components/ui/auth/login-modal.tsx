@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import ModalCloseButton from '../modal-close-button';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import ForgotPasswordModal from './forgot-password-modal';
@@ -107,12 +107,11 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             <h2 className="text-2xl font-bold text-gray-900">
               Zaloguj się
             </h2>
-            <button
+            <ModalCloseButton 
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+              ariaLabel="Zamknij logowanie"
+              size="sm"
+            />
           </div>
 
           {/* Form */}

@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import ModalCloseButton from './modal-close-button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Trash2, Plus, Minus, Truck, CreditCard, ArrowRight } from 'lucide-react';
 import { useCartStore, type CartItem } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
-import { formatPrice } from '@/utils/format-price';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -187,33 +187,10 @@ export default function CartDrawer() {
                   Koszyk ({itemCount})
                 </h2>
               </div>
-              <motion.button
+              <ModalCloseButton 
                 onClick={closeCart}
-                className="group relative p-3 bg-white border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50"
-                aria-label="Zamknij koszyk"
-                whileHover={{ 
-                  scale: 1.05,
-                  rotate: 5
-                }}
-                whileTap={{ 
-                  scale: 0.95,
-                  rotate: -5
-                }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 300, 
-                  damping: 20,
-                  delay: 0.1
-                }}
-              >
-                <div className="relative">
-                  <X className="w-5 h-5 text-gray-600 group-hover:text-gray-800 transition-colors duration-300" />
-                  {/* Subtle glow effect on hover */}
-                  <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm -z-10" />
-                </div>
-              </motion.button>
+                ariaLabel="Zamknij koszyk"
+              />
             </div>
 
             {/* Free shipping notice - CONSISTENT MARGINS */}

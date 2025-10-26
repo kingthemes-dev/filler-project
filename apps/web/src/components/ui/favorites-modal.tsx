@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import ModalCloseButton from './modal-close-button';
 import { X, Heart, Trash2 } from 'lucide-react';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import { Button } from '@/components/ui/button';
@@ -84,14 +85,11 @@ export default function FavoritesModal() {
                       Wyczyść wszystkie
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <ModalCloseButton 
                     onClick={closeFavoritesModal}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
+                    ariaLabel="Zamknij ulubione"
+                    size="sm"
+                  />
                 </div>
               </div>
 

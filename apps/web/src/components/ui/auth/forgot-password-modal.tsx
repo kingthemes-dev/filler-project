@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import ModalCloseButton from '../modal-close-button';
 import { Button } from '@/components/ui/button';
 
 interface ForgotPasswordModalProps {
@@ -131,12 +131,11 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
               {isSuccess ? 'Email wysłany' : 'Zapomniałeś hasła?'}
             </h2>
           </div>
-          <button
+          <ModalCloseButton 
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+            ariaLabel="Zamknij reset hasła"
+            size="sm"
+          />
         </div>
 
         <div className="p-6">
