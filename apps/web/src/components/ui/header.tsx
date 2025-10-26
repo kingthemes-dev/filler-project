@@ -1062,22 +1062,23 @@ export default function Header() {
                                                   ease: 'easeOut'
                                                 }}
                                               >
-                                                <Link
-                                                  href={`/sklep?category=${subcategory.slug}`}
-                                                  className="flex items-center p-3 pl-10 hover:bg-white/80 hover:shadow-sm transition-all duration-200 border-b border-gray-100 last:border-b-0 group"
-                                                  onClick={closeMobileMenu}
-                                                >
+                                                <div className="flex items-center p-3 pl-10 hover:bg-white/80 hover:shadow-sm transition-all duration-200 border-b border-gray-100 last:border-b-0 group">
                                                   {/* Subcategory indicator */}
                                                   <div className="w-2 h-2 rounded-full bg-blue-400 mr-3 group-hover:bg-blue-500 transition-colors"></div>
                                                   
-                                                  <span className="text-sm text-gray-700 group-hover:text-gray-900 font-medium flex-1 transition-colors">
-                                                    {subcategory.name}
-                                                  </span>
-                                                  
-                                                  <span className="text-xs text-gray-500 bg-white group-hover:bg-blue-50 px-2.5 py-1 rounded-full border border-gray-200 group-hover:border-blue-200 transition-all duration-200">
-                                                    {subcategory.count}
-                                                  </span>
-                                                </Link>
+                                                  <Link
+                                                    href={`/sklep?category=${subcategory.slug}`}
+                                                    className="flex items-center flex-1 cursor-pointer"
+                                                    onClick={closeMobileMenu}
+                                                  >
+                                                    <span className="text-sm text-gray-700 group-hover:text-gray-900 font-medium flex-1 transition-colors">
+                                                      {subcategory.name}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 bg-white group-hover:bg-blue-50 px-2 py-1 rounded-full border border-gray-200 group-hover:border-blue-200 transition-all duration-200">
+                                                      {subcategory.count}
+                                                    </span>
+                                                  </Link>
+                                                </div>
                                               </motion.div>
                                             ))}
                                           </div>
