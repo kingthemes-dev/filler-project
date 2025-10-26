@@ -78,7 +78,7 @@ export default function DynamicCategoryFilters({
         <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
           {/* Główna kategoria */}
           <div className="bg-gray-50">
-            <div className="flex items-center p-2 sm:p-3">
+            <div className="flex items-center p-2 sm:p-3 hover:bg-gray-100 transition-colors">
               <div className="flex items-center flex-1">
                 <input
                   type="checkbox"
