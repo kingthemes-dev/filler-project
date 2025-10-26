@@ -768,9 +768,9 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* 🚀 FULL SCREEN MOBILE MENU - Slide from Top */}
+              {/* 🚀 MOBILE MENU - Slide from Header */}
               <motion.div
-                className="fixed inset-0 bg-white z-[120] flex flex-col"
+                className="fixed bg-white z-[120] flex flex-col"
                 initial={{ y: '-100%' }}
                 animate={{ y: 0 }}
                 exit={{ y: '-100%' }}
@@ -780,11 +780,11 @@ export default function Header() {
                 aria-modal="true"
                 aria-labelledby="mobile-menu-title"
                 style={{ 
-                  top: 0,
+                  top: '80px', // Start from header height
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  height: '100vh',
+                  height: 'calc(100vh - 80px)', // Full height minus header
                   width: '100vw'
                 }}
               >
@@ -800,7 +800,7 @@ export default function Header() {
                       className="flex flex-col h-full"
                     >
                       {/* Header - Aligned with Main Header */}
-                      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
+                      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
                         <div className="flex items-center space-x-3">
                           <Menu className="w-6 h-6 text-black" />
                           <h2 id="mobile-menu-title" className="text-xl font-bold text-black">
