@@ -740,9 +740,6 @@ export default function Header() {
                       <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
                         <div className="flex items-center space-x-3">
                           <Menu className="w-6 h-6 text-black" />
-                          <h2 id="mobile-menu-title" className="text-xl font-bold text-black">
-                            Menu
-                          </h2>
                         </div>
                         <motion.button
                           onClick={closeMobileMenu}
@@ -938,13 +935,6 @@ export default function Header() {
                           <ChevronRight className="w-5 h-5 rotate-180" />
                           <span className="text-lg font-semibold">Sklep</span>
                         </button>
-                        <button
-                          onClick={closeMobileMenu}
-                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                          aria-label="Zamknij menu"
-                        >
-                          <X className="w-5 h-5 text-gray-600" />
-                        </button>
                       </div>
 
                       {/* Filter-Style UI - Clean Design */}
@@ -1109,13 +1099,6 @@ export default function Header() {
                         >
                           <ChevronRight className="w-5 h-5 rotate-180" />
                           <span className="text-lg font-semibold">Marki</span>
-                        </button>
-                        <button
-                          onClick={closeMobileMenu}
-                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                          aria-label="Zamknij menu"
-                        >
-                          <X className="w-5 h-5 text-gray-600" />
                         </button>
                       </div>
 
