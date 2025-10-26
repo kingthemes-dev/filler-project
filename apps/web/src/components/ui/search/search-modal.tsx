@@ -261,10 +261,10 @@ export default function SearchModal({
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -50, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial={{ y: '-100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '-100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed top-[10%] bottom-[5%] left-[5%] right-[5%] z-[101] bg-white shadow-2xl flex flex-col rounded-xl"
             style={{ height: '85vh' }}
           >
