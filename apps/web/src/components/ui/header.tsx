@@ -28,7 +28,7 @@ export default function Header() {
   const [isBrandsExpanded, setIsBrandsExpanded] = useState(false);
   const [brands, setBrands] = useState<string[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(false);
-  const [categories, setCategories] = useState<Array<{id: number, name: string, slug: string, count: number}>>([]);
+  const [categories, setCategories] = useState<Array<{id: number, name: string, slug: string, count: number, parent: number}>>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   
@@ -109,26 +109,24 @@ export default function Header() {
       const response = await fetch('/api/woocommerce?endpoint=products/categories&per_page=100');
       if (response.ok) {
         const data = await response.json();
-        // Filter main categories (parent = 0) and limit to 4 main ones
-        const mainCategories = data
-          .filter((cat: any) => cat.parent === 0)
-          .slice(0, 4)
-          .map((cat: any) => ({
-            id: cat.id,
-            name: cat.name,
-            slug: cat.slug,
-            count: cat.count || 0
-          }));
-        setCategories(mainCategories);
+        // Get all categories with hierarchy
+        const allCategories = data.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          count: cat.count || 0,
+          parent: cat.parent || 0
+        }));
+        setCategories(allCategories);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
-      // Fallback to hardcoded categories
+      // Fallback to hardcoded categories with hierarchy
       setCategories([
-        { id: 1, name: 'Wypełniacze', slug: 'wypelniacze', count: 8 },
-        { id: 2, name: 'Stymulatory', slug: 'stymulatory', count: 43 },
-        { id: 3, name: 'Mezoterapia', slug: 'mezoterapia', count: 11 },
-        { id: 4, name: 'Peelingi', slug: 'peelingi', count: 6 }
+        { id: 1, name: 'Wypełniacze', slug: 'wypelniacze', count: 8, parent: 0 },
+        { id: 2, name: 'Stymulatory', slug: 'stymulatory', count: 43, parent: 0 },
+        { id: 3, name: 'Mezoterapia', slug: 'mezoterapia', count: 11, parent: 0 },
+        { id: 4, name: 'Peelingi', slug: 'peelingi', count: 6, parent: 0 }
       ]);
     } finally {
       setCategoriesLoading(false);
@@ -941,32 +939,65 @@ export default function Header() {
                         </button>
                       </div>
 
-                      {/* Categories */}
+                      {/* Categories with Hierarchy */}
                       <div className="flex-1 overflow-y-auto p-4">
                         <div className="space-y-2">
                           {categoriesLoading ? (
                             <div className="text-sm text-gray-500">Ładowanie kategorii...</div>
                           ) : (
-                            categories.slice(0, 4).map((category) => (
-                              <Link
-                                key={category.id}
-                                href={`/sklep?category=${category.slug}`}
-                                className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                                onClick={closeMobileMenu}
+                            <>
+                              {/* Main Categories (parent = 0) */}
+                              {categories
+                                .filter(cat => cat.parent === 0)
+                                .slice(0, 4)
+                                .map((category) => {
+                                  const subcategories = categories.filter(sub => sub.parent === category.id);
+                                  return (
+                                    <div key={category.id} className="space-y-1">
+                                      {/* Main Category */}
+                                      <Link
+                                        href={`/sklep?category=${category.slug}`}
+                                        className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg font-medium"
+                                        onClick={closeMobileMenu}
+                                      >
+                                        {category.name} ({category.count})
+                                      </Link>
+                                      
+                                      {/* Subcategories */}
+                                      {subcategories.length > 0 && (
+                                        <div className="ml-4 space-y-1">
+                                          {subcategories.slice(0, 3).map((subcategory) => (
+                                            <Link
+                                              key={subcategory.id}
+                                              href={`/sklep?category=${subcategory.slug}`}
+                                              className="block text-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors py-2 px-3 rounded-lg"
+                                              onClick={closeMobileMenu}
+                                            >
+                                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-3 inline-block"></div>
+                                              {subcategory.name} ({subcategory.count})
+                                            </Link>
+                                          ))}
+                                          {subcategories.length > 3 && (
+                                            <div className="text-xs text-gray-500 ml-6">
+                                              +{subcategories.length - 3} więcej...
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              
+                              {/* Marki - Slide to Marki View */}
+                              <button
+                                onClick={() => setMobileMenuView('marki')}
+                                className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg mt-4"
                               >
-                                {category.name}
-                              </Link>
-                            ))
+                                <span>Marki</span>
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            </>
                           )}
-                          
-                          {/* Marki - Slide to Marki View */}
-                          <button
-                            onClick={() => setMobileMenuView('marki')}
-                            className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
-                          >
-                            <span>Marki</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
                         </div>
                       </div>
                     </motion.div>
