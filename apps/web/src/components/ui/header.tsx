@@ -277,7 +277,7 @@ export default function Header() {
         }`}
       >
         <div className="px-4">
-          <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
+          <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
           {/* Logo */}
           <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity">
             <div className="w-7 h-7 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
