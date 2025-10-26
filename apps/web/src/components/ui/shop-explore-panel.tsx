@@ -55,18 +55,13 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           : [];
         const selectedCatId = (normCats.find(c => (c.parent || 0) === 0)?.id) || null;
         
-        // 3) Pobierz atrybuty bezpośrednio z API (nie z shop endpoint)
-        const [capacitiesRes, brandsRes] = await Promise.all([
-          fetch('/api/woocommerce?endpoint=products/attributes/pa_pojemność/terms&per_page=100', { cache: 'no-store' }),
-          fetch('/api/woocommerce?endpoint=products/attributes/pa_marka/terms&per_page=100', { cache: 'no-store' })
-        ]);
-        
-        const capacities = capacitiesRes.ok ? await capacitiesRes.json() : [];
-        const brands = brandsRes.ok ? await brandsRes.json() : [];
+        // 3) Pobierz atrybuty z King Shop API (działa!)
+        const attrsResponse = await fetch('/wp-json/king-shop/v1/attributes', { cache: 'no-store' });
+        const attrsData = attrsResponse.ok ? await attrsResponse.json() : { attributes: {} };
         
         const attrs = {
-          capacities: capacities || [],
-          brands: brands || []
+          capacities: attrsData.attributes?.pojemnosc?.terms || [],
+          brands: attrsData.attributes?.marka?.terms || []
         };
         
         setCategories(normCats);
