@@ -292,8 +292,10 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-              {/* Close Button - Inside Modal */}
-              <ModalCloseButton onClick={onClose} />
+              {/* Close Button - Top Right */}
+              <div className="absolute top-4 right-4 z-10">
+                <ModalCloseButton onClick={onClose} />
+              </div>
 
               {/* Content */}
               <div className="flex flex-col lg:flex-row max-h-[90vh] overflow-hidden">
