@@ -135,7 +135,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
         >
-          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-4 pb-8 relative">
+          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-8 pb-8 relative">
             {/* Close button */}
             <button
               onClick={onClose}
