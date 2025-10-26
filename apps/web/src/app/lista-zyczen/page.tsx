@@ -14,6 +14,7 @@ import { formatPrice } from '@/utils/format-price';
 import QuickViewModal from '@/components/ui/quick-view-modal';
 import PageContainer from '@/components/ui/page-container';
 import PageHeader from '@/components/ui/page-header';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export default function WishlistPage() {
   const { 

@@ -24,7 +24,6 @@ export const LazyInvoicesPage = lazy(() => import('@/app/moje-faktury/page'));
 export const LazyProductGrid = lazy(() => import('@/components/king-product-grid'));
 export const LazyProductTabs = lazy(() => import('@/components/king-product-tabs'));
 export const LazyShopFilters = lazy(() => import('@/components/ui/shop-filters'));
-export const LazySearchBar = lazy(() => import('@/components/ui/search/search-bar'));
 
 // Lazy wrapper with loading fallback
 export function LazyWrapper({ children }: { children: React.ReactNode }) {

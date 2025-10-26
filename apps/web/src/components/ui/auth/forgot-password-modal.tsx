@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { ArrowLeft, CheckCircle, Mail, AlertCircle } from 'lucide-react';
 import ModalCloseButton from '../modal-close-button';
 import { Button } from '@/components/ui/button';
 

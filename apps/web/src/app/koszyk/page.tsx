@@ -8,6 +8,7 @@ import Link from 'next/link';
 import PageContainer from '@/components/ui/page-container';
 import Image from 'next/image';
 import PageHeader from '@/components/ui/page-header';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export default function CartPage() {
   const { items, total, itemCount, removeItem, updateQuantity, clearCart } = useCartStore();
