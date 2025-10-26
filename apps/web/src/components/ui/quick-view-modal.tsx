@@ -294,8 +294,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                   <ModalCloseButton onClick={onClose} />
                 </div>
                 {/* Images Section */}
-                <div className="lg:w-1/2 p-6 flex-shrink-0">
-                  <div className="space-y-4">
+                <div className="lg:w-1/2 p-4 sm:p-6 flex-shrink-0">
+                  <div className="space-y-2 sm:space-y-4">
                     {/* Main Image - square */}
                     <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg max-w-sm mx-auto">
                       <motion.div
@@ -363,11 +363,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 </div>
 
                 {/* Product Details */}
-                <div className="lg:w-1/2 p-6">
-                  <div className="space-y-3">
+                <div className="lg:w-1/2 p-4 sm:p-6">
+                  <div className="space-y-2 sm:space-y-3">
                     {/* Product Title & Badges */}
-                    <div className="space-y-2">
-                      <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
                         {product.name}
                       </h1>
                       
