@@ -297,18 +297,18 @@ export default function ProductClient({ slug }: ProductClientProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                  {isOnSale && (<span className="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">-{discount}%</span>)}
-                  {product.featured && (<span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">Polecany</span>)}
+                <div className="flex items-start space-x-2 flex-wrap gap-y-1">
+                  {isOnSale && (<span className="bg-red-100 text-red-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">-{discount}%</span>)}
+                  {product.featured && (<span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Polecany</span>)}
                   {product.stock_status === 'instock' ? (
                     <>
-                      <span className="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">W magazynie</span>
-                      <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">Wysyłka w 24h</span>
+                      <span className="bg-green-100 text-green-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">W magazynie</span>
+                      <span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Wysyłka w 24h</span>
                     </>
                   ) : product.stock_status === 'onbackorder' ? (
-                    <span className="bg-yellow-100 text-yellow-800 text-sm font-medium px-3 py-1 rounded-full">Na zamówienie</span>
+                    <span className="bg-yellow-100 text-yellow-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Na zamówienie</span>
                   ) : (
-                    <span className="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">Brak w magazynie</span>
+                    <span className="bg-gray-100 text-gray-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Brak w magazynie</span>
                   )}
                 </div>
 

@@ -450,7 +450,7 @@ export default function KingProductCard({
                 loading="lazy"
               />
               {isOnSale && (
-                <Badge variant="destructive" className="absolute top-2 left-2 text-xs">
+                <Badge variant="destructive" className="absolute top-1 sm:top-2 left-1 sm:left-2 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
                   -{discount}%
                 </Badge>
               )}
@@ -484,17 +484,17 @@ export default function KingProductCard({
                 loading="lazy"
               />
               {isOnSale && (
-                <Badge variant="destructive" className="absolute top-3 left-3 text-sm border-2 border-destructive/20 rounded-xl px-3 py-1">
+                <Badge variant="destructive" className="absolute top-2 sm:top-3 left-2 sm:left-3 text-xs sm:text-sm border-2 border-destructive/20 rounded-xl px-2 sm:px-3 py-0.5 sm:py-1">
                   -{discount}%
                 </Badge>
               )}
               {product.featured && !isOnSale && (
-                <Badge className="absolute top-3 right-3 text-sm bg-primary text-primary-foreground border-2 border-primary/20 rounded-xl px-3 py-1">
+                <Badge className="absolute top-2 sm:top-3 right-2 sm:right-3 text-xs sm:text-sm bg-primary text-primary-foreground border-2 border-primary/20 rounded-xl px-2 sm:px-3 py-0.5 sm:py-1">
                   Polecany
                 </Badge>
               )}
               {isOnSale && product.featured && (
-                <Badge className="absolute top-3 right-3 text-sm bg-amber-600 text-white border-2 border-amber-500/20 rounded-xl px-3 py-1">
+                <Badge className="absolute top-2 sm:top-3 right-2 sm:right-3 text-xs sm:text-sm bg-amber-600 text-white border-2 border-amber-500/20 rounded-xl px-2 sm:px-3 py-0.5 sm:py-1">
                   Promocja
                 </Badge>
               )}
@@ -615,14 +615,14 @@ export default function KingProductCard({
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
             
-            {/* Badge */}
-            <div className="absolute top-2 left-2">
+            {/* Badge - Mobile optimized */}
+            <div className="absolute top-1 sm:top-2 left-1 sm:left-2">
               {isOnSale ? (
-                <Badge className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full border-0">
+                <Badge className="bg-red-100 text-red-800 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border-0">
                   Promocja
                 </Badge>
               ) : product.featured ? (
-                <Badge className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full border-0">
+                <Badge className="bg-green-100 text-green-800 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border-0">
                   Polecany
                 </Badge>
               ) : null}
@@ -819,22 +819,22 @@ export default function KingProductCard({
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
             
-            {/* Badge - top left */}
+            {/* Badge - top left - Mobile optimized */}
             <div className="absolute top-2 left-2">
               {tabType === 'promocje' || isOnSale ? (
-                <Badge className="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full border-0">
+                <Badge className="bg-red-100 text-red-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
                   Promocja
                 </Badge>
               ) : tabType === 'nowosci' ? (
-                <Badge className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full border-0">
+                <Badge className="bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
                   Nowość
                 </Badge>
               ) : tabType === 'polecane' || product.featured ? (
-                <Badge className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full border-0">
+                <Badge className="bg-green-100 text-green-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
                   Polecany
                 </Badge>
               ) : (
-                <Badge className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full border-0">
+                <Badge className="bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
                   Nowość
                 </Badge>
               )}
