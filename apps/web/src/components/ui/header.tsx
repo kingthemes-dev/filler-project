@@ -817,19 +817,24 @@ export default function Header() {
         <AnimatePresence>
           {isSearchExpanded && (
             <>
-              {/* Backdrop - tylko pod headerem z blur efektem */}
+              {/* Glassmorphism Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="fixed top-[var(--header-height)] left-0 right-0 bottom-0 bg-black/30 backdrop-blur-sm z-40"
+                className="fixed top-[var(--header-height)] left-0 right-0 bottom-0 z-40"
+                style={{ 
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  backdropFilter: 'blur(8px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(180%)',
+                  ['--header-height' as any]: '80px'
+                }}
                 onClick={() => {
                   setIsSearchExpanded(false);
                   setSearchQuery('');
                   setSearchResults([]);
                 }}
-                style={{ ['--header-height' as any]: '80px' }}
               />
               
               {/* Search Panel */}
@@ -843,7 +848,14 @@ export default function Header() {
                   opacity: { duration: 0.3 },
                   y: { duration: 0.4 }
                 }}
-                className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-50 overflow-hidden rounded-b-2xl"
+                className="absolute top-full left-0 right-0 z-50 overflow-hidden rounded-b-2xl"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+                }}
               >
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
