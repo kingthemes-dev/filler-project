@@ -22,6 +22,9 @@ export default function Header() {
   const [isEmailCenterOpen, setIsEmailCenterOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -50,6 +53,8 @@ export default function Header() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isSearchExpanded) {
         setIsSearchExpanded(false);
+        setSearchQuery('');
+        setSearchResults([]);
       }
     };
 
@@ -65,6 +70,43 @@ export default function Header() {
       document.body.style.overflow = 'unset';
     };
   }, [isSearchExpanded]);
+
+  // Search products function
+  const searchProducts = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`/api/woocommerce?endpoint=products&search=${encodeURIComponent(query)}&per_page=10`);
+      if (response.ok) {
+        const products = await response.json();
+        setSearchResults(products);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchProducts(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   // Toggle category expansion
   const toggleCategory = (categoryId: number) => {
@@ -743,14 +785,19 @@ export default function Header() {
         <AnimatePresence>
           {isSearchExpanded && (
             <>
-              {/* Backdrop */}
+              {/* Backdrop - tylko pod headerem */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="fixed inset-0 bg-black/20 z-40"
-                onClick={() => setIsSearchExpanded(false)}
+                className="fixed top-[var(--header-height)] left-0 right-0 bottom-0 bg-black/20 z-40"
+                onClick={() => {
+                  setIsSearchExpanded(false);
+                  setSearchQuery('');
+                  setSearchResults([]);
+                }}
+                style={{ ['--header-height' as any]: '80px' }}
               />
               
               {/* Search Panel */}
@@ -768,37 +815,82 @@ export default function Header() {
                     <input
                       type="text"
                       placeholder="Szukaj produktów..."
+                      value={searchQuery}
+                      onChange={handleSearchChange}
                       className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       autoFocus
                     />
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
                     <button
-                      onClick={() => setIsSearchExpanded(false)}
+                      onClick={() => {
+                        setIsSearchExpanded(false);
+                        setSearchQuery('');
+                        setSearchResults([]);
+                      }}
                       className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
                       <X className="h-5 w-5 text-gray-500" />
                     </button>
                   </div>
                   
-                  {/* Quick Search Suggestions */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="font-medium text-gray-900">Kremy</div>
-                      <div className="text-sm text-gray-500">32 produkty</div>
-                    </button>
-                    <button className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="font-medium text-gray-900">Serum</div>
-                      <div className="text-sm text-gray-500">18 produktów</div>
-                    </button>
-                    <button className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="font-medium text-gray-900">Mezoterapia</div>
-                      <div className="text-sm text-gray-500">25 produktów</div>
-                    </button>
-                    <button className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="font-medium text-gray-900">Peelingi</div>
-                      <div className="text-sm text-gray-500">12 produktów</div>
-                    </button>
-                  </div>
+                  {/* Search Results */}
+                  {searchQuery ? (
+                    <div>
+                      {isSearching ? (
+                        <div className="text-center py-8">
+                          <div className="text-gray-500">Wyszukiwanie...</div>
+                        </div>
+                      ) : searchResults.length > 0 ? (
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            Wyniki wyszukiwania ({searchResults.length})
+                          </h3>
+                          <div className="space-y-2">
+                            {searchResults.map((product) => (
+                              <Link
+                                key={product.id}
+                                href={`/produkt/${product.slug}`}
+                                className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                onClick={() => setIsSearchExpanded(false)}
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900">{product.name}</div>
+                                  <div className="text-sm text-gray-500">{product.short_description?.replace(/<[^>]*>/g, '')}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold text-gray-900">
+                                    {product.price ? `${product.price} zł` : 'Brak ceny'}
+                                  </div>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-gray-500">Nie znaleziono produktów</div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Ostatnio wyszukiwane</h3>
+                      <div className="space-y-2">
+                        <button className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="font-medium text-gray-900">Kremy przeciwzmarszczkowe</div>
+                          <div className="text-sm text-gray-500">Wyszukane 2 dni temu</div>
+                        </button>
+                        <button className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="font-medium text-gray-900">Serum z kwasem hialuronowym</div>
+                          <div className="text-sm text-gray-500">Wyszukane 5 dni temu</div>
+                        </button>
+                        <button className="w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="font-medium text-gray-900">Mezoterapia mikroigłowa</div>
+                          <div className="text-sm text-gray-500">Wyszukane tydzień temu</div>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               </motion.div>
