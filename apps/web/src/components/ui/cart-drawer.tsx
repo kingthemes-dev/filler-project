@@ -7,6 +7,7 @@ import { X, ShoppingBag, Trash2, Plus, Minus, Truck, CreditCard, ArrowRight } fr
 import { useCartStore, type CartItem } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { analytics } from '@headless-woo/shared/utils/analytics';
+import { formatPrice } from '@/utils/format-price';
 import Link from 'next/link';
 import Image from 'next/image';
 
