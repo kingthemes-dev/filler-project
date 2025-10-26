@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PageHeader from '@/components/ui/page-header';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, Heart, ShoppingCart, Eye, FileText, Package, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -376,14 +377,14 @@ export default function MyAccountPage() {
     <div className="min-h-screen bg-white">
       <div className="max-w-[95vw] mx-auto mobile-container py-8 pb-16">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-            Moje konto
-          </h1>
-          <p className="text-lg text-gray-600">
-            Zarządzaj swoimi danymi i ustawieniami
-          </p>
-        </div>
+        <PageHeader 
+          title="Moje konto"
+          subtitle="Zarządzaj swoimi danymi i ustawieniami"
+          breadcrumbs={[
+            { label: 'Strona główna', href: '/' },
+            { label: 'Moje konto', href: '/moje-konto' }
+          ]}
+        />
 
         {/* Tabs */}
         <div className="mb-8">

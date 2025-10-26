@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PageHeader from '@/components/ui/page-header';
 import { motion } from 'framer-motion';
 import { Package, Truck, CheckCircle, Clock, Eye, Download, Calendar } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -288,14 +289,14 @@ export default function MyOrdersPage() {
     <div className="min-h-screen bg-white">
       <div className="max-w-[95vw] mx-auto mobile-container py-8 pb-16">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-            Moje zamówienia
-          </h1>
-          <p className="text-lg text-gray-600">
-            Historia Twoich zamówień i status realizacji
-          </p>
-        </div>
+        <PageHeader 
+          title="Moje zamówienia"
+          subtitle="Historia Twoich zamówień i status realizacji"
+          breadcrumbs={[
+            { label: 'Strona główna', href: '/' },
+            { label: 'Moje zamówienia', href: '/moje-zamowienia' }
+          ]}
+        />
 
         {orders.length === 0 ? (
           // Empty state

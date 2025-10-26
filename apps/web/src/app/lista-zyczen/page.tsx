@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/utils/format-price';
 import QuickViewModal from '@/components/ui/quick-view-modal';
 import PageContainer from '@/components/ui/page-container';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
+import PageHeader from '@/components/ui/page-header';
 
 export default function WishlistPage() {
   const { 
@@ -79,12 +79,10 @@ export default function WishlistPage() {
       <div className="min-h-screen bg-white py-8 pb-16">
         <div className="max-w-[95vw] mx-auto mobile-container">
           {/* Header with Title and Breadcrumbs */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">Lista życzeń</h1>
-              <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
-            </div>
-          </div>
+          <PageHeader 
+            title="Lista życzeń"
+            breadcrumbs={breadcrumbs}
+          />
           
           <div className="text-center py-16">
             <div className="text-red-500 mb-4">
@@ -106,12 +104,10 @@ export default function WishlistPage() {
       <div className="min-h-screen bg-white py-8 pb-16">
         <div className="max-w-[95vw] mx-auto mobile-container">
           {/* Header with Title and Breadcrumbs */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">Lista życzeń</h1>
-              <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
-            </div>
-          </div>
+          <PageHeader 
+            title="Lista życzeń"
+            breadcrumbs={breadcrumbs}
+          />
           
           <div className="text-center py-16">
             <div className="text-gray-400 mb-4">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PageHeader from '@/components/ui/page-header';
 import { motion } from 'framer-motion';
 import { FileText, Download, Calendar, Euro, Eye } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -280,14 +281,14 @@ export default function MyInvoicesPage() {
     <div className="min-h-screen bg-white">
       <div className="max-w-[95vw] mx-auto mobile-container py-8 pb-16">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-            Moje faktury
-          </h1>
-          <p className="text-lg text-gray-600">
-            Historia Twoich faktur i możliwość ich pobrania
-          </p>
-        </div>
+        <PageHeader 
+          title="Moje faktury"
+          subtitle="Historia Twoich faktur i możliwość ich pobrania"
+          breadcrumbs={[
+            { label: 'Strona główna', href: '/' },
+            { label: 'Moje faktury', href: '/moje-faktury' }
+          ]}
+        />
 
         {invoices.length === 0 ? (
           /* Empty State */

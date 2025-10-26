@@ -7,7 +7,7 @@ import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import Link from 'next/link';
 import PageContainer from '@/components/ui/page-container';
 import Image from 'next/image';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
+import PageHeader from '@/components/ui/page-header';
 
 export default function CartPage() {
   const { items, total, itemCount, removeItem, updateQuantity, clearCart } = useCartStore();
@@ -76,12 +76,10 @@ export default function CartPage() {
     <div className="min-h-screen bg-white py-8 pb-16">
       <div className="max-w-[95vw] mx-auto mobile-container">
         {/* Header with Title and Breadcrumbs */}
-        <div className="max-w-6xl mx-auto mb-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Koszyk</h1>
-            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
-          </div>
-        </div>
+        <PageHeader 
+          title="Koszyk"
+          breadcrumbs={breadcrumbs}
+        />
         
         {/* Header */}
         <div className="max-w-6xl mx-auto">
