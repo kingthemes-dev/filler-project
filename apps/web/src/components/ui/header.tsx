@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { UI_SPACING } from '@/config/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube, Plus } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube, Plus, Tag } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
@@ -1088,17 +1088,19 @@ export default function Header() {
                                   );
                                 })}
                               
-                              {/* Marki - Filter Style Button */}
+                              {/* Marki - Special Styled Button */}
                               <div className="border border-gray-100 rounded-lg overflow-hidden">
                                 <button
                                   onClick={() => setMobileMenuView('marki')}
-                                  className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                                  className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 transition-all duration-200 group"
                                 >
                                   <div className="flex items-center">
-                                    <div className="w-6 h-6 mr-2"></div>
-                                    <span className="text-sm font-medium text-gray-900">Marki</span>
+                                    <div className="w-6 h-6 mr-3 flex items-center justify-center">
+                                      <Tag className="w-4 h-4 text-blue-600 group-hover:text-blue-700 transition-colors" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-blue-800 group-hover:text-blue-900">Marki</span>
                                   </div>
-                                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                                  <ChevronRight className="w-4 h-4 text-blue-600 group-hover:text-blue-700 transition-colors" />
                                 </button>
                               </div>
                             </>
