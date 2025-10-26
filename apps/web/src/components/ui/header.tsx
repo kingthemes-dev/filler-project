@@ -310,7 +310,7 @@ export default function Header() {
 
   return (
     <>
-      <header className={`bg-white ${isShopOpen ? '' : 'border-b border-gray-200'} sticky top-0 z-50 will-change-transform overflow-visible relative`}>
+      <header className="bg-white sticky top-0 z-50 will-change-transform overflow-visible relative">
         <div className={`max-w-[95vw] mx-auto px-4 sm:px-8`}>
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
           {/* Logo */}
