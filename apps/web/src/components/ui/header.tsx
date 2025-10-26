@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { UI_SPACING } from '@/config/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube, Plus } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
@@ -1007,10 +1007,10 @@ export default function Header() {
                                               className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors mr-2"
                                             >
                                               <motion.div
-                                                animate={{ rotate: isExpanded ? 90 : 0 }}
+                                                animate={{ rotate: isExpanded ? 45 : 0 }}
                                                 transition={{ duration: 0.2 }}
                                               >
-                                                <ChevronRight className="w-4 h-4 text-gray-500" />
+                                                <Plus className="w-4 h-4 text-gray-500" />
                                               </motion.div>
                                             </button>
                                           )}
