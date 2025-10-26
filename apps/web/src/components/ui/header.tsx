@@ -736,48 +736,6 @@ export default function Header() {
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                       className="flex flex-col h-full"
                     >
-                      {/* Header - Aligned with Main Header */}
-                      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
-                        <div className="flex items-center space-x-3">
-                          <Menu className="w-6 h-6 text-black" />
-                        </div>
-                        <motion.button
-                          onClick={closeMobileMenu}
-                          className="p-2 hover:bg-gray-100 rounded-full transition-colors relative w-8 h-8"
-                          aria-label="Zamknij menu"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          {/* Animated Close Button */}
-                          <div className="relative w-5 h-5 flex flex-col justify-center items-center">
-                            {/* Top Line */}
-                            <motion.div
-                              className="absolute w-4 h-0.5 bg-gray-600 rounded-full"
-                              animate={{
-                                rotate: 45,
-                                y: 0,
-                              }}
-                              transition={{
-                                duration: 0.3,
-                                ease: [0.4, 0, 0.2, 1],
-                              }}
-                            />
-                            
-                            {/* Bottom Line */}
-                            <motion.div
-                              className="absolute w-4 h-0.5 bg-gray-600 rounded-full"
-                              animate={{
-                                rotate: -45,
-                                y: 0,
-                              }}
-                              transition={{
-                                duration: 0.3,
-                                ease: [0.4, 0, 0.2, 1],
-                              }}
-                            />
-                          </div>
-                        </motion.button>
-                      </div>
 
                       {/* Main Navigation */}
                       <div className="flex-1 overflow-y-auto p-4 pb-0">
