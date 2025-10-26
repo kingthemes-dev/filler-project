@@ -714,7 +714,7 @@ export default function Header() {
         </div>
         
         {/* Mobile border line */}
-        <div className="lg:hidden border-b border-gray-200"></div>
+        <div className="lg:hidden border-b border-gray-200 rounded-b-lg"></div>
         
 
         
