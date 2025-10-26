@@ -21,6 +21,7 @@ export default function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEmailCenterOpen, setIsEmailCenterOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -43,6 +44,27 @@ export default function Header() {
     setMobileMenuView('main');
     setExpandedCategories(new Set());
   };
+
+  // Handle ESC key for search
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isSearchExpanded) {
+        setIsSearchExpanded(false);
+      }
+    };
+
+    if (isSearchExpanded) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isSearchExpanded]);
 
   // Toggle category expansion
   const toggleCategory = (categoryId: number) => {
@@ -448,6 +470,7 @@ export default function Header() {
             <SearchBar 
               placeholder="Szukaj produktów..."
               className="w-full text-sm"
+              onExpand={() => setIsSearchExpanded(true)}
             />
           </div>
 
@@ -716,6 +739,73 @@ export default function Header() {
           </div>
         </div>
         
+        {/* Expanded Search Area */}
+        <AnimatePresence>
+          {isSearchExpanded && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="fixed inset-0 bg-black/20 z-40"
+                onClick={() => setIsSearchExpanded(false)}
+              />
+              
+              {/* Search Panel */}
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 overflow-hidden"
+              >
+              <div className="p-6">
+                <div className="max-w-4xl mx-auto">
+                  {/* Search Input */}
+                  <div className="relative mb-6">
+                    <input
+                      type="text"
+                      placeholder="Szukaj produktów..."
+                      className="w-full pl-12 pr-4 py-4 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      autoFocus
+                    />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" />
+                    <button
+                      onClick={() => setIsSearchExpanded(false)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X className="h-5 w-5 text-gray-500" />
+                    </button>
+                  </div>
+                  
+                  {/* Quick Search Suggestions */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="font-medium text-gray-900">Kremy</div>
+                      <div className="text-sm text-gray-500">32 produkty</div>
+                    </button>
+                    <button className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="font-medium text-gray-900">Serum</div>
+                      <div className="text-sm text-gray-500">18 produktów</div>
+                    </button>
+                    <button className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="font-medium text-gray-900">Mezoterapia</div>
+                      <div className="text-sm text-gray-500">25 produktów</div>
+                    </button>
+                    <button className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="font-medium text-gray-900">Peelingi</div>
+                      <div className="text-sm text-gray-500">12 produktów</div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* Search Modal - Direct from Mobile Icon */}
         <SearchModal
           isOpen={isSearchModalOpen}

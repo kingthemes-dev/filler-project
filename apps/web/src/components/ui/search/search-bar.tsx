@@ -8,18 +8,24 @@ interface SearchBarProps {
   placeholder?: string;
   className?: string;
   onSearch?: (query: string) => void;
+  onExpand?: () => void;
 }
 
 export default function SearchBar({ 
   placeholder = "Szukaj produktów...", 
   className = "",
-  onSearch 
+  onSearch,
+  onExpand
 }: SearchBarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSearchClick = useCallback(() => {
-    setIsModalOpen(true);
-  }, []);
+    if (onExpand) {
+      onExpand();
+    } else {
+      setIsModalOpen(true);
+    }
+  }, [onExpand]);
 
   const handleModalClose = useCallback(() => {
     setIsModalOpen(false);
