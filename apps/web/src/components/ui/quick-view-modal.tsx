@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, ShoppingCart, Star, Plus, Minus, Droplets } from 'lucide-react';
+import ModalCloseButton from './modal-close-button';
 import { useCartStore } from '@/stores/cart-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import { Button } from '@/components/ui/button';
@@ -292,16 +293,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             onClick={(e) => e.stopPropagation()}
           >
               {/* Close Button - Inside Modal */}
-              <div className="absolute top-16 right-6 z-10">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="rounded-full p-2 hover:bg-gray-100 bg-white border border-gray-200 shadow-sm"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
+              <ModalCloseButton onClick={onClose} />
 
               {/* Content */}
               <div className="flex flex-col lg:flex-row max-h-[90vh] overflow-hidden">

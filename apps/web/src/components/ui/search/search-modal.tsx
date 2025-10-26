@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Star, Clock, TrendingUp, Filter, ChevronRight } from 'lucide-react';
+import ModalCloseButton from '../modal-close-button';
 import { WooCommerceService } from '@/services/woocommerce-optimized';
 import { wooSearchService } from '@/services/woocommerce-search';
 import { formatPrice } from '@/utils/format-price';
@@ -296,12 +297,7 @@ export default function SearchModal({
                   </div>
 
                   {/* Close Button */}
-                  <button
-                    onClick={closeModal}
-                    className="flex items-center justify-center w-12 h-12 rounded-xl border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors"
-                  >
-                    <X className="h-5 w-5 text-gray-600" />
-                  </button>
+                  <ModalCloseButton onClick={closeModal} position="relative" />
                 </div>
               </div>
             </div>
