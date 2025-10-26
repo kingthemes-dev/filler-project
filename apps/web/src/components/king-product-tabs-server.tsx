@@ -175,7 +175,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
             >
               {isTransitioning ? (
                 // Loading state during transition
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 mobile-grid">
                   {[...Array(4)].map((_, index) => (
                     <div key={`loading-${index}`} className="animate-pulse">
                       <div className="bg-gray-200 aspect-square rounded-2xl mb-4"></div>
@@ -187,7 +187,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                   ))}
                 </div>
               ) : activeTabData.products.length > 0 ? (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 mobile-grid">
                   {activeTabData.products.slice(0, 4).map((product) => (
                     <KingProductCard
                       key={product.id}
@@ -246,7 +246,7 @@ function ProductTabsSkeleton() {
         </div>
         <div className="h-6 w-32 bg-muted rounded animate-pulse" />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 mobile-grid">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <div key={i} className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm animate-pulse">
             <div className="px-4 sm:px-6 pb-0">
