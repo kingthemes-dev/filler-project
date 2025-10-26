@@ -286,12 +286,6 @@ export default function Header() {
             <span className="text-lg sm:text-xl font-bold text-black">FILLER</span>
           </Link>
 
-          {/* Desktop spacer between logo and nav (exact 75px) */}
-          <div
-            className="hidden lg:block"
-            style={{ width: `${UI_SPACING.HEADER_NAV_GAP_DESKTOP}px` }}
-          />
-
           {/* Spacer / Middle column for mobile to allow shrink without overflow */}
           <div className="min-w-0 lg:hidden col-start-2" />
 
