@@ -12,11 +12,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import EmailNotificationCenter from './email/email-notification-center';
 import ShopExplorePanel from './shop-explore-panel';
+import SearchModal from './search-modal';
 
 
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEmailCenterOpen, setIsEmailCenterOpen] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
@@ -391,33 +393,25 @@ export default function Header() {
             style={{ ['--search-pad' as any]: `${UI_SPACING.SEARCH_SIDE_PADDING_DESKTOP}px` }}
             onMouseEnter={() => setIsShopOpen(false)}
           >
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Szukaj produktów..."
-                className="block w-full pl-10 pr-4 py-3 leading-5 bg-white placeholder-gray-500 text-sm border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-            </div>
+            <button
+              onClick={() => setIsSearchModalOpen(true)}
+              className="flex items-center w-full max-w-md mx-auto pl-10 pr-4 py-3 text-left bg-white border border-gray-300 rounded-lg hover:border-gray-400 transition-colors group relative"
+            >
+              <Search className="absolute left-4 h-5 w-5 text-gray-400 group-hover:text-gray-600" />
+              <span className="text-sm text-gray-500">Szukaj produktów...</span>
+            </button>
           </div>
 
           {/* Mobile Icons with Labels */}
           <div className="lg:hidden col-start-3 flex items-center gap-3 justify-end min-w-0 flex-shrink-0">
-            {/* Mobile Search */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Szukaj..."
-                className="block w-32 pl-8 pr-3 py-2 leading-5 bg-white placeholder-gray-500 text-sm border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-            </div>
-
-            {/* Mobile User Icon */}
+            {/* Mobile Search Icon */}
+            <button
+              onClick={() => setIsSearchModalOpen(true)}
+              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
+              aria-label="Szukaj"
+            >
+              <Search className="w-6 h-6" />
+            </button>
             {isAuthenticated ? (
               <Link
                 href="/moje-konto"
@@ -1105,6 +1099,11 @@ export default function Header() {
         onClose={() => setIsEmailCenterOpen(false)}
       />
       
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+      />
       
       {/* Favorites Modal */}
     </>
