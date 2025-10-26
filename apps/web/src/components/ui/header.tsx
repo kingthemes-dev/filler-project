@@ -1089,10 +1089,10 @@ export default function Header() {
                                 })}
                               
                               {/* Marki - Special Styled Button */}
-                              <div className="border border-gray-100 rounded-lg overflow-hidden">
+                              <div className="border border-gray-100 rounded-lg">
                                 <button
                                   onClick={() => setMobileMenuView('marki')}
-                                  className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 transition-all duration-200 group"
+                                  className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 hover:border-blue-300 transition-all duration-200 group rounded-lg"
                                 >
                                   <div className="flex items-center">
                                     <div className="w-6 h-6 mr-3 flex items-center justify-center">
