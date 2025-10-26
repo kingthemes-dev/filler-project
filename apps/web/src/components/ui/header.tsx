@@ -31,6 +31,7 @@ export default function Header() {
   const [categories, setCategories] = useState<Array<{id: number, name: string, slug: string, count: number, parent: number}>>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   
   // 🚀 SENIOR LEVEL - Slide Navigation State
   const [mobileMenuView, setMobileMenuView] = useState<'main' | 'sklep' | 'marki'>('main');
@@ -255,10 +256,24 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
+  // Handle scroll for glassmorphism effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
 
   return (
     <>
-      <header className="bg-white sticky top-0 z-50 will-change-transform overflow-visible lg:rounded-none rounded-b-2xl">
+      <header className={`sticky top-0 z-50 will-change-transform overflow-visible lg:rounded-none rounded-b-2xl transition-all duration-300 ${
+        isScrolled 
+          ? 'bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/50' 
+          : 'bg-white'
+      }`}>
         <div className={`max-w-[95vw] mx-auto mobile-container`}>
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center h-16 sm:h-20 gap-2 overflow-hidden min-h-0">
           {/* Logo */}
