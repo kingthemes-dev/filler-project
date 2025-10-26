@@ -221,6 +221,97 @@ function SearchResultsContent() {
           products={searchResults}
         />
         
+        {/* Old sidebar removed - now using ShopFilters above */}
+        <div className={`lg:w-64 lg:block hidden`}>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Filtry</h3>
+              <button
+                onClick={clearFilters}
+                className="text-sm text-gray-500 hover:text-black transition-colors"
+              >
+                Wyczyść
+              </button>
+            </div>
+
+            {/* Categories */}
+            <div className="mb-6">
+              <h4 className="font-medium text-gray-900 mb-3">Kategorie</h4>
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <label key={category} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.category === category}
+                      onChange={(e) => handleFilterChange('category', e.target.checked ? category : '')}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">{category}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Price Range */}
+            <div className="mb-6">
+              <h4 className="font-medium text-gray-900 mb-3">Cena</h4>
+              <div className="space-y-2">
+                {priceRanges.map((range) => (
+                  <label key={range.label} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.price_min === range.min && filters.price_max === range.max}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleFilterChange('price_min', range.min);
+                          handleFilterChange('price_max', range.max);
+                        } else {
+                          handleFilterChange('price_min', '');
+                          handleFilterChange('price_max', '');
+                        }
+                      }}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">{range.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Stock Status */}
+            <div className="mb-6">
+              <h4 className="font-medium text-gray-900 mb-3">Dostępność</h4>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={filters.in_stock === true}
+                  onChange={(e) => handleFilterChange('in_stock', e.target.checked ? true : false)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">W magazynie</span>
+              </label>
+            </div>
+
+            {/* Rating */}
+            <div className="mb-6">
+              <h4 className="font-medium text-gray-900 mb-3">Ocena</h4>
+              <div className="space-y-2">
+                {ratingOptions.map((option) => (
+                  <label key={option.value} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={filters.rating_min === option.value}
+                      onChange={(e) => handleFilterChange('rating_min', e.target.checked ? option.value : 0)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm text-gray-700">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Search Results */}
         <div className="flex-1">
           {/* Sort and Results Header */}
