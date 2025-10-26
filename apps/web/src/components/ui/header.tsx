@@ -1030,33 +1030,55 @@ export default function Header() {
                                         </div>
                                       </div>
                                       
-                                      {/* Subcategories */}
+                                      {/* Subcategories - SENIOR LEVEL UI */}
                                       {subcategories.length > 0 && (
                                         <motion.div
                                           initial={false}
                                           animate={{ 
                                             height: isExpanded ? 'auto' : 0,
-                                            opacity: isExpanded ? 1 : 0
+                                            opacity: isExpanded ? 1 : 0,
+                                            y: isExpanded ? 0 : -10
                                           }}
-                                          transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                          transition={{ 
+                                            duration: 0.3, 
+                                            ease: [0.4, 0, 0.2, 1],
+                                            opacity: { duration: 0.2 },
+                                            y: { duration: 0.3 }
+                                          }}
                                           className="overflow-hidden"
                                         >
-                                          <div className="bg-white border-t border-gray-100">
-                                            {subcategories.map((subcategory) => (
-                                     <Link
-                                       key={subcategory.id}
-                                       href={`/sklep?category=${subcategory.slug}`}
-                                       className="flex items-center p-3 pl-8 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0"
-                                       onClick={closeMobileMenu}
-                                     >
-                                       <div className="w-6 h-6 mr-2"></div>
-                                       <span className="text-sm text-gray-700 flex-1">
-                                         {subcategory.name}
-                                       </span>
-                                       <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                         {subcategory.count}
-                                       </span>
-                                     </Link>
+                                          <div className="bg-gradient-to-r from-gray-50 to-white border-t border-gray-200 shadow-sm">
+                                            {subcategories.map((subcategory, index) => (
+                                              <motion.div
+                                                key={subcategory.id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ 
+                                                  opacity: isExpanded ? 1 : 0,
+                                                  x: isExpanded ? 0 : -20
+                                                }}
+                                                transition={{ 
+                                                  delay: isExpanded ? index * 0.05 : 0,
+                                                  duration: 0.2,
+                                                  ease: 'easeOut'
+                                                }}
+                                              >
+                                                <Link
+                                                  href={`/sklep?category=${subcategory.slug}`}
+                                                  className="flex items-center p-3 pl-10 hover:bg-white/80 hover:shadow-sm transition-all duration-200 border-b border-gray-100 last:border-b-0 group"
+                                                  onClick={closeMobileMenu}
+                                                >
+                                                  {/* Subcategory indicator */}
+                                                  <div className="w-2 h-2 rounded-full bg-blue-400 mr-3 group-hover:bg-blue-500 transition-colors"></div>
+                                                  
+                                                  <span className="text-sm text-gray-700 group-hover:text-gray-900 font-medium flex-1 transition-colors">
+                                                    {subcategory.name}
+                                                  </span>
+                                                  
+                                                  <span className="text-xs text-gray-500 bg-white group-hover:bg-blue-50 px-2.5 py-1 rounded-full border border-gray-200 group-hover:border-blue-200 transition-all duration-200">
+                                                    {subcategory.count}
+                                                  </span>
+                                                </Link>
+                                              </motion.div>
                                             ))}
                                           </div>
                                         </motion.div>
