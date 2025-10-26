@@ -119,8 +119,8 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
 
   return (
     <section className="py-12 sm:py-16 bg-white">
-      <div className="max-w-[95vw] mx-auto">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 px-4 sm:px-6">
+      <div className="max-w-[95vw] mx-auto mobile-container">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Custom Tabs Implementation - No shadcn/ui */}
           <div className="w-full">
             {/* Custom Tabs Container */}
@@ -166,7 +166,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
         </div>
         
         {/* Custom Tab Content - No shadcn/ui */}
-        <div className="mt-6 px-4 sm:px-6">
+        <div className="mt-6">
           <AnimatePresence mode="wait">
             <div
               key={activeTab}
@@ -220,7 +220,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
         </div>
           
         {/* View All Products - Interactive Black Gradient Button */}
-        <div className="mt-8 md:hidden px-4 sm:px-6">
+        <div className="mt-8 md:hidden">
           <Link
             href="/sklep"
             className="group relative block w-full bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white hover:text-white transition-all duration-300 text-center py-4 px-6 rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
