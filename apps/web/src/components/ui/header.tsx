@@ -174,12 +174,12 @@ export default function Header() {
     }
   }, [favorites.length, isMounted]);
 
-  // Fetch brands when brands section is expanded
+  // Fetch brands when brands section is expanded OR when mobile menu shows brands
   useEffect(() => {
-    if (isBrandsExpanded && brands.length === 0) {
+    if ((isBrandsExpanded || mobileMenuView === 'marki') && brands.length === 0) {
       fetchBrands();
     }
-  }, [isBrandsExpanded, brands.length]);
+  }, [isBrandsExpanded, mobileMenuView, brands.length]);
 
   // Fetch categories when shop section is expanded OR when mobile menu opens
   useEffect(() => {
