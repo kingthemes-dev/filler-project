@@ -179,7 +179,7 @@ export default function ActiveFiltersBar({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={chip.onRemove}
-                    className="flex-shrink-0 hover:bg-white/50 rounded-full p-0.5 transition-colors duration-200"
+                    className="flex items-center justify-center flex-shrink-0 hover:bg-white/50 rounded-full p-0.5 transition-colors duration-200"
                     aria-label={`Usuń filtr ${chip.label}`}
                   >
                     <X className="w-3 h-3" />

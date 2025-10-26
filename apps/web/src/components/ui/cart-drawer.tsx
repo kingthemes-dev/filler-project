@@ -296,7 +296,7 @@ export default function CartDrawer() {
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity - 1)}
                           disabled={isUpdating}
-                          className="p-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center justify-center p-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Zmniejsz ilość"
                         >
                           <Minus className="w-3 h-3 text-gray-700" />
@@ -307,7 +307,7 @@ export default function CartDrawer() {
                         <button
                           onClick={() => handleQuantityChange(item, item.quantity + 1)}
                           disabled={isUpdating}
-                          className="p-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center justify-center p-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Zwiększ ilość"
                         >
                           <Plus className="w-3 h-3 text-gray-700" />
@@ -317,7 +317,7 @@ export default function CartDrawer() {
                       {/* Remove Button */}
                       <button
                         onClick={() => handleRemoveItem(item)}
-                        className="p-2 hover:bg-red-100 rounded-full transition-colors text-red-600"
+                        className="flex items-center justify-center p-2 hover:bg-red-100 rounded-full transition-colors text-red-600"
                         aria-label="Usuń produkt"
                       >
                         <Trash2 className="w-4 h-4" />

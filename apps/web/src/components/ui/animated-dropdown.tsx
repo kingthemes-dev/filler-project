@@ -344,7 +344,7 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
         {clearable && selectedOptions.length > 0 && (
           <motion.button
             onClick={handleClear}
-            className="p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+            className="flex items-center justify-center p-0.5 hover:bg-gray-100 rounded-full transition-colors"
             type="button"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}

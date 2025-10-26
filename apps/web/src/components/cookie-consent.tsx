@@ -118,7 +118,7 @@ export default function CookieConsent() {
               </h2>
               <button 
                 onClick={showSettings ? () => setShowSettings(false) : handleRejectAll}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>

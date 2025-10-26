@@ -357,7 +357,7 @@ export default function ShopFilters({
                     onClick={onToggleFilters}
                     whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.9 }}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-300"
+                    className="flex items-center justify-center p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-300"
                     aria-label="Zamknij filtry"
                     ref={closeBtnRef}
                   >

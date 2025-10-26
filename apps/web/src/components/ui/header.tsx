@@ -852,7 +852,7 @@ export default function Header() {
                           <div className="flex justify-center space-x-4">
                             <a 
                               href="tel:+48123456789" 
-                              className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                              className="flex items-center justify-center p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
                               onClick={closeMobileMenu}
                             >
                               <Phone className="w-4 h-4" />
@@ -861,7 +861,7 @@ export default function Header() {
                               href="https://facebook.com" 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                              className="flex items-center justify-center p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
                               onClick={closeMobileMenu}
                             >
                               <Facebook className="w-4 h-4" />
@@ -870,7 +870,7 @@ export default function Header() {
                               href="https://instagram.com" 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                              className="flex items-center justify-center p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
                               onClick={closeMobileMenu}
                             >
                               <Instagram className="w-4 h-4" />

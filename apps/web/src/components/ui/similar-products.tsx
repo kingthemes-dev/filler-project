@@ -220,7 +220,7 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
                 <>
                   <button
                     onClick={prevSlide}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg transition-all duration-200 hover:scale-110 z-10"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center bg-white/90 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg transition-all duration-200 hover:scale-110 z-10"
                     aria-label="Poprzedni produkt"
                   >
                     <ArrowLeft className="w-5 h-5" />
@@ -228,7 +228,7 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
                   
                   <button
                     onClick={nextSlide}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg transition-all duration-200 hover:scale-110 z-10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center bg-white/90 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg transition-all duration-200 hover:scale-110 z-10"
                     aria-label="Następny produkt"
                   >
                     <ArrowRight className="w-5 h-5" />

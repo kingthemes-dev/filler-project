@@ -18,9 +18,9 @@ export default function ModalCloseButton({
   size = 'md'
 }: ModalCloseButtonProps) {
   const sizeClasses = {
-    sm: 'p-2 w-8 h-8',
-    md: 'p-3 w-10 h-10', 
-    lg: 'p-4 w-12 h-12'
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10', 
+    lg: 'w-12 h-12'
   };
 
   const iconSizes = {
@@ -32,7 +32,7 @@ export default function ModalCloseButton({
   return (
     <motion.button
       onClick={onClick}
-      className={`group relative ${sizeClasses[size]} bg-white border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50 ${className}`}
+      className={`group relative flex items-center justify-center ${sizeClasses[size]} bg-white border-2 border-gray-200 hover:border-gray-300 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-gray-200/50 ${className}`}
       aria-label={ariaLabel}
       whileHover={{ 
         scale: 1.05,
@@ -51,11 +51,9 @@ export default function ModalCloseButton({
         delay: 0.1
       }}
     >
-      <div className="relative">
-        <X className={`${iconSizes[size]} text-gray-600 group-hover:text-gray-800 transition-colors duration-300`} />
-        {/* Subtle glow effect on hover */}
-        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm -z-10" />
-      </div>
+      <X className={`${iconSizes[size]} text-gray-600 group-hover:text-gray-800 transition-colors duration-300`} />
+      {/* Subtle glow effect on hover */}
+      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm -z-10" />
     </motion.button>
   );
 }

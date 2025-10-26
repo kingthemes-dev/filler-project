@@ -191,7 +191,7 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
         {clearable && selectedOptions.length > 0 && (
           <button
             onClick={handleClear}
-            className="p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+            className="flex items-center justify-center p-0.5 hover:bg-gray-100 rounded-full transition-colors"
             type="button"
           >
             <X className="w-3 h-3 text-gray-400" />
