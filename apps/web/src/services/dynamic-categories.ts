@@ -64,7 +64,7 @@ class DynamicCategoriesService {
 
   constructor() {
     // Use absolute URL for server-side calls
-    this.baseUrl = typeof window === 'undefined' ? 'http://localhost:3002/api/woocommerce' : '/api/woocommerce';
+    this.baseUrl = typeof window === 'undefined' ? 'http://localhost:3000/api/woocommerce' : '/api/woocommerce';
   }
 
   /**
