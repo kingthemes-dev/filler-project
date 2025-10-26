@@ -301,8 +301,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 {/* Images Section - scrollable */}
                 <div className="lg:w-1/2 p-6 overflow-y-auto">
                   <div className="space-y-4">
-                    {/* Main Image - even smaller */}
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-gray-50 shadow-lg max-w-xs mx-auto">
+                    {/* Main Image - full height with padding */}
+                    <div className="relative h-[calc(90vh-3rem)] rounded-xl overflow-hidden bg-gray-50 shadow-lg w-full">
                       <motion.div
                         key={selectedImageIndex}
                         initial={{ opacity: 0 }}
