@@ -722,7 +722,7 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="bg-white border-t border-gray-200 overflow-hidden rounded-b-2xl"
+              className="bg-white overflow-hidden rounded-b-2xl"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
