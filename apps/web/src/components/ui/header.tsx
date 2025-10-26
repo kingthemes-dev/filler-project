@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { UI_SPACING } from '@/config/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube, Plus, Tag, Star } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube, Plus, Tag } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
@@ -12,7 +12,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import EmailNotificationCenter from './email/email-notification-center';
 import SearchBar from './search/search-bar';
-import SearchModal from './search/search-modal';
 import ShopExplorePanel from './shop-explore-panel';
 
 
@@ -21,12 +20,6 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEmailCenterOpen, setIsEmailCenterOpen] = useState(false);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -50,101 +43,6 @@ export default function Header() {
     setExpandedCategories(new Set());
   };
 
-  // Handle ESC key and click outside for search
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isSearchExpanded) {
-        setIsSearchExpanded(false);
-        setSearchQuery('');
-        setSearchResults([]);
-      }
-    };
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isSearchExpanded) {
-        const target = event.target as HTMLElement;
-        // Sprawdź czy kliknięcie nie było w search barze ani w search panelu
-        if (!target.closest('[data-search-container]') && !target.closest('[data-search-panel]')) {
-          setIsSearchExpanded(false);
-          setSearchQuery('');
-          setSearchResults([]);
-        }
-      }
-    };
-
-    if (isSearchExpanded) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.addEventListener('click', handleClickOutside);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('click', handleClickOutside);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isSearchExpanded]);
-
-  // Load recent searches from localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('recentSearches');
-      if (saved) {
-        try {
-          setRecentSearches(JSON.parse(saved));
-        } catch (error) {
-          console.error('Error parsing recent searches:', error);
-        }
-      }
-    }
-  }, []);
-
-  // Save search to recent searches
-  const saveToRecentSearches = (query: string) => {
-    if (!query.trim()) return;
-    
-    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
-    setRecentSearches(updated);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('recentSearches', JSON.stringify(updated));
-    }
-  };
-
-  // Search products function
-  const searchProducts = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const response = await fetch(`/api/woocommerce?endpoint=products&search=${encodeURIComponent(query)}&per_page=10`);
-      if (response.ok) {
-        const products = await response.json();
-        setSearchResults(products);
-        // Save to recent searches
-        saveToRecentSearches(query);
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Debounced search effect
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      searchProducts(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
 
   // Toggle category expansion
   const toggleCategory = (categoryId: number) => {
@@ -546,33 +444,32 @@ export default function Header() {
             className="hidden lg:flex mx-4 lg:mx-0 min-w-0 lg:flex-1 w-full max-w-none lg:px-[var(--search-pad)]"
             style={{ ['--search-pad' as any]: `${UI_SPACING.SEARCH_SIDE_PADDING_DESKTOP}px` }}
             onMouseEnter={() => setIsShopOpen(false)}
-            data-search-container
           >
-            <SearchBar 
-              placeholder="Szukaj produktów..."
-              className="w-full text-sm"
-              onExpand={() => setIsSearchExpanded(true)}
-              value={searchQuery}
-              onChange={setSearchQuery}
-              isExpanded={isSearchExpanded}
-              onClose={() => {
-                setIsSearchExpanded(false);
-                setSearchQuery('');
-                setSearchResults([]);
-              }}
-            />
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Szukaj produktów..."
+                className="block w-full pl-10 pr-4 py-3 leading-5 bg-white placeholder-gray-500 text-sm border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+            </div>
           </div>
 
           {/* Mobile Icons with Labels */}
           <div className="lg:hidden col-start-3 flex items-center gap-3 justify-end min-w-0 flex-shrink-0">
-            {/* Mobile Search Icon - Direct to Modal */}
-            <button 
-              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
-              onClick={() => setIsSearchModalOpen(true)}
-              aria-label="Szukaj produktów"
-            >
-              <Search className="w-6 h-6" />
-            </button>
+            {/* Mobile Search */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Szukaj..."
+                className="block w-32 pl-8 pr-3 py-2 leading-5 bg-white placeholder-gray-500 text-sm border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
 
             {/* Mobile User Icon */}
             {isAuthenticated ? (
@@ -828,186 +725,7 @@ export default function Header() {
           </div>
         </div>
         
-        {/* Expanded Search Area */}
-        <AnimatePresence>
-          {isSearchExpanded && (
-            <>
-              {/* Glassmorphism Backdrop - tylko poniżej search panelu */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="fixed left-0 right-0 bottom-0 z-40"
-                style={{ 
-                  background: 'rgba(0, 0, 0, 0.4)',
-                  backdropFilter: 'blur(8px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(8px) saturate(180%)',
-                  top: '280px' // poniżej search panelu
-                }}
-                onClick={() => {
-                  setIsSearchExpanded(false);
-                  setSearchQuery('');
-                  setSearchResults([]);
-                }}
-              />
-              
-              {/* Search Panel */}
-              <motion.div
-                initial={{ height: 0, opacity: 0, y: -20 }}
-                animate={{ height: 'auto', opacity: 1, y: 0 }}
-                exit={{ height: 0, opacity: 0, y: -20 }}
-                transition={{ 
-                  duration: 0.4, 
-                  ease: [0.4, 0, 0.2, 1],
-                  opacity: { duration: 0.3 },
-                  y: { duration: 0.4 }
-                }}
-                className="absolute top-full left-0 right-0 z-50 overflow-hidden rounded-b-2xl"
-                data-search-panel
-                style={{
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(20px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.3 }}
-                  className="p-6"
-                >
-                  <div className="max-w-4xl mx-auto">
-                  
-                  {/* Search Results */}
-                  {searchQuery ? (
-                    <div>
-                      {isSearching ? (
-                        <div className="text-center py-8">
-                          <div className="text-gray-500">Wyszukiwanie...</div>
-                        </div>
-                      ) : searchResults.length > 0 ? (
-                        <div className="space-y-2">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                            Wyniki wyszukiwania ({searchResults.length})
-                          </h3>
-                          <div className="space-y-2">
-                            {searchResults.map((product) => (
-                              <Link
-                                key={product.id}
-                                href={`/produkt/${product.slug}`}
-                                className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group"
-                                onClick={() => setIsSearchExpanded(false)}
-                              >
-                                {/* Product Image */}
-                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 mr-4">
-                                  <Image
-                                    src={product.images?.[0]?.src || '/images/placeholder-product.jpg'}
-                                    alt={product.name}
-                                    width={64}
-                                    height={64}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                  />
-                                </div>
-                                
-                                {/* Product Info */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1 min-w-0">
-                                      <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1 group-hover:text-blue-600 transition-colors">
-                                        {product.name}
-                                      </h3>
-                                      
-                                      {/* Category */}
-                                      {product.categories?.[0] && (
-                                        <div className="text-xs text-gray-500 mb-2">
-                                          {product.categories[0].name}
-                                        </div>
-                                      )}
-                                      
-                                      {/* Rating */}
-                                      <div className="flex items-center gap-1 mb-2">
-                                        <div className="flex items-center">
-                                          {[1, 2, 3, 4, 5].map((star) => (
-                                            <Star
-                                              key={star}
-                                              className={`w-3 h-3 ${
-                                                star <= (product.average_rating || 0)
-                                                  ? 'text-yellow-400 fill-current'
-                                                  : 'text-gray-300'
-                                              }`}
-                                            />
-                                          ))}
-                                        </div>
-                                        <span className="text-xs text-gray-500 ml-1">
-                                          ({product.rating_count || 0})
-                                        </span>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Price */}
-                                    <div className="text-right flex-shrink-0 ml-4">
-                                      <div className="font-bold text-gray-900 text-sm">
-                                        {product.price ? `${product.price} zł` : 'Brak ceny'}
-                                      </div>
-                                      {product.sale_price && (
-                                        <div className="text-xs text-red-500 line-through">
-                                          {product.regular_price} zł
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="text-gray-500">Nie znaleziono produktów</div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Ostatnio wyszukiwane</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {recentSearches.length > 0 ? (
-                          recentSearches.map((search, index) => (
-                            <button
-                              key={index}
-                              onClick={() => {
-                                setSearchQuery(search);
-                                searchProducts(search);
-                              }}
-                              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black rounded-full transition-colors whitespace-nowrap"
-                            >
-                              {search}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="text-center py-8 w-full">
-                            <div className="text-gray-500">Brak ostatnich wyszukiwań</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  </div>
-                </motion.div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
 
-        {/* Search Modal - Direct from Mobile Icon */}
-        <SearchModal
-          isOpen={isSearchModalOpen}
-          onClose={() => setIsSearchModalOpen(false)}
-          placeholder="Szukaj produktów..."
-        />
         
         {/* Mobile Menu - COMPLETELY NEW */}
         <AnimatePresence>
