@@ -283,9 +283,9 @@ export default function Header() {
             <Image 
               src="/images/logo.webp" 
               alt="FILLER" 
-              width={120} 
-              height={40} 
-              className="h-8 sm:h-10 w-auto"
+              width={144} 
+              height={48} 
+              className="h-[38px] sm:h-12 w-auto"
               priority
             />
           </Link>
