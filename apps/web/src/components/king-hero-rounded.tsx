@@ -77,7 +77,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
 
 
   return (
-    <section className="relative h-auto min-h-[400px] sm:min-h-[450px] lg:min-h-[500px] mt-[24px] rounded-两地xl sm:rounded-3xl overflow-hidden">
+    <section className="relative h-auto min-h-[400px] sm:min-h-[450px] lg:min-h-[500px] mt-[24px] rounded-2xl sm:rounded-3xl overflow-hidden">
       <div className="absolute inset-0 h-full">
         <div className="relative h-full overflow-hidden">
           {/* Background Image - optimized for LCP - native img for fastest load */}
@@ -97,7 +97,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           </div>
           
           {/* Content */}
-          <div className="relative z-20 h-full flex flex-col justify-center md:justify-start items-center md:items-start text-center md:text-left px-4 sm:px-6 md:px-8 lg:px-12 pt-0">
+          <div className="relative z-20 h-full flex flex-col justify-center md:justify-start items-center md:items-start text-center md:text-left px-4 sm:px-6 md:px-8 lg:px-12 pt-0 md:pt-[50px]">
             {/* Text Content - Centered on mobile, Left aligned on desktop */}
             <div className="text-white space-y-6 sm:space-y-8 md:space-y-6 max-w-4xl md:max-w-2xl">
               <h1 className="text-2xl sm:text-3xl md:text-3xl lg:text-5xl font-normal leading-tight">
