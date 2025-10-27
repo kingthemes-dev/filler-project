@@ -103,9 +103,9 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        {/* Google Tag Manager - Lazy loaded for better FID */}
+        {/* Google Tag Manager */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
-          <Script id="gtm" strategy="lazyOnload" dangerouslySetInnerHTML={{__html: `
+          <Script id="gtm" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -113,14 +113,14 @@ export default function RootLayout({
             })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
           `}} />
         )}
-            {/* Google Analytics 4 + Search Console - Lazy loaded for better FID */}
+            {/* Google Analytics 4 + Search Console */}
             {process.env.NEXT_PUBLIC_GA4_ID && (
               <>
                 <Script
                   src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}`}
-                  strategy="lazyOnload"
+                  strategy="afterInteractive"
                 />
-                <Script id="ga4" strategy="lazyOnload" dangerouslySetInnerHTML={{__html: `
+                <Script id="ga4" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
                   gtag('js', new Date());
@@ -155,7 +155,7 @@ export default function RootLayout({
             
             {/* Search Console Analytics - Inline implementation to avoid 404 */}
             {process.env.NEXT_PUBLIC_GA4_ID && (
-              <Script id="search-console-inline" strategy="lazyOnload" dangerouslySetInnerHTML={{__html: `
+              <Script id="search-console-inline" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
                 // Track scroll depth inline
                 let scrollDepthTracked = 0;
                 window.addEventListener('scroll', () => {
