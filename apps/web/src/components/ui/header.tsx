@@ -655,11 +655,6 @@ export default function Header() {
           </div>
         </div>
         
-        {/* Mobile border line */}
-        <div className="lg:hidden border-b border-gray-200"></div>
-        
-
-        
         {/* Mobile Menu - Header Expansion */}
         <AnimatePresence>
           {isMobileMenuOpen && (
