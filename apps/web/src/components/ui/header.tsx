@@ -500,18 +500,15 @@ export default function Header() {
                 <AnimatePresence>
                   {showUserMenu && (
                     <>
-                      
+                      <div className="fixed inset-0 z-[60]" onClick={() => setShowUserMenu(false)} />                      
                       {/* Dropdown */}
                     <motion.div
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="fixed bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-[70]"
-                      style={{
-                        top: '80px', // Below header
-                        right: '20px', // Right side of screen
-                        width: '280px'
+                      className="absolute right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-[70]"
+                      style={{ width: '280px' 
                       }}
                     >
                                     {/* User Info */}
