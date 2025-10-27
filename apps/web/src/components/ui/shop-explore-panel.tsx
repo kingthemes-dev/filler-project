@@ -275,7 +275,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   </div>
                 ) : (
                   <div className="pr-1 pb-2">
-                    <div className="grid grid-cols-4 gap-1">
+                    <div className="grid grid-cols-3 gap-1">
                       {brandOptions.map((brand, index) => (
                         <motion.div
                           key={brand.id}
