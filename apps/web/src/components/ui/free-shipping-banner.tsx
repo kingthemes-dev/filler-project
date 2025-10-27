@@ -59,12 +59,9 @@ export default function FreeShippingBanner() {
     return () => clearInterval(interval);
   }, []);
 
-  // Don't show banner if user already has free shipping
-  const hasFreeShipping = hasCart && remainingForFreeShipping <= 0;
-
   return (
     <div className={`sticky top-0 z-[100] transition-transform duration-300 ${
-      isVisible && !hasFreeShipping ? 'translate-y-0' : '-translate-y-full'
+      isVisible ? 'translate-y-0' : '-translate-y-full'
     }`}>
       {/* Main Banner */}
       <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700">
