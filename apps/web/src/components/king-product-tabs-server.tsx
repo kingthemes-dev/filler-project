@@ -138,16 +138,17 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 <button
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
-                  className="relative z-10 flex items-center gap-2 px-4 py-3 text-base font-bold transition-all duration-500 ease-out border-0 border-transparent rounded-xl"
+                  className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-base font-bold transition-all duration-500 ease-out border-0 border-transparent rounded-xl"
                   disabled={isTransitioning}
                   style={{
                     color: activeTab === tab.id ? 'white' : '#374151',
                     backgroundColor: 'transparent'
                   }}
                 >
-                  {getTabIcon(tab.id)}
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.charAt(0)}</span>
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center">
+                    {getTabIcon(tab.id)}
+                  </div>
+                  <span className="text-center leading-tight">{tab.label}</span>
                 </button>
               ))}
             </div>
