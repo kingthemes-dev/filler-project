@@ -125,16 +125,27 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          id="shop-explore-panel"
-          role="dialog"
-          aria-modal="true"
-          className="absolute top-full -left-[1px] -right-[1px] w-[calc(100%+2px)] bg-white border-l border-r border-b border-t-0 border-gray-200/50 z-50 rounded-b-3xl"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-        >
+        <>
+          {/* Overlay to darken content behind dropdown */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            onClick={onClose}
+          />
+          {/* Dropdown content */}
+          <motion.div
+            id="shop-explore-panel"
+            role="dialog"
+            aria-modal="true"
+            className="absolute top-full -left-[1px] -right-[1px] w-[calc(100%+2px)] bg-white border-l border-r border-b border-t-0 border-gray-200/50 z-50 rounded-b-3xl"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
           <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-8 pb-8 relative">
             {/* Close button */}
             <button
@@ -290,7 +301,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
               </div>
             </div>
           </div>
-        </motion.div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
