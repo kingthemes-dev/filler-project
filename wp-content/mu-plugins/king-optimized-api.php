@@ -293,6 +293,28 @@ class KingOptimizedAPI {
         // Debug log final categories
         error_log('🔍 Final categories array: ' . print_r($categories, true));
         
+        // Get main image
+        $image_id = $product->get_image_id();
+        $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'woocommerce_thumbnail') : wc_placeholder_img_src('woocommerce_thumbnail');
+        
+        // Get gallery images
+        $gallery_ids = $product->get_gallery_image_ids();
+        $images = array();
+        if ($image_id) {
+            $images[] = array(
+                'id' => $image_id,
+                'src' => wp_get_attachment_image_url($image_id, 'woocommerce_single'),
+                'alt' => get_post_meta($image_id, '_wp_attachment_image_alt', true) ?: $product->get_name()
+            );
+        }
+        foreach ($gallery_ids as $gallery_id) {
+            $images[] = array(
+                'id' => $gallery_id,
+                'src' => wp_get_attachment_image_url($gallery_id, 'woocommerce_single'),
+                'alt' => get_post_meta($gallery_id, '_wp_attachment_image_alt', true) ?: $product->get_name()
+            );
+        }
+        
         return array(
             'id' => $product->get_id(),
             'name' => $product->get_name(),
@@ -302,10 +324,13 @@ class KingOptimizedAPI {
             'sale_price' => $product->get_sale_price(),
             'on_sale' => $product->is_on_sale(),
             'featured' => $product->is_featured(),
-            'image' => wp_get_attachment_image_url($product->get_image_id(), 'medium'),
+            'image' => $image_url,
+            'images' => $images,
             'stock_status' => $product->get_stock_status(),
             'type' => $product->get_type(),
-            'categories' => $categories
+            'categories' => $categories,
+            'short_description' => $product->get_short_description(),
+            'description' => $product->get_description()
         );
     }
     
