@@ -3,6 +3,7 @@ import { cache } from '@/lib/cache';
 import { WooShippingMethod } from '@/types/woocommerce';
 import { sentryMetrics } from '@/utils/sentry-metrics';
 import { env } from '@/config/env';
+import { withCircuitBreaker, safeWordPressRequest } from '@/utils/circuit-breaker';
 
 // Redis client (optional)
 let redis: any = null;
