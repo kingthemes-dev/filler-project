@@ -90,11 +90,6 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const subCategories = useMemo(() => categories.filter(c => (c.parent || 0) === (selectedCat || 0)), [categories, selectedCat]);
   const currentMain = useMemo(() => mainCategories.find(c => c.id === selectedCat) || null, [mainCategories, selectedCat]);
 
-  console.log('🔍 Debug dropdown:', {
-    selectedCat,
-    subCategories: subCategories.length,
-    currentMain: currentMain?.name
-  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
