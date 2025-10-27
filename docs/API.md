@@ -1,756 +1,318 @@
-# API Documentation
+# API Documentation - Headless WooCommerce
 
-## Overview
+## 🎯 **INSTRUKCJA DLA DEWELOPERÓW**
 
-This document describes the API endpoints and data structures used in the FILLER Headless WooCommerce application.
+### **Jak to działa:**
 
-## 🚀 **PERFORMANCE STATUS**
-- **Lighthouse Performance**: 98-99/100 ⚡
-- **Lighthouse Accessibility**: 100/100 ♿
-- **Lighthouse Best Practices**: 100/100 ✅
-- **Lighthouse SEO**: 100/100 🔍
+1. **Next.js API Routes** (`apps/web/src/app/api/`) → Proxy/middleware
+2. **WordPress REST API** → Faktyczne źródło danych
+3. **king-optimized Plugin** → Custom endpointy z cache
 
-## 🎯 **TOP-OF-THE-TOP FEATURES**
-- **AI Chat Assistant** - inteligentny czatbot z kontekstem kosmetycznym
-- **Skincare Personalization** - quiz typu skóry, builder rutyny
-- **Dynamic Recommendations** - AI-powered rekomendacje produktów
-- **Advanced Payments** - Buy Now Pay Later, ratalne, Apple/Google Pay
-- **Abandoned Cart Recovery** - zaawansowany system odzyskiwania
-- **Loyalty Program** - punkty, poziomy VIP, referral program
-- **Social Commerce** - Instagram Shopping, TikTok Shop, UGC
-- **3D Visualization** - wirtualna wizualizacja produktów
-- **PWA** - Progressive Web App z offline support
-- **Advanced Reviews** - photo/video reviews, verified purchases
-- **Advanced Analytics** - heatmaps, A/B testing, predictive analytics
+### **Endpoint Flow:**
 
-## Base URLs
+```
+User → Next.js API Route → WordPress REST API → WooCommerce
+```
 
-- **Development**: `http://localhost:3001`
-- **Production**: `https://filler.pl`
-
-## Authentication
-
-### JWT Token
-
-Most API endpoints require authentication via JWT token stored in localStorage.
+### **Przykład użycia:**
 
 ```typescript
-// Token is automatically included in requests
-const token = localStorage.getItem('auth-token');
+// W Next.js komponencie
+const response = await fetch('/api/woocommerce?endpoint=products');
+const data = await response.json();
 ```
 
-### Headers
+---
 
-```http
-Authorization: Bearer <jwt-token>
-Content-Type: application/json
-```
+## 📍 **WSZYSTKIE ENDPOINTY**
 
-## API Endpoints
+### 🏠 **Homepage**
 
-### 🤖 AI Chat Assistant
+#### GET `/wp-json/king-optimized/v1/homepage?page=1`
 
-#### POST /api/ai/chat
-Send message to AI chat assistant.
+**Description:** Pobiera wszystkie dane homepage w jednym requestcie (wszystkie tabs)
 
-**Request Body:**
+**Response:**
 ```json
 {
-  "message": "Jaka jest najlepsza rutyna dla skóry tłustej?",
-  "context": {
-    "skinType": "oily",
-    "concerns": ["acne", "pores"],
-    "previousProducts": [123, 456]
+  "success": true,
+  "data": {
+    "bestsellers": [...],
+    "new_arrivals": [...],
+    "on_sale": [...],
+    "featured": [...]
   }
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "response": "Dla skóry tłustej polecam...",
-  "recommendations": [
-    {
-      "productId": 789,
-      "reason": "Zawiera kwas salicylowy..."
-    }
-  ]
-}
-```
+---
 
-### 🧬 Skincare Personalization
+### 🛍️ **Shop / Products**
 
-#### POST /api/personalization/quiz
-Submit skincare quiz results.
+#### GET `/wp-json/king-optimized/v1/shop?page=1&per_page=12&category=slug`
 
-**Request Body:**
-```json
-{
-  "skinType": "combination",
-  "concerns": ["acne", "aging", "darkSpots"],
-  "sensitivity": "moderate",
-  "lifestyle": "busy",
-  "budget": "medium"
-}
-```
+**Description:** Pobiera produkty z filtrowaniem
+
+**Params:**
+- `page` - numer strony (default: 1)
+- `per_page` - produkty na stronę (default: 12)
+- `category` - slug kategorii
 
 **Response:**
 ```json
 {
-  "success": true,
-  "routine": {
-    "morning": [
-      {
-        "step": "cleanser",
-        "productId": 123,
-        "instructions": "Delikatnie masuj przez 30 sekund"
-      }
-    ],
-    "evening": [...]
-  },
-  "recommendations": [...]
-}
-```
-
-### 🎨 Dynamic Recommendations
-
-#### GET /api/recommendations/{userId}
-Get personalized product recommendations.
-
-**Response:**
-```json
-{
-  "success": true,
-  "recommendations": {
-    "frequentlyBoughtTogether": [...],
-    "similarProducts": [...],
-    "trending": [...],
-    "personalized": [...]
-  }
-}
-```
-
-### 💳 Advanced Payments
-
-#### POST /api/payments/klarna
-Create Klarna payment session.
-
-**Request Body:**
-```json
-{
-  "orderId": 12345,
-  "amount": 299.99,
-  "currency": "PLN"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "sessionId": "klarna_session_123",
-  "redirectUrl": "https://checkout.klarna.com/..."
-}
-```
-
-### 🛍️ Abandoned Cart Recovery
-
-#### POST /api/cart/abandoned
-Track abandoned cart.
-
-**Request Body:**
-```json
-{
-  "userId": 123,
-  "cartItems": [...],
-  "abandonedAt": "2025-09-30T10:30:00Z"
-}
-```
-
-#### GET /api/cart/abandoned/{userId}
-Get abandoned cart recovery data.
-
-### 🎁 Loyalty Program
-
-#### GET /api/loyalty/points/{userId}
-Get user loyalty points and status.
-
-**Response:**
-```json
-{
-  "success": true,
-  "points": 1250,
-  "tier": "gold",
-  "nextTier": {
-    "name": "platinum",
-    "pointsNeeded": 250
-  },
-  "rewards": [...]
-}
-```
-
-#### POST /api/loyalty/redeem
-Redeem loyalty points.
-
-### 📸 Social Commerce
-
-#### GET /api/social/instagram/products
-Get Instagram-ready product data.
-
-#### POST /api/social/ugc/submit
-Submit user-generated content.
-
-### 🎥 3D Visualization
-
-#### GET /api/products/{id}/3d
-Get 3D model data for product.
-
-**Response:**
-```json
-{
-  "success": true,
-  "modelUrl": "https://cdn.filler.pl/models/product_123.glb",
-  "textures": [...],
-  "animations": [...]
-}
-```
-
-### 📱 PWA
-
-#### GET /api/pwa/manifest
-Get PWA manifest data.
-
-#### POST /api/pwa/subscribe
-Subscribe to push notifications.
-
-### ⭐ Advanced Reviews
-
-#### POST /api/reviews
-Submit product review with media.
-
-**Request Body:**
-```json
-{
-  "productId": 123,
-  "rating": 5,
-  "title": "Świetny produkt!",
-  "content": "Polecam każdemu...",
-  "images": ["base64_image_1", "base64_image_2"],
-  "video": "base64_video"
-}
-```
-
-### 📊 Advanced Analytics
-
-#### POST /api/analytics/track
-Track user behavior event.
-
-**Request Body:**
-```json
-{
-  "event": "product_view",
-  "properties": {
-    "productId": 123,
-    "category": "skincare",
-    "value": 99.99
-  }
-}
-```
-
-#### GET /api/analytics/heatmap/{page}
-Get heatmap data for page.
-
-### Authentication
-
-#### POST /api/auth/login
-Login user with email and password.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
-    "billing": {
-      "company": "Example Corp",
-      "nip": "1234567890",
-      "phone": "+48123456789",
-      "address": "Example Street 123",
-      "city": "Warsaw",
-      "postcode": "00-001",
-      "country": "PL"
-    }
-  },
-  "token": "jwt-token-here"
-}
-```
-
-#### POST /api/auth/register
-Register new user.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "password123",
-  "firstName": "John",
-  "lastName": "Doe",
-  "phone": "+48123456789",
-  "marketingConsent": true
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe"
-  },
-  "message": "User registered successfully"
-}
-```
-
-### Products
-
-#### GET /api/woocommerce?endpoint=products
-Get list of products.
-
-**Query Parameters:**
-- `page` (number): Page number (default: 1)
-- `per_page` (number): Items per page (default: 12)
-- `search` (string): Search term
-- `category` (number): Category ID
-- `min_price` (number): Minimum price
-- `max_price` (number): Maximum price
-- `orderby` (string): Sort field (price, date, popularity)
-- `order` (string): Sort direction (asc, desc)
-
-**Response:**
-```json
-{
-  "success": true,
-  "products": [
-    {
-      "id": 1,
-      "name": "Product Name",
-      "slug": "product-name",
-      "description": "Product description",
-      "short_description": "Short description",
-      "price": "99.00",
-      "regular_price": "99.00",
-      "sale_price": "",
-      "stock_status": "instock",
-      "stock_quantity": 10,
-      "images": [
-        {
-          "id": 1,
-          "src": "https://example.com/image.jpg",
-          "alt": "Product image"
-        }
-      ],
-      "categories": [
-        {
-          "id": 1,
-          "name": "Category Name",
-          "slug": "category-name"
-        }
-      ]
-    }
-  ],
+  "products": [...],
   "total": 100,
-  "page": 1,
-  "per_page": 12
+  "categories": [...],
+  "attributes": {...}
 }
 ```
 
-#### GET /api/woocommerce?endpoint=products/{id}
-Get single product details.
+**Next.js:** `GET /api/woocommerce?endpoint=shop&page=1&per_page=12`
+
+---
+
+### 🔍 **Single Product**
+
+#### GET `/wp-json/king-optimized/v1/product/{slug}`
+
+**Description:** Pobiera pojedynczy produkt z całymi danymi
 
 **Response:**
 ```json
 {
   "success": true,
   "product": {
-    "id": 1,
+    "id": 123,
     "name": "Product Name",
-    "description": "Full product description",
+    "slug": "product-name",
     "price": "99.00",
-    "variations": [
-      {
-        "id": 1,
-        "attributes": {
-          "pa_capacity": "50ml"
-        },
-        "price": "99.00"
-      }
-    ]
+    "variations": [...],
+    "related": [...]
   }
 }
 ```
 
-### Orders
+**Next.js:** `GET /api/woocommerce?endpoint=products/{id}`
 
-#### GET /api/woocommerce?endpoint=orders&customer={id}
-Get user orders.
+---
 
-**Response:**
-```json
-{
-  "success": true,
-  "orders": [
-    {
-      "id": 1,
-      "number": "001",
-      "status": "processing",
-      "date_created": "2024-01-01T00:00:00",
-      "total": "99.00",
-      "currency": "PLN",
-      "payment_method": "cod",
-      "payment_method_title": "Za pobraniem",
-      "line_items": [
-        {
-          "id": 1,
-          "name": "Product Name",
-          "quantity": 1,
-          "price": "99.00",
-          "total": "99.00"
-        }
-      ]
-    }
-  ]
-}
-```
+### 📦 **Categories**
 
-#### POST /api/woocommerce?endpoint=orders
-Create new order.
+#### GET `/wp-json/king-shop/v1/attributes`
 
-**Request Body:**
-```json
-{
-  "payment_method": "cod",
-  "billing": {
-    "first_name": "John",
-    "last_name": "Doe",
-    "company": "Example Corp",
-    "address_1": "Example Street 123",
-    "city": "Warsaw",
-    "postcode": "00-001",
-    "country": "PL",
-    "email": "user@example.com",
-    "phone": "+48123456789",
-    "nip": "1234567890"
-  },
-  "shipping": {
-    "first_name": "John",
-    "last_name": "Doe",
-    "address_1": "Example Street 123",
-    "city": "Warsaw",
-    "postcode": "00-001",
-    "country": "PL"
-  },
-  "line_items": [
-    {
-      "product_id": 1,
-      "quantity": 1
-    }
-  ],
-  "customer_id": 1,
-  "meta_data": [
-    {
-      "key": "_invoice_request",
-      "value": "yes"
-    }
-  ]
-}
-```
+**Description:** Pobiera kategorie i atrybuty (filterable)
 
 **Response:**
 ```json
 {
-  "success": true,
-  "order": {
-    "id": 1,
-    "number": "001",
-    "status": "pending",
-    "total": "99.00",
-    "currency": "PLN"
+  "categories": [...],
+  "attributes": {...}
+}
+```
+
+**Next.js:** `GET /api/woocommerce?endpoint=categories`
+
+---
+
+### 🛒 **Cart Operations**
+
+#### POST `/wp-json/king-cart/v1/add`
+
+**Description:** Dodaj produkt do koszyka
+
+**Request:**
+```json
+{
+  "product_id": 123,
+  "quantity": 1,
+  "variation_id": 456
+}
+```
+
+---
+
+### 👤 **Customer / Orders**
+
+#### GET `/wp-json/king-optimized/v1/customer/{id}/orders`
+
+**Description:** Pobiera zamówienia użytkownika
+
+**Next.js:** `GET /api/woocommerce?endpoint=orders&customer={id}`
+
+---
+
+### 📧 **Email**
+
+#### POST `/wp-json/king-email/v1/send`
+
+**Description:** Wysyła email (order confirmation, etc.)
+
+**Next.js:** `POST /api/send-email`
+
+---
+
+### 💳 **Payments**
+
+#### POST `/wp-json/wc/v3/payments`
+
+**Description:** Przetwarzanie płatności
+
+**Next.js:** `POST /api/payments/{method}`
+
+---
+
+### 🎁 **Newsletter**
+
+#### POST `/wp-json/king-email/v1/newsletter`
+
+**Description:** Zapisz do newslettera
+
+**Next.js:** `POST /api/newsletter/subscribe`
+
+---
+
+## 🚨 **WAŻNE - CO NIE UŻYWAĆ**
+
+### ❌ **NIE UŻYWAJ:**
+- `king-shop/v1/data` - TO NIE ISTNIEJE!
+- `king-shop/v1/shop` - TO NIE ISTNIEJE!
+
+### ✅ **UŻYWAJ:**
+- `king-optimized/v1/shop` - ✅ POPRAWNE
+- `king-optimized/v1/homepage` - ✅ POPRAWNE
+- `king-optimized/v1/product/{slug}` - ✅ POPRAWNE
+
+---
+
+## 🔧 **NEXT.JS API ROUTES**
+
+### `/api/woocommerce`
+
+Universal proxy dla WooCommerce API:
+
+```typescript
+// Przykłady:
+GET /api/woocommerce?endpoint=products
+GET /api/woocommerce?endpoint=shop&page=1&per_page=12
+GET /api/woocommerce?endpoint=categories
+GET /api/woocommerce?endpoint=orders&customer=123
+
+POST /api/woocommerce?endpoint=orders
+POST /api/woocommerce?endpoint=cart/add
+```
+
+**Lokalizacja:** `apps/web/src/app/api/woocommerce/route.ts`
+
+---
+
+## 🎯 **CACHE STRATEGY**
+
+1. **Redis Cache** - WordPress level (24h)
+2. **Next.js ISR** - Edge caching (60s)
+3. **Browser Cache** - Client level (5min)
+
+---
+
+## 📊 **PERFORMANCE**
+
+- **API Response Time:** < 200ms
+- **Cache Hit Rate:** 95%+
+- **Lighthouse Score:** 98-99/100
+
+---
+
+## 🔐 **AUTHENTICATION**
+
+### JWT Token
+
+```typescript
+const token = localStorage.getItem('auth-token');
+
+fetch('/api/woocommerce', {
+  headers: {
+    'Authorization': `Bearer ${token}`
   }
-}
+});
 ```
 
-### Profile Management
+---
 
-#### PUT /api/woocommerce?endpoint=customer/update-profile
-Update user profile.
-
-**Request Body:**
-```json
-{
-  "customer_id": 1,
-  "profile_data": {
-    "firstName": "John",
-    "lastName": "Doe",
-    "billing": {
-      "company": "Example Corp",
-      "nip": "1234567890",
-      "phone": "+48123456789",
-      "address": "Example Street 123",
-      "city": "Warsaw",
-      "postcode": "00-001",
-      "country": "PL",
-      "invoiceRequest": true
-    },
-    "shipping": {
-      "address": "Example Street 123",
-      "city": "Warsaw",
-      "postcode": "00-001",
-      "country": "PL"
-    }
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Profil został zaktualizowany pomyślnie",
-  "customer": {
-    "id": 1,
-    "firstName": "John",
-    "lastName": "Doe",
-    "email": "user@example.com",
-    "billing": {
-      "company": "Example Corp",
-      "nip": "1234567890",
-      "phone": "+48123456789",
-      "address": "Example Street 123",
-      "city": "Warsaw",
-      "postcode": "00-001",
-      "country": "PL"
-    }
-  }
-}
-```
-
-### Invoices
-
-#### GET /api/woocommerce?endpoint=customers/invoices&customer_id={id}
-Get customer invoices.
-
-**Response:**
-```json
-{
-  "success": true,
-  "invoices": [
-    {
-      "id": "1",
-      "number": "FV/001/2024",
-      "date": "2024-01-01",
-      "total": 9900,
-      "currency": "PLN",
-      "status": "completed",
-      "download_url": "https://example.com/invoice.pdf"
-    }
-  ]
-}
-```
-
-### Newsletter
-
-#### POST /api/newsletter/subscribe
-Subscribe to newsletter.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "firstName": "John",
-  "lastName": "Doe",
-  "source": "website",
-  "consent": true
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Zapisano do newslettera! Kod rabatowy 10% został wysłany na email.",
-  "discountCode": "NEWSJOH1234"
-}
-```
-
-### Email
-
-#### POST /api/send-email
-Send order confirmation email.
-
-**Request Body:**
-```json
-{
-  "type": "order_confirmation",
-  "order_id": 1,
-  "customer_email": "user@example.com",
-  "customer_name": "John Doe",
-  "order_number": "001",
-  "total": "99.00",
-  "items": [
-    {
-      "name": "Product Name",
-      "quantity": 1,
-      "price": "99.00"
-    }
-  ]
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Email sent successfully"
-}
-```
-
-## Error Responses
-
-All endpoints return consistent error responses:
+## 📝 **ERROR HANDLING**
 
 ```json
 {
   "success": false,
   "error": "Error message",
-  "code": "ERROR_CODE",
-  "timestamp": "2024-01-01T00:00:00Z"
+  "code": "ERROR_CODE"
 }
 ```
 
-### Common Error Codes
+### Common Errors:
+- `UNAUTHORIZED` - Brak autoryzacji
+- `NOT_FOUND` - Resource nie istnieje
+- `VALIDATION_ERROR` - Błędne dane
+- `API_ERROR` - Błąd WordPress API
 
-- `VALIDATION_ERROR`: Input validation failed
-- `UNAUTHORIZED`: Authentication required
-- `FORBIDDEN`: Access denied
-- `NOT_FOUND`: Resource not found
-- `API_ERROR`: External API error
-- `NETWORK_ERROR`: Network connection error
-- `UNKNOWN_ERROR`: Unexpected error
+---
 
-## Rate Limiting
+## 🧪 **TESTING**
 
-API endpoints are rate limited to prevent abuse:
-
-- **Default**: 100 requests per 15 minutes per IP
-- **Authentication**: 10 requests per minute per IP
-- **Order creation**: 5 requests per minute per user
-
-## Data Validation
-
-### Required Fields
-
-Most endpoints require specific fields. Missing required fields return `VALIDATION_ERROR`.
-
-### Field Validation
-
-- **Email**: Must be valid email format
-- **Phone**: Must be valid Polish phone number
-- **NIP**: Must be valid 10-digit NIP with checksum
-- **Postcode**: Must be valid Polish postcode (XX-XXX)
-- **Password**: Minimum 8 characters with uppercase, lowercase, and number
-
-### Sanitization
-
-All input data is sanitized to prevent XSS and injection attacks.
-
-## Pagination
-
-List endpoints support pagination:
-
-- `page`: Page number (starts from 1)
-- `per_page`: Items per page (max 100)
-- Response includes `total` and `page` fields
-
-## Caching
-
-API responses are cached for performance:
-
-- **Products**: 10 minutes
-- **Categories**: 30 minutes
-- **User data**: 15 minutes
-- **Orders**: 5 minutes
-
-Cache can be bypassed with `?no-cache=1` parameter.
-
-## Webhooks
-
-The system supports webhooks for real-time updates:
-
-- **Order status changes**: `POST /api/webhooks/order-status`
-- **Stock updates**: `POST /api/webhooks/stock-update`
-- **New products**: `POST /api/webhooks/new-product`
-
-## SDK Examples
-
-### JavaScript/TypeScript
-
-```typescript
-import { WooCommerceAPI } from '@/utils/api-helpers';
-
-const api = new WooCommerceAPI();
-
-// Get products
-const products = await api.getProducts({
-  page: 1,
-  per_page: 12,
-  category: 1
-});
-
-// Create order
-const order = await api.createOrder({
-  payment_method: 'cod',
-  billing: { /* billing data */ },
-  line_items: [{ product_id: 1, quantity: 1 }]
-});
-```
-
-### cURL Examples
+### Test endpointów:
 
 ```bash
-# Login
-curl -X POST http://localhost:3001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"password123"}'
+# Homepage
+curl "http://localhost:3001/wp-json/king-optimized/v1/homepage"
 
-# Get products
-curl "http://localhost:3001/api/woocommerce?endpoint=products&page=1&per_page=12"
+# Shop
+curl "http://localhost:3001/wp-json/king-optimized/v1/shop?page=1&per_page=12"
 
-# Create order
-curl -X POST "http://localhost:3001/api/woocommerce?endpoint=orders" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer jwt-token" \
-  -d '{"payment_method":"cod","line_items":[{"product_id":1,"quantity":1}]}'
+# Product
+curl "http://localhost:3001/wp-json/king-optimized/v1/product/product-slug"
+
+# Przez Next.js
+curl "http://localhost:3001/api/woocommerce?endpoint=shop"
 ```
 
-## Support
+---
 
-For API support and questions:
+## 📚 **DODATKOWE RESOURCES**
 
-- **Email**: support@example.com
-- **Documentation**: https://docs.example.com
-- **Status Page**: https://status.example.com
+- **WordPress REST API:** `/wp-json/`
+- **WooCommerce API:** `/wp-json/wc/v3/`
+- **Custom Endpoints:** `/wp-json/king-optimized/v1/`
+
+---
+
+## 🚀 **QUICK START**
+
+1. **Pobierz produkty:**
+```typescript
+const products = await fetch('/api/woocommerce?endpoint=shop').then(r => r.json());
+```
+
+2. **Pobierz pojedynczy produkt:**
+```typescript
+const product = await fetch('/api/woocommerce?endpoint=products/123').then(r => r.json());
+```
+
+3. **Pobierz kategorie:**
+```typescript
+const categories = await fetch('/api/woocommerce?endpoint=categories').then(r => r.json());
+```
+
+---
+
+## ⚡ **PERFORMANCE TIPS**
+
+1. **Używaj ISR** dla statycznych stron
+2. **Cache'uj w Next.js** - redukuje load na WordPress
+3. **Batch requests** - pobieraj wszystko w jednym requestcie
+4. **Lazy load** - ładowj zdjęcia dynamicznie
+5. **Edge Functions** - dla global performance
+
+---
+
+**Ostatnia aktualizacja:** 2025-01-30  
+**Version:** 2.0.0  
+**Status:** ✅ Production Ready
