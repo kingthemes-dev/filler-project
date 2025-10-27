@@ -18,12 +18,14 @@
     width: 100%;
     max-width: 100vw;
     position: relative;
+    font-family: var(--font-montserrat), system-ui, sans-serif;
   }
   
   /* Prevent horizontal scroll on mobile */
   body {
     touch-action: pan-y;
     overscroll-behavior-x: none;
+    font-family: var(--font-montserrat), system-ui, sans-serif;
   }
   
   /* Mobile-first minimal margins */
