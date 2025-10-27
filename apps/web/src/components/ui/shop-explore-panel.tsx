@@ -174,6 +174,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                     >
                       <button
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           setSelectedCat(category.id);
                         }}
