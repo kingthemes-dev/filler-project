@@ -142,18 +142,18 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             id="shop-explore-panel"
             role="dialog"
             aria-modal="true"
-            className="fixed top-[104px] left-0 right-0 w-full bg-white border-l border-r border-b border-t border-gray-300 z-50 rounded-b-3xl shadow-lg mb-[30px] max-h-[calc(100vh-120px)] overflow-y-auto"
+            className="fixed top-[114px] left-4 right-4 mx-auto max-w-7xl w-auto bg-white border-l border-r border-b border-t border-gray-300 z-50 rounded-b-3xl shadow-lg mb-[30px] max-h-[calc(100vh-130px)] overflow-y-auto"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
-          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-8 pb-8 relative" onClick={(e) => e.stopPropagation()}>
+          <div className="px-4 lg:px-6 pt-8 pb-8 relative" onClick={(e) => e.stopPropagation()}>
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
+              className="absolute top-6 right-4 lg:right-6 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
               aria-label="Zamknij"
             >
               <X className="w-6 h-6" />
