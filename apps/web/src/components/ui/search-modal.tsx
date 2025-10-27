@@ -126,6 +126,28 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      // Stop debounce and trigger immediate search
+      const query = searchQuery.trim();
+      setIsLoading(true);
+      
+      fetch(`/api/woocommerce?endpoint=products&search=${encodeURIComponent(query)}&per_page=10`)
+        .then(res => res.json())
+        .then(data => {
+          setProducts(data || []);
+          setSuggestions(data?.slice(0, 5) || []);
+          setIsLoading(false);
+          setHasSearched(true);
+          saveToHistory(query);
+        })
+        .catch(error => {
+          console.error('Search error:', error);
+          setIsLoading(false);
+        });
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -160,10 +182,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <Search className="w-5 h-5 text-gray-400 mr-3" />
                   <input
                     ref={inputRef}
-                    type="text"
+                    type="search"
                     placeholder="Szukaj produktów..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     className="flex-1 text-base focus:outline-none text-gray-900 placeholder-gray-400"
                     autoFocus
                   />
