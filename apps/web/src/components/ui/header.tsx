@@ -659,7 +659,7 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="bg-gradient-to本研究 from-gray-50 via-white to-gray-50 overflow-hidden rounded-b-2xl border-b border-gray-200 shadow-xl mb-[30px]"
+              className="bg-gradient-to本研究 from-gray-50 via-white to-gray-50 overflow-hidden rounded-b-2xl border-t border-gray-200"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
