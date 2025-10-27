@@ -1209,9 +1209,9 @@ async function handleShopEndpoint(req: NextRequest) {
   try {
     // PRO Architecture: WordPress robi całe filtrowanie
     // Next.js tylko przekazuje parametry i cache'uje odpowiedź
-    const shopUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/data?${searchParams.toString()}`;
+    const shopUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-optimized/v1/shop?${searchParams.toString()}`;
     
-    console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
+    console.log('🛍️ Shop endpoint - calling King Optimized API:', shopUrl);
     
     const response = await fetch(shopUrl, {
       method: 'GET',
