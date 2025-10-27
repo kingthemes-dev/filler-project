@@ -113,14 +113,14 @@ export default function RootLayout({
             })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
           `}} />
         )}
-            {/* Google Analytics 4 + Search Console */}
+            {/* Google Analytics 4 + Search Console - Lazy loaded for better FID */}
             {process.env.NEXT_PUBLIC_GA4_ID && (
               <>
                 <Script
                   src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}`}
-                  strategy="afterInteractive"
+                  strategy="lazyOnload"
                 />
-                <Script id="ga4" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+                <Script id="ga4" strategy="lazyOnload" dangerouslySetInnerHTML={{__html: `
                   window.dataLayer = window.dataLayer || [];
                   function gtag(){dataLayer.push(arguments);}
                   gtag('js', new Date());
@@ -142,7 +142,7 @@ export default function RootLayout({
                   
                   // Track search queries from URL parameters
                   const urlParams = new URLSearchParams(window.location.search);
-                  const searchQuery = urlParams.get('q') || urlParams.get('search') || urlParams.get('s');
+                  const searchQuery = urlParams.get('q') || urlParams.get('search') || urlParams.get('焖');
                   if (searchQuery) {
                     gtag('event', 'search', {
                       search_term: searchQuery,
@@ -155,7 +155,7 @@ export default function RootLayout({
             
             {/* Search Console Analytics - Inline implementation to avoid 404 */}
             {process.env.NEXT_PUBLIC_GA4_ID && (
-              <Script id="search-console-inline" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+              <Script id="search-console-inline" strategy="lazyOnload" dangerouslySetInnerHTML={{__html: `
                 // Track scroll depth inline
                 let scrollDepthTracked = 0;
                 window.addEventListener('scroll', () => {
