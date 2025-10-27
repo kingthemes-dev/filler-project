@@ -97,7 +97,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           </div>
           
           {/* Content */}
-          <div className="relative z-20 h-full flex flex-col justify-center md:justify-start items-center md:items-start text-center md:text-left px-4 sm:px-6 md:px-8 lg:px-12 pt-[200px] md:pt-[200px]">
+          <div className="relative z-20 h-full flex flex-col justify-center md:justify-start items-center md:items-start text-center md:text-left px-4 sm:px-6 md:px-8 lg:px-12 pt-[100px] md:pt-[100px]">
             {/* Text Content - Centered on mobile, Left aligned on desktop */}
             <div className="text-white space-y-6 sm:space-y-8 md:space-y-6 max-w-4xl md:max-w-2xl">
               <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-6xl font-bold leading-tight">
