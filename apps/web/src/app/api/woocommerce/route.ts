@@ -1174,14 +1174,25 @@ async function handleAttributesEndpoint(req: NextRequest) {
     console.log('🏷️ Attributes endpoint - calling King Shop API:', attributesUrl);
     console.log('🔍 WordPress URL:', WORDPRESS_URL);
     
-    const response = await fetch(attributesUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'Filler-Store/1.0'
-      },
-      cache: 'no-store'
+    // Use circuit breaker for WordPress API calls
+    const response = await withCircuitBreaker('wordpress', async () => {
+      const response = await fetch(attributesUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Filler-Store/1.0'
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000) // 10s timeout
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      }
+      
+      return response;
     });
 
     console.log('🔍 King Shop API response status:', response.status);
@@ -1262,14 +1273,25 @@ async function handleShopEndpoint(req: NextRequest) {
     console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
     console.log('🔍 WordPress URL:', WORDPRESS_URL);
     
-    const response = await fetch(shopUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'Filler-Store/1.0'
-      },
-      cache: 'no-store'
+    // Use circuit breaker for WordPress API calls
+    const response = await withCircuitBreaker('wordpress', async () => {
+      const response = await fetch(shopUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Filler-Store/1.0'
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000) // 10s timeout
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      }
+      
+      return response;
     });
 
     console.log('🔍 King Shop API response status:', response.status);
