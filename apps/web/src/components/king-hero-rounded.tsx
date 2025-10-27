@@ -105,7 +105,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
                 medycyny estetycznej
               </h1>
 
-              <p className="text-base sm:text-lg md:text-lg text-white/90 max-w-3xl md:max-w-2xl mx-auto md:mx-0 leading-relaxed">
+              <p className="text-sm sm:text-sm md:text-sm text-white/90 max-w-3xl md:max-w-2xl mx-auto md:mx-0 leading-relaxed">
                 Profesjonalne produkty do medycyny estetycznej, mezoterapii i zabiegów kosmetycznych.
                 Najwyższa jakość, certyfikowane preparaty, kompleksowa obsługa.
               </p>
