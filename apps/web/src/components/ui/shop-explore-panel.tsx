@@ -128,6 +128,15 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     <AnimatePresence>
       {open && (
         <>
+          {/* Overlay - close on click outside */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/5 z-40"
+            onClick={onClose}
+          />
           {/* Dropdown content */}
           <motion.div
             id="shop-explore-panel"
