@@ -8,7 +8,6 @@ import { Metadata } from 'next';
 // Dynamic imports for below-the-fold components
 const KingProductTabsServer = dynamicImport(() => import('@/components/king-product-tabs-server'));
 const NewsletterForm = dynamicImport(() => import('@/components/ui/newsletter-form'));
-const Threads = dynamicImport(() => import('@/components/ui/threads'));
 
 // ISR - Incremental Static Regeneration
 export const revalidate = 300; // 5 minutes
@@ -110,27 +109,8 @@ export default async function HomePage() {
               />
             </div>
             
-            {/* Threads Animation Background - Desktop Only */}
-            <div className="absolute inset-0 z-10 hidden md:block">
-              <Threads
-                color={[1, 1, 1]} // White color like on screen
-                amplitude={2.6}
-                distance={0.3}
-                enableMouseInteraction={true}
-              />
-              {/* Overlay for better text readability - but allow mouse interaction */}
-              <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-            </div>
-            
-            {/* Mobile Fallback - Simple CSS Animation */}
-            <div className="absolute inset-0 z-0 md:hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_0%,transparent_50%)] animate-pulse"></div>
-                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%)] bg-[length:20px_20px] animate-pulse"></div>
-              </div>
-              {/* Overlay for better text readability */}
-              <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-            </div>
+            {/* Overlay for better text readability */}
+            <div className="absolute inset-0 z-10 bg-black/40 pointer-events-none" />
             
             {/* Content */}
             <div className="relative z-10 flex items-center justify-center h-[500px] px-6 sm:px-8">
