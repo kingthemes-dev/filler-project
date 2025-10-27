@@ -96,7 +96,7 @@ export default async function HomePage() {
         <KingProductTabsServer data={homeFeedData} />
 
         {/* Newsletter Section with Threads Animation */}
-        <section className="mt-6 py-16 sm:py-24" id="newsletter-section">
+        <section className="mt-6 py-8 sm:py-12" id="newsletter-section">
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl min-h-[500px]">
             {/* Background Image - Desktop Only */}
             <div className="absolute inset-0 z-0 hidden md:block">
