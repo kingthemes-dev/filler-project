@@ -1,23 +1,12 @@
 {
   "buildCommand": "cd apps/web && pnpm run build",
   "outputDirectory": "apps/web/.next",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    }
-  ],
   "framework": "nextjs",
   "installCommand": "pnpm install",
   "devCommand": "cd apps/web && pnpm run dev",
   "build": {
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1"
-    }
-  },
-  "functions": {
-    "apps/web/src/app/api/**/*.ts": {
-      "maxDuration": 60
     }
   },
   "headers": [
