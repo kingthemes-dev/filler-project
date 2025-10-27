@@ -65,7 +65,7 @@ export default function FreeShippingBanner() {
         >
           {/* Main Banner */}
           <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700">
-            <div className="max-w-[95vw] mx-auto px-4 py-3">
+            <div className="max-w-full md:max-w-md lg:max-w-lg xl:max-w-2xl px-4 md:ml-4 md:mr-auto py-3">
               <div className="flex items-center justify-between gap-4">
                 {/* Left side - Icon and Text */}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
