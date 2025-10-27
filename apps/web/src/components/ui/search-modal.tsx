@@ -141,17 +141,17 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            initial={{ opacity: 0, y: -20 scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-[80] flex items-start justify-center p-4 pt-6 sm:pt-4"
+            className="fixed inset-0 z-[80] flex items-start justify-center pt-24"
             onClick={(e) => {
               if (e.target === e.currentTarget) onClose();
             }}
           >
             <div 
-              className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+              className="bg-white rounded-3xl shadow-xl w-full max-w-[95vw] mx-auto max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
