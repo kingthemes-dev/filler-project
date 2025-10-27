@@ -1209,7 +1209,16 @@ async function handleShopEndpoint(req: NextRequest) {
   try {
     // PRO Architecture: WordPress robi całe filtrowanie
     // Next.js tylko przekazuje parametry i cache'uje odpowiedź
-    const shopUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&${searchParams.toString()}`;
+    
+    // Remove 'endpoint' from searchParams to avoid duplicate
+    const cleanParams = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      if (key !== 'endpoint') {
+        cleanParams.append(key, value);
+      }
+    });
+    
+    const shopUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&${cleanParams.toString()}`;
     
     console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
     
