@@ -659,7 +659,7 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="bg-gradient-to本研究 from-gray-50 via-white to-gray-50 overflow-hidden rounded-b-2xl border-t border-gray-200"
+              className="bg-gradient-to-r from-gray-50 via-white to-gray-50 overflow-hidden rounded-b-2xl border-t border-gray-200"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -683,7 +683,7 @@ export default function Header() {
 
                       {/* Main Navigation */}
                       <div className="flex-1 overflow-y-auto p-4 pb-0">
-                        <div className="space-y-1 mb-6">
+                        <div className="space-y-1">
                           <a 
                             href="/" 
                             className="block text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
