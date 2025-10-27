@@ -295,7 +295,7 @@ export default function Header() {
           >
             <Link 
               href="/" 
-              className="text-black hover:text-gray-700 transition-colors font-medium uppercase tracking-wider text-center"
+              className="text-black hover:text-gray-700 transition-colors font-normal tracking-normal text-center"
               onMouseEnter={() => setIsShopOpen(false)}
             >
               Strona główna
@@ -314,7 +314,7 @@ export default function Header() {
             >
               <Link 
                 href="/sklep"
-                className="text-black hover:text-gray-700 transition-colors font-medium inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 rounded-md px-2 py-1 uppercase tracking-wider"
+                className="text-black hover:text-gray-700 transition-colors font-normal inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 rounded-md px-2 py-1 uppercase tracking-wider"
                 aria-expanded={isShopOpen}
                 aria-haspopup="true"
               >
@@ -326,14 +326,14 @@ export default function Header() {
             </div>
             <a 
               href="/o-nas" 
-              className="text-black hover:text-gray-700 transition-colors font-medium uppercase tracking-wider text-center"
+              className="text-black hover:text-gray-700 transition-colors font-normal tracking-normal text-center"
               onMouseEnter={() => setIsShopOpen(false)}
             >
               O nas
             </a>
             <a 
               href="/kontakt" 
-              className="text-black hover:text-gray-700 transition-colors font-medium uppercase tracking-wider text-center"
+              className="text-black hover:text-gray-700 transition-colors font-normal tracking-normal text-center"
               onMouseEnter={() => setIsShopOpen(false)}
             >
               Kontakt
