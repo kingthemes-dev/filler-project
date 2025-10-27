@@ -261,35 +261,26 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     {/* Suggestions (top 5) */}
                     {suggestions.length > 0 && (
                       <>
-                        <AnimatePresence mode="popLayout">
-                          {suggestions.map((product, index) => (
-                            <motion.div
-                              key={product.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, x: -20 }}
-                              transition={{ duration: 0.2, delay: index * 0.05 }}
-                            >
-                              <SearchResultItem product={product} onClose={onClose} />
-                            </motion.div>
-                          ))}
-                        </AnimatePresence>
+                        {suggestions.map((product, index) => (
+                          <motion.div
+                            key={product.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            <SearchResultItem product={product} onClose={onClose} />
+                          </motion.div>
+                        ))}
                         
                         {products.length > 5 && (
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.3, delay: 0.3 }}
+                          <Link
+                            href={`/wyszukiwanie?q=${encodeURIComponent(searchQuery)}`}
+                            onClick={onClose}
+                            className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 py-3 border-t border-gray-200"
                           >
-                            <Link
-                              href={`/wyszukiwanie?q=${encodeURIComponent(searchQuery)}`}
-                              onClick={onClose}
-                              className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 py-3 border-t border-gray-200"
-                            >
-                              Zobacz wszystkie wyniki ({products.length})
-                              <ArrowRight className="w-4 h-4 ml-2" />
-                            </Link>
-                          </motion.div>
+                            Zobacz wszystkie wyniki ({products.length})
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </Link>
                         )}
                       </>
                     )}
