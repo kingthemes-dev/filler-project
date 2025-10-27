@@ -217,8 +217,15 @@ async function apiCacheStrategy(request) {
   try {
     const response = await fetch(request);
     if (response.status === 200) {
-      const responseToCache = response.clone();
-      responseToCache.headers.set('sw-cache-date', new Date().toISOString());
+      // Create a new response with cache headers without modifying original
+      const responseToCache = new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          ...Object.fromEntries(response.headers.entries()),
+          'sw-cache-date': new Date().toISOString()
+        }
+      });
       cache.put(request, responseToCache);
       
       // Cleanup old entries

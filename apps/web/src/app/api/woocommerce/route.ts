@@ -1142,6 +1142,22 @@ async function handleAttributeTermsEndpoint(req: NextRequest, endpoint: string) 
 async function handleAttributesEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   
+  // Check WordPress URL first
+  if (!process.env.NEXT_PUBLIC_WORDPRESS_URL) {
+    console.error('❌ NEXT_PUBLIC_WORDPRESS_URL is not defined');
+    return NextResponse.json(
+      { 
+        error: 'Błąd konfiguracji serwera', 
+        details: 'Brakuje NEXT_PUBLIC_WORDPRESS_URL',
+        debug: {
+          NEXT_PUBLIC_WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL,
+          NODE_ENV: process.env.NODE_ENV
+        }
+      },
+      { status: 500 }
+    );
+  }
+  
   if (!WC_URL || !CK || !CS) {
     return NextResponse.json(
       { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
@@ -1154,6 +1170,7 @@ async function handleAttributesEndpoint(req: NextRequest) {
     const attributesUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/attributes?${searchParams.toString()}`;
     
     console.log('🏷️ Attributes endpoint - calling King Shop API:', attributesUrl);
+    console.log('🔍 WordPress URL:', process.env.NEXT_PUBLIC_WORDPRESS_URL);
     
     const response = await fetch(attributesUrl, {
       method: 'GET',
@@ -1165,8 +1182,12 @@ async function handleAttributesEndpoint(req: NextRequest) {
       cache: 'no-store'
     });
 
+    console.log('🔍 King Shop API response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ King Shop API error:', errorText.substring(0, 500));
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText.substring(0, 200)}`);
     }
 
     const data = await response.json();
@@ -1199,6 +1220,22 @@ async function handleAttributesEndpoint(req: NextRequest) {
 async function handleShopEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   
+  // Check WordPress URL first
+  if (!process.env.NEXT_PUBLIC_WORDPRESS_URL) {
+    console.error('❌ NEXT_PUBLIC_WORDPRESS_URL is not defined');
+    return NextResponse.json(
+      { 
+        error: 'Błąd konfiguracji serwera', 
+        details: 'Brakuje NEXT_PUBLIC_WORDPRESS_URL',
+        debug: {
+          NEXT_PUBLIC_WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL,
+          NODE_ENV: process.env.NODE_ENV
+        }
+      },
+      { status: 500 }
+    );
+  }
+  
   if (!WC_URL || !CK || !CS) {
     return NextResponse.json(
       { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
@@ -1221,6 +1258,7 @@ async function handleShopEndpoint(req: NextRequest) {
     const shopUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&${cleanParams.toString()}`;
     
     console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
+    console.log('🔍 WordPress URL:', process.env.NEXT_PUBLIC_WORDPRESS_URL);
     
     const response = await fetch(shopUrl, {
       method: 'GET',
@@ -1232,8 +1270,12 @@ async function handleShopEndpoint(req: NextRequest) {
       cache: 'no-store'
     });
 
+    console.log('🔍 King Shop API response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ King Shop API error:', errorText.substring(0, 500));
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText.substring(0, 200)}`);
     }
 
     const data = await response.json();
