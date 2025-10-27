@@ -119,7 +119,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
 
   return (
     <section className="mt-6 py-12 sm:py-16 bg-white rounded-2xl sm:rounded-3xl overflow-hidden">
-      <div className="max-w-[90vw] px-2 sm:px-4 md:px-6 lg:px-8">
+      <div className="px-2 sm:px-4 md:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Custom Tabs Implementation - No shadcn/ui */}
           <div className="w-full">
