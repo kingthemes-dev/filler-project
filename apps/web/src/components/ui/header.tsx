@@ -345,7 +345,7 @@ export default function Header() {
             {/* Mobile Search Icon */}
             <button
               onClick={() => setIsSearchModalOpen(true)}
-              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
+              className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
               aria-label="Szukaj"
             >
               <Search className="w-6 h-6" />
@@ -353,7 +353,7 @@ export default function Header() {
             {isAuthenticated ? (
               <Link
                 href="/moje-konto"
-                className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
+                className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
                 aria-label="Moje konto"
               >
                 <User className="w-6 h-6" />
@@ -361,7 +361,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
-                className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors"
+                className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
                 aria-label="Zaloguj się"
               >
                 <User className="w-6 h-6" />
@@ -371,7 +371,7 @@ export default function Header() {
             {/* Mobile Favorites Icon */}
             <button
               onClick={() => openFavoritesModal()}
-              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors relative"
+              className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors relative"
               aria-label="Ulubione"
             >
               <Heart className="w-6 h-6" />
@@ -385,7 +385,7 @@ export default function Header() {
             {/* Mobile Cart Icon */}
             <button
               onClick={openCart}
-              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors relative"
+              className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors relative"
               aria-label="Koszyk"
             >
               <ShoppingCart className="w-6 h-6" />
@@ -406,7 +406,7 @@ export default function Header() {
                   setMobileMenuView('main');
                 }
               }}
-              className="shrink-0 flex items-center justify-center text-gray-700 hover:text-black transition-colors relative w-8 h-8"
+              className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors relative w-8 h-8"
               aria-label={isMobileMenuOpen ? "Zamknij menu" : "Otwórz menu"}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -463,7 +463,7 @@ export default function Header() {
             {/* Search Icon */}
             <button 
               onClick={() => setIsSearchModalOpen(true)}
-              className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
+              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
               title="Szukaj"
               aria-label="Szukaj"
             >
@@ -474,7 +474,7 @@ export default function Header() {
             {isAuthenticated && user?.role === 'admin' && (
               <button 
                 onClick={() => setIsEmailCenterOpen(true)}
-                className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
+                className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
                 title="Email Notification Center"
                 aria-label="Centrum powiadomień email"
               >
@@ -487,7 +487,7 @@ export default function Header() {
               <div className="relative user-menu-container overflow-visible">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center space-x-2"
+                  className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center space-x-2"
                 >
                   <User className="w-6 h-6" />
                   <span className="text-sm font-medium">
@@ -609,7 +609,7 @@ export default function Header() {
                                   console.error('[Auth] openLogin event error', e);
                                 }
                               }}
-                              className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
+                              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
                               data-test="open-login-btn"
                               aria-label="Zaloguj się"
                             >
@@ -618,7 +618,7 @@ export default function Header() {
                           )}
                           
             <button 
-              className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
+              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
               onClick={openFavoritesModal}
               title="Ulubione"
               aria-label="Ulubione produkty"
@@ -633,7 +633,7 @@ export default function Header() {
 
             {/* Cart */}
             <button 
-              className="text-gray-700 hover:text-black transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
+              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
               onClick={() => {
                 console.log('🛒 Cart button clicked!');
                 console.log('🛒 Current cart state:', useCartStore.getState());
@@ -691,7 +691,7 @@ export default function Header() {
                         <div className="space-y-1 mb-6">
                           <a 
                             href="/" 
-                            className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            className="block text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
                             onClick={closeMobileMenu}
                           >
                             Strona główna
@@ -700,7 +700,7 @@ export default function Header() {
                           {/* Sklep - Slide to Sklep View */}
                           <button
                             onClick={() => setMobileMenuView('sklep')}
-                            className="w-full flex items-center justify-between text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            className="w-full flex items-center justify-between text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
                           >
                             <span>Sklep</span>
                             <ChevronRight className="w-4 h-4" />
@@ -708,7 +708,7 @@ export default function Header() {
                           
                           <a 
                             href="/o-nas" 
-                            className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            className="block text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
                             onClick={closeMobileMenu}
                           >
                             O nas
@@ -716,7 +716,7 @@ export default function Header() {
                           
                           <a 
                             href="/kontakt" 
-                            className="block text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            className="block text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
                             onClick={closeMobileMenu}
                           >
                             Kontakt
@@ -730,7 +730,7 @@ export default function Header() {
                           <div className="space-y-1 mb-2">
                             <Link 
                               href="/moje-konto" 
-                              className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
+                              className="flex items-center space-x-3 text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
                               onClick={closeMobileMenu}
                             >
                               <User className="w-5 h-5" />
@@ -739,7 +739,7 @@ export default function Header() {
 
                             <Link 
                               href="/moje-zamowienia" 
-                              className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
+                              className="flex items-center space-x-3 text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
                               onClick={closeMobileMenu}
                             >
                               <Package className="w-5 h-5" />
@@ -748,7 +748,7 @@ export default function Header() {
 
                             <Link 
                               href="/moje-faktury" 
-                              className="flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
+                              className="flex items-center space-x-3 text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
                               onClick={closeMobileMenu}
                             >
                               <FileText className="w-5 h-5" />
@@ -757,7 +757,7 @@ export default function Header() {
 
                             <button
                               onClick={() => { openFavoritesModal(); closeMobileMenu(); }}
-                              className="w-full flex items-center space-x-3 text-gray-700 hover:text-black hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
+                              className="w-full flex items-center space-x-3 text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
                             >
                               <Heart className="w-5 h-5" />
                               <span className="text-sm font-medium">Lista życzeń</span>
@@ -767,7 +767,7 @@ export default function Header() {
                           <div className="mb-2">
                             <Link 
                               href="/moje-konto" 
-                              className="w-full flex items-center justify-center space-x-2 p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-black"
+                              className="w-full flex items-center justify-center space-x-2 p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-black hover:text-gray-800"
                               onClick={closeMobileMenu}
                             >
                               <User className="w-5 h-5" />
@@ -1022,7 +1022,7 @@ export default function Header() {
                                   closeMobileMenu();
                                   window.location.href = `/sklep?brand=${encodeURIComponent(brand.toLowerCase())}`;
                                 }}
-                                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-black rounded-full transition-colors whitespace-nowrap"
+                                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-black hover:text-gray-800 rounded-full transition-colors whitespace-nowrap"
                               >
                                 {brand}
                               </button>
