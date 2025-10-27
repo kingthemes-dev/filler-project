@@ -172,8 +172,12 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
                     >
                       <button
+                        type="button"
                         onClick={(e) => {
                           console.log('Category button clicked:', category.name);
                           e.preventDefault();
@@ -181,7 +185,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                           console.log('Setting category to:', category.id);
                           setSelectedCat(category.id);
                         }}
-                        className={`${category.id === 15 ? 'hidden' : ''} flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group ${
+                        className={`${category.id === 15 ? 'hidden' : ''} flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group cursor-pointer ${
                           selectedCat === category.id
                             ? 'border-blue-300 bg-blue-50/20 text-blue-900'
                             : 'border-gray-200 bg-transparent hover:border-blue-300 hover:bg-blue-50/20 text-gray-900'
