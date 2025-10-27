@@ -328,7 +328,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       
                       {/* Sale Badge */}
                       {isOnSale && (
-                        <Badge className="absolute top-4 left-4 bg-red-500 text-white">
+                        <Badge className="absolute top-4 left-4 text-white" style={{ backgroundColor: '#dc2626' }}>
                           -{discountPercentage}%
                         </Badge>
                       )}
@@ -342,6 +342,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           <button
                             key={index}
                             onClick={() => setSelectedImageIndex(index)}
+                            aria-label={`Zobacz zdjęcie ${index + 1} z ${galleryImages.length}`}
                             className={`w-16 h-16 aspect-square rounded-lg overflow-hidden border-2 transition-colors shadow-sm ${
                               selectedImageIndex === index
                                 ? 'border-black'
