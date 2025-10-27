@@ -279,7 +279,7 @@ export default function Header() {
         <div className="px-6 lg:px-8">
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-16 sm:h-20 gap-2 min-h-0">
           {/* Logo */}
-          <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity">
+          <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity -mt-[5px]">
             <Image 
               src="/images/logo.webp" 
               alt="FILLER" 
