@@ -176,7 +176,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             }}
           >
             <div 
-              className="bg-white rounded-3xl shadow-xl w-full max-w-[600px] mx-auto max-h-[80vh] flex flex-col"
+              className="bg-white rounded-3xl shadow-xl w-full max-w-[600px] mx-auto max-h-[80vh] flex flex-col m-4"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
