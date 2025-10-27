@@ -158,7 +158,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             
             <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Kategorie główne - Nowoczesny Dropdown */}
-              <div className="md:col-span-3 space-y-4">
+              <div className="md:col-span-4 space-y-4">
                 <div className="mb-4 pb-2 border-b border-gray-200">
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Kategorie</h3>
                 </div>
@@ -207,7 +207,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
               </div>
 
               {/* Podkategorie / Zastosowanie - Pokazuje podkategorie wybranej kategorii głównej */}
-              <div className="md:col-span-3 space-y-4">
+              <div className="md:col-span-4 space-y-4">
                 <div className="mb-4 pb-2 border-b border-gray-200">
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Zastosowanie</h3>
                 </div>
@@ -260,7 +260,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
               </div>
 
               {/* Marki - Nowoczesny Dropdown */}
-              <div className="md:col-span-6 space-y-4">
+              <div className="md:col-span-4 space-y-4">
                 <div className="mb-4 pb-2 border-b border-gray-200">
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Marka</h3>
                 </div>
