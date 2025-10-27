@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import PageContainer from '@/components/ui/page-container';
 import dynamicImport from 'next/dynamic';
 import KingHeroRounded from '@/components/king-hero-rounded';
 import { Button } from '@/components/ui/button';
@@ -89,19 +88,16 @@ export default async function HomePage() {
   const homeFeedData = await getHomeFeedData();
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <KingHeroRounded data={homeFeedData} />
+      {/* Global wrapper for consistent margins and border-radius */}
+      <div className="mx-2 sm:mx-4 md:mx-6 lg:mx-8">
+        {/* Hero Section */}
+        <KingHeroRounded data={homeFeedData} />
 
+        {/* Product Tabs - Server Component with data */}
+        <KingProductTabsServer data={homeFeedData} />
 
-
-      {/* Product Tabs - Server Component with data */}
-      <KingProductTabsServer data={homeFeedData} />
-
-
-
-      {/* Newsletter Section with Threads Animation */}
-      <section className="py-16 sm:py-24" id="newsletter-section">
-        <PageContainer>
+        {/* Newsletter Section with Threads Animation */}
+        <section className="mt-6 py-16 sm:py-24" id="newsletter-section">
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl min-h-[500px]">
             {/* Background Image - Desktop Only */}
             <div className="absolute inset-0 z-0 hidden md:block">
@@ -148,12 +144,10 @@ export default async function HomePage() {
               </div>
             </div>
           </div>
-        </PageContainer>
-      </section>
+        </section>
 
-      {/* Features Section */}
-      <section>
-        <PageContainer>
+        {/* Features Section */}
+        <section className="mt-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
             {/* Quality */}
             <div className="text-center group p-6 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-lg">
@@ -207,8 +201,8 @@ export default async function HomePage() {
               </p>
             </div>
           </div>
-        </PageContainer>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
