@@ -238,19 +238,35 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     {/* Suggestions (top 5) */}
                     {suggestions.length > 0 && (
                       <>
-                        {suggestions.map((product) => (
-                          <SearchResultItem key={product.id} product={product} onClose={onClose} />
-                        ))}
+                        <AnimatePresence mode="popLayout">
+                          {suggestions.map((product, index) => (
+                            <motion.div
+                              key={product.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, x: -20 }}
+                              transition={{ duration: 0.2, delay: index * 0.05 }}
+                            >
+                              <SearchResultItem product={product} onClose={onClose} />
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
                         
                         {products.length > 5 && (
-                          <Link
-                            href={`/wyszukiwanie?q=${encodeURIComponent(searchQuery)}`}
-                            onClick={onClose}
-                            className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 py-3 border-t border-gray-200"
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.3, delay: 0.3 }}
                           >
-                            Zobacz wszystkie wyniki ({products.length})
-                            <ArrowRight className="w-4 h-4 ml-2" />
-                          </Link>
+                            <Link
+                              href={`/wyszukiwanie?q=${encodeURIComponent(searchQuery)}`}
+                              onClick={onClose}
+                              className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 py-3 border-t border-gray-200"
+                            >
+                              Zobacz wszystkie wyniki ({products.length})
+                              <ArrowRight className="w-4 h-4 ml-2" />
+                            </Link>
+                          </motion.div>
                         )}
                       </>
                     )}
