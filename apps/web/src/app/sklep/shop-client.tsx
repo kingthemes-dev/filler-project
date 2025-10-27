@@ -401,7 +401,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     <div className="min-h-screen bg-white">
       <PageContainer className="py-4 pb-12">
         {/* Header with Title and Breadcrumbs */}
-        <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-white rounded-2xl mt-4 mx-4 lg:mx-0 px-4 lg:px-8 pt-2 pb-6 sm:pt-4 sm:pb-8">
+        <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-white rounded-3xl mt-4 mx-4 lg:mx-0 px-4 lg:px-8 pt-2 pb-6 sm:pt-4 sm:pb-8">
           <div className="flex items-center justify-between gap-4 lg:gap-8">
             <h1 className="text-2xl font-bold text-gray-900">Sklep</h1>
             <div className="ml-auto">
