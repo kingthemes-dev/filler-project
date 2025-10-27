@@ -603,7 +603,7 @@ export default function ShopFilters({
       </AnimatePresence>
       
       {/* Desktop version - always visible */}
-      <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
+      <div className="hidden lg:block lg:sticky lg:top-[7rem] lg:self-start">
         <div 
           ref={desktopSidebarRef}
           className="bg-white border border-gray-200/50 shadow-sm rounded-2xl p-4 sm:p-6 lg:shadow-md lg:backdrop-blur-md max-h-[calc(100vh-6rem)] overflow-y-auto"
