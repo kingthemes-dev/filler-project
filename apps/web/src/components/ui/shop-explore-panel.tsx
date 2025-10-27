@@ -149,7 +149,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             transition={{ duration: 0.3, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
-          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-8 pb-8 relative">
+          <div className="max-w-[95vw] mx-auto px-4 sm:px-8 pt-8 pb-8 relative" onClick={(e) => e.stopPropagation()}>
             {/* Close button */}
             <button
               onClick={onClose}
