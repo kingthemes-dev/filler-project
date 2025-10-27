@@ -89,7 +89,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Global wrapper for consistent margins and border-radius */}
-      <div className="mx-2 sm:mx-4 md:mx-6 lg:mx-8">
+      <div className="mx-4 sm:mx-4 md:mx-6 lg:mx-8">
         {/* Hero Section */}
         <KingHeroRounded data={homeFeedData} />
 
