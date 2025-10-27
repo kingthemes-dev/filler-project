@@ -142,7 +142,7 @@ export default function KingProductTabs() {
                 onClick={() => handleTabChange(tab.id)}
                 className="relative group"
               >
-                <span className={`text-base font-bold transition-colors ${
+                <span className={`text-sm sm:text-base font-bold transition-colors ${
                   activeTab === tab.id ? 'text-black' : 'text-gray-500 hover:text-gray-700'
                 }`}>
                   {tab.label}
