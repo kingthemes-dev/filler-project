@@ -81,8 +81,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5, // Changed from 1 to 5 for accessibility compliance (WCAG 2.1 AAA)
+  userScalable: true, // Changed from false to true for accessibility
   themeColor: '#000000',
   // Fix for iPhone 14 Pro horizontal scroll
   viewportFit: 'cover',
@@ -153,18 +153,27 @@ export default function RootLayout({
               </>
             )}
             
-            {/* Initialize Search Console Analytics */}
+            {/* Search Console Analytics - Inline implementation to avoid 404 */}
             {process.env.NEXT_PUBLIC_GA4_ID && (
-              <Script id="search-console-init" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
-                // Initialize Search Console Analytics after GA4
-                setTimeout(() => {
-                  if (typeof window !== 'undefined') {
-                    import('/src/utils/search-console-analytics.js').then(module => {
-                      const analytics = module.initializeSearchConsoleAnalytics('${process.env.NEXT_PUBLIC_GA4_ID}');
-                      analytics.trackScrollDepth();
-                    }).catch(console.warn);
+              <Script id="search-console-inline" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+                // Track scroll depth inline
+                let scrollDepthTracked = 0;
+                window.addEventListener('scroll', () => {
+                  const scrollPercent = Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100);
+                  if (scrollPercent >= 25 && scrollDepthTracked < 25) {
+                    window.gtag?.('event', 'scroll', { scroll_depth: 25 });
+                    scrollDepthTracked = 25;
+                  } else if (scrollPercent >= 50 && scrollDepthTracked < 50) {
+                    window.gtag?.('event', 'scroll', { scroll_depth: 50 });
+                    scrollDepthTracked = 50;
+                  } else if (scrollPercent >= 75 && scrollDepthTracked < 75) {
+                    window.gtag?.('event', 'scroll', { scroll_depth: 75 });
+                    scrollDepthTracked = 75;
+                  } else if (scrollPercent >= 90 && scrollDepthTracked < 90) {
+                    window.gtag?.('event', 'scroll', { scroll_depth: 90 });
+                    scrollDepthTracked = 90;
                   }
-                }, 1000);
+                });
               `}} />
             )}
         {/* Preconnect to WordPress for faster API calls */}

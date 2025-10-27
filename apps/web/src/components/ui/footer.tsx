@@ -169,6 +169,7 @@ export default function Footer() {
           
           {/* Kontakt - pierwsza kolumna z większym odstępem */}
           <div className="lg:pr-12 lg:ml-4">
+            <h3 className="sr-only">Sekcja kontakt</h3>
             <h4 className="text-lg font-semibold mb-6 text-white">Kontakt</h4>
             
             <div className="space-y-3 mb-8">
