@@ -314,7 +314,7 @@ export default function Header() {
             >
               <Link 
                 href="/sklep"
-                className="text-black hover:text-gray-700 transition-colors font-normal inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 rounded-md px-2 py-1 uppercase tracking-wider"
+                className="text-black hover:text-gray-700 transition-colors font-normal inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 rounded-md px-2 py-1"
                 aria-expanded={isShopOpen}
                 aria-haspopup="true"
               >
