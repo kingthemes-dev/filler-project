@@ -467,7 +467,7 @@ export default function Header() {
             {/* Search Icon */}
             <button 
               onClick={() => setIsSearchModalOpen(true)}
-              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
+              className="flex items-center justify-center text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
               title="Szukaj"
               aria-label="Szukaj"
             >
