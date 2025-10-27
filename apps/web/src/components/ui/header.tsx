@@ -508,7 +508,10 @@ export default function Header() {
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.2, ease: 'easeOut' }}
                       className="fixed bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-[70]"
-                      style={{ width: '280px' 
+                      style={{
+                        top: '80px',
+                        right: '60px',
+                        width: '280px'
                       }}
                     >
                                     {/* User Info */}
