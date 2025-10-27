@@ -39,13 +39,11 @@ export default function ContactPage() {
       <PageContainer>
         {/* Header with Title and Breadcrumbs */}
         <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-white border border-gray-200 rounded-3xl mt-4 mx-4 lg:mx-0 px-4 lg:px-8 pt-2 pb-6 sm:pt-4 sm:pb-8">
-          <div className="flex items-center justify-between gap-4 lg:gap-8">
+          <div className="flex flex-col items-center justify-center gap-4 lg:gap-6 text-center">
             <h1 className="text-2xl font-bold text-gray-900">
               Kontakt
             </h1>
-            <div className која="ml-auto">
-              <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
-            </div>
+            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
           </div>
         </div>
 
