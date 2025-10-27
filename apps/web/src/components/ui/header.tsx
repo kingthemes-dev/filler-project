@@ -280,10 +280,14 @@ export default function Header() {
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-16 sm:h-20 gap-2 min-h-0">
           {/* Logo */}
           <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity">
-            <div className="w-7 h-7 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-2 sm:mr-3">
-              <span className="text-white text-sm sm:text-lg font-bold">F</span>
-            </div>
-            <span className="text-lg sm:text-xl font-bold text-black">FILLER</span>
+            <Image 
+              src="/images/logo.webp" 
+              alt="FILLER" 
+              width={120} 
+              height={40} 
+              className="h-8 sm:h-10 w-auto"
+              priority
+            />
           </Link>
 
           {/* Spacer / Middle column for mobile to allow shrink without overflow */}
