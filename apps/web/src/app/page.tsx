@@ -115,7 +115,7 @@ export default async function HomePage() {
             {/* Content */}
             <div className="relative z-10 flex items-center justify-center h-[500px] px-6 sm:px-8">
               <div className="max-w-3xl mx-auto text-center">
-                <h2 className="text-2xl sm:text-3xl font-black text-white mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-2xl font-normal text-white mb-6 sm:mb-8">
                   Zapisz się i odbierz 10% zniżki na pierwsze zakupy
                 </h2>
                 <div className="max-w-lg mx-auto">
