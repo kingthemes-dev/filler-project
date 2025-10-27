@@ -318,7 +318,7 @@ export default function Header() {
                 aria-expanded={isShopOpen}
                 aria-haspopup="true"
               >
-                sklep
+                Sklep
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopOpen ? 'rotate-180' : ''}`} />
               </Link>
               
@@ -697,7 +697,7 @@ export default function Header() {
                             onClick={() => setMobileMenuView('sklep')}
                             className="w-full flex items-center justify-between text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
                           >
-                            <span>sklep</span>
+                            <span>Sklep</span>
                             <ChevronRight className="w-4 h-4" />
                           </button>
                           
@@ -835,7 +835,7 @@ export default function Header() {
                           className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
                         >
                           <ChevronRight className="w-5 h-5 rotate-180" />
-                          <span className="text-lg font-semibold">sklep</span>
+                          <span className="text-lg font-semibold">Sklep</span>
                         </button>
                       </div>
 
