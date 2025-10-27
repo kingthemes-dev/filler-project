@@ -168,7 +168,7 @@ export default function CartDrawer() {
 
           {/* Cart Drawer - HIGHER Z-INDEX */}
           <motion.div
-            className="fixed right-0 top-0 h-full bg-white shadow-2xl z-[120] 
+            className="fixed right-0 top-0 h-full bg-gradient-to-br from-gray-50 via-gray-100 to-white shadow-2xl z-[120] 
                      w-full max-w-[364px] lg:max-w-[428px] xl:max-w-[492px]
                      lg:border-l lg:border-gray-200 flex flex-col
                      rounded-l-2xl rounded-bl-2xl lg:rounded-l-2xl lg:rounded-bl-2xl"
