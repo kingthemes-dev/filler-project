@@ -152,16 +152,6 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
               ))}
             </div>
 
-            {/* View All Products - Clean Desktop Link */}
-            <div className="hidden md:block mt-4">
-              <Link 
-                href="/sklep" 
-                className="relative text-base sm:text-lg font-semibold text-gray-700 hover:text-black transition-colors whitespace-nowrap"
-              >
-                Wszystkie produkty
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left scale-x-0 hover:scale-x-100 transition-transform duration-300" />
-              </Link>
-            </div>
           </div>
         </div>
         
@@ -217,18 +207,6 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
               )}
             </div>
           </AnimatePresence>
-        </div>
-          
-        {/* View All Products - Interactive Black Gradient Button */}
-        <div className="mt-8 md:hidden">
-          <Link
-            href="/sklep"
-            className="group relative block w-full bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white hover:text-white transition-all duration-300 text-center py-4 px-6 rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <span className="relative z-10">Wszystkie produkty</span>
-            {/* Subtle shine effect on hover */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
-          </Link>
         </div>
       </div>
     </section>

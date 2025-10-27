@@ -170,27 +170,6 @@ export default function KingProductTabs() {
               </button>
             ))}
           </div>
-
-          {/* View All Products - Mobile: full width outline button, Desktop: link */}
-          <div className="md:hidden">
-            <Link
-              href="/sklep"
-              className="block w-full bg-transparent border-2 border-gray-300 text-gray-700 hover:border-black hover:text-black transition-all duration-300 text-center py-3 px-4 rounded-lg font-medium"
-            >
-              Wszystkie produkty
-            </Link>
-          </div>
-          
-          <div className="hidden md:block">
-            <Link
-              href="/sklep"
-              className="relative text-lg text-black hover:text-black transition-colors group"
-            >
-              Wszystkie produkty
-              {/* Animated underline */}
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out" />
-            </Link>
-          </div>
         </div>
 
         {/* Products Grid */}
