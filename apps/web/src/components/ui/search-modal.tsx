@@ -145,7 +145,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-[80] flex items-start justify-center pt-[80px]"
+            className="fixed inset-0 z-[80] flex items-start justify-center pt-16"
             onClick={(e) => {
               if (e.target === e.currentTarget) onClose();
             }}
