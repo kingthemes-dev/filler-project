@@ -135,7 +135,7 @@ export default function KingProductTabs() {
         {/* Tabs */}
         <div className="flex flex-col mb-8">
           {/* Tabs */}
-          <div className="flex space-x-8 mb-4">
+          <div className="flex space-x-4 sm:space-x-8 mb-4">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
