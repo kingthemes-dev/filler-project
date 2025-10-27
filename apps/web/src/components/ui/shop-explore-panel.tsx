@@ -132,7 +132,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed top-[80px] left-0 right-0 bottom-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30"
             onClick={onClose}
           />
           {/* Dropdown content */}
