@@ -111,7 +111,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
               </p>
 
               <div className="flex justify-center md:justify-start">
-                <Button size="lg" asChild className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black text-lg sm:text-xl md:text-xl px-8 sm:px-10 md:px-12 py-4 sm:py-5 md:py-6 rounded-xl sm:rounded-2xl transition-all duration-300">
+                <Button size="lg" asChild className="bg-gradient-to-r from-gray-800 via-gray-900 to-black border-2 border-white/20 text-white hover:from-gray-900 hover:to-black hover:border-white/40 text-lg sm:text-xl md:text-xl px-8 sm:px-10 md:px-12 py-4 sm:py-5 md:py-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium">
                   <Link href="/sklep">
                     Zobacz produkty
                   </Link>
