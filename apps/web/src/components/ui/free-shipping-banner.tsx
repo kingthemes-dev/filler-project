@@ -39,7 +39,7 @@ export default function FreeShippingBanner() {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasScrolled]);
+  }, []);
 
   // Animate text every 5 seconds - 2 blinks
   useEffect(() => {
