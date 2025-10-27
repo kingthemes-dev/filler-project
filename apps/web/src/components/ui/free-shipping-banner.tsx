@@ -7,8 +7,8 @@ import { useCartStore } from '@/stores/cart-store';
 import { SHIPPING_CONFIG } from '@/config/constants';
 
 export default function FreeShippingBanner() {
+  const [isShopModalOpen, setIsShopModalOpen] = useState(false);
   const { total, itemCount } = useCartStore();
-  const [showText, setShowText] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
   const [hasScrolled, setHasScrolled] = useState(false);
   
@@ -42,30 +42,40 @@ export default function FreeShippingBanner() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Animate text every 5 seconds - 2 blinks
+  // Listen for shop modal open/close events
   useEffect(() => {
-    const interval = setInterval(() => {
-      // First blink
-      setShowText(false);
-      setTimeout(() => {
-        setShowText(true);
-        // Second blink after 300ms
-        setTimeout(() => {
-          setShowText(false);
-          setTimeout(() => setShowText(true), 300);
-        }, 300);
-      }, 300);
-    }, 5000);
+    const handleShopModalToggle = (event: CustomEvent) => {
+      setIsShopModalOpen(event.detail.open);
+    };
 
-    return () => clearInterval(interval);
+    window.addEventListener('shopModalToggle', handleShopModalToggle as EventListener);
+    return () => window.removeEventListener('shopModalToggle', handleShopModalToggle as EventListener);
   }, []);
 
+
+
   return (
-    <div className={`sticky top-0 z-[100] transition-transform duration-300 ${
-      isVisible ? 'translate-y-0' : '-translate-y-full'
-    }`}>
+    <motion.div
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ 
+        y: (isVisible && !isShopModalOpen) ? 0 : -100,
+        opacity: (isVisible && !isShopModalOpen) ? 1 : 0
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 60,
+        damping: 15,
+        mass: 0.5
+      }}
+      className="sticky top-0 z-[100]"
+    >
       {/* Main Banner */}
-      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700">
+      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700"
+        style={{
+          borderBottomLeftRadius: '16px',
+          borderBottomRightRadius: '16px'
+        }}
+      >
         <div className="px-6 py-2 ml-4">
           <div className="flex items-center justify-center gap-3">
             {/* White Icon */}
@@ -73,14 +83,8 @@ export default function FreeShippingBanner() {
               <Truck className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
             
-            {/* Animated Text */}
-            <motion.div
-              key={showText ? 'visible' : 'hidden'}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="flex-shrink-0"
-            >
+            {/* Text */}
+            <div className="flex-shrink-0">
               <p className="text-white font-medium text-xs sm:text-sm leading-tight text-center">
                 <span className="hidden sm:inline">
                   Darmowa dostawa od <span className="font-semibold">200 zł netto</span>
@@ -93,7 +97,7 @@ export default function FreeShippingBanner() {
                 </span>
                 <span className="sm:hidden">Darmowa dostawa od 200 zł</span>
               </p>
-            </motion.div>
+            </div>
           </div>
           
           {/* Progress bar - only show if cart has items */}
@@ -107,6 +111,6 @@ export default function FreeShippingBanner() {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

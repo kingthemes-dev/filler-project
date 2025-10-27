@@ -94,7 +94,10 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+      }
     };
     if (open) window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -134,32 +137,48 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-black/5 z-40"
-            onClick={onClose}
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+            onClick={() => {
+              onClose();
+              window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+            }}
           />
-          {/* Dropdown content */}
+          {/* Modal content */}
           <motion.div
             id="shop-explore-panel"
             role="dialog"
             aria-modal="true"
-            className="fixed top-[114px] left-4 right-4 mx-auto max-w-7xl w-auto bg-white border-l border-r border-b border-t border-gray-300 z-50 rounded-b-3xl shadow-lg mb-[30px] max-h-[calc(100vh-130px)] overflow-y-auto"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="fixed top-[114px] left-0 right-0 flex justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
           >
-          <div className="px-4 lg:px-6 pt-8 pb-8 relative" onClick={(e) => e.stopPropagation()}>
-            {/* Close button */}
-            <button
-              onClick={onClose}
-              className="absolute top-6 right-4 lg:right-6 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
-              aria-label="Zamknij"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            
-            <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                         <motion.div
+               className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+               initial={{ scale: 0.95, y: 20 }}
+               animate={{ scale: 1, y: 0 }}
+               exit={{ scale: 0.95, y: 20 }}
+               transition={{ duration: 0.2, ease: 'easeOut' }}
+             >
+               <div className="flex-shrink-0 px-4 lg:px-6 pt-6 pb-4 border-b border-gray-200">
+                 <div className="flex items-center justify-between">
+                   <h2 className="text-2xl font-bold text-gray-900">Sklep</h2>
+                   <button
+                     onClick={() => {
+                       onClose();
+                       window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+                     }}
+                     className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                     aria-label="Zamknij"
+                   >
+                     <X className="w-6 h-6" />
+                   </button>
+                 </div>
+               </div>
+                       <div className="flex-1 overflow-y-auto px-4 lg:px-6 pt-6 pb-8 relative" onClick={(e) => e.stopPropagation()}>
+              <div ref={panelRef} className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Kategorie główne - Nowoczesny Dropdown */}
               <div className="md:col-span-4 space-y-4">
                 <div className="mb-4 pb-2 border-b border-gray-200">
@@ -251,6 +270,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                           onClick={(e) => {
                             e.stopPropagation();
                             onClose();
+                            window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
                           }}
                         >
                           <div className="flex items-center justify-between">
@@ -299,6 +319,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                           onClick={(e) => {
                             e.stopPropagation();
                             onClose();
+                            window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
                           }}
                           title={brand.label}
                         >
@@ -311,6 +332,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
               </div>
             </div>
           </div>
+          </motion.div>
           </motion.div>
         </>
       )}

@@ -270,10 +270,10 @@ export default function Header() {
   return (
     <>
       <header 
-          className={`sticky top-4 z-50 will-change-transform transition-all duration-300 mx-auto max-w-[95vw] ${isShopOpen ? 'rounded-t-3xl overflow-visible border-t border-l border-r border-b-0 bg-white border-gray-300' : 'rounded-3xl overflow-visible'} ${
+          className={`sticky top-4 z-50 will-change-transform transition-all duration-300 mx-auto max-w-[95vw] rounded-3xl overflow-visible ${
           isScrolled 
-            ? `${isShopOpen ? 'border-gray-300' : 'bg-white shadow-md border border-gray-300'}` 
-            : `${isShopOpen ? 'border-gray-300' : 'bg-white border-transparent'}`
+            ? `${isShopOpen ? 'bg-white shadow-md border border-gray-300' : 'bg-white shadow-md border border-gray-300'}` 
+            : `${isShopOpen ? 'bg-white' : 'bg-white'}`
         }`}
       >
         <div className="px-4 lg:px-6">
@@ -305,28 +305,35 @@ export default function Header() {
               Strona główna
             </Link>
             <div 
-              className="relative overflow-visible shop-dropdown-container"
-              onMouseEnter={() => {
-                // Clear any existing timeout
-                if (shopHoverTimeout) {
-                  clearTimeout(shopHoverTimeout);
-                  setShopHoverTimeout(null);
-                }
-                // Open dropdown immediately on hover
-                setIsShopOpen(true);
-              }}
+              className="relative overflow-visible shop-dropdown-container flex items-center gap-2"
             >
-              <Link 
-                href="/sklep"
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  const newValue = !isShopOpen;
+                  setIsShopOpen(newValue);
+                  // Dispatch event for banner to listen
+                  window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: newValue } }));
+                }}
                 className="text-black hover:text-gray-700 transition-colors font-normal inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 rounded-md px-2 py-1"
                 aria-expanded={isShopOpen}
                 aria-haspopup="true"
               >
                 Sklep
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <Link
+                href="/sklep"
+                className="text-black hover:text-gray-700 transition-colors font-normal tracking-normal"
+                onClick={() => {
+                  setIsShopOpen(false);
+                  window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+                }}
+              >
+                Wszystkie produkty
               </Link>
               
-              {/* Shop Dropdown is now rendered inside ShopExplorePanel component */}
+              {/* Shop Modal is now rendered inside ShopExplorePanel component */}
             </div>
             <a 
               href="/o-nas" 

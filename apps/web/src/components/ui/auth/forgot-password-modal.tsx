@@ -102,7 +102,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
     >
       {/* Backdrop */}
       <motion.div
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+                    className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

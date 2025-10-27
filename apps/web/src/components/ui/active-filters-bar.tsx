@@ -131,7 +131,7 @@ export default function ActiveFiltersBar({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="bg-white/95 backdrop-blur-sm sticky top-[7.5rem] z-30 rounded-2xl mx-0 mb-5"
+      className="bg-white/95 backdrop-blur-sm sticky top-[7.5rem] z-30 rounded-2xl mx-0 mb-5 shadow-sm"
     >
       <div className="px-6 sm:px-10 py-5">
         {/* Mobile Layout - Button left, filters right */}
@@ -141,7 +141,7 @@ export default function ActiveFiltersBar({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClearFilters}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-xs flex-shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-gray-100 text-black border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-300 font-medium text-xs flex-shrink-0"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Wyczyść filtry</span>
@@ -162,17 +162,7 @@ export default function ActiveFiltersBar({
                     delay: index * 0.05,
                     layout: { duration: 0.3 }
                   }}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-200 ${
-                    chip.type === 'search' 
-                      ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
-                      : chip.type === 'category'
-                      ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                      : chip.type === 'price'
-                      ? 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200'
-                      : chip.type === 'sale'
-                      ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                      : 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200'
-                  }`}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-white border border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
                 >
                   <span className="truncate max-w-[100px]">{chip.label}</span>
                   <motion.button
@@ -197,7 +187,7 @@ export default function ActiveFiltersBar({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClearFilters}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-red-100 text-gray-700 hover:text-red-700 rounded-lg border border-gray-200 hover:border-red-200 transition-all duration-300 font-medium text-sm flex-shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-100 text-black border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-300 font-medium text-sm flex-shrink-0"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Wyczyść filtry</span>
@@ -219,17 +209,7 @@ export default function ActiveFiltersBar({
                       delay: index * 0.05,
                       layout: { duration: 0.3 }
                     }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-200 ${
-                      chip.type === 'search' 
-                        ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
-                        : chip.type === 'category'
-                        ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                        : chip.type === 'price'
-                        ? 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200'
-                        : chip.type === 'sale'
-                        ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
-                        : 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200'
-                    }`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-white border border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
                   >
                     <span className="truncate max-w-[120px]">{chip.label}</span>
                     <motion.button
@@ -248,9 +228,6 @@ export default function ActiveFiltersBar({
           </div>
         </div>
       </div>
-      
-      {/* Horizontal line under filters */}
-      <div className="w-full h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200"></div>
     </motion.div>
   );
 }
