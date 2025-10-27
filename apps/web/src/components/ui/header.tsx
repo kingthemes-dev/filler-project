@@ -487,13 +487,9 @@ export default function Header() {
               <div className="relative user-menu-container overflow-visible">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center space-x-2"
+                  className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded "
                 >
                   <User className="w-6 h-6" />
-                  <span className="text-sm font-medium">
-                    {user?.firstName || 'Moje konto'}
-                  </span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* User Dropdown Menu */}
