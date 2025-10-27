@@ -14,7 +14,7 @@ export default function Footer() {
         <div className="absolute inset-0 bg-gradient-to-t from-gray-800/50 via-transparent to-gray-900/30"></div>
       </div>
       
-         <div className="relative max-w-[95vw] mx-auto mobile-container">
+         <div className="relative max-w-[95vw] mx-4 lg:mx-8 xl:mx-auto mobile-container">
            {/* Logo i kontakt - Mobile */}
            <div className="lg:hidden mb-8 -mt-4">
              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 py-4 mb-3 relative">
