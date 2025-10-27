@@ -112,6 +112,7 @@ export default function CookieConsent() {
               <button 
                 onClick={showSettings ? () => setShowSettings(false) : handleRejectAll}
                 className="flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label={showSettings ? "Zamknij ustawienia" : "Odrzuć wszystkie"}
               >
                 <X className="w-4 h-4" />
               </button>
