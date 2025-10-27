@@ -58,9 +58,7 @@ export default function FreeShippingBanner() {
   }, []);
 
   return (
-    <div className={`sticky top-0 z-[100] transition-transform duration-300 ${
-      isVisible ? 'translate-y-0' : '-translate-y-full'
-    }`}>
+    <div className="sticky top-0 z-[100]">
       {/* Main Banner */}
       <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700">
         <div className="px-6 py-2 ml-4">
