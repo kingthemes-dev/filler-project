@@ -720,7 +720,7 @@ export default function Header() {
                       </div>
 
                       {/* Footer */}
-                      <div className="border-t border-gray-200 p-4 bg-gray-50 mb-[30px]">
+                      <div className="border-t border-gray-200 p-4 bg-gray-50">
                         {isAuthenticated ? (
                           <div className="space-y-1 mb-2">
                             <Link 
