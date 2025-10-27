@@ -270,13 +270,13 @@ export default function Header() {
   return (
     <>
       <header 
-          className={`sticky top-4 z-50 will-change-transform transition-all duration-300 mx-auto w-full ${isShopOpen ? 'rounded-t-3xl overflow-visible border-t border-l border-r border-b-0 bg-white border-gray-300' : 'rounded-3xl overflow-visible'} ${
+          className={`sticky top-4 z-50 will-change-transform transition-all duration-300 mx-4 max-w-7xl ${isShopOpen ? 'rounded-t-3xl overflow-visible border-t border-l border-r border-b-0 bg-white border-gray-300' : 'rounded-3xl overflow-visible'} ${
           isScrolled 
             ? `${isShopOpen ? 'border-gray-300' : 'bg-white shadow-md border border-gray-300'}` 
             : `${isShopOpen ? 'border-gray-300' : 'bg-white border-transparent'}`
         }`}
       >
-        <div className="px-6 lg:px-8">
+        <div className="px-4 lg:px-6">
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-16 sm:h-20 gap-2 min-h-0">
           {/* Logo */}
           <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity -mt-[5px]">
