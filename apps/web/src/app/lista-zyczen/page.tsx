@@ -132,11 +132,13 @@ export default function WishlistPage() {
   return (
     <PageContainer>
       {/* Header with Title and Breadcrumbs */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
+      <div className="pt-8 pb-4 sm:pb-6 px-4 lg:px-8 mb-8">
+        <div className="flex items-center justify-between gap-4 lg:gap-8">
           <h1 className="text-2xl font-bold text-gray-900">Lista życzeń</h1>
+          <div className="ml-auto">
+            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
+          </div>
         </div>
-        <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
       </div>
       
       {/* Header */}
