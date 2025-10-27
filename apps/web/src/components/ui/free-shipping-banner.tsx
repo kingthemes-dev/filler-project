@@ -8,6 +8,7 @@ import { useCartStore } from '@/stores/cart-store';
 export default function FreeShippingBanner() {
   const { total, itemCount } = useCartStore();
   const [showText, setShowText] = useState(true);
+  const [isVisible, setIsVisible] = useState(true);
   
   const FREE_SHIPPING_THRESHOLD = 200; // PLN netto
   const nettoTotal = total / 1.23;
@@ -16,6 +17,27 @@ export default function FreeShippingBanner() {
 
   // Calculate progress percentage
   const progress = Math.min(100, (nettoTotal / FREE_SHIPPING_THRESHOLD) * 100);
+
+  // Hide banner on scroll down, show on scroll up
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Hide when scrolling down, show when scrolling up or at top
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY || currentScrollY <= 100) {
+        setIsVisible(true);
+      }
+      
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Animate text every 5 seconds - 2 blinks
   useEffect(() => {
@@ -36,7 +58,9 @@ export default function FreeShippingBanner() {
   }, []);
 
   return (
-    <div className="sticky top-0 z-[100]">
+    <div className={`sticky top-0 z-[100] transition-transform duration-300 ${
+      isVisible ? 'translate-y-0' : '-translate-y-full'
+    }`}>
       {/* Main Banner */}
       <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700">
         <div className="px-6 py-2 ml-4">
