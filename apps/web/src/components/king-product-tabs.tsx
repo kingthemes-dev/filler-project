@@ -150,7 +150,7 @@ export default function KingProductTabs() {
                 
                 {/* Animated underline */}
                 <motion.div
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-black origin-left"
+                  className="absolute bottom-0 left-[5px] right-[5px] sm:left-0 sm:right-0 h-0.5 bg-black origin-left"
                   initial={false}
                   animate={{
                     scaleX: activeTab === tab.id ? 1 : 0,
