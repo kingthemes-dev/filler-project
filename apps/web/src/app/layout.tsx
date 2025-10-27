@@ -178,6 +178,8 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        {/* Montserrat Google Font */}
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         {/* Preload hero image for faster LCP - highest priority */}
         <link rel="preload" as="image" href="/images/hero/home.webp" type="image/webp" fetchPriority="high" imageSrcSet="/images/hero/home.webp 1920w" imageSizes="100vw" />
         {/* Preload critical CSS inline */}
@@ -185,7 +187,6 @@ export default function RootLayout({
           .text-white{color:#fff}
           .font-bold{font-weight:700}
           .leading-tight{line-height:1.25}
-          @font-face{font-family:'Geist';font-style:normal;font-weight:400;font-display:swap;src:local('Geist')}
         `}} />
         {/* Structured Data - Organization */}
         <Script
