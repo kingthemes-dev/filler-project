@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import "./globals.css";
 import Header from '@/components/ui/header';
 import GlobalBreadcrumbs from '@/components/ui/global-breadcrumbs';
@@ -19,19 +19,12 @@ import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analyti
 import { errorTracker, analytics, performanceMonitor } from '@headless-woo/shared';
 
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
   display: "swap",
   preload: true,
   fallback: ['system-ui', 'arial'],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -216,7 +209,7 @@ export default function RootLayout({
         />
       </head>
                         <body
-                    className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+                    className={`${montserrat.variable} antialiased bg-background text-foreground font-sans`}
                     suppressHydrationWarning={true}
                   >
                         {/* Google Tag Manager (noscript) */}
