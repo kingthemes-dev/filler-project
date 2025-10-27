@@ -401,7 +401,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     <div className="min-h-screen bg-white">
       <PageContainer className="py-4 pb-12">
         {/* Header with Title and Breadcrumbs */}
-        <div className="mb-4 sm:mb-6">
+        <div className="pt-8 pb-4 sm:pb-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">Sklep</h1>
             <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
