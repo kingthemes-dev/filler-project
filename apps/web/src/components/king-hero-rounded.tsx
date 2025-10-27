@@ -123,11 +123,6 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
             <div className="hidden md:flex justify-center lg:justify-end absolute bottom-4 right-4 lg:bottom-6 lg:right-6">
               {featuredProduct ? (
                 <div className="group block">
-                  {/* Promocja Title */}
-                  <div className="text-center mb-2">
-                    <span className="text-xs text-white/80 font-medium">Promocja</span>
-                  </div>
-                  
                   <Link href={`/produkt/${featuredProduct.slug}`} className="group block">
                   <Card className="w-45 md:w-51 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 group-hover:-translate-y-0.5">
                     <CardContent className="px-4 md:px-6 pt-1 pb-1">
