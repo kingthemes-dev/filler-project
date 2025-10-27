@@ -89,6 +89,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const mainCategories = useMemo(() => categories.filter(c => (c.parent || 0) === 0), [categories]);
   const subCategories = useMemo(() => categories.filter(c => (c.parent || 0) === (selectedCat || 0)), [categories, selectedCat]);
   const currentMain = useMemo(() => mainCategories.find(c => c.id === selectedCat) || null, [mainCategories, selectedCat]);
+  
+  console.log('🔍 Category debug:', {
+    selectedCat,
+    subCategoriesCount: subCategories.length,
+    subCategories: subCategories.map(sc => sc.name),
+    currentMain: currentMain?.name,
+    allCategoriesCount: categories.length
+  });
 
 
   useEffect(() => {
