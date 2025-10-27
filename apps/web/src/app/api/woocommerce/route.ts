@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cache } from '@/lib/cache';
 import { WooShippingMethod } from '@/types/woocommerce';
 import { sentryMetrics } from '@/utils/sentry-metrics';
+import { env } from '@/config/env';
 
 // Redis client (optional)
 let redis: any = null;
@@ -22,10 +23,11 @@ try {
   console.warn('Redis not available, using in-memory cache', error);
 }
 
-const WC_URL = process.env.NEXT_PUBLIC_WC_URL;
+const WC_URL = env.NEXT_PUBLIC_WC_URL;
 const SITE_BASE = WC_URL ? WC_URL.replace(/\/wp-json\/wc\/v3.*/, '') : '';
-const CK = process.env.WC_CONSUMER_KEY;
-const CS = process.env.WC_CONSUMER_SECRET;
+const CK = env.WC_CONSUMER_KEY;
+const CS = env.WC_CONSUMER_SECRET;
+const WORDPRESS_URL = env.NEXT_PUBLIC_WORDPRESS_URL;
 
 // Check if required environment variables are available
 if (!WC_URL || !CK || !CS) {
@@ -1143,14 +1145,14 @@ async function handleAttributesEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   
   // Check WordPress URL first
-  if (!process.env.NEXT_PUBLIC_WORDPRESS_URL) {
-    console.error('❌ NEXT_PUBLIC_WORDPRESS_URL is not defined');
+  if (!WORDPRESS_URL) {
+    console.error('❌ WORDPRESS_URL is not defined');
     return NextResponse.json(
       { 
         error: 'Błąd konfiguracji serwera', 
         details: 'Brakuje NEXT_PUBLIC_WORDPRESS_URL',
         debug: {
-          NEXT_PUBLIC_WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL,
+          WORDPRESS_URL: WORDPRESS_URL,
           NODE_ENV: process.env.NODE_ENV
         }
       },
@@ -1167,10 +1169,10 @@ async function handleAttributesEndpoint(req: NextRequest) {
 
   try {
     // PRO Architecture: WordPress robi całe filtrowanie atrybutów
-    const attributesUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/attributes?${searchParams.toString()}`;
+    const attributesUrl = `${WORDPRESS_URL}/wp-json/king-shop/v1/attributes?${searchParams.toString()}`;
     
     console.log('🏷️ Attributes endpoint - calling King Shop API:', attributesUrl);
-    console.log('🔍 WordPress URL:', process.env.NEXT_PUBLIC_WORDPRESS_URL);
+    console.log('🔍 WordPress URL:', WORDPRESS_URL);
     
     const response = await fetch(attributesUrl, {
       method: 'GET',
@@ -1221,14 +1223,14 @@ async function handleShopEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   
   // Check WordPress URL first
-  if (!process.env.NEXT_PUBLIC_WORDPRESS_URL) {
-    console.error('❌ NEXT_PUBLIC_WORDPRESS_URL is not defined');
+  if (!WORDPRESS_URL) {
+    console.error('❌ WORDPRESS_URL is not defined');
     return NextResponse.json(
       { 
         error: 'Błąd konfiguracji serwera', 
         details: 'Brakuje NEXT_PUBLIC_WORDPRESS_URL',
         debug: {
-          NEXT_PUBLIC_WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL,
+          WORDPRESS_URL: WORDPRESS_URL,
           NODE_ENV: process.env.NODE_ENV
         }
       },
@@ -1255,10 +1257,10 @@ async function handleShopEndpoint(req: NextRequest) {
       }
     });
     
-    const shopUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&${cleanParams.toString()}`;
+    const shopUrl = `${WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&${cleanParams.toString()}`;
     
     console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
-    console.log('🔍 WordPress URL:', process.env.NEXT_PUBLIC_WORDPRESS_URL);
+    console.log('🔍 WordPress URL:', WORDPRESS_URL);
     
     const response = await fetch(shopUrl, {
       method: 'GET',
