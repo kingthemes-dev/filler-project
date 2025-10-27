@@ -1196,12 +1196,6 @@ async function handleAttributesEndpoint(req: NextRequest) {
     });
 
     console.log('🔍 King Shop API response status:', response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ King Shop API error:', errorText.substring(0, 500));
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText.substring(0, 200)}`);
-    }
 
     const data = await response.json();
     
@@ -1295,12 +1289,6 @@ async function handleShopEndpoint(req: NextRequest) {
     });
 
     console.log('🔍 King Shop API response status:', response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ King Shop API error:', errorText.substring(0, 500));
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText.substring(0, 200)}`);
-    }
 
     const data = await response.json();
     
