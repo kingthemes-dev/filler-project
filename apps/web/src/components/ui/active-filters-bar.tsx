@@ -133,7 +133,7 @@ export default function ActiveFiltersBar({
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="bg-white/95 backdrop-blur-sm sticky top-0 z-30 border border-gray-200/50 rounded-2xl shadow-sm mx-0 mb-5"
     >
-      <div className="px-4 sm:px-6 py-5">
+      <div className="px-6 sm:px-10 py-5">
         {/* Mobile Layout - Button left, filters right */}
         <div className="flex items-center gap-3 sm:hidden">
           {/* Clear button - left side */}
