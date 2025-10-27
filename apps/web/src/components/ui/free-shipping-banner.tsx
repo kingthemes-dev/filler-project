@@ -6,8 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/stores/cart-store';
 
 export default function FreeShippingBanner() {
-  const [isVisible, setIsVisible] = useState(true);
-  const [isScrolled, setIsScrolled] = useState(false);
   const { total, itemCount } = useCartStore();
   
   const FREE_SHIPPING_THRESHOLD = 200; // PLN netto
@@ -15,54 +13,11 @@ export default function FreeShippingBanner() {
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - nettoTotal);
   const hasCart = itemCount > 0;
 
-  // Hide banner on scroll down, show on scroll up
-  useEffect(() => {
-    let lastScrollY = 0;
-    
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY > 100) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-      
-      lastScrollY = currentScrollY;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleClose = () => {
-    setIsVisible(false);
-    localStorage.setItem('free-shipping-banner-closed', 'true');
-  };
-
-  useEffect(() => {
-    const bannerClosed = localStorage.getItem('free-shipping-banner-closed');
-    if (bannerClosed === 'true') {
-      setIsVisible(false);
-    }
-  }, []);
-
   // Calculate progress percentage
   const progress = Math.min(100, (nettoTotal / FREE_SHIPPING_THRESHOLD) * 100);
 
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -100, opacity: 0 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          className={`fixed top-0 left-0 right-0 z-[100] ${
-            isScrolled ? 'transform -translate-y-full' : ''
-          } transition-transform duration-300`}
-          style={{ transition: 'transform 0.3s ease-out' }}
-        >
+    <div className="sticky top-0 z-[100]">
           {/* Main Banner */}
           <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border border-gray-700 rounded-br-3xl">
             <div className="px-6 py-3 ml-4">
@@ -89,32 +44,20 @@ export default function FreeShippingBanner() {
                   </div>
                 </div>
 
-                {/* Right side - Close button (hidden on mobile if in cart) */}
-                <button
-                  onClick={handleClose}
-                  className="flex-shrink-0 p-1.5 rounded-full hover:bg-white/10 transition-colors"
-                  aria-label="Zamknij"
-                >
-                  <X className="w-5 h-5 text-white/70 hover:text-white transition-colors" />
-                </button>
               </div>
               
               {/* Progress bar - only show if cart has items */}
               {hasCart && (
                 <div className="mt-2 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full"
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
                   />
                 </div>
               )}
             </div>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        </div>
   );
 }
 
