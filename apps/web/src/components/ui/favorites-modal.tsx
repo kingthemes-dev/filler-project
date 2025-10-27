@@ -49,7 +49,7 @@ export default function FavoritesModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-[80] flex items-start sm:items-center justify-center p-4 pt-6 sm:pt-4"
+            className="fixed inset-0 z-[80] flex items-center justify-center p-4"
             onClick={(e) => {
               // Close when clicking on the empty area (overlay container)
               if (e.target === e.currentTarget) closeFavoritesModal();
