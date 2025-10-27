@@ -119,3 +119,11 @@ export const VALIDATION_RULES = {
   MIN_ADDRESS_LENGTH: 10,
   MAX_ADDRESS_LENGTH: 200,
 } as const;
+
+// =========================================
+// Shipping & Checkout
+// =========================================
+export const SHIPPING_CONFIG = {
+  FREE_SHIPPING_THRESHOLD: 200, // PLN netto
+  VAT_RATE: 1.23, // Polish VAT rate
+} as const;

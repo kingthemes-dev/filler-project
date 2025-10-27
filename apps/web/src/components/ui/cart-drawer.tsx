@@ -8,6 +8,7 @@ import { useCartStore, type CartItem } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import { formatPrice } from '@/utils/format-price';
+import { SHIPPING_CONFIG } from '@/config/constants';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -55,9 +56,9 @@ export default function CartDrawer() {
   }, [isOpen, closeCart]);
 
   // Free shipping config (netto)
-  const FREE_SHIPPING_THRESHOLD = 200; // PLN netto
+  const FREE_SHIPPING_THRESHOLD = SHIPPING_CONFIG.FREE_SHIPPING_THRESHOLD;
   // Convert total (with VAT) to netto for comparison
-  const nettoTotal = total / 1.23;
+  const nettoTotal = total / SHIPPING_CONFIG.VAT_RATE;
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - nettoTotal);
   const progress = Math.min(100, (nettoTotal / FREE_SHIPPING_THRESHOLD) * 100);
 

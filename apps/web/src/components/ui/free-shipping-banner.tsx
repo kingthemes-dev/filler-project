@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCartStore } from '@/stores/cart-store';
+import { SHIPPING_CONFIG } from '@/config/constants';
 
 export default function FreeShippingBanner() {
   const { total, itemCount } = useCartStore();
@@ -11,8 +12,8 @@ export default function FreeShippingBanner() {
   const [isVisible, setIsVisible] = useState(true);
   const [hasScrolled, setHasScrolled] = useState(false);
   
-  const FREE_SHIPPING_THRESHOLD = 200; // PLN netto
-  const nettoTotal = total / 1.23;
+  const FREE_SHIPPING_THRESHOLD = SHIPPING_CONFIG.FREE_SHIPPING_THRESHOLD;
+  const nettoTotal = total / SHIPPING_CONFIG.VAT_RATE;
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - nettoTotal);
   const hasCart = itemCount > 0;
 

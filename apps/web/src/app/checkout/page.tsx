@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
+import { SHIPPING_CONFIG } from '@/config/constants';
 import Link from 'next/link';
 import { PaymentMethod } from '@/services/mock-payment';
 import wooCommerceService from '@/services/woocommerce-optimized';
@@ -1583,8 +1584,8 @@ function CheckoutPageInner() {
                   
                   {/* Free Shipping Progress */}
                   {(() => {
-                    const FREE_SHIPPING_THRESHOLD = 200; // PLN netto
-                    const nettoTotal = total / 1.23;
+                    const FREE_SHIPPING_THRESHOLD = SHIPPING_CONFIG.FREE_SHIPPING_THRESHOLD;
+                    const nettoTotal = total / SHIPPING_CONFIG.VAT_RATE;
                     const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - nettoTotal);
                     
                     if (remainingForFreeShipping > 0) {
