@@ -55,9 +55,6 @@ const nextConfig: NextConfig = {
       {
         pathname: '/images/**',
       },
-      {
-        pathname: '/logo.webp',
-      },
     ],
   },
       webpack: (config, { isServer, dev }) => {

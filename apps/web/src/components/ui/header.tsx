@@ -281,7 +281,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity">
             <Image 
-              src="/logo.webp" 
+              src="/images/logo.webp" 
               alt="FILLER" 
               width={120} 
               height={40} 
