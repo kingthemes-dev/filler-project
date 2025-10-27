@@ -118,7 +118,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   }, [activeTab]);
 
   return (
-    <section className="py-12 sm:py-16 bg-white mx-2 sm:mx-4 md:mx-6 lg:mx-8 rounded-2xl sm:夸张overflow-hidden">
+    <section className="py-12 sm:py-16 bg-white mx-2 sm:mx-4 md:mx-6 lg:mx-8 rounded-2xl sm:rounded-3xl overflow-hidden">
       <div className="max-w-[90vw] mx-auto mobile-container">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Custom Tabs Implementation - No shadcn/ui */}
