@@ -43,7 +43,7 @@ export default function FreeShippingBanner() {
           <div className="flex items-center justify-center gap-3">
             {/* White Icon */}
             <div className="flex-shrink-0">
-              <Truck className="w-5 h-5 text-white" strokeWidth={2.5} />
+              <Truck className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
             
             {/* Animated Text */}
