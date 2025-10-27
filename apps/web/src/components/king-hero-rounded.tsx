@@ -77,7 +77,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
 
 
   return (
-    <section className="relative h-auto min-h-[400px] sm:min-h-[450px] lg:min-h-[500px] -mt-[20px] rounded-2xl sm:rounded-3xl overflow-hidden">
+    <section className="relative h-auto min-h-[400px] sm:min-h-[450px] lg:min-h-[500px] rounded-2xl sm:rounded-3xl overflow-hidden">
       <div className="absolute inset-0 h-full">
         <div className="relative h-full overflow-hidden">
           {/* Background Image - optimized for LCP - native img for fastest load */}
