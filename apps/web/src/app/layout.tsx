@@ -3,7 +3,6 @@ import Script from "next/script";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import Header from '@/components/ui/header';
-import GlobalBreadcrumbs from '@/components/ui/global-breadcrumbs';
 import { ConditionalFooter } from '@/components/conditional-footer';
 import CartDrawer from '@/components/ui/cart-drawer';
 import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
@@ -219,7 +218,6 @@ export default function RootLayout({
                           <Header />
                           <ReactQueryProvider>
                             <main>
-                              <GlobalBreadcrumbs />
                               {children}
                             </main>
                           </ReactQueryProvider>
