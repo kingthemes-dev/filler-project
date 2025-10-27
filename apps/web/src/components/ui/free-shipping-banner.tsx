@@ -17,11 +17,19 @@ export default function FreeShippingBanner() {
   // Calculate progress percentage
   const progress = Math.min(100, (nettoTotal / FREE_SHIPPING_THRESHOLD) * 100);
 
-  // Animate text every 5 seconds
+  // Animate text every 5 seconds - 2 blinks
   useEffect(() => {
     const interval = setInterval(() => {
+      // First blink
       setShowText(false);
-      setTimeout(() => setShowText(true), 600);
+      setTimeout(() => {
+        setShowText(true);
+        // Second blink after 300ms
+        setTimeout(() => {
+          setShowText(false);
+          setTimeout(() => setShowText(true), 300);
+        }, 300);
+      }, 300);
     }, 5000);
 
     return () => clearInterval(interval);
