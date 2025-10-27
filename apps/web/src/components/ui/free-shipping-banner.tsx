@@ -64,8 +64,8 @@ export default function FreeShippingBanner() {
           style={{ transition: 'transform 0.3s ease-out' }}
         >
           {/* Main Banner */}
-          <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700">
-            <div className="max-w-xs sm:max-w-sm md:max-w-md px-4 ml-4 mr-auto py-3 rounded-br-3xl">
+          <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border border-gray-700 rounded-br-3xl">
+            <div className="px-6 py-3 ml-4">
               <div className="flex items-center justify-between gap-4">
                 {/* Left side - Icon and Text */}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
