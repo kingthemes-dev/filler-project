@@ -280,7 +280,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
           onClick={onClose}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y:continued opacity: 1, scale: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[80vh] overflow-y-auto mt-20"
