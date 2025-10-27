@@ -106,7 +106,7 @@ export default function Breadcrumbs({
           aria-current="page"
         >
           {ItemIcon && <ItemIcon className={`${iconSizes[size]} mr-1.5`} />}
-          <span className="truncate max-w-[120px] sm:max-w-[200px]">{item.label}</span>
+          <span className="truncate">{item.label}</span>
         </motion.span>
       );
     }
@@ -129,7 +129,7 @@ export default function Breadcrumbs({
           ) : ItemIcon ? (
             <ItemIcon className={`${iconSizes[size]} mr-1.5 transition-transform duration-200`} />
           ) : null}
-          <span className="truncate max-w-[120px] sm:max-w-[200px]">{item.label}</span>
+          <span className="truncate">{item.label}</span>
         </Link>
         
         {/* Hover tooltip */}
