@@ -38,7 +38,7 @@ export default function ContactPage() {
     <div className="bg-white">
       <PageContainer>
         {/* Header with Title and Breadcrumbs */}
-        <div className="pt-8 pb-4 sm:pb-6 px-4 lg:px-8">
+        <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-white rounded-2xl mt-4 mx-4 lg:mx-0 px-4 lg:px-8 py-6 sm:py-8">
           <div className="flex items-center justify-between gap-4 lg:gap-8">
             <h1 className="text-2xl font-bold text-gray-900">
               Kontakt
