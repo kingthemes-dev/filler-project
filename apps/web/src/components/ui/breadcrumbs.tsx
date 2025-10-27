@@ -70,19 +70,19 @@ export default function Breadcrumbs({
   // Variant styles
   const variantClasses = {
     default: {
-      container: 'bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm',
+      container: 'bg-gradient-to-br from-gray-50 via-gray-100 to-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm',
       item: 'text-gray-600 hover:text-gray-900',
       active: 'text-gray-900 font-semibold',
       separator: 'text-gray-400'
     },
     minimal: {
-      container: 'bg-transparent',
+      container: 'bg-gradient-to-br from-gray-50 to-transparent',
       item: 'text-gray-500 hover:text-gray-700',
       active: 'text-gray-900 font-medium',
       separator: 'text-gray-300'
     },
     elevated: {
-      container: 'bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-md backdrop-blur-sm',
+      container: 'bg-gradient-to-br from-gray-50 via-gray-100 to-white border border-gray-200 rounded-xl px-4 py-3 shadow-md backdrop-blur-sm',
       item: 'text-gray-600 hover:text-gray-900',
       active: 'text-gray-900 font-semibold',
       separator: 'text-gray-400'
