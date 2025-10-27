@@ -13,10 +13,10 @@ export async function GET() {
     let hasMorePages = true;
     
     while (hasMorePages) {
-      const shopUrl = `${WP_BASE_URL}/wp-json/king-optimized/v1/shop?per_page=100&page=${page}`;
+      const shopUrl = `${WP_BASE_URL}/wp-json/king-shop/v1/data?endpoint=shop&per_page=100&page=${page}`;
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`🏠 Home feed - calling King Optimized API page ${page}:`, shopUrl);
+        console.log(`🏠 Home feed - calling King Shop API page ${page}:`, shopUrl);
       }
       
       // Fetch products using our optimized API with timeout
