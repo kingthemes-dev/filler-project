@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import Header from '@/components/ui/header';
+import FreeShippingBanner from '@/components/ui/free-shipping-banner';
 import { ConditionalFooter } from '@/components/conditional-footer';
 import CartDrawer from '@/components/ui/cart-drawer';
 import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
@@ -216,6 +217,7 @@ export default function RootLayout({
                         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TJSTQLNM" height="0" width="0" style={{display:'none',visibility:'hidden'}}></iframe></noscript>
                         <ErrorBoundary>
                           <PerformanceTracker />
+                          <FreeShippingBanner />
                           <Header />
                           <ReactQueryProvider>
                             <main>
