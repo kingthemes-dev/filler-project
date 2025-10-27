@@ -130,7 +130,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 className="absolute top-0 bottom-0 bg-gradient-to-r from-black to-gray-800 rounded-2xl sm:rounded-3xl transition-all duration-500 ease-out"
                 style={{
                   left: `calc(${(tabs.findIndex(tab => tab.id === activeTab) * 100) / tabs.length}% - 2px)`,
-                  width: `calc(${100 / tabs.length}% + 10px)`,
+                  width: `calc(${100 / tabs.length}% + 5px)`,
                   transform: 'translateX(0)',
                 }}
               />
