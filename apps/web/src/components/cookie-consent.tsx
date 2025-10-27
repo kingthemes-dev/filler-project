@@ -91,17 +91,9 @@ export default function CookieConsent() {
     }
   };
 
-  // Show cookie settings button in bottom left when not showing modals
+  // Don't show anything when popup is closed
   if (!showBanner && !showSettings) {
-    return (
-      <button
-        onClick={() => setShowSettings(true)}
-        className="fixed bottom-4 left-4 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 hover:shadow-xl transition-all duration-300 group"
-        title="Ustawienia cookies"
-      >
-        <Cookie className="w-5 h-5 text-gray-600 group-hover:text-gray-900 transition-colors" />
-      </button>
-    );
+    return null;
   }
 
   return (
