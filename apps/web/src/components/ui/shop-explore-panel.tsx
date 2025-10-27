@@ -90,13 +90,6 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   const subCategories = useMemo(() => categories.filter(c => (c.parent || 0) === (selectedCat || 0)), [categories, selectedCat]);
   const currentMain = useMemo(() => mainCategories.find(c => c.id === selectedCat) || null, [mainCategories, selectedCat]);
   
-  console.log('🔍 Category debug:', {
-    selectedCat,
-    subCategoriesCount: subCategories.length,
-    subCategories: subCategories.map(sc => sc.name),
-    currentMain: currentMain?.name,
-    allCategoriesCount: categories.length
-  });
 
 
   useEffect(() => {
@@ -179,10 +172,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       <button
                         type="button"
                         onClick={(e) => {
-                          console.log('💥 Category button clicked - BEFORE preventDefault:', category.name);
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log('💥 Category button clicked - AFTER preventDefault:', category.name, 'Setting selectedCat to:', category.id);
                           setSelectedCat(category.id);
                         }}
                         className={`${category.id === 15 ? 'hidden' : ''} flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group cursor-pointer ${
