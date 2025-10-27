@@ -201,16 +201,6 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                 <div className="flex items-center gap-2 mb-4">
                   <ChevronRight className="w-5 h-5 text-gray-600" />
                   <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Zastosowanie</h3>
-                  {currentMain && (
-                    <Link
-                      href={`/sklep?category=${encodeURIComponent(currentMain.slug)}`}
-                      onClick={onClose}
-                      className="ml-auto text-xs font-medium text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
-                      title={`Zobacz wszystko: ${currentMain.name}`}
-                    >
-                      Zobacz wszystko
-                    </Link>
-                  )}
                 </div>
                 
                 {!selectedCat ? (
