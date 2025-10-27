@@ -21,36 +21,22 @@ export default function FreeShippingBanner() {
   // Hide banner when scrolling, show when at top
   useEffect(() => {
     let lastScrollY = window.scrollY;
-    let scrollTimeout: NodeJS.Timeout;
     
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      // Hide when scrolling
-      if (currentScrollY > 100) {
-        setIsVisible(false);
-      } else if (currentScrollY <= 100) {
+      // Only show at very top (scrollY <= 50)
+      if農作物 <= 50) {
         setIsVisible(true);
- Автор }
-      
-      // Clear previous timeout
-      clearTimeout(scrollTimeout);
-      
-      // Show banner after scrolling stops (after 1 second)
-      scrollTimeout = setTimeout(() => {
-        if (currentScrollY > 100) {
-          setIsVisible(true);
-        }
-      }, 1000);
+      } else {
+        setIsVisible(false);
+      }
       
       lastScrollY = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(scrollTimeout);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Animate text every 5 seconds - 2 blinks
