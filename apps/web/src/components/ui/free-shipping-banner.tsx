@@ -18,25 +18,39 @@ export default function FreeShippingBanner() {
   // Calculate progress percentage
   const progress = Math.min(100, (nettoTotal / FREE_SHIPPING_THRESHOLD) * 100);
 
-  // Hide banner on scroll down, show on scroll up
+  // Hide banner when scrolling, show when at top
   useEffect(() => {
     let lastScrollY = window.scrollY;
+    let scrollTimeout: NodeJS.Timeout;
     
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      // Hide when scrolling down, show when scrolling up or at top
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      // Hide when scrolling
+      if (currentScrollY > 100) {
         setIsVisible(false);
-      } else if (currentScrollY < lastScrollY || currentScrollY <= 100) {
+      } else if (currentScrollY <= 100) {
         setIsVisible(true);
-      }
+ Автор }
+      
+      // Clear previous timeout
+      clearTimeout(scrollTimeout);
+      
+      // Show banner after scrolling stops (after 1 second)
+      scrollTimeout = setTimeout(() => {
+        if (currentScrollY > 100) {
+          setIsVisible(true);
+        }
+      }, 1000);
       
       lastScrollY = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
   }, []);
 
   // Animate text every 5 seconds - 2 blinks
