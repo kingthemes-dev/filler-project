@@ -108,9 +108,9 @@ export default function CookieConsent() {
     <>
       {/* Cookie Modal - Bottom Left Popup */}
       {(showBanner || showSettings) && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 w-full">
-          <div className="bg-white border-t border-gray-200 mx-4 mb-4 rounded-3xl shadow-2xl max-w-[95vw] lg:max-w-7xl xl:mx-auto">
-            <div className="p-6 lg:p-8">
+        <div className="fixed bottom-4 left-4 z-50">
+          <div className="bg-white border border-gray-200 rounded-3xl shadow-2xl max-w-xs sm:max-w-sm">
+            <div className="p-4 sm:p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
