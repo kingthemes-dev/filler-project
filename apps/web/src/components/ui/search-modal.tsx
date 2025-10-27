@@ -55,7 +55,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       return;
     }
 
-    setIsLoading(true);
+    // Show loading only if there are no results yet
+    if (products.length === 0 && !hasSearched) {
+      setIsLoading(true);
+    }
     
     // Search products
     fetch(`/api/woocommerce?endpoint=products&search=${encodeURIComponent(query)}&per_page=10`)
