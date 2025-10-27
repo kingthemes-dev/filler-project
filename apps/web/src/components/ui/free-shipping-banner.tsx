@@ -26,7 +26,7 @@ export default function FreeShippingBanner() {
       const currentScrollY = window.scrollY;
       
       // Only show at very top (scrollY <= 50)
-      if農作物 <= 50) {
+      if (currentScrollY <= 50) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
