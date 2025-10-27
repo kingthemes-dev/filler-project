@@ -352,7 +352,7 @@ export default function Header() {
               className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
               aria-label="Szukaj"
             >
-              <Search className="w-6 h-6" />
+              <Search className="w-6 h-6" strokeWidth={1.5} />
             </button>
             {isAuthenticated ? (
               <Link
@@ -360,7 +360,7 @@ export default function Header() {
                 className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
                 aria-label="Moje konto"
               >
-                <User className="w-6 h-6" />
+                <User className="w-6 h-6" strokeWidth={1.5} />
               </Link>
             ) : (
               <button
@@ -368,7 +368,7 @@ export default function Header() {
                 className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
                 aria-label="Zaloguj się"
               >
-                <User className="w-6 h-6" />
+                <User className="w-6 h-6" strokeWidth={1.5} />
               </button>
             )}
 
@@ -378,7 +378,7 @@ export default function Header() {
               className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors relative"
               aria-label="Ulubione"
             >
-              <Heart className="w-6 h-6" />
+              <Heart className="w-6 h-6" strokeWidth={1.5} />
               {favoritesCount > 0 && (
                 <span className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-red-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center">
                   {favoritesCount}
@@ -392,7 +392,7 @@ export default function Header() {
               className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors relative"
               aria-label="Koszyk"
             >
-              <ShoppingCart className="w-6 h-6" />
+              <ShoppingCart className="w-6 h-6" strokeWidth={1.5} />
               {itemCount > 0 && (
                 <span className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-blue-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center">
                   {itemCount}
@@ -471,7 +471,7 @@ export default function Header() {
               title="Szukaj"
               aria-label="Szukaj"
             >
-              <Search className="w-6 h-6" />
+              <Search className="w-6 h-6" strokeWidth={1.5} />
             </button>
 
             {/* Email Notification Center - Admin Only */}
@@ -482,7 +482,7 @@ export default function Header() {
                 title="Email Notification Center"
                 aria-label="Centrum powiadomień email"
               >
-                <Mail className="w-6 h-6" />
+                <Mail className="w-6 h-6" strokeWidth={1.5} />
               </button>
             )}
 
@@ -493,7 +493,7 @@ export default function Header() {
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded "
                 >
-                  <User className="w-6 h-6" />
+                  <User className="w-6 h-6" strokeWidth={1.5} />
                 </button>
 
                 {/* User Dropdown Menu */}
@@ -613,7 +613,7 @@ export default function Header() {
                               data-test="open-login-btn"
                               aria-label="Zaloguj się"
                             >
-                              <User className="w-6 h-6" />
+                              <User className="w-6 h-6" strokeWidth={1.5} />
                             </button>
                           )}
                           
@@ -623,7 +623,7 @@ export default function Header() {
               title="Ulubione"
               aria-label="Ulubione produkty"
             >
-              <Heart className="w-6 h-6 group-hover:text-red-500 transition-colors" />
+              <Heart className="w-6 h-6 group-hover:text-red-500 transition-colors" strokeWidth={1.5} />
               {isMounted && favoritesCount > 0 && (
                 <span className="pointer-events-none absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-red-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center ring-1 ring-white">
                   {favoritesCount}
@@ -643,7 +643,7 @@ export default function Header() {
               title="Koszyk"
               aria-label="Koszyk zakupowy"
             >
-              <ShoppingCart className="w-6 h-6 group-hover:text-blue-600 transition-colors" />
+              <ShoppingCart className="w-6 h-6 group-hover:text-blue-600 transition-colors" strokeWidth={1.5} />
               {itemCount > 0 && (
                 <span className="pointer-events-none absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-blue-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center ring-1 ring-white animate-bounce">
                   {itemCount}
