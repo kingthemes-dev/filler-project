@@ -132,7 +132,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="fixed top-[80px] left-0 right-0 bottom-0 bg-black/20 backdrop-blur-sm z-40"
             onClick={onClose}
           />
           {/* Dropdown content */}
@@ -285,7 +285,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                         >
                           <Link
                             href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-transparent px-1.5 py-1.5 text-xs text-gray-900 hover:bg-blue-50/20 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group w-full min-h-[24px]"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-transparent px-1.5 py-1.5 text-[10px] text-gray-900 hover:bg-blue-50/20 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group w-full min-h-[24px]"
                             onClick={onClose}
                             title={brand.label}
                           >
