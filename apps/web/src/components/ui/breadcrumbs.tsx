@@ -76,7 +76,7 @@ export default function Breadcrumbs({
       separator: 'text-gray-400'
     },
     minimal: {
-      container: 'bg-gradient-to-br from-gray-50 via-gray-100 to-white px-3 py-2 rounded-lg',
+      container: 'bg-transparent',
       item: 'text-gray-500 hover:text-gray-700',
       active: 'text-gray-900 font-medium',
       separator: 'text-gray-300'
