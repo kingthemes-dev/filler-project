@@ -274,28 +274,24 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                     <p className="text-xs text-gray-400 mt-1">Marki będą dostępne wkrótce</p>
                   </div>
                 ) : (
-                  <div className="pr-1 pb-2">
-                    <div className="grid grid-cols-3 gap-1">
-                      {brandOptions.map((brand, index) => (
-                        <motion.div
-                          key={brand.id}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: index * 0.02, duration: 0.2 }}
+                  <div className="pr-1 pb-2 flex flex-wrap gap-1">
+                    {brandOptions.map((brand, index) => (
+                      <motion.div
+                        key={brand.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.02, duration: 0.2 }}
+                      >
+                        <Link
+                          href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
+                          className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-transparent px-3 py-1.5 text-[10px] text-gray-900 hover:bg-blue-50/20 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group min-h-[24px]"
+                          onClick={onClose}
+                          title={brand.label}
                         >
-                          <Link
-                            href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-transparent px-1.5 py-1.5 text-[10px] text-gray-900 hover:bg-blue-50/20 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group w-full min-h-[24px]"
-                            onClick={onClose}
-                            title={brand.label}
-                          >
-                            <div className="flex items-center justify-center w-full">
-                              <span className="truncate text-center">{brand.label}</span>
-                            </div>
-                          </Link>
-                        </motion.div>
-                      ))}
-                    </div>
+                          {brand.label}
+                        </Link>
+                      </motion.div>
+                    ))}
                   </div>
                 )}
               </div>
