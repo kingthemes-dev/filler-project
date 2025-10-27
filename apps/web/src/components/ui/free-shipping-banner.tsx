@@ -9,6 +9,7 @@ export default function FreeShippingBanner() {
   const { total, itemCount } = useCartStore();
   const [showText, setShowText] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
+  const [hasScrolled, setHasScrolled] = useState(false);
   
   const FREE_SHIPPING_THRESHOLD = 200; // PLN netto
   const nettoTotal = total / 1.23;
