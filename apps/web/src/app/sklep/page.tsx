@@ -1,6 +1,5 @@
 import ShopClient from './shop-client';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
-import wooCommerceService from '@/services/woocommerce-optimized';
 import { Metadata } from 'next';
 
 // PRO: Static generation with ISR for better performance
@@ -12,9 +11,25 @@ export async function generateMetadata({ searchParams }: { searchParams?: Promis
   const params = await searchParams;
   const category = params?.category || '';
   
+  // Use static metadata to avoid fetch issues in generateMetadata
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3000');
+  
   try {
-    const categories = await wooCommerceService.getCategories();
-    const categoryData = categories.data?.find((cat: any) => cat.slug === category);
+    // Try to fetch categories from API with full URL
+    let categoryData = null;
+    try {
+      const res = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/categories`, {
+        next: { revalidate: 600 },
+        signal: AbortSignal.timeout(5000)
+      });
+      if (res.ok) {
+        const categories = await res.json();
+        categoryData = categories?.find((cat: any) => cat.slug === category);
+      }
+    } catch (apiError) {
+      console.warn('Could not fetch categories for metadata:', apiError);
+    }
     
     const title = categoryData 
       ? `${categoryData.name} - Hurtownia Medycyny Estetycznej | FILLER`
@@ -98,9 +113,18 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     });
     
     // Prefetch categories with error handling
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+      (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3000');
     await qc.prefetchQuery({
       queryKey: ['shop','categories'],
-      queryFn: async () => wooCommerceService.getCategories(),
+      queryFn: async () => {
+        const res = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/categories`, {
+          next: { revalidate: 600 },
+          signal: AbortSignal.timeout(5000)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      },
       retry: 1,
       retryDelay: 500,
     });
