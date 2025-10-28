@@ -35,6 +35,7 @@ interface ShopFiltersProps {
   onToggleFilters: () => void;
   totalProducts: number;
   attributesLoading: boolean;
+  dynamicFiltersData?: { categories: any[]; attributes: any };
   wooCommerceCategories?: Array<{ id: number; name: string; slug: string; parent: number; count: number }>;
   products?: any[]; // Dodaj produkty jako prop
 }
@@ -51,6 +52,7 @@ export default function ShopFilters({
   onToggleFilters,
   totalProducts,
   attributesLoading,
+  dynamicFiltersData,
   wooCommerceCategories,
   products = []
 }: ShopFiltersProps) {
@@ -458,6 +460,7 @@ export default function ShopFilters({
                         onCategoryChange={onCategoryChange}
                         selectedCategories={filters.categories}
                         totalProducts={totalProducts}
+                        dynamicFiltersData={dynamicFiltersData}
                       />
                     </motion.div>
                   )}
@@ -495,6 +498,7 @@ export default function ShopFilters({
                             onFilterChange={onFilterChange}
                             selectedFilters={filters}
                             totalProducts={totalProducts}
+                            dynamicFiltersData={dynamicFiltersData}
                             currentFilters={{
                               categories: filters.categories,
                               search: filters.search as string,
@@ -712,6 +716,7 @@ export default function ShopFilters({
                         onCategoryChange={onCategoryChange}
                         selectedCategories={filters.categories}
                         totalProducts={totalProducts}
+                        dynamicFiltersData={dynamicFiltersData}
                       />
                     </motion.div>
                   )}

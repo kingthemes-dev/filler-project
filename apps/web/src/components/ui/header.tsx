@@ -13,6 +13,7 @@ import Image from 'next/image';
 import EmailNotificationCenter from './email/email-notification-center';
 import ShopExplorePanel from './shop-explore-panel';
 import SearchModal from './search-modal';
+import { useShopDataStore, useShopCategories, useShopAttributes, useShopStats } from '@/stores/shop-data-store';
 
 
 
@@ -26,17 +27,17 @@ export default function Header() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isShopExpanded, setIsShopExpanded] = useState(false);
   const [isBrandsExpanded, setIsBrandsExpanded] = useState(false);
-  const [brands, setBrands] = useState<string[]>([]);
-  const [brandsLoading, setBrandsLoading] = useState(false);
-  const [categories, setCategories] = useState<Array<{id: number, name: string, slug: string, count: number, parent: number}>>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   
   // 🚀 SENIOR LEVEL - Slide Navigation State
   const [mobileMenuView, setMobileMenuView] = useState<'main' | 'sklep' | 'marki'>('main');
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
-  const [totalProductsCount, setTotalProductsCount] = useState<number>(0);
+  
+  // Użyj prefetched data z store
+  const { categories, mainCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
+  const { brands, isLoading: brandsLoading } = useShopAttributes();
+  const { totalProducts, initialize } = useShopDataStore();
   
   // Reset view when closing mobile menu
   const closeMobileMenu = () => {
@@ -93,75 +94,6 @@ export default function Header() {
   const { getItemCount } = useWishlist();
   wishlistCount = getItemCount();
 
-  // Fetch brands from API - SAME AS DESKTOP DROPDOWN
-  const fetchBrands = async () => {
-    if (brands.length > 0) return; // Don't fetch if already loaded
-    
-    setBrandsLoading(true);
-    try {
-      // Use the same endpoint as desktop dropdown
-      const wordpressUrl = 'https://qvwltjhdjw.cfolks.pl';
-      const response = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`, { cache: 'no-store' });
-      if (response.ok) {
-        const data = await response.json();
-        const brandNames = data.attributes?.marka?.terms?.map((brand: any) => brand.name) || [];
-        setBrands(brandNames); // All brands - no limit
-      } else {
-        throw new Error('Failed to fetch brands');
-      }
-    } catch (error) {
-      console.error('Error fetching brands:', error);
-      // Fallback to hardcoded brands
-      setBrands(['Allergan', 'Merz', 'Galderma', 'Teoxane', 'Juvederm', 'Restylane', 'Sculptra', 'Radiesse', 'Belotero', 'Ellanse', 'Aestetic dermal', 'BioPlus Co', 'Caregen', 'Dexlevo', 'Dongkook', 'Dr. PPS', 'Filmed', 'Guna', 'Hyalual', 'Medytox']);
-    } finally {
-      setBrandsLoading(false);
-    }
-  };
-
-  // Fetch categories from API (same as desktop dropdown)
-  const fetchCategories = async () => {
-    if (categories.length > 0) return; // Don't fetch if already loaded
-    
-    setCategoriesLoading(true);
-    try {
-      // Fetch categories
-      const categoriesResponse = await fetch('/api/woocommerce?endpoint=products/categories&per_page=100');
-      if (categoriesResponse.ok) {
-        const categoriesData = await categoriesResponse.json();
-        // Get all categories with hierarchy
-        const allCategories = categoriesData.map((cat: any) => ({
-          id: cat.id,
-          name: cat.name,
-          slug: cat.slug,
-          count: cat.count || 0,
-          parent: cat.parent || 0
-        }));
-        setCategories(allCategories);
-        
-        // Fetch total products count separately
-        const productsResponse = await fetch('/api/woocommerce?endpoint=products&per_page=1');
-        if (productsResponse.ok) {
-          const totalHeader = productsResponse.headers.get('X-WP-Total');
-          if (totalHeader) {
-            setTotalProductsCount(parseInt(totalHeader));
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      // Fallback to hardcoded categories with hierarchy
-      setCategories([
-        { id: 1, name: 'Wypełniacze', slug: 'wypelniacze', count: 8, parent: 0 },
-        { id: 2, name: 'Stymulatory', slug: 'stymulatory', count: 43, parent: 0 },
-        { id: 3, name: 'Mezoterapia', slug: 'mezoterapia', count: 11, parent: 0 },
-        { id: 4, name: 'Peelingi', slug: 'peelingi', count: 6, parent: 0 }
-      ]);
-      setTotalProductsCount(68); // Fallback total
-    } finally {
-      setCategoriesLoading(false);
-    }
-  };
-
   // Fix hydration issue by syncing favorites count after mount
   useEffect(() => {
     setIsMounted(true);
@@ -176,19 +108,12 @@ export default function Header() {
     }
   }, [favorites.length, isMounted]);
 
-  // Fetch brands when brands section is expanded OR when mobile menu shows brands
+  // Inicjalizuj store gdy potrzebne
   useEffect(() => {
-    if ((isBrandsExpanded || mobileMenuView === 'marki') && brands.length === 0) {
-      fetchBrands();
+    if ((isBrandsExpanded || mobileMenuView === 'marki' || isShopExpanded || isMobileMenuOpen)) {
+      initialize();
     }
-  }, [isBrandsExpanded, mobileMenuView, brands.length]);
-
-  // Fetch categories when shop section is expanded OR when mobile menu opens
-  useEffect(() => {
-    if ((isShopExpanded || isMobileMenuOpen) && categories.length === 0) {
-      fetchCategories();
-    }
-  }, [isShopExpanded, isMobileMenuOpen, categories.length]);
+  }, [isBrandsExpanded, mobileMenuView, isShopExpanded, isMobileMenuOpen, initialize]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -1019,14 +944,14 @@ export default function Header() {
                           ) : (
                             brands.map((brand) => (
                               <button
-                                key={brand}
+                                key={brand.id}
                                 onClick={() => {
                                   closeMobileMenu();
-                                  window.location.href = `/sklep?brand=${encodeURIComponent(brand.toLowerCase())}`;
+                                  window.location.href = `/sklep?brand=${encodeURIComponent(brand.slug)}`;
                                 }}
                                 className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-black hover:text-gray-800 rounded-full transition-colors whitespace-nowrap"
                               >
-                                {brand}
+                                {brand.name}
                               </button>
                             ))
                           )}

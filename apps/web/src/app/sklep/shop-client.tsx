@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { useRouter, useSearchParams as useNextSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import PageContainer from '@/components/ui/page-container';
-import { useSearchParams } from 'next/navigation';
 import { Search, Filter, X } from 'lucide-react';
 import KingProductCard from '@/components/king-product-card';
 
@@ -17,6 +16,7 @@ import Pagination from '@/components/ui/pagination';
 
 import { WooProduct } from '@/types/woocommerce';
 import { useQuery } from '@tanstack/react-query';
+import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
 
 interface FilterState {
   search: string;
@@ -53,6 +53,39 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   console.log('🔍 ShopClient render - initialShopData:', initialShopData);
   console.log('🔍 ShopClient render - products count:', initialShopData?.products?.length);
   
+  // Sprawdź czy jesteśmy w przeglądarce
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Zawsze wywołuj hooks, ale używaj danych tylko gdy isClient = true
+  const { categories, mainCategories, hierarchicalCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
+  const { brands, capacities, isLoading: attributesLoading } = useShopAttributes();
+  const { totalProducts: storeTotalProducts, initialize } = useShopDataStore();
+  
+  // Inicjalizuj store przy pierwszym renderze w przeglądarce
+  useEffect(() => {
+    if (isClient) {
+      initialize();
+    }
+  }, [initialize, isClient]);
+  
+  // Aktualizuj kategorie gdy store się załaduje i jesteśmy w przeglądarce
+  useEffect(() => {
+    if (isClient && categories.length > 0) {
+      setAllCategories(categories);
+    }
+  }, [categories, isClient]);
+  
+  // Aktualizuj total products gdy store się załaduje i jesteśmy w przeglądarce
+  useEffect(() => {
+    if (isClient && storeTotalProducts > 0) {
+      setTotalProducts(storeTotalProducts);
+    }
+  }, [storeTotalProducts, isClient]);
+  
   const [products, setProducts] = useState<WooProduct[]>(initialShopData?.products || []);
   const [allCategories, setAllCategories] = useState<Category[]>(initialShopData?.categories || []);
   const [loading, setLoading] = useState(false);
@@ -79,9 +112,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   
   console.log('🔍 ShopClient filters state:', filters);
   const router = useRouter();
-  const nextSearchParams = useNextSearchParams();
-  // Sync filters with URL query params (category, brands, dynamic attrs)
   const searchParams = useSearchParams();
+  // Sync filters with URL query params (category, brands, dynamic attrs)
   useEffect(() => {
     if (!searchParams) return;
     const categoryParam = searchParams.get('category') || '';
@@ -212,23 +244,14 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     setRefreshing(shopQuery.isFetching);
   }, [shopQuery.data, shopQuery.isLoading, shopQuery.isFetching]);
 
-  // Categories query (separate, cached long-term)
-  const categoriesQuery = useQuery({
-    queryKey: ['shop','categories'],
-    queryFn: async () => {
-      const res = await wooCommerceService.getCategories();
-      return res;
-    },
-    staleTime: 30 * 60_000,
-    enabled: allCategories.length === 0,
-  });
+  // Categories query - zastąpione prefetched data z store
+  // Nie potrzebujemy już API call - dane są w store
+
+  // Dynamic filters query - zastąpione prefetched data z store
+  // Używamy brands i capacities z store zamiast API call
 
 
-  useEffect(() => {
-    if (categoriesQuery.data?.data && allCategories.length === 0) {
-      setAllCategories(categoriesQuery.data.data as any);
-    }
-  }, [categoriesQuery.data]);
+  // useEffect dla categoriesQuery usunięty - używamy prefetched data z store
 
   // Reset to first page when filters change (React Query will auto fetch from key change)
   useEffect(() => {
@@ -423,7 +446,14 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             showFilters={showFilters}
             onToggleFilters={() => setShowFilters(!showFilters)}
             totalProducts={totalProducts}
-            attributesLoading={false}
+            attributesLoading={attributesLoading}
+            dynamicFiltersData={{
+              categories: isClient ? hierarchicalCategories : allCategories,
+              attributes: {
+                marka: { terms: isClient ? brands : [] },
+                pojemnosc: { terms: isClient ? capacities : [] }
+              }
+            }}
             wooCommerceCategories={allCategories.map(c => ({ 
               id: c.id, 
               name: c.name, 

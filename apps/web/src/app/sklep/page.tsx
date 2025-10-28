@@ -129,19 +129,31 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       retryDelay: 500,
     });
 
-    // Prefetch attributes with error handling
+    // Prefetch attributes with error handling - wszystkie atrybuty bez filtrów
     await qc.prefetchQuery({
-      queryKey: ['shop','attributes',{ categories: defaultCategory ? [defaultCategory] : [], search: '', min: 0, max: 10000, selected: [] }],
+      queryKey: ['shop','attributes',{ categories: [], search: '', min: 0, max: 10000, selected: [] }],
       queryFn: async () => {
         const params = new URLSearchParams();
         params.append('endpoint', 'attributes');
-        if (defaultCategory) params.append('category', defaultCategory);
         const res = await fetch(`/api/woocommerce?${params.toString()}`, { 
           next: { revalidate: 600 },
           signal: AbortSignal.timeout(10000) // 10s timeout
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
+      },
+      staleTime: 10 * 60_000,
+      retry: 1,
+      retryDelay: 500,
+    });
+
+    // Prefetch dynamic filters (kategorie + atrybuty) dla DynamicCategoriesService
+    await qc.prefetchQuery({
+      queryKey: ['shop','dynamic-filters'],
+      queryFn: async () => {
+        // Import dynamicCategoriesService dynamically to avoid SSR issues
+        const { dynamicCategoriesService } = await import('@/services/dynamic-categories');
+        return await dynamicCategoriesService.getDynamicFilters();
       },
       staleTime: 10 * 60_000,
       retry: 1,

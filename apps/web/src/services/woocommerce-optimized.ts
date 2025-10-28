@@ -1,5 +1,6 @@
 import { WooProduct, WooProductQuery, WooApiResponse } from '@/types/woocommerce';
 import { CartItem } from '@/stores/cart-store';
+import { env } from '@/config/env';
 
 // =========================================
 // Optimized WooCommerce Service
@@ -477,7 +478,7 @@ class WooCommerceService {
   // =========================================
   async getNonce(): Promise<{ success: boolean; nonce: string; expires: number }> {
     try {
-      const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/king-cart/v1/nonce');
+      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-cart/v1/nonce`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -540,7 +541,7 @@ class WooCommerceService {
         throw new Error('Failed to get nonce');
       }
 
-      const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/king-cart/v1/remove-item', {
+      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-cart/v1/remove-item`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -569,7 +570,7 @@ class WooCommerceService {
         throw new Error('Failed to get nonce');
       }
 
-      const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/king-cart/v1/update-item', {
+      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-cart/v1/update-item`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -594,7 +595,7 @@ class WooCommerceService {
 
   async getCart(): Promise<{ success: boolean; cart?: { items: CartItem[]; total: number }; error?: string }> {
     try {
-      const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/king-cart/v1/cart');
+      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-cart/v1/cart`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -674,11 +675,11 @@ class WooCommerceService {
     try {
       // In headless mode, we'll check if user exists in WooCommerce
       // Note: This is a simplified approach for headless setup
-      const customerResponse = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3/customers', {
+      const customerResponse = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/customers`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa('ck_deb61eadd7301ebfc5f8074ce7c53c6668eb725d:cs_0de18ed0e013f96aebfb51c77f506bb94e416cb8')
+          'Authorization': 'Basic ' + btoa(`${env.WC_CONSUMER_KEY}:${env.WC_CONSUMER_SECRET}`)
         },
       });
 
@@ -735,11 +736,11 @@ class WooCommerceService {
       
       console.log('🔍 Register user payload:', payload);
       
-      const response = await fetch('https://qvwltjhdjw.cfolks.pl/wp-json/wc/v3/customers', {
+      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/customers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa('ck_deb61eadd7301ebfc5f8074ce7c53c6668eb725d:cs_0de18ed0e013f96aebfb51c77f506bb94e416cb8')
+          'Authorization': 'Basic ' + btoa(`${env.WC_CONSUMER_KEY}:${env.WC_CONSUMER_SECRET}`)
         },
         body: JSON.stringify(payload),
       });

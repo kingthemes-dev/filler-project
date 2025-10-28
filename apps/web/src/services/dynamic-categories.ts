@@ -61,6 +61,7 @@ export interface DynamicFilters {
 
 class DynamicCategoriesService {
   private baseUrl: string;
+  private cache: Map<string, any> = new Map();
 
   constructor() {
     // Use absolute URL for server-side calls
@@ -68,9 +69,16 @@ class DynamicCategoriesService {
   }
 
   /**
-   * Pobiera wszystkie kategorie z WordPress/WooCommerce
+   * Pobiera wszystkie kategorie z WordPress/WooCommerce z cache
    */
   async getAllCategories(): Promise<WooCategory[]> {
+    const cacheKey = 'categories';
+    
+    // Sprawdź cache
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+    
     try {
       const response = await fetch(`${this.baseUrl}?endpoint=products/categories&per_page=100`);
       
@@ -79,7 +87,12 @@ class DynamicCategoriesService {
       }
       
       const data = await response.json();
-      return Array.isArray(data) ? data : (data.categories || []);
+      const categories = Array.isArray(data) ? data : (data.categories || []);
+      
+      // Zapisz w cache
+      this.cache.set(cacheKey, categories);
+      
+      return categories;
     } catch (error) {
       console.error('Error fetching categories:', error);
       return [];
@@ -87,9 +100,16 @@ class DynamicCategoriesService {
   }
 
   /**
-   * Pobiera wszystkie atrybuty z WordPress/WooCommerce
+   * Pobiera wszystkie atrybuty z WordPress/WooCommerce z cache
    */
   async getAllAttributes(): Promise<WooAttribute[]> {
+    const cacheKey = 'attributes';
+    
+    // Sprawdź cache
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
+    }
+    
     try {
       const response = await fetch(`${this.baseUrl}?endpoint=products/attributes&per_page=100`);
       
@@ -98,7 +118,12 @@ class DynamicCategoriesService {
       }
       
       const data = await response.json();
-      return Array.isArray(data) ? data : (data.attributes || []);
+      const attributes = Array.isArray(data) ? data : (data.attributes || []);
+      
+      // Zapisz w cache
+      this.cache.set(cacheKey, attributes);
+      
+      return attributes;
     } catch (error) {
       console.error('Error fetching attributes:', error);
       return [];
@@ -234,6 +259,13 @@ class DynamicCategoriesService {
         attributes: {}
       };
     }
+  }
+
+  /**
+   * Czyści cache serwisu
+   */
+  clearCache(): void {
+    this.cache.clear();
   }
 
   /**

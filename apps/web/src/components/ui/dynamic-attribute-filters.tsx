@@ -11,6 +11,7 @@ interface DynamicAttributeFiltersProps {
   onFilterChange: (key: string, value: string) => void;
   selectedFilters: { [key: string]: string[] | string | number | boolean };
   totalProducts: number;
+  dynamicFiltersData?: { categories: any[]; attributes: any };
   currentFilters?: { // Dodaj aktualne filtry
     categories: string[];
     search?: string;
@@ -25,186 +26,42 @@ export default function DynamicAttributeFilters({
   onFilterChange, 
   selectedFilters,
   totalProducts,
+  dynamicFiltersData,
   currentFilters = { categories: [] }
 }: DynamicAttributeFiltersProps) {
-  const [attributes, setAttributes] = useState<DynamicFilters['attributes']>({});
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // PRO: Separate state for refreshing
   const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(new Set());
-  const [lastFiltersHash, setLastFiltersHash] = useState<string>('');
-  const [attributesCache, setAttributesCache] = useState<Map<string, DynamicFilters['attributes']>>(new Map()); // PRO: Cache for performance
 
-  useEffect(() => {
-    console.log('🔄 DynamicAttributeFilters useEffect triggered - loading attributes with current filters:', currentFilters);
-    console.log('🔄 selectedFilters:', selectedFilters);
-    
-    // PRO: Create hash of current filters to check if we need to reload
-    const filtersHash = JSON.stringify({
-      categories: currentFilters.categories.sort(),
-      search: currentFilters.search,
-      minPrice: currentFilters.minPrice,
-      maxPrice: currentFilters.maxPrice,
-      // PRO: Include all dynamic attributes in the hash
-      attributes: Object.keys(selectedFilters).filter(key => key.startsWith('pa_')).sort()
-    });
-    
-    // PRO: Check cache first for performance
-    if (attributesCache.has(filtersHash)) {
-      console.log('🚀 Using cached attributes for filters:', filtersHash);
-      setAttributes(attributesCache.get(filtersHash)!);
-      setLastFiltersHash(filtersHash);
-      return;
-    }
-    
-    // PRO: Only reload if filters actually changed
-    if (filtersHash === lastFiltersHash) {
-      console.log('🔄 Filters unchanged, skipping reload');
-      return;
-    }
-    
-    // PRO: Immediate load for better UX (no debounce for attributes)
-    loadAttributes(filtersHash).then(() => setLastFiltersHash(filtersHash));
-  }, [currentFilters, selectedFilters]); // PRO: Also reload when selectedFilters change
-
-  // React Query: fetch attributes with current filters (deduplicated, cached)
+  // Użyj prefetchowanych danych jeśli dostępne, w przeciwnym razie React Query
   const attributesQuery = useQuery({
-    queryKey: ['shop','attributes',{ categories: (currentFilters.categories||[]).slice().sort(), search: currentFilters.search||'', min: currentFilters.minPrice||0, max: currentFilters.maxPrice||0, selected: Object.keys(selectedFilters).filter(k=>k.startsWith('pa_')).sort() }],
+    queryKey: ['shop','attributes',{ categories: [], search: '', min: 0, max: 10000, selected: [] }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('endpoint', 'attributes');
-      if (currentFilters.categories?.length) params.append('category', currentFilters.categories.join(','));
-      if (currentFilters.search) params.append('search', currentFilters.search);
-      if (currentFilters.minPrice !== undefined) params.append('min_price', String(currentFilters.minPrice));
-      if (currentFilters.maxPrice !== undefined) params.append('max_price', String(currentFilters.maxPrice));
-      if (currentFilters.attributeValues) {
-        Object.keys(currentFilters.attributeValues).forEach(key => {
-          if (key.startsWith('pa_') && currentFilters.attributeValues![key]) {
-            const attributeName = key.replace('pa_', '');
-            const filterValue = currentFilters.attributeValues![key];
-            const values = Array.isArray(filterValue) ? filterValue : [String(filterValue)];
-            values.forEach((value: string) => params.append(`attribute_${attributeName}`, value));
-          }
-        });
-      }
       const res = await fetch(`/api/woocommerce?${params.toString()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },
     staleTime: 10 * 60_000,
-    enabled: true,
+    enabled: !dynamicFiltersData, // Tylko jeśli nie ma prefetchowanych danych
   });
 
-  useEffect(() => {
-    if (attributesQuery.data?.attributes) {
-      const attributesMap: { [key: string]: { name: string; slug: string; terms: any[] } } = {};
-      Object.entries(attributesQuery.data.attributes).forEach(([attrSlug, attrData]: [string, any]) => {
-        const cleanName = (attrData.name || attrSlug)
-          .replace(/^pa_/i, '')
-          .replace(/_/g, ' ')
-          .replace(/\b\w/g, (l: string) => l.toUpperCase());
-        attributesMap[attrSlug] = { name: cleanName, slug: attrSlug, terms: attrData.terms || [] };
-      });
-      setAttributes(attributesMap);
-    }
-  }, [attributesQuery.data]);
+  // Przetwórz dane atrybutów z prefetchowanych danych lub React Query
+  const attributes = useMemo(() => {
+    const attributesData = dynamicFiltersData?.attributes || attributesQuery.data?.attributes;
+    if (!attributesData) return {};
+    
+    const attributesMap: { [key: string]: { name: string; slug: string; terms: any[] } } = {};
+    Object.entries(attributesData).forEach(([attrSlug, attrData]: [string, any]) => {
+      const cleanName = (attrData.name || attrSlug)
+        .replace(/^pa_/i, '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (l: string) => l.toUpperCase());
+      attributesMap[attrSlug] = { name: cleanName, slug: attrSlug, terms: attrData.terms || [] };
+    });
+    return attributesMap;
+  }, [dynamicFiltersData?.attributes, attributesQuery.data?.attributes]);
 
-  const loadAttributes = async (filtersHash?: string) => {
-    try {
-      // PRO: Use refreshing for subsequent loads, loading only for initial load
-      if (Object.keys(attributes).length > 0) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      console.log('🔄 Loading dynamic attributes with filters:', currentFilters);
-      
-      // PRO Architecture: Użyj dedykowanego endpoint'u /attributes dla dynamicznych atrybutów
-      const params = new URLSearchParams();
-      params.append('endpoint', 'attributes');
-      
-      // Przekaż aktualne filtry do WordPress
-      if (currentFilters.categories.length > 0) {
-        params.append('category', currentFilters.categories.join(','));
-      }
-      if (currentFilters.search) {
-        params.append('search', currentFilters.search);
-      }
-      if (currentFilters.minPrice !== undefined) {
-        params.append('min_price', currentFilters.minPrice.toString());
-      }
-      if (currentFilters.maxPrice !== undefined) {
-        params.append('max_price', currentFilters.maxPrice.toString());
-      }
-      
-      // PRO: Przekaż wszystkie atrybuty dla tree-like recalculation
-      if (currentFilters.attributeValues) {
-        Object.keys(currentFilters.attributeValues).forEach(key => {
-          if (key.startsWith('pa_') && currentFilters.attributeValues![key]) {
-            const attributeName = key.replace('pa_', '');
-            const filterValue = currentFilters.attributeValues![key];
-            const values = Array.isArray(filterValue) 
-              ? filterValue 
-              : [String(filterValue)];
-            values.forEach((value: string) => {
-              params.append(`attribute_${attributeName}`, value);
-            });
-          }
-        });
-      }
-      
-      const apiUrl = `/api/woocommerce?${params.toString()}`;
-      console.log('🌐 Fetching dynamic attributes from:', apiUrl);
-      const response = await fetch(apiUrl, { cache: 'no-store' }); // Always fetch fresh attributes
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('📦 Dynamic attributes from API:', data);
-      
-      if (data.success && data.attributes) {
-        // PRO: Use direct attributes from API response
-        const attributesMap: { [key: string]: { name: string; slug: string; terms: any[] } } = {};
-        
-        // Process attributes from API response
-        Object.entries(data.attributes).forEach(([attrSlug, attrData]: [string, any]) => {
-          // PRO: Clean attribute name - remove pa_ prefix and format nicely
-          const cleanName = (attrData.name || attrSlug)
-            .replace(/^pa_/i, '') // Remove pa_ prefix
-            .replace(/_/g, ' ') // Replace underscores with spaces
-            .replace(/\b\w/g, (l: string) => l.toUpperCase()); // Capitalize first letter of each word
-          
-          attributesMap[attrSlug] = {
-            name: cleanName,
-            slug: attrSlug,
-            terms: attrData.terms || []
-          };
-        });
-        
-        console.log('📦 Dynamic attributes from API:', attributesMap);
-        setAttributes(attributesMap);
-        
-        // PRO: Save to cache for performance
-        if (filtersHash) {
-          setAttributesCache(prev => new Map(prev).set(filtersHash, attributesMap));
-        }
-      } else {
-        console.log('📦 No attributes found for current filters');
-        setAttributes({});
-        
-        // PRO: Save empty result to cache too
-        if (filtersHash) {
-          setAttributesCache(prev => new Map(prev).set(filtersHash, {}));
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading dynamic attributes:', error);
-      setAttributes({});
-        } finally {
-          setLoading(false);
-          setRefreshing(false);
-        }
-  };
+  const loading = !dynamicFiltersData && attributesQuery.isLoading;
 
   const toggleAttribute = (attributeSlug: string) => {
     setExpandedAttributes(prev => {
@@ -276,13 +133,7 @@ export default function DynamicAttributeFilters({
   }
 
   return (
-    <div className="space-y-4 relative">
-      {/* PRO: Subtle refreshing indicator */}
-      {refreshing && (
-        <div className="absolute top-0 right-0 z-10">
-          <div className="w-4 h-4 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-        </div>
-      )}
+    <div className="space-y-4">
       {attributeEntries.map(([attributeSlug, attribute]) => (
         <div key={attributeSlug} className="border border-gray-100 rounded-lg overflow-hidden">
           {/* Nagłówek atrybutu */}

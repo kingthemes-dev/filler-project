@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from '@/components/ui/header';
 import DeferClientUI from '@/components/defer-client-ui';
 import FreeShippingBanner from '@/components/ui/free-shipping-banner';
+import ShopDataPrefetcher from '@/components/shop-data-prefetcher';
 import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
 import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analytics';
 
@@ -176,6 +177,13 @@ export default function RootLayout({
                           <DeferClientUI>
                             {children}
                           </DeferClientUI>
+                          
+                          {/* Prefetch shop data in background */}
+                          <ShopDataPrefetcher 
+                            immediate={true} 
+                            delay={1000} 
+                            onlyIfEmpty={true} 
+                          />
                         
                         {/* PWA Service Worker Registration */}
                         <Script

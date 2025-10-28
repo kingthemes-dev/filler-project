@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, User, Heart, ShoppingCart, ChevronRight, Sparkles, Filter } from 'lucide-react';
-import woo from '@/services/woocommerce-optimized';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
+import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
 import AnimatedDropdown from './animated-dropdown';
 
 interface ShopExplorePanelProps {
@@ -16,79 +16,40 @@ interface ShopExplorePanelProps {
 }
 
 export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProps) {
-  const [categories, setCategories] = useState<Array<{ id: number; name: string; slug: string; count?: number; parent?: number }>>([]);
-  const [attributes, setAttributes] = useState<Record<string, Array<{ id: number | string; name: string; slug: string }>>>({});
   const [selectedCat, setSelectedCat] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  
+  // Użyj prefetched data z store
+  const { categories, mainCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
+  const { brandsForModal, isLoading: attributesLoading } = useShopAttributes();
+  const { initialize, isLoading: storeLoading } = useShopDataStore();
 
+  // Inicjalizuj store przy otwarciu modala
   useEffect(() => {
-    if (!open) return;
-    let mounted = true;
-    const load = async () => {
-      try {
-        // Sprawdź cache w sessionStorage (5 minut)
-        const cacheKey = 'shop-explore-data';
-        const cached = sessionStorage.getItem(cacheKey);
-        const now = Date.now();
-        
-        if (cached) {
-          const data = JSON.parse(cached);
-          if (data.timestamp && (now - data.timestamp) < 300000) { // 5 minut
-            setCategories(data.categories || []);
-            setAttributes(data.attributes || {});
-            setSelectedCat(data.selectedCat || null);
-            return;
-          }
-        }
+    if (open) {
+      initialize();
+    }
+  }, [open, initialize]);
 
-        // 1) pełne kategorie (z parent) do kolumny 1 i 2
-        const catsRes = await fetch('/api/woocommerce?endpoint=products/categories&per_page=100', { cache: 'no-store' });
-        const cats = catsRes.ok ? await catsRes.json() : [];
-        // 2) szybkie metadane z shop (liczniki/atrybuty)
-        const shop = await woo.getShopData(1, 1);
-        if (!mounted) return;
-        const counters: Record<number, number> = {};
-        (shop.categories || []).forEach((c: any) => { counters[c.id] = c.count ?? 0; });
-        const normCats = Array.isArray(cats)
-          ? cats.map((c: any) => ({ id: c.id, name: c.name, slug: c.slug, parent: c.parent || 0, count: counters[c.id] ?? c.count }))
-          : [];
-        const selectedCatId = (normCats.find(c => (c.parent || 0) === 0)?.id) || null;
-        
-        // 3) Pobierz atrybuty z King Shop API (produkcja) lub fallback
-        const wordpressUrl = 'https://qvwltjhdjw.cfolks.pl'; // Hardcoded for now
-        console.log('🔍 Fetching attributes from:', `${wordpressUrl}/wp-json/king-shop/v1/attributes`);
-        const attrsResponse = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`, { cache: 'no-store' });
-        console.log('🔍 Attributes response status:', attrsResponse.status);
-        const attrsData = attrsResponse.ok ? await attrsResponse.json() : { attributes: {} };
-        console.log('🔍 Attributes data:', attrsData);
-        
-        const attrs = {
-          capacities: attrsData.attributes?.pojemnosc?.terms || [],
-          brands: attrsData.attributes?.marka?.terms || []
-        };
-        
-        setCategories(normCats);
-        setSelectedCat(selectedCatId);
-        setAttributes(attrs);
-        
-        // Zapisz w cache
-        sessionStorage.setItem(cacheKey, JSON.stringify({
-          categories: normCats,
-          attributes: attrs,
-          selectedCat: selectedCatId,
-          timestamp: now
-        }));
-      } catch (e) {
-        // optional: log silently in dev
+  // Ustaw pierwszą kategorię główną jako domyślną
+  useEffect(() => {
+    if (mainCategories.length > 0 && !selectedCat) {
+      const firstMainCategory = mainCategories.find(cat => cat.id !== 15); // Wyklucz kategorię o ID 15
+      if (firstMainCategory) {
+        setSelectedCat(firstMainCategory.id);
       }
-    };
-    load();
-    return () => { mounted = false; };
-  }, [open]);
+    }
+  }, [mainCategories, selectedCat]);
 
-  const mainCategories = useMemo(() => categories.filter(c => (c.parent || 0) === 0), [categories]);
-  const subCategories = useMemo(() => categories.filter(c => (c.parent || 0) === (selectedCat || 0)), [categories, selectedCat]);
-  const currentMain = useMemo(() => mainCategories.find(c => c.id === selectedCat) || null, [mainCategories, selectedCat]);
+  // Użyj danych z store zamiast lokalnych useMemo
+  const subCategories = useMemo(() => {
+    if (!selectedCat) return [];
+    return getSubCategories(selectedCat);
+  }, [selectedCat, getSubCategories]);
+  
+  const currentMain = useMemo(() => {
+    return mainCategories.find(c => c.id === selectedCat) || null;
+  }, [mainCategories, selectedCat]);
   
 
 
@@ -114,18 +75,15 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     icon: <ChevronRight className="w-4 h-4" />
   }));
 
-  // Convert brands to dropdown options
-  const brandOptions = (attributes.brands || []).slice(0, 36).map((brand: any) => ({
+  // Convert brands to dropdown options - użyj danych z store
+  const brandOptions = brandsForModal.map((brand) => ({
     id: brand.id,
     label: brand.name,
     value: brand.slug
   }));
 
-  console.log('🔍 Brands debug:', {
-    attributes: attributes,
-    brands: attributes.brands,
-    brandOptions: brandOptions
-  });
+  // Sprawdź czy dane są ładowane
+  const isLoading = storeLoading || categoriesLoading || attributesLoading;
 
   return (
     <AnimatePresence>
@@ -185,9 +143,18 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Kategorie</h3>
                 </div>
                 
-                {/* Pokaż główne kategorie bezpośrednio zamiast dropdown */}
-                <div className="space-y-2">
-                  {mainCategories.map((category) => (
+                {/* Loading state */}
+                {isLoading ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                    </div>
+                    <p className="text-sm">Ładowanie kategorii...</p>
+                  </div>
+                ) : (
+                  /* Pokaż główne kategorie bezpośrednio zamiast dropdown */
+                  <div className="space-y-2">
+                    {mainCategories.map((category) => (
                     <motion.div
                       key={category.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -230,7 +197,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                       </button>
                     </motion.div>
                   ))}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Podkategorie / Zastosowanie - Pokazuje podkategorie wybranej kategorii głównej */}
@@ -296,7 +264,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Marka</h3>
                 </div>
                 
-                {brandOptions.length === 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                    </div>
+                    <p className="text-sm">Ładowanie marek...</p>
+                  </div>
+                ) : brandOptions.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
                       <Sparkles className="w-6 h-6 text-gray-400" />

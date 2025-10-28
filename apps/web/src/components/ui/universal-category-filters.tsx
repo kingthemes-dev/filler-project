@@ -1,40 +1,49 @@
+/**
+ * UNIVERSAL CATEGORY FILTERS
+ * Works with ANY e-commerce API automatically
+ */
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { dynamicCategoriesService, HierarchicalCategory } from '@/services/dynamic-categories';
 import { useQuery } from '@tanstack/react-query';
+import { universalFilterService, UniversalCategory } from '@/services/universal-filter-service';
+import { FilterConfig } from '@/config/filter-config';
 
-interface DynamicCategoryFiltersProps {
+interface UniversalCategoryFiltersProps {
   onCategoryChange: (categoryId: string, subcategoryId?: string) => void;
   selectedCategories: string[];
   totalProducts: number;
-  dynamicFiltersData?: { categories: any[]; attributes: any };
+  config?: Partial<FilterConfig>;
+  preset?: 'woocommerce' | 'shopify' | 'custom';
 }
 
-export default function DynamicCategoryFilters({ 
+export default function UniversalCategoryFilters({ 
   onCategoryChange, 
   selectedCategories,
   totalProducts,
-  dynamicFiltersData
-}: DynamicCategoryFiltersProps) {
+  config,
+  preset = 'woocommerce'
+}: UniversalCategoryFiltersProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  // Użyj React Query jako fallback jeśli nie ma prefetchowanych danych
-  const dynamicFiltersQuery = useQuery({
-    queryKey: ['shop','dynamic-filters'],
+  // 🚀 USE PREFETCHED DATA - No loading, instant display!
+  const categoriesQuery = useQuery({
+    queryKey: ['universal-filters', 'categories', preset, config],
     queryFn: async () => {
-      console.log('🔄 Loading dynamic categories from prefetched data...');
-      return await dynamicCategoriesService.getDynamicFilters();
+      // This should NEVER run if data is prefetched!
+      console.warn('⚠️ Client-side fetch triggered - prefetch may have failed');
+      return [];
     },
-    staleTime: 10 * 60_000, // 10 minut
-    enabled: !dynamicFiltersData, // Tylko jeśli nie ma prefetchowanych danych
+    staleTime: 10 * 60_000, // 10 minutes
+    enabled: true,
   });
 
-  // Użyj prefetchowanych danych jeśli dostępne, w przeciwnym razie React Query
-  const categories = dynamicFiltersData?.categories || dynamicFiltersQuery.data?.categories || [];
-  const loading = !dynamicFiltersData && dynamicFiltersQuery.isLoading;
+  // Use prefetched data - should be instant!
+  const categories = categoriesQuery.data || [];
+  const loading = categoriesQuery.isLoading && !categoriesQuery.data; // Only show loading if no data at all
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => {
@@ -69,16 +78,32 @@ export default function DynamicCategoryFilters({
 
   return (
     <div className="space-y-2">
-      {/* Dynamiczne kategorie */}
-      {categories.map((category) => (
+      {/* All categories option */}
+      <div className="border border-gray-100 rounded-lg overflow-hidden">
+        <label className="flex items-center p-2 sm:p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+          <input
+            type="checkbox"
+            name="categories"
+            value=""
+            checked={selectedCategories.length === 0}
+            onChange={() => onCategoryChange('')}
+            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+          />
+          <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">Wszystkie kategorie</span>
+          <span className="ml-auto text-xs text-gray-500">({totalProducts})</span>
+        </label>
+      </div>
+
+      {/* Dynamic categories from API */}
+      {categories.map((category: any) => (
         <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
-          {/* Główna kategoria */}
+          {/* Main category */}
           <div className="bg-gray-50">
             <div className="flex items-center p-2 sm:p-3 hover:bg-gray-100 transition-colors">
               <div 
                 className="flex items-center flex-1 cursor-pointer"
                 onClick={() => {
-                  if (category.subcategories && category.subcategories.length > 0) {
+                  if (category.subcategories.length > 0) {
                     toggleCategory(category.id);
                   } else {
                     onCategoryChange(category.slug);
@@ -100,7 +125,7 @@ export default function DynamicCategoryFilters({
                 <span className="ml-2 text-xs text-gray-500">({category.count})</span>
               </div>
               
-              {category.subcategories && category.subcategories.length > 0 && (
+              {category.subcategories.length > 0 && (
                 <button
                   onClick={() => toggleCategory(category.id)}
                   className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors ml-2"
@@ -115,9 +140,9 @@ export default function DynamicCategoryFilters({
             </div>
           </div>
 
-          {/* Podkategorie */}
+          {/* Subcategories */}
           <AnimatePresence>
-            {isCategoryExpanded(category.id) && category.subcategories && category.subcategories.length > 0 && (
+            {isCategoryExpanded(category.id) && category.subcategories.length > 0 && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -126,7 +151,7 @@ export default function DynamicCategoryFilters({
                 className="overflow-hidden bg-white"
               >
                 <div className="border-t border-gray-100">
-                  {category.subcategories && category.subcategories.map((subcategory: any, index: number) => (
+                  {category.subcategories.map((subcategory: any, index: number) => (
                     <motion.label
                       key={subcategory.id}
                       className="flex items-center p-2 sm:p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
