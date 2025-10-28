@@ -104,13 +104,16 @@ export default async function HomePage() {
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                 style={{
                   backgroundImage: 'url(/images/hero/hero-bg.webp?v=' + Date.now() + ')',
-                  filter: 'brightness(0.4) contrast(1.1)'
+                  filter: 'brightness(0.35) contrast(1.15)'
                 }}
               />
             </div>
             
-            {/* Overlay for better text readability */}
-            <div className="absolute inset-0 z-10 bg-black/40 pointer-events-none" />
+            {/* Solid gradient background on mobile for guaranteed contrast */}
+            <div className="absolute inset-0 z-0 md:hidden bg-gradient-to-b from-gray-900 via-black to-black" />
+            
+            {/* Overlay for better text readability (stronger on mobile) */}
+            <div className="absolute inset-0 z-10 bg-black/60 md:bg-black/40 pointer-events-none" />
             
             {/* Content */}
             <div className="relative z-10 flex items-center justify-center h-[500px] px-6 sm:px-8">
