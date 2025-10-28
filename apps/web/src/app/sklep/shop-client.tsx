@@ -102,8 +102,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     search: '',
     categories: [],
     brands: [],
-    minPrice: 0,
-    maxPrice: 10000, // 1000 zł w groszach
+    minPrice: -1, // -1 oznacza brak filtra ceny
+    maxPrice: -1, // -1 oznacza brak filtra ceny
     inStock: false,
     onSale: false,
     sortBy: 'date',
@@ -149,7 +149,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     if (filters.categories.length) params.set('category', filters.categories.join(','));
     if ((filters.brands as string[]).length) params.set('brands', (filters.brands as string[]).join(','));
     if (filters.minPrice > 0) params.set('min_price', String(filters.minPrice));
-    if (filters.maxPrice < 10000) params.set('max_price', String(filters.maxPrice));
+    if (filters.maxPrice > 0 && filters.maxPrice < 10000) params.set('max_price', String(filters.maxPrice));
     if (filters.inStock) params.set('in_stock', 'true');
     if (filters.onSale) params.set('on_sale', 'true');
     params.set('sort', filters.sortBy);
@@ -202,8 +202,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       params.append('orderby', filters.sortBy === 'name' ? 'title' : filters.sortBy);
       params.append('order', filters.sortOrder);
       if (filters.onSale) params.append('on_sale', 'true');
-      if (filters.minPrice >= 0) params.append('min_price', String(filters.minPrice));
-      if (filters.maxPrice < 10000) params.append('max_price', String(filters.maxPrice));
+      if (filters.minPrice > 0) params.append('min_price', String(filters.minPrice));
+      if (filters.maxPrice > 0 && filters.maxPrice < 10000) params.append('max_price', String(filters.maxPrice));
       Object.keys(filters).forEach(key => {
         if (key.startsWith('pa_') && Array.isArray(filters[key]) && (filters[key] as string[]).length > 0) {
           params.append(key, (filters[key] as string[]).join(','));
@@ -308,8 +308,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       const currentCategories = prev.categories;
       
       if (subcategoryId) {
-        // PRO: Podkategoria - dodaj zarówno kategorię główną jak i podkategorię
-        const mainCategoryExists = currentCategories.includes(categoryId);
+        // PRO: Podkategoria - filtruj tylko po podkategorii, nie po kategorii głównej
         const subcategoryExists = currentCategories.includes(subcategoryId);
         
         let newCategories = [...currentCategories];
@@ -318,10 +317,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           // Usuń podkategorię
           newCategories = newCategories.filter(cat => cat !== subcategoryId);
         } else {
-          // Dodaj podkategorię i kategorię główną jeśli nie istnieje
-          if (!mainCategoryExists) {
-            newCategories.push(categoryId);
-          }
+          // Dodaj tylko podkategorię (nie kategorię główną)
           newCategories.push(subcategoryId);
         }
         
@@ -363,8 +359,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       search: '',
       categories: [],
       brands: [],
-      minPrice: 0,
-      maxPrice: 10000,
+      minPrice: -1,
+      maxPrice: -1,
       inStock: false,
       onSale: false,
       sortBy: 'date' as const,
@@ -383,7 +379,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     filters.categories.forEach((c) => items.push({ key: 'category', value: c, label: `Kategoria: ${c}` }));
     if ((filters.brands as string[]).length) (filters.brands as string[]).forEach((b) => items.push({ key: 'brands', value: b, label: `Marka: ${b}` }));
     if (filters.minPrice > 0) items.push({ key: 'minPrice', value: String(filters.minPrice), label: `Min: ${filters.minPrice} zł` });
-    if (filters.maxPrice < 10000) items.push({ key: 'maxPrice', value: String(filters.maxPrice), label: `Max: ${filters.maxPrice} zł` });
+    if (filters.maxPrice > 0 && filters.maxPrice < 10000) items.push({ key: 'maxPrice', value: String(filters.maxPrice), label: `Max: ${filters.maxPrice} zł` });
     if (filters.inStock) items.push({ key: 'inStock', value: 'true', label: 'W magazynie' });
     if (filters.onSale) items.push({ key: 'onSale', value: 'true', label: 'Promocje' });
     Object.keys(filters).forEach((key) => {
@@ -400,8 +396,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     if (key === 'search') setFilters((p) => { analytics.track('filter_remove', { key, value }); return ({ ...p, search: '' }); });
     else if (key === 'category') setFilters((p) => ({ ...p, categories: p.categories.filter((c) => c !== value) }));
     else if (key === 'brands') setFilters((p) => ({ ...p, brands: (p.brands as string[]).filter((b) => b !== value) }));
-    else if (key === 'minPrice') setFilters((p) => ({ ...p, minPrice: 0 }));
-    else if (key === 'maxPrice') setFilters((p) => ({ ...p, maxPrice: 10000 }));
+    else if (key === 'minPrice') setFilters((p) => ({ ...p, minPrice: -1 }));
+    else if (key === 'maxPrice') setFilters((p) => ({ ...p, maxPrice: -1 }));
     else if (key === 'inStock') setFilters((p) => ({ ...p, inStock: false }));
     else if (key === 'onSale') setFilters((p) => ({ ...p, onSale: false }));
     else if (key.startsWith('pa_')) setFilters((p) => {

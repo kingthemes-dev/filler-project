@@ -74,45 +74,22 @@ export default function DynamicCategoryFilters({
         <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
           {/* Główna kategoria */}
           <div className="bg-gray-50">
-            <div className="flex items-center p-2 sm:p-3 hover:bg-gray-100 transition-colors">
-              <div 
-                className="flex items-center flex-1 cursor-pointer"
-                onClick={() => {
-                  if (category.subcategories && category.subcategories.length > 0) {
-                    toggleCategory(category.id);
-                  } else {
-                    onCategoryChange(category.slug);
-                  }
-                }}
-              >
-                <input
-                  type="checkbox"
-                  name="categories"
-                  value={category.slug}
-                  checked={isCategorySelected(category.slug)}
-                  onChange={() => onCategoryChange(category.slug)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <span className="ml-3 text-xs sm:text-sm font-semibold text-gray-800 hover:text-gray-600 transition-colors">
-                  {category.name}
-                </span>
+            <button
+              onClick={() => toggleCategory(category.id)}
+              className="flex items-center justify-between w-full p-2 sm:p-3 hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center">
+                <span className="text-xs sm:text-sm font-semibold text-gray-800">{category.name}</span>
                 <span className="ml-2 text-xs text-gray-500">({category.count})</span>
               </div>
-              
               {category.subcategories && category.subcategories.length > 0 && (
-                <button
-                  onClick={() => toggleCategory(category.id)}
-                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors ml-2"
-                >
-                  {isCategoryExpanded(category.id) ? (
-                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
+                isCategoryExpanded(category.id) ? (
+                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                )
               )}
-            </div>
+            </button>
           </div>
 
           {/* Podkategorie */}

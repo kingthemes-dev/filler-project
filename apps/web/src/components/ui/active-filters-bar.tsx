@@ -78,7 +78,7 @@ export default function ActiveFiltersBar({
     }
 
     // Price range
-    if (filters.minPrice || filters.maxPrice) {
+    if ((filters.minPrice && filters.minPrice > 0) || (filters.maxPrice && filters.maxPrice > 0 && filters.maxPrice < 10000)) {
       const minPrice = filters.minPrice || 0;
       const maxPrice = filters.maxPrice || '∞';
       chips.push({
