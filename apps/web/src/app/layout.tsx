@@ -2,16 +2,18 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
+import dynamic from 'next/dynamic';
 import Header from '@/components/ui/header';
-import FreeShippingBanner from '@/components/ui/free-shipping-banner';
-import { ConditionalFooter } from '@/components/conditional-footer';
-import CartDrawer from '@/components/ui/cart-drawer';
-import AuthModalManager from '@/components/ui/auth/auth-modal-manager';
-import FavoritesModal from '@/components/ui/favorites-modal';
-import ErrorBoundary from '@/components/error-boundary';
-import ReactQueryProvider from './providers/react-query-provider';
-import PerformanceTracker from '@/components/PerformanceTracker';
-import CookieConsent from '@/components/cookie-consent';
+// Defer non-critical UI to client after hydration to reduce initial JS
+const FreeShippingBanner = dynamic(() => import('@/components/ui/free-shipping-banner'), { ssr: false });
+const ConditionalFooter = dynamic(() => import('@/components/conditional-footer').then(m => m.ConditionalFooter), { ssr: false });
+const CartDrawer = dynamic(() => import('@/components/ui/cart-drawer'), { ssr: false });
+const AuthModalManager = dynamic(() => import('@/components/ui/auth/auth-modal-manager'), { ssr: false });
+const FavoritesModal = dynamic(() => import('@/components/ui/favorites-modal'), { ssr: false });
+const ErrorBoundary = dynamic(() => import('@/components/error-boundary'), { ssr: false });
+const ReactQueryProvider = dynamic(() => import('./providers/react-query-provider'), { ssr: false });
+const PerformanceTracker = dynamic(() => import('@/components/PerformanceTracker'), { ssr: false });
+const CookieConsent = dynamic(() => import('@/components/cookie-consent'), { ssr: false });
 import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
 import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analytics';
 
