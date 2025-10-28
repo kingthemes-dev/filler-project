@@ -145,7 +145,7 @@ export default function RootLayout({
         {/* Montserrat Google Font */}
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
         {/* Preload hero image for faster LCP - highest priority (ensure correct file) */}
-        <link rel="preload" as="image" href="/images/hero/hero-bg.webp" type="image/webp" fetchPriority="high" imagesrcset="/images/hero/hero-bg.webp 1920w" imagesizes="100vw" />
+        <link rel="preload" as="image" href="/images/hero/hero-bg.webp" type="image/webp" fetchPriority="high" imageSrcSet="/images/hero/hero-bg.webp 1920w" imageSizes="100vw" />
         {/* Preload critical CSS inline */}
         <style dangerouslySetInnerHTML={{__html: `
           .text-white{color:#fff}
