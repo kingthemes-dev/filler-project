@@ -51,6 +51,8 @@ export default function ActiveFiltersBar({
   // Get active filter chips
   const getActiveFilterChips = () => {
     const chips = [];
+    
+    console.log('🔍 ActiveFiltersBar - Current filters:', filters);
 
     // Search filter
     if (filters.search) {
@@ -106,13 +108,16 @@ export default function ActiveFiltersBar({
     // Dynamic attributes (pa_*)
     Object.keys(filters).forEach(key => {
       if (key.startsWith('pa_') && Array.isArray(filters[key]) && filters[key].length > 0) {
+        console.log('🔍 Processing attribute:', key, filters[key]);
         filters[key].forEach((value: string, index: number) => {
           chips.push({
             id: `${key}-${index}`,
             label: value,
             type: 'attribute',
             onRemove: () => {
+              console.log('🔍 Removing attribute value:', { key, value, currentValues: filters[key] });
               const newValues = filters[key].filter((v: string) => v !== value);
+              console.log('🔍 New values after removal:', newValues);
               onFilterChange(key, newValues);
             }
           });
@@ -120,6 +125,7 @@ export default function ActiveFiltersBar({
       }
     });
 
+    console.log('🔍 ActiveFiltersBar - Generated chips:', chips);
     return chips;
   };
 
@@ -150,7 +156,7 @@ export default function ActiveFiltersBar({
           {/* Filter chips - right side */}
           <div className="flex flex-wrap gap-1.5 min-w-0 flex-1">
             <AnimatePresence mode="popLayout">
-              {filterChips.map((chip, index) => (
+              {filterChips.filter(chip => chip.label && chip.label.trim()).map((chip, index) => (
                 <motion.div
                   key={chip.id}
                   layout
@@ -197,7 +203,7 @@ export default function ActiveFiltersBar({
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <div className="flex flex-wrap gap-1.5 min-w-0">
               <AnimatePresence mode="popLayout">
-                {filterChips.map((chip, index) => (
+                {filterChips.filter(chip => chip.label && chip.label.trim()).map((chip, index) => (
                   <motion.div
                     key={chip.id}
                     layout

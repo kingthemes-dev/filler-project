@@ -427,6 +427,56 @@ export default function ShopFilters({
                 </div>
               </div>
 
+              {/* Price Range Slider - Compact version above categories */}
+              <div className="mb-4 px-2">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                  <span className="font-medium">{priceRange.min} zł</span>
+                  <span className="font-medium">{priceRange.max} zł</span>
+                </div>
+                <div className="relative h-5">
+                  <div className="absolute top-2 left-0 right-0 h-1.5 bg-gray-200 rounded-full"></div>
+                  <div 
+                    className="absolute top-2 h-1.5 bg-blue-500 rounded-full"
+                    style={{
+                      left: `${(priceRange.min / 10000) * 100}%`,
+                      right: `${100 - (priceRange.max / 10000) * 100}%`
+                    }}
+                  ></div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
+                    step="100"
+                    value={priceRange.min}
+                    onWheel={(e) => e.preventDefault()}
+                    onChange={(e) => {
+                      const newMin = parseInt(e.target.value);
+                      if (newMin <= priceRange.max) {
+                        setPriceRange({ ...priceRange, min: newMin });
+                        onFilterChange('minPrice', newMin);
+                      }
+                    }}
+                    className="absolute top-2 w-full h-1.5 bg-transparent appearance-none cursor-pointer slider-thumb z-10"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
+                    step="100"
+                    value={priceRange.max}
+                    onWheel={(e) => e.preventDefault()}
+                    onChange={(e) => {
+                      const newMax = parseInt(e.target.value);
+                      if (newMax >= priceRange.min) {
+                        setPriceRange({ ...priceRange, max: newMax });
+                        onFilterChange('maxPrice', newMax);
+                      }
+                    }}
+                    className="absolute top-2 w-full h-1.5 bg-transparent appearance-none cursor-pointer slider-thumb z-20"
+                  />
+                </div>
+              </div>
+
               {/* Categories Filter */}
               <div className="mb-4 sm:mb-6">
                 <motion.button
@@ -520,86 +570,6 @@ export default function ShopFilters({
                     </AnimatePresence>
                   </div>
 
-                  {/* Price Range Filter */}
-              <div className="mb-4 sm:mb-6">
-                <motion.button
-                  onClick={() => toggleSection('price')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Zakres cen</h4>
-                  
-                  {/* Delicate horizontal line on mobile */}
-                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                  
-                  <motion.div
-                    animate={{ rotate: expandedSections.price ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                  </motion.div>
-                </motion.button>
-                
-                <AnimatePresence>
-                  {expandedSections.price && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-4"
-                    >
-                      {/* Price Range Slider */}
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between text-sm text-gray-600">
-                          <span>{priceRange.min} zł</span>
-                          <span>{priceRange.max} zł</span>
-                        </div>
-                        
-                        <div className="relative h-6">
-                          <div className="absolute top-3 left-0 right-0 h-2 bg-gray-200 rounded-lg"></div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="10000"
-                            step="100"
-                            value={priceRange.min}
-                            onWheel={(e) => e.preventDefault()}
-                            onChange={(e) => {
-                              const newMin = parseInt(e.target.value);
-                              if (newMin <= priceRange.max) {
-                                setPriceRange({ ...priceRange, min: newMin });
-                                onFilterChange('minPrice', newMin);
-                              }
-                            }}
-                            className="absolute top-3 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb z-10"
-                          />
-                          <input
-                            type="range"
-                            min="0"
-                            max="10000"
-                            step="100"
-                            value={priceRange.max}
-                            onWheel={(e) => e.preventDefault()}
-                            onChange={(e) => {
-                              const newMax = parseInt(e.target.value);
-                              if (newMax >= priceRange.min) {
-                                setPriceRange({ ...priceRange, max: newMax });
-                                onFilterChange('maxPrice', newMax);
-                              }
-                            }}
-                            className="absolute top-3 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb z-20"
-                          />
-                        </div>
-                        
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-
               </div>
             </div>
           </motion.div>
@@ -680,6 +650,56 @@ export default function ShopFilters({
                       )}
                     </div>
                   </button>
+                </div>
+              </div>
+
+              {/* Price Range Slider - Compact version above categories */}
+              <div className="mb-4 px-2">
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                  <span className="font-medium">{priceRange.min} zł</span>
+                  <span className="font-medium">{priceRange.max} zł</span>
+                </div>
+                <div className="relative h-5">
+                  <div className="absolute top-2 left-0 right-0 h-1.5 bg-gray-200 rounded-full"></div>
+                  <div 
+                    className="absolute top-2 h-1.5 bg-blue-500 rounded-full"
+                    style={{
+                      left: `${(priceRange.min / 10000) * 100}%`,
+                      right: `${100 - (priceRange.max / 10000) * 100}%`
+                    }}
+                  ></div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
+                    step="100"
+                    value={priceRange.min}
+                    onWheel={(e) => e.preventDefault()}
+                    onChange={(e) => {
+                      const newMin = parseInt(e.target.value);
+                      if (newMin <= priceRange.max) {
+                        setPriceRange({ ...priceRange, min: newMin });
+                        onFilterChange('minPrice', newMin);
+                      }
+                    }}
+                    className="absolute top-2 w-full h-1.5 bg-transparent appearance-none cursor-pointer slider-thumb z-10"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
+                    step="100"
+                    value={priceRange.max}
+                    onWheel={(e) => e.preventDefault()}
+                    onChange={(e) => {
+                      const newMax = parseInt(e.target.value);
+                      if (newMax >= priceRange.min) {
+                        setPriceRange({ ...priceRange, max: newMax });
+                        onFilterChange('maxPrice', newMax);
+                      }
+                    }}
+                    className="absolute top-2 w-full h-1.5 bg-transparent appearance-none cursor-pointer slider-thumb z-20"
+                  />
                 </div>
               </div>
 
@@ -770,85 +790,6 @@ export default function ShopFilters({
                             }, {} as Record<string, any>)
                         }}
                       />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Price Range Filter */}
-              <div className="mb-4 sm:mb-6">
-                <motion.button
-                  onClick={() => toggleSection('price')}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between w-full mb-3 sm:mb-4 p-3 rounded-xl hover:bg-gray-50/50 transition-all duration-300 group"
-                >
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">Zakres cen</h4>
-                  
-                  {/* Delicate horizontal line on mobile */}
-                  <div className="hidden sm:block flex-1 mx-4 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-                  
-                  <motion.div
-                    animate={{ rotate: expandedSections.price ? 180 : 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <ChevronDown className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors duration-300" />
-                  </motion.div>
-                </motion.button>
-                
-                <AnimatePresence>
-                  {expandedSections.price && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-4"
-                    >
-                      {/* Price Range Slider */}
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between text-sm text-gray-600">
-                          <span>{priceRange.min} zł</span>
-                          <span>{priceRange.max} zł</span>
-                        </div>
-                        
-                        <div className="relative h-6">
-                          <div className="absolute top-3 left-0 right-0 h-2 bg-gray-200 rounded-lg"></div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="10000"
-                            step="100"
-                            value={priceRange.min}
-                            onWheel={(e) => e.preventDefault()}
-                            onChange={(e) => {
-                              const newMin = parseInt(e.target.value);
-                              if (newMin <= priceRange.max) {
-                                setPriceRange({ ...priceRange, min: newMin });
-                                onFilterChange('minPrice', newMin);
-                              }
-                            }}
-                            className="absolute top-3 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb z-10"
-                          />
-                          <input
-                            type="range"
-                            min="0"
-                            max="10000"
-                            step="100"
-                            value={priceRange.max}
-                            onWheel={(e) => e.preventDefault()}
-                            onChange={(e) => {
-                              const newMax = parseInt(e.target.value);
-                              if (newMax >= priceRange.min) {
-                                setPriceRange({ ...priceRange, max: newMax });
-                                onFilterChange('maxPrice', newMax);
-                              }
-                            }}
-                            className="absolute top-3 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb z-20"
-                          />
-                        </div>
-                        
-                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
