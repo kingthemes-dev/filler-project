@@ -103,7 +103,7 @@ export default async function HomePage() {
               <div 
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                 style={{
-                  backgroundImage: 'url(/images/hero/hero-bg.webp?v=' + Date.now() + ')',
+                  backgroundImage: 'url(/images/hero/hero-bg.webp)',
                   filter: 'brightness(0.35) contrast(1.15)'
                 }}
               />

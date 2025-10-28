@@ -103,79 +103,33 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        {/* Google Tag Manager */}
-        {process.env.NEXT_PUBLIC_GTM_ID && (
-          <Script id="gtm" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
-          `}} />
-        )}
-            {/* Google Analytics 4 + Search Console */}
-            {process.env.NEXT_PUBLIC_GA4_ID && (
-              <>
-                <Script
-                  src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}`}
-                  strategy="afterInteractive"
-                />
-                <Script id="ga4" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${process.env.NEXT_PUBLIC_GA4_ID}', {
-                    // Enhanced measurement for Search Console integration
-                    enhanced_measurements: {
-                      scrolls: true,
-                      outbound_clicks: true,
-                      site_search: true,
-                      video_engagement: true,
-                      file_downloads: true
-                    },
-                    // Search Console integration
-                    custom_map: {
-                      'custom_parameter_1': 'search_term',
-                      'custom_parameter_2': 'search_engine'
-                    }
-                  });
-                  
-                  // Track search queries from URL parameters
-                  const urlParams = new URLSearchParams(window.location.search);
-                  const searchQuery = urlParams.get('q') || urlParams.get('search') || urlParams.get('焖');
-                  if (searchQuery) {
-                    gtag('event', 'search', {
-                      search_term: searchQuery,
-                      search_engine: 'site_search'
-                    });
-                  }
-                `}} />
-              </>
-            )}
-            
-            {/* Search Console Analytics - Inline implementation to avoid 404 */}
-            {process.env.NEXT_PUBLIC_GA4_ID && (
-              <Script id="search-console-inline" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
-                // Track scroll depth inline
-                let scrollDepthTracked = 0;
-                window.addEventListener('scroll', () => {
-                  const scrollPercent = Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100);
-                  if (scrollPercent >= 25 && scrollDepthTracked < 25) {
-                    window.gtag?.('event', 'scroll', { scroll_depth: 25 });
-                    scrollDepthTracked = 25;
-                  } else if (scrollPercent >= 50 && scrollDepthTracked < 50) {
-                    window.gtag?.('event', 'scroll', { scroll_depth: 50 });
-                    scrollDepthTracked = 50;
-                  } else if (scrollPercent >= 75 && scrollDepthTracked < 75) {
-                    window.gtag?.('event', 'scroll', { scroll_depth: 75 });
-                    scrollDepthTracked = 75;
-                  } else if (scrollPercent >= 90 && scrollDepthTracked < 90) {
-                    window.gtag?.('event', 'scroll', { scroll_depth: 90 });
-                    scrollDepthTracked = 90;
-                  }
-                });
-              `}} />
-            )}
+        {/* Consent-gated loading for GTM/GA to reduce unused JS and improve LCP */}
+        <Script id="consent-gated-analytics" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+          try {
+            var prefs = localStorage.getItem('cookie_preferences');
+            var parsed = prefs ? JSON.parse(prefs) : null;
+            var allowAnalytics = parsed && parsed.analytics;
+            if (allowAnalytics) {
+              // Load GTM
+              ${process.env.NEXT_PUBLIC_GTM_ID ? `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                'https://www.googletagmanager.com/gtm.js?id=${process.env.NEXT_PUBLIC_GTM_ID}'+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer');` : ''}
+
+              // Load GA4
+              ${(process.env.NEXT_PUBLIC_GA4_ID ? `
+                var gaScript = document.createElement('script');
+                gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}';
+                gaScript.async = true;document.head.appendChild(gaScript);
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);} 
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA4_ID}', { anonymize_ip: true });
+              ` : '')}
+            }
+          } catch(e) { /* noop */ }
+        `}} />
         {/* Preconnect to WordPress for faster API calls */}
         <link rel="preconnect" href="https://qvwltjhdjw.cfolks.pl" crossOrigin="" />
         <link rel="dns-prefetch" href="https://qvwltjhdjw.cfolks.pl" />
@@ -190,8 +144,8 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         {/* Montserrat Google Font */}
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-        {/* Preload hero image for faster LCP - highest priority */}
-        <link rel="preload" as="image" href="/images/hero/home.webp" type="image/webp" fetchPriority="high" imageSrcSet="/images/hero/home.webp 1920w" imageSizes="100vw" />
+        {/* Preload hero image for faster LCP - highest priority (ensure correct file) */}
+        <link rel="preload" as="image" href="/images/hero/hero-bg.webp" type="image/webp" fetchPriority="high" imagesrcset="/images/hero/hero-bg.webp 1920w" imagesizes="100vw" />
         {/* Preload critical CSS inline */}
         <style dangerouslySetInnerHTML={{__html: `
           .text-white{color:#fff}
