@@ -4,6 +4,7 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import Header from '@/components/ui/header';
 import DeferClientUI from '@/components/defer-client-ui';
+import FreeShippingBanner from '@/components/ui/free-shipping-banner';
 import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
 import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analytics';
 
@@ -134,8 +135,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-        {/* Montserrat Google Font */}
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        {/* next/font Montserrat already in use; remove external CSS to avoid render-blocking */}
         {/* Preload hero image for faster LCP - highest priority (ensure correct file) */}
         <link rel="preload" as="image" href="/images/hero/hero-bg.webp" type="image/webp" fetchPriority="high" imageSrcSet="/images/hero/hero-bg.webp 1920w" imageSizes="100vw" />
         {/* Preload critical CSS inline */}
@@ -170,6 +170,8 @@ export default function RootLayout({
                   >
                         {/* Google Tag Manager (noscript) */}
                         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TJSTQLNM" height="0" width="0" style={{display:'none',visibility:'hidden'}}></iframe></noscript>
+                          {/* Place banner above header to avoid overlap */}
+                          <FreeShippingBanner />
                           <Header />
                           <DeferClientUI>
                             {children}
