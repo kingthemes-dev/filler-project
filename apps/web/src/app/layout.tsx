@@ -198,78 +198,33 @@ export default function RootLayout({
                           }}
                         />
                         
-                        {/* PWA Install Prompt */}
+                        {/* PWA Install Prompt - idle callback to avoid impacting FCP */}
                         <Script
                           id="pwa-install-prompt"
                           strategy="afterInteractive"
                           dangerouslySetInnerHTML={{
-                            __html: `
+                            __html: `requestIdleCallback?.(() => {
                               let deferredPrompt;
                               window.addEventListener('beforeinstallprompt', (e) => {
                                 e.preventDefault();
                                 deferredPrompt = e;
-                                
-                                // Show install button or banner
-                                const installBtn = document.createElement('button');
-                                installBtn.textContent = 'Zainstaluj aplikację';
-                                installBtn.style.cssText = \`
-                                  position: fixed;
-                                  bottom: 20px;
-                                  right: 20px;
-                                  background: #000;
-                                  color: #fff;
-                                  border: none;
-                                  padding: 12px 24px;
-                                  border-radius: 8px;
-                                  font-weight: 600;
-                                  cursor: pointer;
-                                  z-index: 1000;
-                                  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                                \`;
-                                
-                                installBtn.addEventListener('click', () => {
-                                  deferredPrompt.prompt();
-                                  deferredPrompt.userChoice.then((choiceResult) => {
-                                    if (choiceResult.outcome === 'accepted') {
-                                      console.log('User accepted the install prompt');
-                                    }
-                                    deferredPrompt = null;
-                                    installBtn.remove();
-                                  });
-                                });
-                                
-                                document.body.appendChild(installBtn);
                               });
-                            `,
+                            });`,
                           }}
                         />
                         
-                        {/* Expert Level 9.6/10 - Free Monitoring Systems */}
-                        <Script
-                          id="expert-monitoring-init"
-                          strategy="afterInteractive"
-                          dangerouslySetInnerHTML={{
-                            __html: `
-                              // Initialize Expert Level monitoring systems
-                              console.log('🚀 Expert Level 9.6/10 - Free Implementation Active');
-                              console.log('📊 Analytics:', window.analytics?.getStats());
-                              console.log('🛡️ Error Tracker:', window.errorTracker?.getStats());
-                              console.log('⚡ Performance Monitor:', window.performanceMonitor?.getStats());
-                              console.log('🔒 Security Auditor:', window.securityAuditor?.getSecurityScore() + '%');
-                              
-                              // Run security audit on page load
-                              setTimeout(() => {
-                                const securityReport = window.securityAuditor?.runAudit();
-                                console.group('🔒 Security Audit Report');
-                                console.log('Overall Status:', securityReport?.overallStatus);
-                                console.log('Security Score:', window.securityAuditor?.getSecurityScore() + '%');
-                                console.log('Critical Issues:', window.securityAuditor?.getCriticalIssues().length);
-                                console.log('Recommendations:', window.securityAuditor?.getRecommendations());
-                                console.groupEnd();
-                              }, 2000);
-                            `,
-                          }}
-                        />
+                        {/* Expert monitoring only if explicitly enabled via env */}
+                        {process.env.NEXT_PUBLIC_EXPERT_MONITORING === 'true' && (
+                          <Script
+                            id="expert-monitoring-init"
+                            strategy="afterInteractive"
+                            dangerouslySetInnerHTML={{
+                              __html: `requestIdleCallback?.(() => {
+                                window.performanceMonitor?.getStats?.();
+                              });`,
+                            }}
+                          />
+                        )}
               </body>
             </html>
           );

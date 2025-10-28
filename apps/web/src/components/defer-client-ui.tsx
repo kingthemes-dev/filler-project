@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic';
 
 // Load non-critical UI only on the client to reduce initial JS for SSR/Edge
-const FreeShippingBanner = dynamic(() => import('@/components/ui/free-shipping-banner'), { ssr: false });
 const ConditionalFooter = dynamic(() => import('@/components/conditional-footer').then(m => m.ConditionalFooter), { ssr: false });
 const CartDrawer = dynamic(() => import('@/components/ui/cart-drawer'), { ssr: false });
 const AuthModalManager = dynamic(() => import('@/components/ui/auth/auth-modal-manager'), { ssr: false });
@@ -17,7 +16,6 @@ export default function DeferClientUI({ children }: { children: React.ReactNode 
   return (
     <ErrorBoundary>
       <PerformanceTracker />
-      <FreeShippingBanner />
       <ReactQueryProvider>
         <main>
           {children}
