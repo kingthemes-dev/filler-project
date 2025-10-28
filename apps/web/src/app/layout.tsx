@@ -2,18 +2,8 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
-import dynamic from 'next/dynamic';
 import Header from '@/components/ui/header';
-// Defer non-critical UI to client after hydration to reduce initial JS
-const FreeShippingBanner = dynamic(() => import('@/components/ui/free-shipping-banner'), { ssr: false });
-const ConditionalFooter = dynamic(() => import('@/components/conditional-footer').then(m => m.ConditionalFooter), { ssr: false });
-const CartDrawer = dynamic(() => import('@/components/ui/cart-drawer'), { ssr: false });
-const AuthModalManager = dynamic(() => import('@/components/ui/auth/auth-modal-manager'), { ssr: false });
-const FavoritesModal = dynamic(() => import('@/components/ui/favorites-modal'), { ssr: false });
-const ErrorBoundary = dynamic(() => import('@/components/error-boundary'), { ssr: false });
-const ReactQueryProvider = dynamic(() => import('./providers/react-query-provider'), { ssr: false });
-const PerformanceTracker = dynamic(() => import('@/components/PerformanceTracker'), { ssr: false });
-const CookieConsent = dynamic(() => import('@/components/cookie-consent'), { ssr: false });
+import DeferClientUI from '@/components/defer-client-ui';
 import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
 import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analytics';
 
@@ -180,21 +170,10 @@ export default function RootLayout({
                   >
                         {/* Google Tag Manager (noscript) */}
                         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TJSTQLNM" height="0" width="0" style={{display:'none',visibility:'hidden'}}></iframe></noscript>
-                        <ErrorBoundary>
-                          <PerformanceTracker />
-                          <FreeShippingBanner />
                           <Header />
-                          <ReactQueryProvider>
-                            <main>
-                              {children}
-                            </main>
-                          </ReactQueryProvider>
-                          <AuthModalManager />
-                          <FavoritesModal />
-                          <CookieConsent />
-                          <ConditionalFooter />
-                          <CartDrawer />
-                        </ErrorBoundary>
+                          <DeferClientUI>
+                            {children}
+                          </DeferClientUI>
                         
                         {/* PWA Service Worker Registration */}
                         <Script
