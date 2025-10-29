@@ -72,7 +72,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
         try {
           // Update local state immediately for better UX
           set({ favorites: [...favorites, product] });
-          console.log('❤️ Added to favorites:', product.name);
+          // Added to favorites debug removed
           
           // Sync with API
           const userId = getUserId();
@@ -100,7 +100,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
         try {
           // Update local state immediately
           set({ favorites: newFavorites });
-          console.log('💔 Removed from favorites:', productId);
+          // Removed from favorites debug removed
           
           // Sync with API
           const userId = getUserId();
@@ -137,12 +137,12 @@ export const useFavoritesStore = create<FavoritesStore>()(
 
       openFavoritesModal: () => {
         set({ isModalOpen: true });
-        console.log('❤️ Opening favorites modal');
+        // Opening favorites modal debug removed
       },
 
       closeFavoritesModal: () => {
         set({ isModalOpen: false });
-        console.log('❤️ Closing favorites modal');
+        // Closing favorites modal debug removed
       },
 
       clearFavorites: async () => {
@@ -151,7 +151,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
         try {
           // Update local state immediately
           set({ favorites: [] });
-          console.log('❤️ Cleared all favorites');
+          // Cleared all favorites debug removed
           
           // Sync with API
           const userId = getUserId();
@@ -185,7 +185,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
           });
           
           set({ lastSyncTime: Date.now() });
-          console.log('🔄 Favorites synced with API');
+          // Favorites synced with API debug removed
         } catch (error) {
           console.error('Nie udało się zsynchronizować ulubionych:', error);
         } finally {
@@ -205,7 +205,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
               favorites: response.data,
               lastSyncTime: Date.now()
             });
-            console.log('📥 Loaded favorites from API:', response.data.length);
+            // Loaded favorites from API debug removed
           }
         } catch (error) {
           console.error('Nie udało się załadować ulubionych z API:', error);

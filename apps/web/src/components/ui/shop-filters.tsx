@@ -36,6 +36,8 @@ interface ShopFiltersProps {
   totalProducts: number;
   attributesLoading: boolean;
   dynamicFiltersData?: { categories: any[]; attributes: any };
+  contextualAttributes?: any; // Contextual attributes na podstawie wybranych kategorii
+  contextualLoading?: boolean; // Loading state dla contextual attributes
   wooCommerceCategories?: Array<{ id: number; name: string; slug: string; parent: number; count: number }>;
   products?: any[]; // Dodaj produkty jako prop
 }
@@ -53,6 +55,8 @@ export default function ShopFilters({
   totalProducts,
   attributesLoading,
   dynamicFiltersData,
+  contextualAttributes,
+  contextualLoading,
   wooCommerceCategories,
   products = []
 }: ShopFiltersProps) {
@@ -381,7 +385,7 @@ export default function ShopFilters({
                     placeholder="Szukaj produktów..."
                     value={filters.search}
                     onChange={(e) => onFilterChange('search', e.target.value)}
-                    className="w-full px-4 py-3 pl-12 border border-gray-200 rounded-xl text-sm bg-gray-50/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400 group-hover:border-gray-300 group-hover:bg-white/80"
+                    className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl text-sm bg-gray-50/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400 group-hover:border-gray-400 group-hover:bg-white/80"
                   />
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <svg className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -408,7 +412,7 @@ export default function ShopFilters({
                     className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 group ${
                       filters.onSale 
                         ? 'bg-red-50 border border-red-200 text-red-700' 
-                        : 'hover:bg-gray-50 border border-transparent text-gray-700'
+                        : 'hover:bg-gray-50 border border-gray-200 text-gray-700'
                     }`}
                   >
                     <span className="text-sm font-medium">Promocje</span>
@@ -436,7 +440,7 @@ export default function ShopFilters({
                 <div className="relative h-5">
                   <div className="absolute top-2 left-0 right-0 h-1.5 bg-gray-200 rounded-full"></div>
                   <div 
-                    className="absolute top-2 h-1.5 bg-blue-500 rounded-full"
+                    className="absolute top-2 h-1.5 bg-gray-600 rounded-full"
                     style={{
                       left: `${(priceRange.min / 10000) * 100}%`,
                       right: `${100 - (priceRange.max / 10000) * 100}%`
@@ -549,6 +553,8 @@ export default function ShopFilters({
                             selectedFilters={filters}
                             totalProducts={totalProducts}
                             dynamicFiltersData={dynamicFiltersData}
+                            contextualAttributes={contextualAttributes}
+                            contextualLoading={contextualLoading}
                             currentFilters={{
                               categories: filters.categories,
                               search: filters.search as string,
@@ -577,13 +583,12 @@ export default function ShopFilters({
       </AnimatePresence>
       
       {/* Desktop version - always visible */}
-      <div className="hidden lg:block lg:sticky lg:top-[7rem] lg:self-start">
+      <div className="hidden lg:block lg:sticky lg:top-32 lg:self-start">
         <div 
-          ref={desktopSidebarRef}
-          className="bg-white border border-gray-200/50 shadow-sm rounded-2xl p-4 sm:p-6 lg:shadow-md lg:backdrop-blur-md max-h-[calc(100vh-6rem)] overflow-y-auto"
+          className="bg-white border border-gray-200/50 shadow-sm rounded-2xl lg:shadow-md lg:backdrop-blur-md h-[calc(100vh-10rem)] flex flex-col"
         >
           {/* Desktop Header */}
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 p-4 sm:p-6 flex-shrink-0">
             <div className="flex items-center group">
               <div className="p-2 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
                 <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
@@ -597,17 +602,18 @@ export default function ShopFilters({
             </div>
           </div>
           
-          {/* Desktop content - same as mobile but without scroll container */}
-          <div className="space-y-4 sm:space-y-6">
+          {/* Desktop content - scrollable container */}
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+            <div className="space-y-4 sm:space-y-6">
               {/* Search Filter */}
-              <div className="mb-4 sm:mb-6">
+              <div className="mb-3 sm:mb-4">
                 <div className="relative group" data-testid="filter-search">
                   <input
                     type="text"
                     placeholder="Szukaj produktów..."
                     value={filters.search}
                     onChange={(e) => onFilterChange('search', e.target.value)}
-                    className="w-full px-4 py-3 pl-12 border border-gray-200 rounded-xl text-sm bg-gray-50/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400 group-hover:border-gray-300 group-hover:bg-white/80"
+                    className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl text-sm bg-gray-50/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all duration-300 placeholder:text-gray-400 group-hover:border-gray-400 group-hover:bg-white/80"
                   />
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <svg className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -634,7 +640,7 @@ export default function ShopFilters({
                     className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 group ${
                       filters.onSale 
                         ? 'bg-red-50 border border-red-200 text-red-700' 
-                        : 'hover:bg-gray-50 border border-transparent text-gray-700'
+                        : 'hover:bg-gray-50 border border-gray-200 text-gray-700'
                     }`}
                   >
                     <span className="text-sm font-medium">Promocje</span>
@@ -662,7 +668,7 @@ export default function ShopFilters({
                 <div className="relative h-5">
                   <div className="absolute top-2 left-0 right-0 h-1.5 bg-gray-200 rounded-full"></div>
                   <div 
-                    className="absolute top-2 h-1.5 bg-blue-500 rounded-full"
+                    className="absolute top-2 h-1.5 bg-gray-600 rounded-full"
                     style={{
                       left: `${(priceRange.min / 10000) * 100}%`,
                       right: `${100 - (priceRange.max / 10000) * 100}%`
@@ -776,6 +782,9 @@ export default function ShopFilters({
                         onFilterChange={onFilterChange}
                         selectedFilters={filters}
                         totalProducts={totalProducts}
+                        dynamicFiltersData={dynamicFiltersData}
+                        contextualAttributes={contextualAttributes}
+                        contextualLoading={contextualLoading}
                         currentFilters={{
                           categories: filters.categories,
                           search: filters.search as string,
@@ -794,7 +803,7 @@ export default function ShopFilters({
                   )}
                 </AnimatePresence>
               </div>
-
+            </div>
           </div>
         </div>
       </div>

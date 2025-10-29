@@ -74,10 +74,7 @@ export default function KingProductCard({
   // Debug variations state changes (only in development)
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 variations state changed:', variations);
-      console.log('🔄 variations.length:', variations.length);
-      console.log('🔄 variations type:', typeof variations);
-      console.log('🔄 variations is array:', Array.isArray(variations));
+      // variations state changed debug removed
     }
   }, [variations]);
   
@@ -155,7 +152,7 @@ export default function KingProductCard({
         };
       }
 
-      console.log('🛒 Adding to cart from card:', cartItem);
+      // Adding to cart from card debug removed
       addItem(cartItem);
       openCart();
     } catch (error) {
@@ -180,7 +177,7 @@ export default function KingProductCard({
 
   const handleShowVariants = async () => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 handleShowVariants called for product:', product.id);
+      // handleShowVariants debug removed
     }
     
     if (!variationsLoaded) {
@@ -188,24 +185,21 @@ export default function KingProductCard({
         const response = await wooCommerceService.getProductVariations(product.id);
         
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔄 Variations response:', response);
+          // Variations response debug removed
         }
         
         // API zwraca warianty jako tablicę bezpośrednio, nie w obiekcie z właściwością variations
         const variations = Array.isArray(response) ? response : (response.variations || []);
         
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔄 Setting variations:', variations);
-          console.log('🔄 variations type:', typeof variations);
-          console.log('🔄 variations is array:', Array.isArray(variations));
-          console.log('🔄 variations length:', variations.length);
+          // Setting variations debug removed
         }
         
         setVariations([...variations]); // Force new array reference
         setVariationsLoaded(true);
         
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔄 Variations set, variationsLoaded:', true);
+          // Variations set debug removed
         }
       } catch (error) {
         console.error('Błąd ładowania wariantów:', error);
@@ -230,9 +224,7 @@ export default function KingProductCard({
     sale_price: string; 
     attributes?: Array<{ slug: string; option: string }>; 
   }, variantName: string) => {
-    console.log('🛒 handleAddToCartWithVariation called with:', variation, variantName);
-    console.log('🛒 addItem function:', addItem);
-    console.log('🛒 openCart function:', openCart);
+    // handleAddToCartWithVariation debug removed
     
     setIsLoading(true);
     try {
@@ -246,12 +238,9 @@ export default function KingProductCard({
         permalink: `/produkt/${product.slug}`,
       };
 
-      console.log('🛒 Adding variation to cart:', cartItem);
-      console.log('🛒 Calling addItem...');
+      // Adding variation to cart debug removed
       addItem(cartItem);
-      console.log('🛒 addItem called, now calling openCart...');
       openCart();
-      console.log('🛒 openCart called');
     } catch (error) {
       console.error('Błąd dodawania wariantu do koszyka:', error);
     } finally {
@@ -261,41 +250,39 @@ export default function KingProductCard({
 
   // Get available variants from loaded variations
   const getAvailableVariants = () => {
-    console.log('🔄 getAvailableVariants called - variations:', variations);
-    console.log('🔄 variations.length:', variations.length);
-    console.log('🔄 variationsLoaded:', variationsLoaded);
+    // getAvailableVariants debug removed
     
     if (variations.length > 0) {
       const variants = variations.map((variation: any) => {
-        console.log('🔄 Processing variation:', variation);
+        // Processing variation debug removed
         // Znajdź pierwszy dostępny atrybut (pojemność, kolor, rozmiar, etc.)
         const firstAttr = variation.attributes?.find((attr: any) => 
           attr.slug && attr.option
         );
-        console.log('🔄 First attr found:', firstAttr);
+        // First attr found debug removed
         const variantName = firstAttr?.option || variation.name || `Wariant ${variation.id}`;
-        console.log('🔄 Variant name:', variantName);
+        // Variant name debug removed
         return variantName;
       });
-      console.log('🔄 Mapped variants:', variants);
+      // Mapped variants debug removed
       return variants;
     }
     
-    console.log('🔄 No variations, trying product attributes');
+    // No variations debug removed
     // Fallback to product attributes - znajdź pierwszy atrybut z opcjami
     if (!product.attributes) {
-      console.log('🔄 No product attributes');
+      // No product attributes debug removed
       return [];
     }
     const firstAttrWithOptions = product.attributes.find((attr) => 
       (attr as any).options && (attr as any).options.length > 0
     );
     if (!firstAttrWithOptions) {
-      console.log('🔄 No attributes with options');
+      // No attributes with options debug removed
       return [];
     }
     const opts = (firstAttrWithOptions as any).options || [];
-    console.log('🔄 Product attribute options:', opts);
+    // Product attribute options debug removed
     return opts.map((o: any) => {
       if (typeof o === 'string') return o;
       if (typeof o === 'object' && o.name) return o.name;
@@ -1039,15 +1026,14 @@ export default function KingProductCard({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log('🛒 Variant clicked:', variant);
-                          console.log('🛒 Found variation:', variation);
+                          // Variant clicked debug removed
                           setSelectedVariant(variant);
                           setIsDropdownOpen(false);
                           if (variation) {
-                            console.log('🛒 Calling handleAddToCartWithVariation with:', variation, variant);
+                            // Calling handleAddToCartWithVariation debug removed
                             handleAddToCartWithVariation(variation, variant);
                           } else {
-                            console.log('🛒 No variation found for variant:', variant);
+                            // No variation found debug removed
                           }
                         }}
                         className={`px-4 py-2 text-sm font-medium rounded-full border-2 transition-all duration-200 transform hover:scale-105 ${

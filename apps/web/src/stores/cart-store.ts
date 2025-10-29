@@ -85,7 +85,7 @@ export const useCartStore = create<CartStore>()(
           // Recalculate totals
           get().calculateTotal();
           
-          console.log('✅ Item added to local cart:', item);
+          // Item added to local cart debug removed
           
           // Optional: Try to sync with WooCommerce API (non-blocking)
           try {
@@ -96,13 +96,13 @@ export const useCartStore = create<CartStore>()(
             );
             
             if (apiResponse.success) {
-              console.log('✅ WooCommerce API sync successful');
+              // WooCommerce API sync successful debug removed
             } else {
-              console.log('ℹ️ WooCommerce API sync skipped (headless mode)');
+              // WooCommerce API sync skipped debug removed
             }
           } catch (apiError) {
             // This should not happen anymore, but just in case
-            console.log('ℹ️ WooCommerce API sync skipped (headless mode)');
+            // WooCommerce API sync skipped debug removed
           }
         } catch (error) {
           console.error('❌ Error adding item to cart:', error);
@@ -195,9 +195,9 @@ export const useCartStore = create<CartStore>()(
       },
 
       openCart: () => {
-        console.log('🛒 openCart called! Setting isOpen to true');
+        // openCart called debug removed
         set({ isOpen: true });
-        console.log('🛒 isOpen set to true');
+        // isOpen set to true debug removed
       },
 
       closeCart: () => {
@@ -211,13 +211,13 @@ export const useCartStore = create<CartStore>()(
           // Price is netto (without VAT), calculate with VAT
           const priceWithVAT = calculatePriceWithVAT(price);
           const itemTotal = priceWithVAT * item.quantity;
-          console.log(`🔍 Item ${item.id}: netto=${price}, brutto=${priceWithVAT}, qty=${item.quantity}, itemTotal=${itemTotal}`);
+          // Item calculation debug removed
           return sum + itemTotal;
         }, 0);
         
         const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
         
-        console.log('🔍 Cart calculateTotal result:', { items: items.length, total, itemCount });
+        // Cart calculateTotal result debug removed
         
         set({ total, itemCount });
       },
@@ -232,7 +232,7 @@ export const useCartStore = create<CartStore>()(
       onRehydrateStorage: () => (state) => {
         // Recalculate total when loading from localStorage
         if (state?.items && state.items.length > 0) {
-          console.log('🔄 Recalculating total from localStorage...');
+          // Recalculating total from localStorage debug removed
           state.calculateTotal();
         }
       },

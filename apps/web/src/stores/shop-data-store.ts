@@ -33,6 +33,7 @@ export interface ShopDataState {
   getBrandsForModal: (limit?: number) => ShopAttribute[];
   getAllBrands: () => ShopAttribute[];
   getCapacities: () => ShopAttribute[];
+  getZastosowanie: () => ShopAttribute[];
   
   // Computed
   hasData: boolean;
@@ -70,12 +71,16 @@ const getCapacities = (attributes: ShopAttributes): ShopAttribute[] => {
   return attributes.capacities;
 };
 
+const getZastosowanie = (attributes: ShopAttributes): ShopAttribute[] => {
+  return attributes.zastosowanie;
+};
+
 // Store
 export const useShopDataStore = create<ShopDataState>()(
   subscribeWithSelector((set, get) => ({
     // Initial State
     categories: [],
-    attributes: { brands: [], capacities: [] },
+    attributes: { brands: [], capacities: [], zastosowanie: [] },
     totalProducts: 0,
     isLoading: false,
     isInitialized: false,
@@ -187,6 +192,11 @@ export const useShopDataStore = create<ShopDataState>()(
       return getCapacities(attributes);
     },
 
+    getZastosowanie: () => {
+      const { attributes } = get();
+      return getZastosowanie(attributes);
+    },
+
     // Computed
     get hasData() {
       const { categories, attributes } = get();
@@ -241,6 +251,7 @@ export const useShopAttributes = () => {
     brands: store.attributes.brands,
     brandsForModal: store.attributes.brands.slice(0, 36),
     capacities: store.attributes.capacities,
+    zastosowanie: store.attributes.zastosowanie,
     isLoading: store.isLoading
   };
 };

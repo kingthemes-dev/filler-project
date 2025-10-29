@@ -52,7 +52,7 @@ export default function ActiveFiltersBar({
   const getActiveFilterChips = () => {
     const chips = [];
     
-    console.log('🔍 ActiveFiltersBar - Current filters:', filters);
+    // ActiveFiltersBar current filters debug removed
 
     // Search filter
     if (filters.search) {
@@ -72,17 +72,35 @@ export default function ActiveFiltersBar({
           label: getCategoryName(category),
           type: 'category',
           onRemove: () => {
-            const newCategories = filters.categories.filter(cat => cat !== category);
-            onFilterChange('categories', newCategories);
+            // Removing category debug removed
+            onFilterChange('categories', category);
+          }
+        });
+      });
+    }
+
+    // Brands
+    if (filters.brands && (filters.brands as string[]).length > 0) {
+      (filters.brands as string[]).forEach((brand, index) => {
+        chips.push({
+          id: `brand-${index}`,
+          label: brand,
+          type: 'brand',
+          onRemove: () => {
+            // Removing brand debug removed
+            onFilterChange('brands', brand);
           }
         });
       });
     }
 
     // Price range
-    if ((filters.minPrice && filters.minPrice > 0) || (filters.maxPrice && filters.maxPrice > 0 && filters.maxPrice < 10000)) {
-      const minPrice = filters.minPrice || 0;
-      const maxPrice = filters.maxPrice || '∞';
+    const minPriceNum = typeof filters.minPrice === 'number' ? filters.minPrice : Number(filters.minPrice) || 0;
+    const maxPriceNum = typeof filters.maxPrice === 'number' ? filters.maxPrice : Number(filters.maxPrice) || 0;
+    
+    if ((minPriceNum > 0) || (maxPriceNum > 0 && maxPriceNum < 10000)) {
+      const minPrice = minPriceNum > 0 ? minPriceNum : 0;
+      const maxPrice = maxPriceNum > 0 ? maxPriceNum : '∞';
       chips.push({
         id: 'price',
         label: `${minPrice} - ${maxPrice} zł`,
@@ -108,16 +126,15 @@ export default function ActiveFiltersBar({
     // Dynamic attributes (pa_*)
     Object.keys(filters).forEach(key => {
       if (key.startsWith('pa_') && Array.isArray(filters[key]) && filters[key].length > 0) {
-        console.log('🔍 Processing attribute:', key, filters[key]);
+        // Processing attribute debug removed
         filters[key].forEach((value: string, index: number) => {
           chips.push({
             id: `${key}-${index}`,
             label: value,
             type: 'attribute',
             onRemove: () => {
-              console.log('🔍 Removing attribute value:', { key, value, currentValues: filters[key] });
+              // Removing attribute value debug removed
               const newValues = filters[key].filter((v: string) => v !== value);
-              console.log('🔍 New values after removal:', newValues);
               onFilterChange(key, newValues);
             }
           });
@@ -125,7 +142,7 @@ export default function ActiveFiltersBar({
       }
     });
 
-    console.log('🔍 ActiveFiltersBar - Generated chips:', chips);
+    // ActiveFiltersBar generated chips debug removed
     return chips;
   };
 
@@ -156,7 +173,7 @@ export default function ActiveFiltersBar({
           {/* Filter chips - right side */}
           <div className="flex flex-wrap gap-1.5 min-w-0 flex-1">
             <AnimatePresence mode="popLayout">
-              {filterChips.filter(chip => chip.label && chip.label.trim()).map((chip, index) => (
+              {filterChips.filter(chip => chip.label && typeof chip.label === 'string' && chip.label.trim()).map((chip, index) => (
                 <motion.div
                   key={chip.id}
                   layout
@@ -203,7 +220,7 @@ export default function ActiveFiltersBar({
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <div className="flex flex-wrap gap-1.5 min-w-0">
               <AnimatePresence mode="popLayout">
-                {filterChips.filter(chip => chip.label && chip.label.trim()).map((chip, index) => (
+                {filterChips.filter(chip => chip.label && typeof chip.label === 'string' && chip.label.trim()).map((chip, index) => (
                   <motion.div
                     key={chip.id}
                     layout

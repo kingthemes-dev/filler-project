@@ -67,7 +67,7 @@ function CheckoutPageInner() {
   const { items, total, itemCount, clearCart } = useCartStore();
   
   // Debug total value
-  console.log('🔍 Checkout total debug:', { total, itemCount, items: items.length });
+  // Checkout total debug removed
   const searchParams = useSearchParams();
   const { user, isAuthenticated, fetchUserProfile } = useAuthStore();
   const [currentStep, setCurrentStep] = useState(1);
@@ -166,10 +166,7 @@ function CheckoutPageInner() {
 
   // Load shipping methods
   const loadShippingMethods = async () => {
-    console.log('🚚 Loading shipping methods...', { 
-      country: form.shippingCountry, 
-      city: form.shippingCity 
-    });
+    // Loading shipping methods debug removed
     setIsLoadingShipping(true);
     try {
       const methods = await wooCommerceService.getShippingMethods(
@@ -178,7 +175,7 @@ function CheckoutPageInner() {
         form.shippingCity,
         form.shippingPostcode
       );
-      console.log('🚚 Shipping methods loaded:', methods);
+      // Shipping methods loaded debug removed
       if (methods && methods.methods) {
         setShippingMethods(methods.methods);
       } else if (Array.isArray(methods)) {
@@ -187,13 +184,13 @@ function CheckoutPageInner() {
       
       // Auto-select first shipping method for quick payment
       const methodsArray = methods && methods.methods ? methods.methods : (Array.isArray(methods) ? methods : []);
-      console.log('🚚 Available shipping methods:', methodsArray);
+      // Available shipping methods debug removed
       
       // Auto-select first shipping method if available and no method is selected
       if (methodsArray.length > 0 && !form.shippingMethod) {
         const firstMethod = methodsArray[0];
         setForm(prev => ({ ...prev, shippingMethod: firstMethod.method_id }));
-        console.log('🚚 Auto-selected first shipping method:', firstMethod.method_id);
+        // Auto-selected first shipping method debug removed
       }
     } catch (error) {
       console.error('Error loading shipping methods:', error);
@@ -279,14 +276,10 @@ function CheckoutPageInner() {
         !user.billing.phone ||
         Object.values(user.billing).every(value => !value || value === 'PL');
       
-      console.log('🔍 Checkout: Checking billing data:', { 
-        billing: user.billing, 
-        hasEmptyBilling,
-        shouldFetch: hasEmptyBilling 
-      });
+      // Checkout: Checking billing data debug removed
       
       if (hasEmptyBilling) {
-        console.log('🔄 Checkout: User data incomplete, fetching profile...');
+        // Checkout: User data incomplete debug removed
         fetchUserProfile();
       }
     }
@@ -294,7 +287,7 @@ function CheckoutPageInner() {
 
   // Prefill from authenticated user profile
   useEffect(() => {
-    console.log('🔍 Checkout useEffect - auth check:', { isAuthenticated, user: !!user });
+    // Checkout useEffect - auth check debug removed
     
     // Add small delay to ensure auth store is fully loaded
     const timer = setTimeout(() => {
@@ -302,7 +295,7 @@ function CheckoutPageInner() {
     const u: any = user;
     const billing = u.billing || {};
     const shipping = u.shipping || {};
-    console.log('🔍 Auto-filling form with user data:', { u, billing, shipping });
+      // Auto-filling form with user data debug removed
 
     setForm(prev => ({
       ...prev,
@@ -332,7 +325,7 @@ function CheckoutPageInner() {
 
   // Auto-fill form after successful registration
   const handleRegistrationSuccess = (userData: any) => {
-    console.log('🎉 Registration successful, auto-filling checkout form:', userData);
+        // Registration successful debug removed
     setForm(prev => ({
       ...prev,
       firstName: userData.first_name || userData.firstName || prev.firstName,
@@ -384,12 +377,7 @@ function CheckoutPageInner() {
         
         // Check minimum amount if specified - compare netto with netto
         const nettoTotal = total / 1.23; // Convert total (with VAT) to netto
-        console.log('🔍 Debug discount validation:', {
-          total_with_vat: total,
-          total_netto: nettoTotal,
-          minimum_amount_netto: coupon.minimum_amount,
-          comparison: nettoTotal < coupon.minimum_amount
-        });
+        // Debug discount validation removed
         
         if (coupon.minimum_amount && nettoTotal < coupon.minimum_amount) {
           alert(`❌ Minimalna wartość zamówienia dla tego kodu to ${formatPrice(coupon.minimum_amount)} (netto)`);
@@ -518,7 +506,7 @@ function CheckoutPageInner() {
     
     // Debug: show errors
     if (Object.keys(errors).length > 0) {
-      console.log('❌ Validation errors:', errors);
+      // Validation errors debug removed
       // Show first error to user
       const firstError = Object.values(errors)[0];
       alert(`❌ ${firstError}`);
@@ -647,7 +635,7 @@ function CheckoutPageInner() {
               }
             }),
           });
-          console.log('✅ User profile updated with checkout data');
+          // User profile updated debug removed
         } catch (error) {
           console.error('⚠️ Failed to update user profile:', error);
         }
@@ -684,13 +672,11 @@ function CheckoutPageInner() {
 
         // WYŚLIJ EMAIL BEZPOŚREDNIO
         try {
-          console.log('📧 Wysyłam email bezpośrednio dla zamówienia:', orderResult.order.id);
-          console.log('📧 orderResult:', orderResult);
+          // Wysyłam email bezpośrednio debug removed
           
           const orderId = orderResult.order.id;
           if (!orderId) {
-            console.log('⚠️ Brak ID zamówienia, nie można wysłać emaila');
-            console.log('⚠️ orderResult structure:', JSON.stringify(orderResult, null, 2));
+            // Brak ID zamówienia debug removed
             return;
           }
           
@@ -715,10 +701,10 @@ function CheckoutPageInner() {
           });
           
           if (emailResponse.ok) {
-            console.log('✅ Email wysłany pomyślnie!');
+            // Email wysłany pomyślnie debug removed
           } else {
             const errorText = await emailResponse.text();
-            console.log('⚠️ Błąd wysyłania emaila:', errorText);
+            // Błąd wysyłania emaila debug removed
           }
         } catch (error) {
           console.error('❌ Błąd email:', error);
@@ -748,23 +734,19 @@ function CheckoutPageInner() {
     const selectedMethod = shippingMethods.find(m => m.method_id === form.shippingMethod);
     if (!selectedMethod) return 0;
     
-    console.log('🚚 Calculating shipping cost:', {
-      method: selectedMethod.method_id,
-      cost_netto: selectedMethod.cost,
-      free_shipping_threshold: selectedMethod.free_shipping_threshold
-    });
+    // Calculating shipping cost debug removed
     
     // Check for free shipping conditions
     if (selectedMethod.free_shipping_threshold > 0) {
       // Convert total (with VAT) to netto for comparison with threshold
       const nettoTotal = total / 1.23;
       const shippingCost = nettoTotal >= selectedMethod.free_shipping_threshold ? 0 : selectedMethod.cost * 1.23;
-      console.log('🚚 Shipping cost with free shipping check:', shippingCost);
+      // Shipping cost with free shipping check debug removed
       return shippingCost;
     }
     
     const shippingCost = selectedMethod.cost * 1.23; // Add VAT to netto cost
-    console.log('🚚 Shipping cost (regular):', shippingCost);
+    // Shipping cost (regular) debug removed
     return shippingCost;
   };
   
@@ -1648,7 +1630,7 @@ function CheckoutPageInner() {
         onClose={() => setShowRegisterModal(false)}
         onSwitchToLogin={() => {
           // You could add login modal here if needed
-          console.log('Switch to login - not implemented yet');
+          // Switch to login debug removed
         }}
         onRegistrationSuccess={handleRegistrationSuccess}
       />

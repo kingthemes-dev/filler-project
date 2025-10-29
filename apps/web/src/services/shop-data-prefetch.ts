@@ -23,11 +23,13 @@ export interface ShopAttribute {
   id: number | string;
   name: string;
   slug: string;
+  count?: number; // Added count property
 }
 
 export interface ShopAttributes {
   brands: ShopAttribute[];
   capacities: ShopAttribute[];
+  zastosowanie: ShopAttribute[];
 }
 
 export interface ShopData {
@@ -149,7 +151,8 @@ class ShopDataPrefetchService {
       // Przetwórz atrybuty
       const attributes: ShopAttributes = {
         brands: attributesData.attributes?.marka?.terms || [],
-        capacities: attributesData.attributes?.pojemnosc?.terms || []
+        capacities: attributesData.attributes?.pojemnosc?.terms || [],
+        zastosowanie: attributesData.attributes?.zastosowanie?.terms || []
       };
 
       const shopData: ShopData = {
@@ -163,6 +166,7 @@ class ShopDataPrefetchService {
         categories: categories.length,
         brands: attributes.brands.length,
         capacities: attributes.capacities.length,
+        zastosowanie: attributes.zastosowanie.length,
         totalProducts
       });
 
@@ -254,6 +258,14 @@ class ShopDataPrefetchService {
           { id: 3, name: '1.5ml', slug: '1-5ml' },
           { id: 4, name: '2ml', slug: '2ml' },
           { id: 5, name: '3ml', slug: '3ml' }
+        ],
+        zastosowanie: [
+          { id: 1, name: 'Twarz', slug: 'twarz' },
+          { id: 2, name: 'Usta', slug: 'usta' },
+          { id: 3, name: 'Nos', slug: 'nos' },
+          { id: 4, name: 'Policzki', slug: 'policzki' },
+          { id: 5, name: 'Broda', slug: 'broda' },
+          { id: 6, name: 'Skronie', slug: 'skronie' }
         ]
       },
       totalProducts: 68,

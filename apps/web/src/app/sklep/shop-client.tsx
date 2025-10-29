@@ -17,6 +17,7 @@ import Pagination from '@/components/ui/pagination';
 import { WooProduct } from '@/types/woocommerce';
 import { useQuery } from '@tanstack/react-query';
 import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
+import { useDebouncedCallback } from 'use-debounce';
 
 interface FilterState {
   search: string;
@@ -48,43 +49,34 @@ interface ShopClientProps {
   };
 }
 
+// Hook dla contextual attributes na podstawie wybranych kategorii
+const useContextualAttributes = (selectedCategories: string[]) => {
+  return useQuery({
+    queryKey: ['shop', 'attributes', 'contextual', selectedCategories],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('endpoint', 'attributes');
+      if (selectedCategories.length > 0) {
+        // WordPress API oczekuje parametru 'category' (nie 'categories')
+        params.append('category', selectedCategories.join(','));
+      }
+      const res = await fetch(`/api/woocommerce?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    enabled: selectedCategories.length > 0,
+    staleTime: 2 * 60_000, // 2 minuty cache
+    retry: 2,
+  });
+};
+
 export default function ShopClient({ initialShopData }: ShopClientProps) {
-  console.log('🔍 ShopClient render - wooCommerceService:', !!wooCommerceService, typeof wooCommerceService);
-  console.log('🔍 ShopClient render - initialShopData:', initialShopData);
-  console.log('🔍 ShopClient render - products count:', initialShopData?.products?.length);
+  // Debug logs removed for cleaner console
   
-  // Sprawdź czy jesteśmy w przeglądarce
-  const [isClient, setIsClient] = useState(false);
-  
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
-  // Zawsze wywołuj hooks, ale używaj danych tylko gdy isClient = true
+  // Zawsze wywołuj hooks - dane są prefetchowane
   const { categories, mainCategories, hierarchicalCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
-  const { brands, capacities, isLoading: attributesLoading } = useShopAttributes();
+  const { brands, capacities, zastosowanie, isLoading: attributesLoading } = useShopAttributes();
   const { totalProducts: storeTotalProducts, initialize } = useShopDataStore();
-  
-  // Inicjalizuj store przy pierwszym renderze w przeglądarce
-  useEffect(() => {
-    if (isClient) {
-      initialize();
-    }
-  }, [initialize, isClient]);
-  
-  // Aktualizuj kategorie gdy store się załaduje i jesteśmy w przeglądarce
-  useEffect(() => {
-    if (isClient && categories.length > 0) {
-      setAllCategories(categories);
-    }
-  }, [categories, isClient]);
-  
-  // Aktualizuj total products gdy store się załaduje i jesteśmy w przeglądarce
-  useEffect(() => {
-    if (isClient && storeTotalProducts > 0) {
-      setTotalProducts(storeTotalProducts);
-    }
-  }, [storeTotalProducts, isClient]);
   
   const [products, setProducts] = useState<WooProduct[]>(initialShopData?.products || []);
   const [allCategories, setAllCategories] = useState<Category[]>(initialShopData?.categories || []);
@@ -110,7 +102,32 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     sortOrder: 'desc'
   });
   
-  console.log('🔍 ShopClient filters state:', filters);
+  // Contextual attributes na podstawie wybranych kategorii
+  const { data: contextualAttributes, isLoading: contextualLoading } = useContextualAttributes(filters.categories);
+  
+  // Debug contextual attributes
+  // Contextual attributes debug removed
+  
+  // Inicjalizuj store przy pierwszym renderze
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+  
+  // Aktualizuj kategorie gdy store się załaduje
+  useEffect(() => {
+    if (categories.length > 0) {
+      setAllCategories(categories);
+    }
+  }, [categories]);
+  
+  // Aktualizuj total products gdy store się załaduje
+  useEffect(() => {
+    if (storeTotalProducts > 0) {
+      setTotalProducts(storeTotalProducts);
+    }
+  }, [storeTotalProducts]);
+  
+  // Filters state debug removed
   const router = useRouter();
   const searchParams = useSearchParams();
   // Sync filters with URL query params (category, brands, dynamic attrs)
@@ -134,12 +151,38 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       }
     });
 
-    setFilters((prev) => ({
-      ...prev,
-      categories: urlCategories,
-      brands: urlBrands,
-      ...newAttrs,
-    }));
+    // URL useEffect debug removed
+
+    // If URL is empty (no query params), don't update filters
+    if (searchParams.toString() === '') {
+      // URL is empty, skipping filter update
+      return;
+    }
+
+    // Only update if URL params are different from current filters
+    setFilters((prev) => {
+      const currentCategories = prev.categories;
+      const currentBrands = prev.brands as string[];
+      
+      // Check if URL categories are different from current
+      const categoriesChanged = JSON.stringify(currentCategories.sort()) !== JSON.stringify(urlCategories.sort());
+      const brandsChanged = JSON.stringify(currentBrands.sort()) !== JSON.stringify(urlBrands.sort());
+      
+      // URL comparison debug removed
+      
+      if (categoriesChanged || brandsChanged || Object.keys(newAttrs).length > 0) {
+        // URL params changed, updating filters
+        return {
+          ...prev,
+          categories: urlCategories,
+          brands: urlBrands,
+          ...newAttrs,
+        };
+      }
+      
+      // URL params unchanged, keeping current filters
+      return prev; // No change needed
+    });
   }, [searchParams]);
 
   // Sync filters -> URL (shallow) whenever filters change (avoid loops)
@@ -185,13 +228,12 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   // React Query for products with SSR hydration
   const queryKey = ['shop','products',{ page: currentPage, perPage: productsPerPage, filters: JSON.stringify(filters) }];
-  console.log('🔍 shopQuery queryKey:', queryKey);
-  console.log('🔍 shopQuery filters:', filters);
+  // Shop query debug removed
   
   const shopQuery = useQuery({
     queryKey,
     queryFn: async () => {
-      console.log('🔍 shopQuery queryFn called with filters:', filters);
+      // Shop query function called
       const params = new URLSearchParams();
       params.append('endpoint', 'shop');
       params.append('page', currentPage.toString());
@@ -215,12 +257,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       
-      console.log('✅ Shop data received from WordPress:', { 
-        products: data.products?.length || 0, 
-        total: data.total, 
-        categories: data.categories?.length || 0, 
-        attributes: Object.keys(data.attributes || {}).length 
-      });
+      // Shop data received from WordPress
       
       return data;
     },
@@ -231,10 +268,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   // Update products and total from shopQuery data
   useEffect(() => {
-    console.log('🔍 useEffect shopQuery.data:', shopQuery.data);
+    // useEffect shopQuery.data debug removed
     if (shopQuery.data) {
-      console.log('🔍 Setting products:', shopQuery.data.products?.length);
-      console.log('🔍 Setting totalProducts:', shopQuery.data.total);
       setProducts(shopQuery.data.products || []);
       setTotalProducts(shopQuery.data.total || 0);
       setAllCategories(shopQuery.data.categories || []);
@@ -258,52 +293,64 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     setCurrentPage(1);
   }, [filters]);
 
+  // Debounced filter update dla lepszej wydajności - tylko dla produktów
+  const debouncedProductUpdate = useDebouncedCallback(
+    (newFilters: FilterState) => {
+  // Debounced product update triggered
+      // React Query automatycznie zaktualizuje produkty na podstawie zmiany queryKey
+    },
+    300 // 300ms debounce
+  );
+
   const handleFilterChange = (key: string, value: string | number | boolean) => {
-    console.log('🔧 handleFilterChange called:', { key, value, type: typeof value });
+    // handleFilterChange debug removed
+    
+    // Optimistic UI update - natychmiastowa zmiana w interfejsie
+    let newFilters: FilterState;
     
     if (key === 'categories' || key === 'brands') {
       // Handle array filters (checkboxes)
-      setFilters(prev => {
-        const currentArray = prev[key] as string[];
-        const newArray = currentArray.includes(value as string) 
-          ? currentArray.filter(item => item !== value)
-          : [...currentArray, value as string];
-        return { ...prev, [key]: newArray };
-      });
+      const currentArray = filters[key] as string[];
+      const newArray = currentArray.includes(value as string) 
+        ? currentArray.filter(item => item !== value)
+        : [...currentArray, value as string];
+      // Array filter change debug removed
+      newFilters = { ...filters, [key]: newArray };
     } else if (key.startsWith('pa_')) {
       // Handle dynamic attribute filters (comma-separated values)
-      setFilters(prev => {
-        // Handle both string (comma-separated) and array values
-        let attributeValues: string[];
-        if (typeof value === 'string') {
-          attributeValues = value.split(',').filter(v => v.trim());
-        } else if (Array.isArray(value)) {
-          attributeValues = value;
-        } else {
-          attributeValues = [String(value)];
-        }
-        
-        console.log('🔧 Attribute filter change:', { key, value, attributeValues });
-        // PRO: If no values, remove the attribute completely
-        if (attributeValues.length === 0) {
-          const newFilters = { ...prev };
-          delete newFilters[key];
-          return newFilters;
-        }
-        return { ...prev, [key]: attributeValues };
-      });
+      // Handle both string (comma-separated) and array values
+      let attributeValues: string[];
+      if (typeof value === 'string') {
+        attributeValues = value.split(',').filter(v => v.trim());
+      } else if (Array.isArray(value)) {
+        attributeValues = value;
+      } else {
+        attributeValues = [String(value)];
+      }
+      
+      // Attribute filter change debug removed
+      // PRO: If no values, remove the attribute completely
+      if (attributeValues.length === 0) {
+        newFilters = { ...filters };
+        delete newFilters[key];
+      } else {
+        newFilters = { ...filters, [key]: attributeValues };
+      }
     } else {
       // Handle other filters
-      setFilters(prev => {
-        const newFilters = { ...prev, [key]: value };
-        console.log('🔧 New filters state:', newFilters);
-        return newFilters;
-      });
+      newFilters = { ...filters, [key]: value };
+      // New filters state debug removed
     }
+    
+    // Natychmiastowa aktualizacja UI
+    setFilters(newFilters);
+    
+    // Debounced update dla produktów (React Query automatycznie zaktualizuje na podstawie queryKey)
+    debouncedProductUpdate(newFilters);
   };
 
   const handleCategoryChange = (categoryId: string, subcategoryId?: string) => {
-    console.log('🔧 handleCategoryChange called:', { categoryId, subcategoryId });
+    // handleCategoryChange debug removed
     setFilters(prev => {
       const currentCategories = prev.categories;
       
@@ -321,12 +368,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           newCategories.push(subcategoryId);
         }
         
-        console.log('🔧 Subcategory change:', { 
-          currentCategories, 
-          categoryId, 
-          subcategoryId, 
-          newCategories 
-        });
+        // Subcategory change debug removed
         
         return { ...prev, categories: newCategories };
       } else {
@@ -340,11 +382,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           ? currentCategories.filter(cat => cat !== categoryId)
           : [...currentCategories, categoryId];
         
-        console.log('🔧 Main category change:', { 
-          currentCategories, 
-          categoryId, 
-          newCategories 
-        });
+        // Main category change debug removed
         
         const nextState = { ...prev, categories: newCategories };
         analytics.track('filter_change', { key: 'categories', value: nextState.categories });
@@ -367,9 +405,19 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       sortOrder: 'desc' as const
     };
     
+    // Usuń wszystkie dynamiczne atrybuty (pa_*)
+    Object.keys(filters).forEach(key => {
+      if (key.startsWith('pa_')) {
+        delete clearedFilters[key];
+      }
+    });
+    
     setFilters(clearedFilters);
     analytics.track('filters_clear_all');
     setSearchInput(''); // PRO: Also clear search input
+    
+    // PRO: Clear URL parameters
+    router.replace('/sklep');
   };
 
   // Helpers: active filters and clearing single filter
@@ -444,12 +492,15 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             totalProducts={totalProducts}
             attributesLoading={attributesLoading}
             dynamicFiltersData={{
-              categories: isClient ? hierarchicalCategories : allCategories,
+              categories: hierarchicalCategories,
               attributes: {
-                marka: { terms: isClient ? brands : [] },
-                pojemnosc: { terms: isClient ? capacities : [] }
+                marka: { terms: brands },
+                pojemnosc: { terms: capacities },
+                zastosowanie: { terms: zastosowanie }
               }
             }}
+            contextualAttributes={contextualAttributes}
+            contextualLoading={contextualLoading}
             wooCommerceCategories={allCategories.map(c => ({ 
               id: c.id, 
               name: c.name, 

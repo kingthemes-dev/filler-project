@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Star, Plus, Minus, Droplets } from 'lucide-react';
+import { X, ShoppingCart, Star, Plus, Minus, Droplets, ChevronDown, ChevronUp } from 'lucide-react';
 import ModalCloseButton from './modal-close-button';
 import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     menu_order: number;
   }>>([]);
   const [selectedCapacity, setSelectedCapacity] = useState<string>('');
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const { addItem, openCart } = useCartStore();
 
@@ -46,7 +47,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     });
     
     const price = variation ? parseFloat(variation.price) : parseFloat(product?.price || '0');
-    console.log('🔍 Getting variation price for:', capacity, 'Price:', price);
+    // Getting variation price debug removed
     return price;
   };
 
@@ -75,11 +76,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
         try {
           // Dla produktów zmiennych zawsze próbujemy pobrać warianty
           if (product.type === 'variable') {
-            console.log('🔄 Quick View - Fetching variations for product:', product.id);
+            // Quick View - Fetching variations debug removed
             const variationsResponse = await wooCommerceService.getProductVariations(product.id);
-            console.log('🔄 Quick View - Variations response:', variationsResponse);
+            // Quick View - Variations response debug removed
             const fetchedVariations = Array.isArray(variationsResponse) ? variationsResponse : (variationsResponse.variations || []);
-            console.log('✅ Quick View - Variations fetched:', fetchedVariations);
+            // Quick View - Variations fetched debug removed
             setVariations(fetchedVariations);
           } else {
             setVariations([]);
@@ -146,7 +147,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
           finalId = selectedVariation.id; // Use variation ID for unique cart items
           finalName = selectedVariation.name; // Use variation name
           finalPrice = parseFloat(selectedVariation.price);
-          console.log('✅ Using variation:', selectedVariation.id, selectedVariation.name, selectedVariation.price);
+          // Using variation debug removed
         }
       }
       
@@ -215,7 +216,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     if (trimmed.includes('woocommerce-placeholder')) return trimmed;
     
     // Use original URL without any modifications - no resizing
-    console.log('🖼️ Quick View - Using original image URL:', trimmed);
+    // Quick View - Using original image URL debug removed
     
     // Clean query params that may downscale
     try {
@@ -239,9 +240,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   };
 
   const galleryImages = (() => {
-    console.log('🖼️ Quick View - Product images:', product.images);
-    console.log('🖼️ Quick View - Product images type:', typeof product.images, Array.isArray(product.images));
-    console.log('🖼️ Quick View - Product name:', product.name);
+    // Quick View - Product images debug removed
     
     // Handle both string array and object array formats
     let imageArray: any[] = [];
@@ -255,17 +254,17 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       }
     }
     
-    console.log('🖼️ Quick View - Processed images:', imageArray);
+    // Quick View - Processed images debug removed
     if (imageArray.length > 0) return imageArray;
     
     // Try to get image from product.images[0] if available
     if (product.images && product.images.length > 0 && product.images[0].src && !isWooPlaceholder(product.images[0].src)) {
-      console.log('🖼️ Quick View - Using product.images[0]:', product.images[0].src);
+      // Quick View - Using product.images[0] debug removed
       return [{ src: product.images[0].src, name: product.name, alt: product.name }];
     }
     
     // fallback – keep one placeholder to avoid empty UI
-    console.log('🖼️ Quick View - Using fallback placeholder');
+    // Quick View - Using fallback placeholder debug removed
     return [{ src: 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp', name: product.name, alt: product.name } as any];
   })();
 
@@ -483,7 +482,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                                   key={index}
                                   onClick={() => {
                                     setSelectedCapacity(capacity);
-                                    console.log('🔍 Selected capacity:', capacity, 'Price:', variation.price);
+                                    // Selected capacity debug removed
                                   }}
                                   className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                                     isSelected
@@ -572,12 +571,40 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       </div>
                     </div>
 
-                    {/* Short Description - moved under buttons */}
+                    {/* Rozwijany krótki opis */}
                     {product.short_description && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-700 text-sm leading-relaxed">
-                          {product.short_description.replace(/<[^>]*>/g, '')}
-                        </p>
+                      <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                        <button
+                          onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                          className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-gray-100 transition-colors duration-200"
+                        >
+                          <span className="text-sm font-medium text-gray-700">
+                            Opis produktu
+                          </span>
+                          {isDescriptionExpanded ? (
+                            <ChevronUp className="h-4 w-4 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                          )}
+                        </button>
+                        
+                        <AnimatePresence>
+                          {isDescriptionExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2, ease: 'easeInOut' }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-3 pb-3">
+                                <p className="text-gray-700 text-sm leading-relaxed">
+                                  {product.short_description.replace(/<[^>]*>/g, '')}
+                                </p>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     )}
                   </div>

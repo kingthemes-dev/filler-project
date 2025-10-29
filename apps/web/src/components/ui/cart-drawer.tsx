@@ -25,9 +25,7 @@ export default function CartDrawer() {
   // Loading states
   const [isUpdating, setIsUpdating] = useState(false);
   
-  console.log('🛒 CartDrawer render - isOpen:', isOpen);
-  console.log('🛒 CartDrawer render - items:', items);
-  console.log('🛒 CartDrawer render - itemCount:', itemCount);
+  // CartDrawer render debug removed
 
   // Analytics tracking
   useEffect(() => {

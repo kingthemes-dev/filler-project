@@ -12,6 +12,8 @@ interface DynamicAttributeFiltersProps {
   selectedFilters: { [key: string]: string[] | string | number | boolean };
   totalProducts: number;
   dynamicFiltersData?: { categories: any[]; attributes: any };
+  contextualAttributes?: any; // Contextual attributes na podstawie wybranych kategorii
+  contextualLoading?: boolean; // Loading state dla contextual attributes
   currentFilters?: { // Dodaj aktualne filtry
     categories: string[];
     search?: string;
@@ -27,6 +29,8 @@ export default function DynamicAttributeFilters({
   selectedFilters,
   totalProducts,
   dynamicFiltersData,
+  contextualAttributes,
+  contextualLoading,
   currentFilters = { categories: [] }
 }: DynamicAttributeFiltersProps) {
   const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(new Set());
@@ -35,19 +39,28 @@ export default function DynamicAttributeFilters({
   const attributesQuery = useQuery({
     queryKey: ['shop','attributes',{ categories: [], search: '', min: 0, max: 10000, selected: [] }],
     queryFn: async () => {
+      // attributesQuery queryFn called - fetching all attributes
       const params = new URLSearchParams();
       params.append('endpoint', 'attributes');
-      const res = await fetch(`/api/woocommerce?${params.toString()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/woocommerce?${params.toString()}`, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
+      const data = await res.json();
+      // attributesQuery data received
+      return data;
     },
-    staleTime: 10 * 60_000,
-    enabled: !dynamicFiltersData, // Tylko jeśli nie ma prefetchowanych danych
+    staleTime: 0, // Brak cache - zawsze pobierz świeże dane
+    enabled: currentFilters.categories.length === 0, // Włącz gdy nie ma wybranych kategorii
   });
 
-  // Przetwórz dane atrybutów z prefetchowanych danych lub React Query
+  // Przetwórz dane atrybutów z contextual, prefetchowanych danych lub React Query
   const attributes = useMemo(() => {
-    const attributesData = dynamicFiltersData?.attributes || attributesQuery.data?.attributes;
+    // Priorytet: contextual attributes (tylko gdy są kategorie) > React Query (gdy brak kategorii) > prefetchowane dane
+    const attributesData = (currentFilters.categories.length > 0 ? contextualAttributes?.attributes : null) || 
+                          (currentFilters.categories.length === 0 ? attributesQuery.data?.attributes : null) ||
+                          dynamicFiltersData?.attributes;
+    
+    // DynamicAttributeFilters attributes debug removed
+    
     if (!attributesData) return {};
     
     const attributesMap: { [key: string]: { name: string; slug: string; terms: any[] } } = {};
@@ -59,9 +72,10 @@ export default function DynamicAttributeFilters({
       attributesMap[attrSlug] = { name: cleanName, slug: attrSlug, terms: attrData.terms || [] };
     });
     return attributesMap;
-  }, [dynamicFiltersData?.attributes, attributesQuery.data?.attributes]);
+  }, [contextualAttributes?.attributes, currentFilters.categories.length, attributesQuery.data?.attributes, dynamicFiltersData?.attributes]);
 
-  const loading = !dynamicFiltersData && attributesQuery.isLoading;
+  // Usunięto główny loading state - dane są prefetchowane
+  // Zostaw tylko contextual loading dla dynamicznych aktualizacji
 
   const toggleAttribute = (attributeSlug: string) => {
     setExpandedAttributes(prev => {
@@ -76,15 +90,14 @@ export default function DynamicAttributeFilters({
   };
 
   const handleAttributeTermClick = (attributeSlug: string, termSlug: string) => {
-    console.log('🔧 handleAttributeTermClick called:', { attributeSlug, termSlug });
+    // handleAttributeTermClick debug removed
     const filterValue = selectedFilters[`pa_${attributeSlug}`];
     const currentTerms = Array.isArray(filterValue) ? filterValue : [];
     const newTerms = currentTerms.includes(termSlug)
       ? currentTerms.filter(t => t !== termSlug)
       : [...currentTerms, termSlug];
     
-    console.log('🔧 New terms:', newTerms);
-    console.log('🔧 Calling onFilterChange with:', `pa_${attributeSlug}`, newTerms.join(','));
+    // New terms debug removed
     onFilterChange(`pa_${attributeSlug}`, newTerms.join(','));
   };
 
@@ -99,30 +112,15 @@ export default function DynamicAttributeFilters({
       terms = filterValue.split(',').filter(v => v.trim());
     }
     
-    console.log('🔍 isTermSelected check:', { attributeSlug, termSlug, filterValue, terms, result: terms.includes(termSlug) });
+    // isTermSelected check debug removed
     return terms.includes(termSlug);
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(2)].map((_, i) => (
-          <div key={i} className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-            <div className="space-y-2">
-              <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  // Usunięto główny loading state - dane są prefetchowane
+  // Zostaw tylko contextual loading dla dynamicznych aktualizacji
 
   const attributeEntries = Object.entries(attributes);
-  console.log('🔧 DynamicAttributeFilters render - attributes:', attributes);
-  console.log('🔧 DynamicAttributeFilters render - attributeEntries:', attributeEntries);
+  // DynamicAttributeFilters render debug removed
 
   if (attributeEntries.length === 0) {
     return (
@@ -134,6 +132,14 @@ export default function DynamicAttributeFilters({
 
   return (
     <div className="space-y-4">
+      {/* Contextual loading indicator */}
+      {contextualLoading && currentFilters.categories.length > 0 && (
+        <div className="flex items-center justify-center py-2">
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+          <span className="ml-2 text-xs text-gray-500">Aktualizacja atrybutów...</span>
+        </div>
+      )}
+      
       {attributeEntries.map(([attributeSlug, attribute]) => (
         <div key={attributeSlug} className="border border-gray-100 rounded-lg overflow-hidden">
           {/* Nagłówek atrybutu */}

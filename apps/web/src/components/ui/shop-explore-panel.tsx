@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, User, Heart, ShoppingCart, ChevronRight, Sparkles, Filter } from 'lucide-react';
+import { X, User, Heart, ShoppingCart, ChevronRight, Sparkles, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -16,12 +16,13 @@ interface ShopExplorePanelProps {
 }
 
 export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProps) {
-  const [selectedCat, setSelectedCat] = useState<number | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   
   // Użyj prefetched data z store
   const { categories, mainCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
-  const { brandsForModal, isLoading: attributesLoading } = useShopAttributes();
+  const { brandsForModal, zastosowanie, isLoading: attributesLoading } = useShopAttributes();
   const { initialize, isLoading: storeLoading } = useShopDataStore();
 
   // Inicjalizuj store przy otwarciu modala
@@ -31,27 +32,41 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     }
   }, [open, initialize]);
 
-  // Ustaw pierwszą kategorię główną jako domyślną
-  useEffect(() => {
-    if (mainCategories.length > 0 && !selectedCat) {
-      const firstMainCategory = mainCategories.find(cat => cat.id !== 15); // Wyklucz kategorię o ID 15
-      if (firstMainCategory) {
-        setSelectedCat(firstMainCategory.id);
-      }
+  // Funkcje do zarządzania hover kategoriami z delay
+  const handleCategoryHover = (categoryId: string) => {
+    // Wyczyść poprzedni timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
     }
-  }, [mainCategories, selectedCat]);
+    
+    // Natychmiast ustaw nową kategorię jako hovered
+    setHoveredCategory(categoryId);
+  };
 
-  // Użyj danych z store zamiast lokalnych useMemo
-  const subCategories = useMemo(() => {
-    if (!selectedCat) return [];
-    return getSubCategories(selectedCat);
-  }, [selectedCat, getSubCategories]);
-  
-  const currentMain = useMemo(() => {
-    return mainCategories.find(c => c.id === selectedCat) || null;
-  }, [mainCategories, selectedCat]);
-  
+  const handleCategoryLeave = () => {
+    // Dodaj delay przed zamknięciem, żeby użytkownik miał czas na przejście między kategoriami
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredCategory(null);
+    }, 200); // Zwiększony delay do 200ms
+  };
 
+  const handleCategoryContainerLeave = () => {
+    // Dodaj większy delay dla całego kontenera kategorii
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredCategory(null);
+    }, 300); // Jeszcze większy delay dla kontenera
+  };
+
+  const isCategoryHovered = (categoryId: string) => hoveredCategory === categoryId;
+
+  // Cleanup timeout przy unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -66,14 +81,6 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
 
 
-  // Convert subcategories to dropdown options
-  const subcategoryOptions = subCategories.map(sub => ({
-    id: sub.id,
-    label: sub.name,
-    value: sub.slug,
-    count: sub.count,
-    icon: <ChevronRight className="w-4 h-4" />
-  }));
 
   // Convert brands to dropdown options - użyj danych z store
   const brandOptions = brandsForModal.map((brand) => ({
@@ -96,9 +103,11 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
-            onClick={() => {
-              onClose();
-              window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                onClose();
+                window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+              }
             }}
           />
           {/* Modal content */}
@@ -152,88 +161,132 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                     <p className="text-sm">Ładowanie kategorii...</p>
                   </div>
                 ) : (
-                  /* Pokaż główne kategorie bezpośrednio zamiast dropdown */
+                  /* Kategorie z systemem hover */
                   <div className="space-y-2">
-                    {mainCategories.map((category) => (
-                    <motion.div
-                      key={category.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedCat(category.id);
-                        }}
-                        className={`${category.id === 15 ? 'hidden' : ''} flex items-center justify-between w-full px-4 py-3 rounded-xl border text-sm transition-all duration-200 group cursor-pointer ${
-                          selectedCat === category.id
-                            ? 'border-blue-300 bg-blue-50/20 text-blue-900'
-                            : 'border-gray-200 bg-transparent hover:border-blue-300 hover:bg-blue-50/20 text-gray-900'
-                        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 group-hover:text-blue-900 text-left">
-                              {category.name}
+                    {mainCategories.map((category) => {
+                      if (category.id === 15) return null; // Wyklucz kategorię o ID 15
+                      
+                      const subCategories = getSubCategories(category.id);
+                      const hasSubcategories = subCategories.length > 0;
+                      const isHovered = isCategoryHovered(category.id.toString());
+                      
+                      return (
+                        <motion.div
+                          key={category.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="border border-gray-100 rounded-lg overflow-hidden"
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseEnter={() => handleCategoryHover(category.id.toString())}
+                          onMouseLeave={handleCategoryContainerLeave}
+                        >
+                          {/* Główna kategoria */}
+                          <div 
+                            className="bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              
+                              if (!hasSubcategories) {
+                                // Jeśli nie ma podkategorii, przekieruj bezpośrednio
+                                window.location.href = `/sklep?category=${encodeURIComponent(category.slug)}`;
+                                onClose();
+                                window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+                              }
+                            }}
+                          >
+                            <div className="flex items-center justify-between w-full p-3">
+                              <div className="flex items-center">
+                                <span className="text-sm font-semibold text-gray-800">{category.name}</span>
+                                {category.count !== undefined && (
+                                  <span className="ml-2 text-xs text-gray-500">({category.count})</span>
+                                )}
+                              </div>
+                              {hasSubcategories && (
+                                <ChevronRight className="w-4 h-4 text-gray-500" />
+                              )}
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {category.count !== undefined && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 group-hover:bg-blue-200">
-                              {category.count}
-                            </span>
-                          )}
-                          {selectedCat === category.id && (
-                            <ChevronRight className="w-4 h-4 text-blue-600" />
-                          )}
-                        </div>
-                      </button>
-                    </motion.div>
-                  ))}
+
+                          {/* Podkategorie - pokazuj po prawej stronie */}
+                          <AnimatePresence>
+                            {isHovered && hasSubcategories && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                className="overflow-hidden bg-white"
+                              >
+                                <div className="border-t border-gray-100">
+                                  {subCategories.map((subcategory, index) => (
+                                    <motion.div
+                                      key={subcategory.id}
+                                      initial={{ opacity: 0, x: -20 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: index * 0.05 }}
+                                    >
+                                      <Link
+                                        href={`/sklep?category=${encodeURIComponent(subcategory.slug)}`}
+                                        className="flex items-center p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onClose();
+                                          window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+                                        }}
+                                      >
+                                        <span className="text-sm font-medium text-gray-700">{subcategory.name}</span>
+                                        {subcategory.count && (
+                                          <span className="ml-auto text-xs text-gray-500">({subcategory.count})</span>
+                                        )}
+                                      </Link>
+                                    </motion.div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
-              {/* Podkategorie / Zastosowanie - Pokazuje podkategorie wybranej kategorii głównej */}
+              {/* Zastosowanie - Pokazuje atrybuty pa_zastosowanie dla wybranej kategorii */}
               <div className="md:col-span-4 space-y-4">
                 <div className="mb-4 pb-2 border-b border-gray-200">
                   <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Zastosowanie</h3>
                 </div>
                 
-                {!selectedCat ? (
+                {attributesLoading ? (
                   <div className="text-center py-8 text-gray-500">
                     <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-                      <ChevronRight className="w-6 h-6 text-gray-400" />
+                      <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
                     </div>
-                    <p className="text-sm">Wybierz kategorię główną</p>
-                    <p className="text-xs text-gray-400 mt-1">aby zobaczyć podkategorie</p>
+                    <p className="text-sm">Ładowanie zastosowań...</p>
                   </div>
-                ) : subCategories.length === 0 ? (
+                ) : zastosowanie.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
                       <Filter className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-sm">Brak podkategorii</p>
-                    <p className="text-xs text-gray-400 mt-1">dla kategorii "{currentMain?.name}"</p>
+                    <p className="text-sm">Brak zastosowań</p>
+                    <p className="text-xs text-gray-400 mt-1">dla wybranej kategorii</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 gap-2">
-                    {subCategories.map((sc) => (
+                  <div className="max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+                    <div className="grid grid-cols-1 gap-2">
+                      {zastosowanie.map((term, index) => (
                       <motion.div
-                        key={sc.id}
+                        key={term.id || term.slug || index}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ delay: index * 0.05 }}
                       >
                         <Link
-                          href={`/sklep?category=${encodeURIComponent(sc.slug)}`}
+                          href={`/sklep?pa_zastosowanie=${encodeURIComponent(term.slug || term.name)}`}
                           className="block px-4 py-3 rounded-xl border border-gray-200 text-sm bg-transparent hover:border-blue-300 hover:bg-blue-50/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -243,17 +296,18 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-gray-900 group-hover:text-blue-900">
-                              {sc.name}
+                              {term.name}
                             </span>
-                            {sc.count && (
+                            {term.count && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-800">
-                                {sc.count}
+                                {term.count}
                               </span>
                             )}
                           </div>
                         </Link>
                       </motion.div>
                     ))}
+                    </div>
                   </div>
                 )}
               </div>

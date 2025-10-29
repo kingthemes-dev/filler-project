@@ -34,7 +34,7 @@ export default function DynamicCategoryFilters({
 
   // Użyj prefetchowanych danych jeśli dostępne, w przeciwnym razie React Query
   const categories = dynamicFiltersData?.categories || dynamicFiltersQuery.data?.categories || [];
-  const loading = !dynamicFiltersData && dynamicFiltersQuery.isLoading;
+  // Usunięto główny loading state - dane są prefetchowane
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => {
@@ -55,17 +55,7 @@ export default function DynamicCategoryFilters({
   const isCategoryExpanded = (categoryId: string) => expandedCategories.has(categoryId);
   const isCategorySelected = (categorySlug: string) => selectedCategories.includes(categorySlug);
 
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-        </div>
-      </div>
-    );
-  }
+  // Usunięto główny loading state - dane są prefetchowane
 
   return (
     <div className="space-y-2">
@@ -130,7 +120,7 @@ export default function DynamicCategoryFilters({
         </div>
       ))}
 
-      {categories.length === 0 && !loading && (
+      {categories.length === 0 && (
         <div className="text-center py-4">
           <p className="text-sm text-gray-500">Brak kategorii do wyświetlenia</p>
         </div>
