@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { List } from 'react-window';
+import { FixedSizeList as List } from 'react-window';
 import { DynamicFilters } from '@/services/dynamic-categories';
 
 interface DynamicAttributeFiltersProps {
