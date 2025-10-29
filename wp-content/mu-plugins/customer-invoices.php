@@ -3,11 +3,36 @@
 if (file_exists(WP_CONTENT_DIR . '/mu-plugins/headless-config.php')) {
     require_once WP_CONTENT_DIR . '/mu-plugins/headless-config.php';
 }
-// wp-content/mu-plugins/customer-invoices.php
 
 /**
- * Custom REST API endpoints for customer invoices and tracking
+ * HPOS-Compatible Customer Invoices System
+ * Updated for High-Performance Order Storage compatibility
+ * 
+ * @package KingWooCommerce
+ * @version 2.0.0
+ * @author King Brand
  */
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// HPOS Compatibility Check
+if (!function_exists('wc_get_container')) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-error"><p><strong>Customer Invoices:</strong> WooCommerce HPOS is required for this plugin to work properly.</p></div>';
+    });
+    return;
+}
+
+// Check if HPOS is enabled
+$hpos_enabled = wc_get_container()->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
+if (!$hpos_enabled) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-warning"><p><strong>Customer Invoices:</strong> HPOS is not enabled. Please enable High-Performance Order Storage in WooCommerce settings.</p></div>';
+    });
+}
 
 // Hook into WooCommerce order completion to auto-generate invoices
 // FIXED: Faktura tylko przy completed status - Senior Level
@@ -19,34 +44,41 @@ add_action('woocommerce_order_status_completed', 'auto_generate_invoice_for_orde
 // REMOVED: PDF Invoices & Packing Slips control function
 // We don't need to control that plugin - we have our own invoice system
 
+/**
+ * HPOS-Compatible: Auto-generate invoice for completed orders
+ */
 function auto_generate_invoice_for_order($order_id) {
-    $order = wc_get_order($order_id);
-    
-    if (!$order) {
-        return;
-    }
-    
-    // Check if customer requested invoice (has NIP)
-    $billing_nip = $order->get_meta('_billing_nip');
-    $invoice_request = $order->get_meta('_invoice_request');
-    
-    // Auto-generate invoice if NIP is provided or invoice is requested
-    if (!empty($billing_nip) || $invoice_request === 'yes') {
-        // Create invoice record
-        $invoice_data = generate_invoice_data($order);
+    try {
+        // HPOS-compatible order retrieval
+        $order = wc_get_order($order_id);
         
-        // Store invoice data in order meta
-        $order->update_meta_data('_invoice_generated', 'yes');
-        $order->update_meta_data('_invoice_number', $invoice_data['invoice_number']);
-        $order->update_meta_data('_invoice_date', $invoice_data['invoice_date']);
-        $order->save();
+        if (!$order || !$order->get_id()) {
+            error_log("HPOS Customer Invoices: Order {$order_id} not found");
+            return;
+        }
         
-        // DISABLED: Custom invoice email sending - let PDF Invoices & Packing Slips handle it
-        // if ($invoice_request === 'yes') {
-        //     send_invoice_email($order, $invoice_data);
-        // }
+        // HPOS-compatible meta data access
+        $billing_nip = $order->get_meta('_billing_nip');
+        $invoice_request = $order->get_meta('_invoice_request');
         
-        error_log("Auto-generated invoice for order: " . $order_id);
+        // Auto-generate invoice if NIP is provided or invoice is requested
+        if (!empty($billing_nip) || $invoice_request === 'yes') {
+            // Generate invoice data with HPOS compatibility
+            $invoice_data = generate_invoice_data_hpos($order);
+            
+            // Store invoice data using HPOS-compatible methods
+            $order->update_meta_data('_invoice_generated', 'yes');
+            $order->update_meta_data('_invoice_number', $invoice_data['invoice_number']);
+            $order->update_meta_data('_invoice_date', $invoice_data['invoice_date']);
+            $order->update_meta_data('_hpos_invoice_version', '2.0');
+            $order->save();
+            
+            // Log successful invoice generation
+            error_log("HPOS Customer Invoices: Auto-generated invoice for order {$order_id} - Invoice #{$invoice_data['invoice_number']}");
+        }
+        
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error generating invoice for order {$order_id}: " . $e->getMessage());
     }
 }
 
@@ -236,156 +268,261 @@ function check_customer_permission($request) {
 }
 
 /**
- * Get customer invoices
+ * HPOS-Compatible: Get customer invoices
  */
 function get_customer_invoices($request) {
-    $customer_id = $request->get_param('customer_id');
-    
-    // Debug: Log invoice request
-    error_log("🔍 Customer invoices request - customer_id: " . $customer_id);
-
-    // Get orders for customer that have invoices generated
-    $orders = wc_get_orders([
-        'customer_id' => $customer_id,
-        'status' => ['completed', 'processing', 'shipped'],
-        'limit' => 50,
-        'orderby' => 'date',
-        'order' => 'DESC',
-        'meta_query' => [
-            [
-                'key' => '_invoice_generated',
-                'value' => 'yes',
-                'compare' => '='
-            ]
-        ]
-    ]);
-    
-    // Debug: Log found orders
-    error_log("🔍 Found orders with invoices: " . count($orders));
-    
-    $invoices = [];
-    
-    foreach ($orders as $order) {
-        $invoice_number = $order->get_meta('_invoice_number');
-        $invoice_date = $order->get_meta('_invoice_date');
+    try {
+        $customer_id = $request->get_param('customer_id');
         
-        $invoices[] = [
-            'id' => $order->get_id(),
-            'number' => $invoice_number ?: 'FV/' . date('Y') . '/' . str_pad($order->get_id(), 6, '0', STR_PAD_LEFT),
-            'date' => $invoice_date ?: $order->get_date_created()->date('Y-m-d'),
-            'total' => $order->get_total(),
-            'currency' => $order->get_currency(),
-            'status' => $order->get_status(),
-            'download_url' => kb_get_wcpdf_download_url($order->get_id()) ?: rest_url("custom/v1/invoice/{$order->get_id()}"),
-            'order_number' => $order->get_order_number(),
-            'billing_nip' => $order->get_meta('_billing_nip'),
-            'company' => $order->get_billing_company()
-        ];
+        // Debug: Log invoice request
+        error_log("HPOS Customer Invoices: Invoice request for customer {$customer_id}");
+
+        // HPOS-compatible order query
+        $orders = wc_get_orders([
+            'customer_id' => $customer_id,
+            'status' => ['completed', 'processing', 'shipped'],
+            'limit' => 50,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'meta_query' => [
+                [
+                    'key' => '_invoice_generated',
+                    'value' => 'yes',
+                    'compare' => '='
+                ]
+            ]
+        ]);
+        
+        // Debug: Log found orders
+        error_log("HPOS Customer Invoices: Found " . count($orders) . " orders with invoices for customer {$customer_id}");
+        
+        $invoices = [];
+        
+        foreach ($orders as $order) {
+            // HPOS-compatible meta data access
+            $invoice_number = $order->get_meta('_invoice_number');
+            $invoice_date = $order->get_meta('_invoice_date');
+            $billing_nip = $order->get_meta('_billing_nip');
+            
+            $invoices[] = [
+                'id' => $order->get_id(),
+                'number' => $invoice_number ?: 'FV/' . date('Y') . '/' . str_pad($order->get_id(), 6, '0', STR_PAD_LEFT),
+                'date' => $invoice_date ?: $order->get_date_created()->date('Y-m-d'),
+                'total' => $order->get_total(),
+                'currency' => $order->get_currency(),
+                'status' => $order->get_status(),
+                'download_url' => kb_get_wcpdf_download_url($order->get_id()) ?: rest_url("custom/v1/invoice/{$order->get_id()}"),
+                'order_number' => $order->get_order_number(),
+                'billing_nip' => $billing_nip,
+                'company' => $order->get_billing_company(),
+                'hpos_enabled' => true,
+                'hpos_version' => $order->get_meta('_hpos_invoice_version') ?: '1.0'
+            ];
+        }
+        
+        return new WP_REST_Response([
+            'success' => true,
+            'invoices' => $invoices,
+            'hpos_enabled' => true,
+            'total_count' => count($invoices)
+        ], 200);
+        
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error getting invoices for customer {$customer_id}: " . $e->getMessage());
+        
+        return new WP_REST_Response([
+            'success' => false,
+            'error' => 'Wystąpił błąd podczas pobierania faktur',
+            'hpos_enabled' => true
+        ], 500);
     }
-    
-    return new WP_REST_Response([
-        'success' => true,
-        'invoices' => $invoices
-    ], 200);
 }
 
 /**
- * Generate and return invoice PDF
+ * HPOS-Compatible: Generate and return invoice PDF
  */
 function get_invoice_pdf($request) {
-    $order_id = $request->get_param('id');
-    $order = wc_get_order($order_id);
-    
-    if (!$order) {
+    try {
+        $order_id = $request->get_param('id');
+        
+        // HPOS-compatible order retrieval
+        $order = wc_get_order($order_id);
+        
+        if (!$order || !$order->get_id()) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Zamówienie nie znalezione',
+                'hpos_enabled' => true
+            ], 404);
+        }
+        
+        // Generate HPOS-compatible invoice data
+        $invoice_data = generate_invoice_data_hpos($order);
+        
+        // Return JSON data with HPOS compatibility info
+        return new WP_REST_Response([
+            'success' => true,
+            'invoice' => $invoice_data,
+            'pdf_url' => rest_url("custom/v1/invoice/{$order_id}/pdf"),
+            'hpos_enabled' => true,
+            'hpos_version' => '2.0'
+        ], 200);
+        
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error generating PDF for order {$order_id}: " . $e->getMessage());
+        
         return new WP_REST_Response([
             'success' => false,
-            'error' => 'Zamówienie nie znalezione'
-        ], 404);
+            'error' => 'Wystąpił błąd podczas generowania faktury',
+            'hpos_enabled' => true
+        ], 500);
     }
-    
-    // Generate PDF invoice (simplified version)
-    $invoice_data = generate_invoice_data($order);
-    
-    // For now, return JSON data - in production generate actual PDF
-    return new WP_REST_Response([
-        'success' => true,
-        'invoice' => $invoice_data,
-        'pdf_url' => rest_url("custom/v1/invoice/{$order_id}/pdf") // Future PDF endpoint
-    ], 200);
 }
 
 /**
- * Get order tracking information
+ * HPOS-Compatible: Get order tracking information
  */
 function get_order_tracking($request) {
-    $order_id = $request->get_param('order_id');
-    $order = wc_get_order($order_id);
-    
-    if (!$order) {
+    try {
+        $order_id = $request->get_param('order_id');
+        
+        // HPOS-compatible order retrieval
+        $order = wc_get_order($order_id);
+        
+        if (!$order || !$order->get_id()) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Zamówienie nie znalezione',
+                'hpos_enabled' => true
+            ], 404);
+        }
+        
+        // HPOS-compatible meta data access
+        $tracking_number = $order->get_meta('_tracking_number');
+        $carrier = $order->get_meta('_tracking_carrier') ?: 'InPost';
+        $estimated_delivery = $order->get_meta('_estimated_delivery');
+        
+        // Get order status
+        $status = $order->get_status();
+        $status_info = get_order_status_info($status);
+        
+        $tracking_info = [
+            'order_id' => $order->get_id(),
+            'order_number' => $order->get_order_number(),
+            'tracking_number' => $tracking_number,
+            'carrier' => $carrier,
+            'status' => $status,
+            'status_label' => $status_info['label'],
+            'status_description' => $status_info['description'],
+            'estimated_delivery' => $estimated_delivery,
+            'tracking_url' => $tracking_number ? "https://inpost.pl/sledzenie-przesylek?number={$tracking_number}" : null,
+            'history' => get_tracking_history_hpos($order),
+            'hpos_enabled' => true,
+            'hpos_version' => '2.0'
+        ];
+        
+        return new WP_REST_Response([
+            'success' => true,
+            'tracking' => $tracking_info
+        ], 200);
+        
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error getting tracking for order {$order_id}: " . $e->getMessage());
+        
         return new WP_REST_Response([
             'success' => false,
-            'error' => 'Zamówienie nie znalezione'
-        ], 404);
+            'error' => 'Wystąpił błąd podczas pobierania informacji o śledzeniu',
+            'hpos_enabled' => true
+        ], 500);
     }
-    
-    // Get tracking number from order meta
-    $tracking_number = $order->get_meta('_tracking_number');
-    $carrier = $order->get_meta('_tracking_carrier') ?: 'InPost';
-    
-    // Get order status
-    $status = $order->get_status();
-    $status_info = get_order_status_info($status);
-    
-    $tracking_info = [
-        'order_id' => $order->get_id(),
-        'order_number' => $order->get_order_number(),
-        'tracking_number' => $tracking_number,
-        'carrier' => $carrier,
-        'status' => $status,
-        'status_label' => $status_info['label'],
-        'status_description' => $status_info['description'],
-        'estimated_delivery' => $order->get_meta('_estimated_delivery'),
-        'tracking_url' => $tracking_number ? "https://inpost.pl/sledzenie-przesylek?number={$tracking_number}" : null,
-        'history' => get_tracking_history($order)
-    ];
-    
-    return new WP_REST_Response([
-        'success' => true,
-        'tracking' => $tracking_info
-    ], 200);
 }
 
 /**
- * Generate invoice data
+ * HPOS-Compatible: Generate invoice data
  */
-function generate_invoice_data($order) {
-    return [
-        'invoice_number' => 'FV/' . date('Y') . '/' . str_pad($order->get_id(), 6, '0', STR_PAD_LEFT),
-        'invoice_date' => date('Y-m-d'),
-        'order_number' => $order->get_order_number(),
-        'order_date' => $order->get_date_created()->date('Y-m-d'),
-        'customer' => [
-            'name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-            'email' => $order->get_billing_email(),
-            'phone' => $order->get_billing_phone(),
-            'address' => $order->get_formatted_billing_address()
-        ],
-        'items' => [],
-        'totals' => [
-            'subtotal' => $order->get_subtotal(),
-            'shipping' => $order->get_shipping_total(),
-            'tax' => $order->get_total_tax(),
-            'total' => $order->get_total()
-        ],
-        'payment_method' => $order->get_payment_method_title(),
-        'company_info' => [
-            'name' => 'KingBrand Sp. z o.o.',
-            'address' => 'ul. Przykładowa 123, 00-001 Warszawa',
-            'nip' => '1234567890',
-            'phone' => '+48 123 456 789',
-            'email' => 'info@kingbrand.pl'
-        ]
-    ];
+function generate_invoice_data_hpos($order) {
+    try {
+        // HPOS-compatible order data access
+        $order_items = $order->get_items();
+        $items_data = [];
+        
+        foreach ($order_items as $item) {
+            $product = $item->get_product();
+            $items_data[] = [
+                'name' => $item->get_name(),
+                'quantity' => $item->get_quantity(),
+                'price' => $item->get_total(),
+                'product_id' => $item->get_product_id(),
+                'variation_id' => $item->get_variation_id(),
+                'sku' => $product ? $product->get_sku() : '',
+                'tax_class' => $item->get_tax_class()
+            ];
+        }
+        
+        return [
+            'invoice_number' => 'FV/' . date('Y') . '/' . str_pad($order->get_id(), 6, '0', STR_PAD_LEFT),
+            'invoice_date' => date('Y-m-d'),
+            'order_number' => $order->get_order_number(),
+            'order_date' => $order->get_date_created()->date('Y-m-d'),
+            'order_id' => $order->get_id(),
+            'customer' => [
+                'id' => $order->get_customer_id(),
+                'name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+                'email' => $order->get_billing_email(),
+                'phone' => $order->get_billing_phone(),
+                'address' => $order->get_formatted_billing_address(),
+                'company' => $order->get_billing_company(),
+                'nip' => $order->get_meta('_billing_nip')
+            ],
+            'items' => $items_data,
+            'totals' => [
+                'subtotal' => $order->get_subtotal(),
+                'shipping' => $order->get_shipping_total(),
+                'tax' => $order->get_total_tax(),
+                'total' => $order->get_total(),
+                'currency' => $order->get_currency()
+            ],
+            'payment_method' => $order->get_payment_method_title(),
+            'payment_method_id' => $order->get_payment_method(),
+            'shipping_method' => $order->get_shipping_method(),
+            'company_info' => [
+                'name' => 'KingBrand Sp. z o.o.',
+                'address' => 'ul. Przykładowa 123, 00-001 Warszawa',
+                'nip' => '1234567890',
+                'phone' => '+48 123 456 789',
+                'email' => 'info@kingbrand.pl'
+            ],
+            'hpos_enabled' => true,
+            'hpos_version' => '2.0',
+            'generated_at' => current_time('mysql')
+        ];
+        
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error generating invoice data for order {$order->get_id()}: " . $e->getMessage());
+        
+        // Return basic invoice data as fallback
+        return [
+            'invoice_number' => 'FV/' . date('Y') . '/' . str_pad($order->get_id(), 6, '0', STR_PAD_LEFT),
+            'invoice_date' => date('Y-m-d'),
+            'order_number' => $order->get_order_number(),
+            'order_date' => $order->get_date_created()->date('Y-m-d'),
+            'order_id' => $order->get_id(),
+            'customer' => [
+                'name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+                'email' => $order->get_billing_email(),
+                'address' => $order->get_formatted_billing_address()
+            ],
+            'items' => [],
+            'totals' => [
+                'total' => $order->get_total(),
+                'currency' => $order->get_currency()
+            ],
+            'payment_method' => $order->get_payment_method_title(),
+            'hpos_enabled' => true,
+            'hpos_version' => '2.0',
+            'error' => 'Partial data due to error'
+        ];
+    }
 }
 
 /**
@@ -422,35 +559,68 @@ function get_order_status_info($status) {
 }
 
 /**
- * Get tracking history
+ * HPOS-Compatible: Get tracking history
  */
-function get_tracking_history($order) {
-    // Mock tracking history - in production integrate with real carrier API
-    $history = [
-        [
-            'date' => $order->get_date_created()->date('Y-m-d H:i'),
-            'status' => 'Zamówienie przyjęte',
-            'description' => 'Zamówienie zostało przyjęte do realizacji'
-        ]
-    ];
-    
-    if ($order->get_status() !== 'pending') {
-        $history[] = [
-            'date' => $order->get_date_modified()->date('Y-m-d H:i'),
-            'status' => 'W przygotowaniu',
-            'description' => 'Zamówienie jest przygotowywane do wysyłki'
+function get_tracking_history_hpos($order) {
+    try {
+        // HPOS-compatible tracking history
+        $history = [
+            [
+                'date' => $order->get_date_created()->date('Y-m-d H:i'),
+                'status' => 'Zamówienie przyjęte',
+                'description' => 'Zamówienie zostało przyjęte do realizacji',
+                'hpos_enabled' => true
+            ]
+        ];
+        
+        if ($order->get_status() !== 'pending') {
+            $history[] = [
+                'date' => $order->get_date_modified()->date('Y-m-d H:i'),
+                'status' => 'W przygotowaniu',
+                'description' => 'Zamówienie jest przygotowywane do wysyłki',
+                'hpos_enabled' => true
+            ];
+        }
+        
+        if (in_array($order->get_status(), ['shipped', 'completed'])) {
+            $history[] = [
+                'date' => $order->get_date_modified()->date('Y-m-d H:i'),
+                'status' => 'Wysłane',
+                'description' => 'Zamówienie zostało przekazane do przewoźnika',
+                'hpos_enabled' => true
+            ];
+        }
+        
+        // Add HPOS-specific tracking events
+        $hpos_events = $order->get_meta('_hpos_tracking_events');
+        if (!empty($hpos_events) && is_array($hpos_events)) {
+            foreach ($hpos_events as $event) {
+                $history[] = [
+                    'date' => $event['date'],
+                    'status' => $event['status'],
+                    'description' => $event['description'],
+                    'hpos_enabled' => true,
+                    'source' => 'hpos'
+                ];
+            }
+        }
+        
+        return $history;
+        
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error getting tracking history for order {$order->get_id()}: " . $e->getMessage());
+        
+        // Return basic history as fallback
+        return [
+            [
+                'date' => $order->get_date_created()->date('Y-m-d H:i'),
+                'status' => 'Zamówienie przyjęte',
+                'description' => 'Zamówienie zostało przyjęte do realizacji',
+                'hpos_enabled' => true,
+                'error' => 'Partial data due to error'
+            ]
         ];
     }
-    
-    if (in_array($order->get_status(), ['shipped', 'completed'])) {
-        $history[] = [
-            'date' => $order->get_date_modified()->date('Y-m-d H:i'),
-            'status' => 'Wysłane',
-            'description' => 'Zamówienie zostało przekazane do przewoźnika'
-        ];
-    }
-    
-    return $history;
 }
 
 // Register customer profile update endpoints
@@ -689,144 +859,198 @@ add_action('rest_api_init', function () {
     });
 }, 15);
 
+/**
+ * HPOS-Compatible: Generate invoice PDF binary
+ */
 function get_invoice_pdf_binary($request) {
-    $order_id = $request->get_param('id');
-    $order = wc_get_order($order_id);
+    try {
+        $order_id = $request->get_param('id');
+        
+        // HPOS-compatible order retrieval
+        $order = wc_get_order($order_id);
 
-    if (!$order) {
+        if (!$order || !$order->get_id()) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Zamówienie nie znalezione',
+                'hpos_enabled' => true
+            ], 404);
+        }
+
+        // Generate HPOS-compatible invoice data
+        $invoice_data = generate_invoice_data_hpos($order);
+        
+        // Create HTML template for invoice
+        $html = generate_invoice_html_hpos($order, $invoice_data);
+        
+        // Convert HTML to PDF using simple method (can be enhanced with dompdf/mpdf later)
+        $pdf_content = generate_pdf_from_html($html);
+        $base64 = base64_encode($pdf_content);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'mime' => 'application/pdf',
+            'filename' => 'faktura_' . $order_id . '.pdf',
+            'base64' => $base64,
+            'hpos_enabled' => true,
+            'hpos_version' => '2.0'
+        ], 200);
+        
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error generating PDF binary for order {$order_id}: " . $e->getMessage());
+        
         return new WP_REST_Response([
             'success' => false,
-            'error' => 'Zamówienie nie znalezione'
-        ], 404);
+            'error' => 'Wystąpił błąd podczas generowania PDF',
+            'hpos_enabled' => true
+        ], 500);
     }
-
-    // Generate proper PDF invoice
-    $invoice_data = generate_invoice_data($order);
-    
-    // Create HTML template for invoice
-    $html = generate_invoice_html($order, $invoice_data);
-    
-    // Convert HTML to PDF using simple method (can be enhanced with dompdf/mpdf later)
-    $pdf_content = generate_pdf_from_html($html);
-    $base64 = base64_encode($pdf_content);
-
-    return new WP_REST_Response([
-        'success' => true,
-        'mime' => 'application/pdf',
-        'filename' => 'faktura_' . $order_id . '.pdf',
-        'base64' => $base64
-    ], 200);
 }
 
 /**
- * Generate HTML template for invoice
+ * HPOS-Compatible: Generate HTML template for invoice
  */
-function generate_invoice_html($order, $invoice_data) {
-    $order_items = $order->get_items();
-    $items_html = '';
-    
-    foreach ($order_items as $item) {
-        $product = $item->get_product();
-        $items_html .= '
-        <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">' . $item->get_name() . '</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . $item->get_quantity() . '</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">' . wc_price($item->get_total()) . '</td>
-        </tr>';
+function generate_invoice_html_hpos($order, $invoice_data) {
+    try {
+        // HPOS-compatible order items access
+        $order_items = $order->get_items();
+        $items_html = '';
+        
+        foreach ($order_items as $item) {
+            $product = $item->get_product();
+            $items_html .= '
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">' . esc_html($item->get_name()) . '</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">' . esc_html($item->get_quantity()) . '</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">' . wc_price($item->get_total()) . '</td>
+            </tr>';
+        }
+        
+        // HPOS-compatible customer data
+        $customer_name = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
+        $customer_company = $order->get_billing_company();
+        $customer_nip = $order->get_meta('_billing_nip');
+        
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Faktura ' . esc_html($invoice_data['invoice_number']) . '</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+                .company-info { float: left; width: 50%; }
+                .invoice-info { float: right; width: 50%; text-align: right; }
+                .clear { clear: both; }
+                .customer-info { margin: 20px 0; }
+                .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                .items-table th { background-color: #f5f5f5; font-weight: bold; }
+                .totals { float: right; width: 300px; margin-top: 20px; }
+                .total-row { display: flex; justify-content: space-between; padding: 5px 0; }
+                .total-final { font-weight: bold; font-size: 1.2em; border-top: 2px solid #000; padding-top: 10px; }
+                .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
+                .hpos-info { background-color: #f0f8ff; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>FAKTURA VAT</h1>
+                <h2>' . esc_html($invoice_data['invoice_number']) . '</h2>
+            </div>
+            
+            <div class="company-info">
+                <h3>' . esc_html($invoice_data['company_info']['name']) . '</h3>
+                <p>' . esc_html($invoice_data['company_info']['address']) . '</p>
+                <p>NIP: ' . esc_html($invoice_data['company_info']['nip']) . '</p>
+                <p>Tel: ' . esc_html($invoice_data['company_info']['phone']) . '</p>
+                <p>Email: ' . esc_html($invoice_data['company_info']['email']) . '</p>
+            </div>
+            
+            <div class="invoice-info">
+                <p><strong>Data wystawienia:</strong> ' . esc_html($invoice_data['invoice_date']) . '</p>
+                <p><strong>Data sprzedaży:</strong> ' . esc_html($invoice_data['order_date']) . '</p>
+                <p><strong>Numer zamówienia:</strong> ' . esc_html($invoice_data['order_number']) . '</p>
+            </div>
+            
+            <div class="clear"></div>
+            
+            <div class="customer-info">
+                <h3>Dane nabywcy:</h3>
+                <p><strong>' . esc_html($customer_name) . '</strong></p>
+                ' . (!empty($customer_company) ? '<p><strong>Firma:</strong> ' . esc_html($customer_company) . '</p>' : '') . '
+                ' . (!empty($customer_nip) ? '<p><strong>NIP:</strong> ' . esc_html($customer_nip) . '</p>' : '') . '
+                <p>' . str_replace('<br />', '<br>', $invoice_data['customer']['address']) . '</p>
+                <p>Email: ' . esc_html($invoice_data['customer']['email']) . '</p>
+                <p>Tel: ' . esc_html($invoice_data['customer']['phone']) . '</p>
+            </div>
+            
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Nazwa produktu</th>
+                        <th style="text-align: center;">Ilość</th>
+                        <th style="text-align: right;">Cena</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ' . $items_html . '
+                </tbody>
+            </table>
+            
+            <div class="totals">
+                <div class="total-row">
+                    <span>Wartość netto:</span>
+                    <span>' . wc_price($invoice_data['totals']['subtotal']) . '</span>
+                </div>
+                <div class="total-row">
+                    <span>Dostawa:</span>
+                    <span>' . wc_price($invoice_data['totals']['shipping']) . '</span>
+                </div>
+                <div class="total-row">
+                    <span>VAT:</span>
+                    <span>' . wc_price($invoice_data['totals']['tax']) . '</span>
+                </div>
+                <div class="total-row total-final">
+                    <span>RAZEM:</span>
+                    <span>' . wc_price($invoice_data['totals']['total']) . '</span>
+                </div>
+            </div>
+            
+            <div class="clear"></div>
+            
+            <div class="hpos-info">
+                <p><strong>HPOS Enabled:</strong> ' . ($invoice_data['hpos_enabled'] ? 'Tak' : 'Nie') . '</p>
+                <p><strong>HPOS Version:</strong> ' . esc_html($invoice_data['hpos_version']) . '</p>
+                <p><strong>Wygenerowano:</strong> ' . esc_html($invoice_data['generated_at']) . '</p>
+            </div>
+            
+            <div class="footer">
+                <p>Płatność: ' . esc_html($invoice_data['payment_method']) . '</p>
+                <p>Dziękujemy za zakupy w KingBrand!</p>
+            </div>
+        </body>
+        </html>';
+        
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error generating HTML for order {$order->get_id()}: " . $e->getMessage());
+        
+        // Return basic HTML as fallback
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Faktura - Błąd</title>
+        </head>
+        <body>
+            <h1>Błąd generowania faktury</h1>
+            <p>Wystąpił błąd podczas generowania faktury dla zamówienia ' . $order->get_id() . '</p>
+            <p>HPOS Enabled: ' . ($invoice_data['hpos_enabled'] ? 'Tak' : 'Nie') . '</p>
+        </body>
+        </html>';
     }
-    
-    return '
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Faktura ' . $invoice_data['invoice_number'] . '</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
-            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
-            .company-info { float: left; width: 50%; }
-            .invoice-info { float: right; width: 50%; text-align: right; }
-            .clear { clear: both; }
-            .customer-info { margin: 20px 0; }
-            .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .items-table th { background-color: #f5f5f5; font-weight: bold; }
-            .totals { float: right; width: 300px; margin-top: 20px; }
-            .total-row { display: flex; justify-content: space-between; padding: 5px 0; }
-            .total-final { font-weight: bold; font-size: 1.2em; border-top: 2px solid #000; padding-top: 10px; }
-            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>FAKTURA VAT</h1>
-            <h2>' . $invoice_data['invoice_number'] . '</h2>
-        </div>
-        
-        <div class="company-info">
-            <h3>' . $invoice_data['company_info']['name'] . '</h3>
-            <p>' . $invoice_data['company_info']['address'] . '</p>
-            <p>NIP: ' . $invoice_data['company_info']['nip'] . '</p>
-            <p>Tel: ' . $invoice_data['company_info']['phone'] . '</p>
-            <p>Email: ' . $invoice_data['company_info']['email'] . '</p>
-        </div>
-        
-        <div class="invoice-info">
-            <p><strong>Data wystawienia:</strong> ' . $invoice_data['invoice_date'] . '</p>
-            <p><strong>Data sprzedaży:</strong> ' . $invoice_data['order_date'] . '</p>
-            <p><strong>Numer zamówienia:</strong> ' . $invoice_data['order_number'] . '</p>
-        </div>
-        
-        <div class="clear"></div>
-        
-        <div class="customer-info">
-            <h3>Dane nabywcy:</h3>
-            <p><strong>' . $invoice_data['customer']['name'] . '</strong></p>
-            <p>' . str_replace('<br />', '<br>', $invoice_data['customer']['address']) . '</p>
-            <p>Email: ' . $invoice_data['customer']['email'] . '</p>
-            <p>Tel: ' . $invoice_data['customer']['phone'] . '</p>
-        </div>
-        
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th>Nazwa produktu</th>
-                    <th style="text-align: center;">Ilość</th>
-                    <th style="text-align: right;">Cena</th>
-                </tr>
-            </thead>
-            <tbody>
-                ' . $items_html . '
-            </tbody>
-        </table>
-        
-        <div class="totals">
-            <div class="total-row">
-                <span>Wartość netto:</span>
-                <span>' . wc_price($invoice_data['totals']['subtotal']) . '</span>
-            </div>
-            <div class="total-row">
-                <span>Dostawa:</span>
-                <span>' . wc_price($invoice_data['totals']['shipping']) . '</span>
-            </div>
-            <div class="total-row">
-                <span>VAT:</span>
-                <span>' . wc_price($invoice_data['totals']['tax']) . '</span>
-            </div>
-            <div class="total-row total-final">
-                <span>RAZEM:</span>
-                <span>' . wc_price($invoice_data['totals']['total']) . '</span>
-            </div>
-        </div>
-        
-        <div class="clear"></div>
-        
-        <div class="footer">
-            <p>Płatność: ' . $invoice_data['payment_method'] . '</p>
-            <p>Dziękujemy za zakupy w KingBrand!</p>
-        </div>
-    </body>
-    </html>';
 }
 
 /**

@@ -64,8 +64,10 @@ class DynamicCategoriesService {
   private cache: Map<string, any> = new Map();
 
   constructor() {
-    // Use absolute URL for server-side calls
-    this.baseUrl = typeof window === 'undefined' ? `${process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl'}/api/woocommerce` : '/api/woocommerce';
+    // Use our Next.js API routes instead of direct WordPress calls
+    this.baseUrl = typeof window === 'undefined' 
+      ? `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/woocommerce` 
+      : '/api/woocommerce';
   }
 
   /**
@@ -95,6 +97,7 @@ class DynamicCategoriesService {
       return categories;
     } catch (error) {
       console.error('Error fetching categories:', error);
+      // Fallback - zwróć pustą tablicę zamiast crashować
       return [];
     }
   }
@@ -111,7 +114,7 @@ class DynamicCategoriesService {
     }
     
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/attributes&per_page=100`);
+      const response = await fetch(`${this.baseUrl}?endpoint=attributes&per_page=100`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -126,6 +129,7 @@ class DynamicCategoriesService {
       return attributes;
     } catch (error) {
       console.error('Error fetching attributes:', error);
+      // Fallback - zwróć pustą tablicę zamiast crashować
       return [];
     }
   }

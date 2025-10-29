@@ -1,9 +1,10 @@
 /**
- * Session Management Service
- * Persistent sessions with Redis storage
+ * HPOS-Compatible Session Management Service
+ * Enhanced session handling with automatic cleanup
  */
 
 import { Redis } from 'ioredis';
+import { hposCache } from '@/lib/hpos-cache';
 
 interface SessionData {
   sessionId: string;
@@ -28,6 +29,15 @@ interface SessionData {
     city: string;
     timezone: string;
   };
+  // HPOS-specific fields
+  hposEnabled: boolean;
+  orderAttempts: number;
+  lastOrderAttempt?: Date;
+  sessionFlags: {
+    isEmpty: boolean;
+    needsCleanup: boolean;
+    autoCleanupEnabled: boolean;
+  };
 }
 
 interface CartSession {
@@ -40,9 +50,13 @@ interface CartSession {
 class SessionManager {
   private redis: Redis | null = null;
   private sessionExpiry = 30 * 24 * 60 * 60; // 30 days in seconds
+  private cleanupInterval: NodeJS.Timeout | null = null;
+  private emptySessionThreshold = 2 * 60 * 60; // 2 hours for empty sessions
+  private autoCleanupEnabled = true;
 
   constructor() {
     this.initializeRedis();
+    this.startAutoCleanup();
   }
 
   private initializeRedis(): void {
@@ -95,6 +109,91 @@ class SessionManager {
   }
 
   /**
+   * Start automatic cleanup of empty sessions
+   */
+  private startAutoCleanup(): void {
+    if (!this.autoCleanupEnabled) return;
+
+    // Run cleanup every hour
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupEmptySessions();
+    }, 60 * 60 * 1000);
+
+    console.log('✅ Session auto-cleanup started');
+  }
+
+  /**
+   * Stop automatic cleanup
+   */
+  public stopAutoCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+      console.log('🛑 Session auto-cleanup stopped');
+    }
+  }
+
+  /**
+   * Clean up empty sessions
+   */
+  private async cleanupEmptySessions(): Promise<void> {
+    try {
+      const now = Date.now();
+      let cleanedCount = 0;
+
+      if (this.redis) {
+        // Get all session keys
+        const sessionKeys = await this.redis.keys('session:*');
+        
+        for (const key of sessionKeys) {
+          try {
+            const sessionData = await this.redis.get(key);
+            if (sessionData) {
+              const session: SessionData = JSON.parse(sessionData);
+              
+              // Check if session is empty and old enough
+              if (this.shouldCleanupSession(session, now)) {
+                await this.redis.del(key);
+                cleanedCount++;
+                
+                // Also clean from HPOS cache
+                await hposCache.invalidateByTag(`session:${session.sessionId}`);
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Error processing session for cleanup:', error);
+          }
+        }
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`🧹 Cleaned up ${cleanedCount} empty sessions`);
+      }
+    } catch (error) {
+      console.error('❌ Error during session cleanup:', error);
+    }
+  }
+
+  /**
+   * Check if session should be cleaned up
+   */
+  private shouldCleanupSession(session: SessionData, now: number): boolean {
+    const timeSinceLastActivity = now - new Date(session.lastActivity).getTime();
+    const isEmpty = session.sessionFlags.isEmpty;
+    const needsCleanup = session.sessionFlags.needsCleanup;
+    
+    // Clean up if:
+    // 1. Session is marked as empty and old enough
+    // 2. Session is marked for cleanup
+    // 3. Session has been inactive for too long and is empty
+    return (
+      (isEmpty && timeSinceLastActivity > this.emptySessionThreshold * 1000) ||
+      needsCleanup ||
+      (isEmpty && timeSinceLastActivity > this.sessionExpiry * 1000)
+    );
+  }
+
+  /**
    * Create new session
    */
   async createSession(userId?: string): Promise<SessionData> {
@@ -116,9 +215,17 @@ class SessionManager {
       createdAt: now,
       expiresAt,
       deviceInfo: this.getDeviceInfo(),
+      // HPOS-specific fields
+      hposEnabled: true,
+      orderAttempts: 0,
+      sessionFlags: {
+        isEmpty: true,
+        needsCleanup: false,
+        autoCleanupEnabled: this.autoCleanupEnabled,
+      },
     };
 
-    // Store session in Redis
+    // Store session in Redis and HPOS cache
     if (this.redis) {
       await this.redis.setex(
         `session:${sessionId}`,
@@ -129,6 +236,9 @@ class SessionManager {
       // Fallback to localStorage
       localStorage.setItem(`session:${sessionId}`, JSON.stringify(sessionData));
     }
+
+    // Also store in HPOS cache
+    await hposCache.set('sessions', sessionId, sessionData, undefined, [`session:${sessionId}`]);
 
     console.log(`✅ Session created: ${sessionId}`);
     return sessionData;

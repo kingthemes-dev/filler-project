@@ -3,11 +3,13 @@
 if (file_exists(WP_CONTENT_DIR . '/mu-plugins/headless-config.php')) {
     require_once WP_CONTENT_DIR . '/mu-plugins/headless-config.php';
 }
+
 /**
- * King Email System - System powiadomień email
+ * HPOS-Compatible King Email System - System powiadomień email
+ * Updated for High-Performance Order Storage compatibility
  * 
  * @package KingWooCommerce
- * @version 1.0.0
+ * @version 2.0.0
  * @author King Brand
  */
 
@@ -16,12 +18,31 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// HPOS Compatibility Check
+if (!function_exists('wc_get_container')) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-error"><p><strong>King Email System:</strong> WooCommerce HPOS is required for this plugin to work properly.</p></div>';
+    });
+    return;
+}
+
+// Check if HPOS is enabled
+$hpos_enabled = wc_get_container()->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
+if (!$hpos_enabled) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-warning"><p><strong>King Email System:</strong> HPOS is not enabled. Please enable High-Performance Order Storage in WooCommerce settings.</p></div>';
+    });
+}
+
 class KingEmailSystem {
     
     private $email_templates = [];
     private $email_service = 'wordpress'; // 'wordpress', 'sendgrid', 'mailgun'
+    private $hpos_enabled = false;
+    private $hpos_version = '2.0';
     
     public function __construct() {
+        $this->hpos_enabled = wc_get_container()->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
         $this->init();
     }
     
@@ -138,36 +159,52 @@ class KingEmailSystem {
     }
     
     /**
-     * Handle order status change
+     * HPOS-Compatible: Handle order status change
      */
     public function handle_order_status_change($order_id, $old_status, $new_status, $order) {
-        // ADAPTER MODE: Only log and enrich WooCommerce default emails
-        // Do not send custom emails - let WooCommerce handle it
-        switch ($new_status) {
-            case 'processing':
-                // Order is being processed - log only
-                $this->log_email_sent($order_id, 'order_processing_adapter', $order->get_billing_email());
-                break;
-                
-            case 'completed':
-                // Order completed – log only
-                $this->log_email_sent($order_id, 'order_completed_adapter', $order->get_billing_email());
-                break;
-                
-            case 'shipped':
-                // Order shipped – log only
-                $this->log_email_sent($order_id, 'order_shipped_adapter', $order->get_billing_email());
-                break;
-                
-            case 'cancelled':
-                // Order cancelled - log only
-                $this->log_email_sent($order_id, 'order_cancelled_adapter', $order->get_billing_email());
-                break;
-                
-            case 'on-hold':
-                // Order on hold - log only
-                $this->log_email_sent($order_id, 'order_on_hold_adapter', $order->get_billing_email());
-                break;
+        try {
+            // HPOS-compatible order validation
+            if (!$order || !$order->get_id()) {
+                error_log("HPOS King Email System: Invalid order in status change hook");
+                return;
+            }
+            
+            // ADAPTER MODE: Only log and enrich WooCommerce default emails
+            // Do not send custom emails - let WooCommerce handle it
+            switch ($new_status) {
+                case 'processing':
+                    // Order is being processed - log only
+                    $this->log_email_sent($order_id, 'order_processing_adapter', $order->get_billing_email());
+                    $this->log_hpos_event($order_id, 'status_change', 'processing', $old_status);
+                    break;
+                    
+                case 'completed':
+                    // Order completed – log only
+                    $this->log_email_sent($order_id, 'order_completed_adapter', $order->get_billing_email());
+                    $this->log_hpos_event($order_id, 'status_change', 'completed', $old_status);
+                    break;
+                    
+                case 'shipped':
+                    // Order shipped – log only
+                    $this->log_email_sent($order_id, 'order_shipped_adapter', $order->get_billing_email());
+                    $this->log_hpos_event($order_id, 'status_change', 'shipped', $old_status);
+                    break;
+                    
+                case 'cancelled':
+                    // Order cancelled - log only
+                    $this->log_email_sent($order_id, 'order_cancelled_adapter', $order->get_billing_email());
+                    $this->log_hpos_event($order_id, 'status_change', 'cancelled', $old_status);
+                    break;
+                    
+                case 'on-hold':
+                    // Order on hold - log only
+                    $this->log_email_sent($order_id, 'order_on_hold_adapter', $order->get_billing_email());
+                    $this->log_hpos_event($order_id, 'status_change', 'on-hold', $old_status);
+                    break;
+            }
+            
+        } catch (Exception $e) {
+            error_log("HPOS King Email System: Error handling order status change for order {$order_id}: " . $e->getMessage());
         }
     }
     
@@ -385,22 +422,47 @@ class KingEmailSystem {
     }
 
     /**
-     * Inject extra order meta into standard Woo emails
+     * HPOS-Compatible: Inject extra order meta into standard Woo emails
      */
     public function inject_order_meta_into_email($order, $sent_to_admin, $plain_text) {
-        if (!$order instanceof WC_Order) { return; }
-        $nip = $order->get_meta('_billing_nip');
-        $company = $order->get_billing_company();
-        $tracking = $order->get_meta('_tracking_number');
-        $lines = [];
-        if (!empty($company)) { $lines[] = __('Firma', 'woocommerce') . ': ' . esc_html($company); }
-        if (!empty($nip)) { $lines[] = 'NIP: ' . esc_html($nip); }
-        if (!empty($tracking)) { $lines[] = __('Numer śledzenia', 'woocommerce') . ': ' . esc_html($tracking); }
-        if (empty($lines)) { return; }
-        if ($plain_text) {
-            echo "\n" . implode("\n", $lines) . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-        } else {
-            echo '<div style="margin-top:10px;color:#555">' . wp_kses_post(implode('<br>', $lines)) . '</div>';
+        try {
+            // HPOS-compatible order validation
+            if (!$order instanceof WC_Order || !$order->get_id()) {
+                return;
+            }
+            
+            // HPOS-compatible meta data access
+            $nip = $order->get_meta('_billing_nip');
+            $company = $order->get_billing_company();
+            $tracking = $order->get_meta('_tracking_number');
+            $hpos_version = $order->get_meta('_hpos_invoice_version');
+            
+            $lines = [];
+            if (!empty($company)) { 
+                $lines[] = __('Firma', 'woocommerce') . ': ' . esc_html($company); 
+            }
+            if (!empty($nip)) { 
+                $lines[] = 'NIP: ' . esc_html($nip); 
+            }
+            if (!empty($tracking)) { 
+                $lines[] = __('Numer śledzenia', 'woocommerce') . ': ' . esc_html($tracking); 
+            }
+            if (!empty($hpos_version)) {
+                $lines[] = 'HPOS Version: ' . esc_html($hpos_version);
+            }
+            
+            if (empty($lines)) { 
+                return; 
+            }
+            
+            if ($plain_text) {
+                echo "\n" . implode("\n", $lines) . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            } else {
+                echo '<div style="margin-top:10px;color:#555">' . wp_kses_post(implode('<br>', $lines)) . '</div>';
+            }
+            
+        } catch (Exception $e) {
+            error_log("HPOS King Email System: Error injecting order meta for order {$order->get_id()}: " . $e->getMessage());
         }
     }
 
@@ -415,49 +477,97 @@ class KingEmailSystem {
     }
 
     /**
-     * Add CTA links pointing to headless frontend (order details, account)
+     * HPOS-Compatible: Add CTA links pointing to headless frontend (order details, account)
      */
     public function inject_frontend_cta_links($order, $sent_to_admin, $plain_text, $email) {
-        if (!$order instanceof WC_Order) { return; }
-        $frontend = function_exists('headless_frontend_url') ? headless_frontend_url() : site_url();
-        $order_id = $order->get_id();
-        $order_url = rtrim($frontend, '/') . '/moje-zamowienia/' . $order_id;
-        $account_url = rtrim($frontend, '/') . '/moje-konto';
-        if ($plain_text) {
-            echo "\n" . __('Szczegóły zamówienia:', 'woocommerce') . ' ' . $order_url . "\n";
-            echo __('Twoje konto:', 'woocommerce') . ' ' . $account_url . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput
-        } else {
-            echo '<div style="margin-top:16px">'
-               . '<a href="' . esc_url($order_url) . '" style="display:inline-block;background:#000;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;margin-right:10px;">'
-               . esc_html__('Zobacz zamówienie', 'woocommerce') . '</a>'
-               . '<a href="' . esc_url($account_url) . '" style="display:inline-block;background:#111827;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">'
-               . esc_html__('Przejdź do konta', 'woocommerce') . '</a>'
-               . '</div>';
+        try {
+            // HPOS-compatible order validation
+            if (!$order instanceof WC_Order || !$order->get_id()) {
+                return;
+            }
+            
+            $frontend = function_exists('headless_frontend_url') ? headless_frontend_url() : site_url();
+            $order_id = $order->get_id();
+            $order_url = rtrim($frontend, '/') . '/moje-zamowienia/' . $order_id;
+            $account_url = rtrim($frontend, '/') . '/moje-konto';
+            
+            if ($plain_text) {
+                echo "\n" . __('Szczegóły zamówienia:', 'woocommerce') . ' ' . $order_url . "\n";
+                echo __('Twoje konto:', 'woocommerce') . ' ' . $account_url . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+            } else {
+                echo '<div style="margin-top:16px">'
+                   . '<a href="' . esc_url($order_url) . '" style="display:inline-block;background:#000;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;margin-right:10px;">'
+                   . esc_html__('Zobacz zamówienie', 'woocommerce') . '</a>'
+                   . '<a href="' . esc_url($account_url) . '" style="display:inline-block;background:#111827;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">'
+                   . esc_html__('Przejdź do konta', 'woocommerce') . '</a>'
+                   . '</div>';
+            }
+            
+        } catch (Exception $e) {
+            error_log("HPOS King Email System: Error injecting frontend CTA links for order {$order->get_id()}: " . $e->getMessage());
         }
     }
     
     /**
-     * Log email sent
+     * HPOS-Compatible: Log HPOS-specific events
+     */
+    private function log_hpos_event($order_id, $event_type, $new_value, $old_value = null) {
+        try {
+            $log_entry = [
+                'order_id' => $order_id,
+                'event_type' => $event_type,
+                'new_value' => $new_value,
+                'old_value' => $old_value,
+                'timestamp' => current_time('mysql'),
+                'hpos_enabled' => $this->hpos_enabled,
+                'hpos_version' => $this->hpos_version
+            ];
+            
+            // Store in WordPress options
+            $existing_logs = get_option('king_hpos_email_logs', []);
+            $existing_logs[] = $log_entry;
+            
+            // Keep only last 1000 logs
+            if (count($existing_logs) > 1000) {
+                $existing_logs = array_slice($existing_logs, -1000);
+            }
+            
+            update_option('king_hpos_email_logs', $existing_logs);
+            
+        } catch (Exception $e) {
+            error_log("HPOS King Email System: Error logging HPOS event for order {$order_id}: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * HPOS-Compatible: Log email sent
      */
     private function log_email_sent($order_id, $email_type, $recipient) {
-        $log_entry = [
-            'order_id' => $order_id,
-            'email_type' => $email_type,
-            'recipient' => $recipient,
-            'sent_at' => current_time('mysql'),
-            'status' => 'sent'
-        ];
-        
-        // Store in WordPress options (you could also use custom table)
-        $existing_logs = get_option('king_email_logs', []);
-        $existing_logs[] = $log_entry;
-        
-        // Keep only last 1000 logs
-        if (count($existing_logs) > 1000) {
-            $existing_logs = array_slice($existing_logs, -1000);
+        try {
+            $log_entry = [
+                'order_id' => $order_id,
+                'email_type' => $email_type,
+                'recipient' => $recipient,
+                'sent_at' => current_time('mysql'),
+                'status' => 'sent',
+                'hpos_enabled' => $this->hpos_enabled,
+                'hpos_version' => $this->hpos_version
+            ];
+            
+            // Store in WordPress options (you could also use custom table)
+            $existing_logs = get_option('king_email_logs', []);
+            $existing_logs[] = $log_entry;
+            
+            // Keep only last 1000 logs
+            if (count($existing_logs) > 1000) {
+                $existing_logs = array_slice($existing_logs, -1000);
+            }
+            
+            update_option('king_email_logs', $existing_logs);
+            
+        } catch (Exception $e) {
+            error_log("HPOS King Email System: Error logging email for order {$order_id}: " . $e->getMessage());
         }
-        
-        update_option('king_email_logs', $existing_logs);
     }
     
     /**
@@ -479,6 +589,19 @@ class KingEmailSystem {
         register_rest_route('king-email/v1', '/templates', [
             'methods' => 'GET',
             'callback' => [$this, 'get_email_templates'],
+            'permission_callback' => [$this, 'check_admin_permissions']
+        ]);
+        
+        // HPOS-specific endpoints
+        register_rest_route('king-email/v1', '/hpos-logs', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_hpos_logs'],
+            'permission_callback' => [$this, 'check_admin_permissions']
+        ]);
+        
+        register_rest_route('king-email/v1', '/hpos-status', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_hpos_status'],
             'permission_callback' => [$this, 'check_admin_permissions']
         ]);
         
@@ -759,6 +882,37 @@ class KingEmailSystem {
         return $this->email_templates;
     }
     
+    /**
+     * HPOS-Compatible: Get HPOS logs
+     */
+    public function get_hpos_logs() {
+        try {
+            $logs = get_option('king_hpos_email_logs', []);
+            return array_reverse($logs); // Latest first
+        } catch (Exception $e) {
+            error_log("HPOS King Email System: Error getting HPOS logs: " . $e->getMessage());
+            return new WP_Error('hpos_logs_error', 'Error retrieving HPOS logs', array('status' => 500));
+        }
+    }
+    
+    /**
+     * HPOS-Compatible: Get HPOS status
+     */
+    public function get_hpos_status() {
+        try {
+            return [
+                'hpos_enabled' => $this->hpos_enabled,
+                'hpos_version' => $this->hpos_version,
+                'email_system_version' => '2.0',
+                'compatibility' => 'HPOS-Compatible',
+                'last_check' => current_time('mysql')
+            ];
+        } catch (Exception $e) {
+            error_log("HPOS King Email System: Error getting HPOS status: " . $e->getMessage());
+            return new WP_Error('hpos_status_error', 'Error retrieving HPOS status', array('status' => 500));
+        }
+    }
+    
     // Default template methods
     private function get_order_confirmation_template($data) {
         return $this->get_basic_email_template('Potwierdzenie zamówienia', $data);
@@ -813,9 +967,14 @@ register_activation_hook(__FILE__, function() {
     // Create email logs table if needed
     // Set default options
     add_option('king_email_logs', []);
+    add_option('king_hpos_email_logs', []);
+    
+    // Log HPOS activation
+    error_log("HPOS King Email System: Plugin activated with HPOS compatibility");
 });
 
 // Deactivation hook
 register_deactivation_hook(__FILE__, function() {
     // Cleanup if needed
+    error_log("HPOS King Email System: Plugin deactivated");
 });

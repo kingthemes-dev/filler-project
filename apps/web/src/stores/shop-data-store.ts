@@ -249,7 +249,7 @@ export const useShopAttributes = () => {
   return {
     attributes: store.attributes,
     brands: store.attributes.brands,
-    brandsForModal: store.attributes.brands.slice(0, 36),
+    brandsForModal: store.attributes.brands.slice(0, 50), // Zwiększono z 36 do 50
     capacities: store.attributes.capacities,
     zastosowanie: store.attributes.zastosowanie,
     isLoading: store.isLoading

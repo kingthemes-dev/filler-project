@@ -16,12 +16,17 @@ import SimilarProducts from '@/components/ui/similar-products';
 import { WooProduct } from '@/types/woocommerce';
 import { useQuery } from '@tanstack/react-query';
 import Script from 'next/script';
+import { CLSOptimizer, ImageCLSOptimizer } from '@/components/ui/cls-optimizer';
+import { usePerformanceMonitoring } from '@/hooks/use-performance-optimization';
 
 type ProductClientProps = { slug: string };
 
 export default function ProductClient({ slug }: ProductClientProps) {
   const { addItem, openCart } = useCartStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
+  
+  // Performance monitoring
+  usePerformanceMonitoring();
 
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'shipping'>('description');
   const [selectedCapacity, setSelectedCapacity] = useState<string>('');
@@ -251,23 +256,46 @@ export default function ProductClient({ slug }: ProductClientProps) {
             {/* Images */}
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="space-y-4">
               {/* Main Image */}
-              <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm relative">
+              <CLSOptimizer minHeight={500} minWidth={500} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm relative">
                 {product.images?.[activeImageIndex]?.src ? (
-                  <Image src={product.images[activeImageIndex].src} alt={product.name} width={500} height={500} priority sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px" className="w-full h-full object-cover" />
+                  <ImageCLSOptimizer
+                    src={product.images[activeImageIndex].src}
+                    alt={product.name}
+                    width={500}
+                    height={500}
+                    className="w-full h-full object-cover"
+                    priority={true}
+                    placeholder="blur"
+                  />
                 ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center"><span className="text-gray-500">Brak obrazka</span></div>
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500">Brak obrazka</span>
+                  </div>
                 )}
-              </div>
+              </CLSOptimizer>
 
               {/* Thumbnails - only show if more than 1 image, positioned under main image */}
               {(product.images || []).length > 1 && (
                 <div className="flex gap-2 justify-center">
                   {(product.images || []).map((image: { src: string }, index: number) => (
-                    <button key={index} onClick={() => setActiveImageIndex(index)} className={`w-16 h-16 bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 ${activeImageIndex === index ? 'ring-2 ring-black ring-offset-1' : 'hover:shadow-md'}`}>
+                    <button 
+                      key={index} 
+                      onClick={() => setActiveImageIndex(index)} 
+                      className={`w-16 h-16 bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 ${activeImageIndex === index ? 'ring-2 ring-black ring-offset-1' : 'hover:shadow-md'}`}
+                    >
                       {image?.src ? (
-                        <Image src={image.src} alt={`${product.name} ${index + 1}`} width={64} height={64} className="w-full h-full object-cover" />
+                        <ImageCLSOptimizer
+                          src={image.src}
+                          alt={`${product.name} ${index + 1}`}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                          placeholder="blur"
+                        />
                       ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center"><span className="text-xs text-gray-500">?</span></div>
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-xs text-gray-500">?</span>
+                        </div>
                       )}
                     </button>
                   ))}

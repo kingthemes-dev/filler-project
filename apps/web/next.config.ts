@@ -23,7 +23,14 @@ const nextConfig: NextConfig = {
         // ppr: true, // Partial Prerendering - requires Next.js canary
       },
   // Fix for Node.js v18 compatibility - moved to top level
-  serverExternalPackages: ['ioredis', 'nodemailer'],
+  serverExternalPackages: [
+    'ioredis', 
+    'nodemailer',
+    'import-in-the-middle',
+    'require-in-the-middle',
+    '@opentelemetry/instrumentation',
+    '@sentry/node-core'
+  ],
   // Production optimizations
   ...(process.env.NODE_ENV === 'production' && {
     compress: true,
@@ -101,6 +108,8 @@ const nextConfig: NextConfig = {
         concatenateModules: true,
         splitChunks: {
           chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000,
           cacheGroups: {
             vendor: {
               test: /[\\/]node_modules[\\/]/,
@@ -127,10 +136,24 @@ const nextConfig: NextConfig = {
               chunks: 'all',
               priority: 7,
             },
+            // Separate chunk for performance monitoring
+            monitoring: {
+              test: /[\\/]node_modules[\\/](@sentry|@opentelemetry)/,
+              name: 'monitoring',
+              chunks: 'all',
+              priority: 9,
+            },
           },
         },
       };
     }
+    
+    // Performance optimizations for all environments
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      // Reduce bundle size by aliasing heavy dependencies
+      'lodash': 'lodash-es',
+    };
     
     return config;
   },

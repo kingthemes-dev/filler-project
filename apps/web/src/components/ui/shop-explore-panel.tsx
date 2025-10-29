@@ -22,7 +22,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
   
   // Użyj prefetched data z store
   const { categories, mainCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
-  const { brandsForModal, zastosowanie, isLoading: attributesLoading } = useShopAttributes();
+  const { brands, zastosowanie, isLoading: attributesLoading } = useShopAttributes(); // Użyj wszystkich marek zamiast brandsForModal
   const { initialize, isLoading: storeLoading } = useShopDataStore();
 
   // Inicjalizuj store przy otwarciu modala
@@ -82,8 +82,8 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
 
 
 
-  // Convert brands to dropdown options - użyj danych z store
-  const brandOptions = brandsForModal.map((brand) => ({
+  // Convert brands to dropdown options - użyj wszystkich marek zamiast ograniczonej listy
+  const brandOptions = brands.map((brand) => ({
     id: brand.id,
     label: brand.name,
     value: brand.slug

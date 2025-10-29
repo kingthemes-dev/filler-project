@@ -33,7 +33,7 @@ class KingWebhooks {
     }
     
     /**
-     * Register WooCommerce webhooks
+     * Register WooCommerce webhooks with HPOS compatibility
      */
     private function register_webhooks() {
         // Product webhooks
@@ -41,10 +41,12 @@ class KingWebhooks {
         $this->create_webhook('product.updated', 'Product Updated');
         $this->create_webhook('product.deleted', 'Product Deleted');
         
-        // Order webhooks
+        // Order webhooks with HPOS support
         $this->create_webhook('order.created', 'Order Created');
         $this->create_webhook('order.updated', 'Order Updated');
         $this->create_webhook('order.deleted', 'Order Deleted');
+        $this->create_webhook('order.status_changed', 'Order Status Changed');
+        $this->create_webhook('order.payment_complete', 'Order Payment Complete');
         
         // Customer webhooks
         $this->create_webhook('customer.created', 'Customer Created');
@@ -55,10 +57,14 @@ class KingWebhooks {
         $this->create_webhook('product_cat.created', 'Product Category Created');
         $this->create_webhook('product_cat.updated', 'Product Category Updated');
         $this->create_webhook('product_cat.deleted', 'Product Category Deleted');
+        
+        // HPOS-specific webhooks
+        $this->create_webhook('order.refunded', 'Order Refunded');
+        $this->create_webhook('order.note_added', 'Order Note Added');
     }
     
     /**
-     * Create webhook
+     * Create webhook with HPOS compatibility
      */
     private function create_webhook($topic, $name) {
         $webhook_id = 'king_' . str_replace('.', '_', $topic);
@@ -75,7 +81,7 @@ class KingWebhooks {
             return $existing_webhook[0]->ID;
         }
         
-        // Create webhook
+        // Create webhook with HPOS-specific settings
         $webhook_id = wp_insert_post(array(
             'post_type' => 'shop_webhook',
             'post_title' => $name,
@@ -87,6 +93,9 @@ class KingWebhooks {
                 '_webhook_status' => 'active',
                 '_webhook_version' => '2',
                 '_webhook_api_version' => '3',
+                '_webhook_hpos_enabled' => 'true', // HPOS compatibility flag
+                '_webhook_delivery_timeout' => 30, // Increased timeout for HPOS
+                '_webhook_retry_count' => 3, // Retry count for reliability
             ),
         ));
         

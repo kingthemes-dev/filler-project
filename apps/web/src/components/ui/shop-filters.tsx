@@ -5,7 +5,7 @@ import { analytics } from '@headless-woo/shared/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import DynamicCategoryFilters from './dynamic-category-filters';
+import HierarchicalCategoryFilters from './hierarchical-category-filters';
 import DynamicAttributeFilters from './dynamic-attribute-filters';
 
 interface Category {
@@ -438,9 +438,9 @@ export default function ShopFilters({
                   <span className="font-medium">{priceRange.max} zł</span>
                 </div>
                 <div className="relative h-5">
-                  <div className="absolute top-2 left-0 right-0 h-1.5 bg-gray-200 rounded-full"></div>
+                  <div className="absolute top-2 left-0 right-0 h-1.5 bg-gray-200 rounded-full z-0"></div>
                   <div 
-                    className="absolute top-2 h-1.5 bg-gray-600 rounded-full"
+                    className="absolute top-2 h-1.5 bg-gray-600 rounded-full z-0"
                     style={{
                       left: `${(priceRange.min / 10000) * 100}%`,
                       right: `${100 - (priceRange.max / 10000) * 100}%`
@@ -510,11 +510,11 @@ export default function ShopFilters({
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <DynamicCategoryFilters
-                        onCategoryChange={onCategoryChange}
+                      <HierarchicalCategoryFilters
+                        onFilterChange={onFilterChange}
                         selectedCategories={filters.categories}
                         totalProducts={totalProducts}
-                        dynamicFiltersData={dynamicFiltersData}
+                        wooCommerceCategories={wooCommerceCategories}
                       />
                     </motion.div>
                   )}
@@ -666,9 +666,9 @@ export default function ShopFilters({
                   <span className="font-medium">{priceRange.max} zł</span>
                 </div>
                 <div className="relative h-5">
-                  <div className="absolute top-2 left-0 right-0 h-1.5 bg-gray-200 rounded-full"></div>
+                  <div className="absolute top-2 left-0 right-0 h-1.5 bg-gray-200 rounded-full z-0"></div>
                   <div 
-                    className="absolute top-2 h-1.5 bg-gray-600 rounded-full"
+                    className="absolute top-2 h-1.5 bg-gray-600 rounded-full z-0"
                     style={{
                       left: `${(priceRange.min / 10000) * 100}%`,
                       right: `${100 - (priceRange.max / 10000) * 100}%`
@@ -738,11 +738,11 @@ export default function ShopFilters({
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <DynamicCategoryFilters
-                        onCategoryChange={onCategoryChange}
+                      <HierarchicalCategoryFilters
+                        onFilterChange={onFilterChange}
                         selectedCategories={filters.categories}
                         totalProducts={totalProducts}
-                        dynamicFiltersData={dynamicFiltersData}
+                        wooCommerceCategories={wooCommerceCategories}
                       />
                     </motion.div>
                   )}

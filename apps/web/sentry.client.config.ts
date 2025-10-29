@@ -1,6 +1,10 @@
 import * as Sentry from '@sentry/nextjs';
 
-Sentry.init({
+// Tymczasowo wyłącz Sentry dla lokalnego rozwoju
+if (process.env.NODE_ENV === 'development' && process.env.DISABLE_SENTRY === 'true') {
+  console.log('🔧 Sentry wyłączony dla lokalnego rozwoju');
+} else {
+  Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   
   // Adjust this value in production, or use tracesSampler for greater control
@@ -50,4 +54,5 @@ Sentry.init({
     return event;
   },
 });
+}
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 
 interface SubCategory {
   id: string;
@@ -239,34 +239,22 @@ export default function HierarchicalCategoryFilters({
       {/* Hierarchiczne kategorie */}
       {hierarchicalCategories.map((category) => (
         <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
-          {/* Główna kategoria */}
+          {/* Główna kategoria - tylko do rozwijania */}
           <div className="bg-gray-50">
-            <div className="flex items-center p-2 sm:p-3">
-              <button
-                onClick={() => toggleCategory(category.id)}
-                className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-200 transition-colors mr-2"
-              >
-                <motion.div
-                  animate={{ rotate: isCategoryExpanded(category.id) ? 90 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronRight className="w-4 h-4 text-gray-500" />
-                </motion.div>
-              </button>
-              
-              <label className="flex items-center flex-1 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="categories"
-                  value={category.slug}
-                  checked={isCategorySelected(category.slug)}
-                  onChange={() => handleCategoryClick(category.slug)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                />
-                <span className="ml-3 text-xs sm:text-sm font-semibold text-gray-800 text-left">{category.name}</span>
-                <span className="ml-auto text-xs text-gray-500">({category.count || 0})</span>
-              </label>
-            </div>
+            <button
+              onClick={() => toggleCategory(category.id)}
+              className="flex items-center justify-between w-full p-2 sm:p-3 hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center">
+                <span className="text-xs sm:text-sm font-semibold text-gray-800">{category.name}</span>
+                <span className="ml-2 text-xs text-gray-500">({category.count || 0})</span>
+              </div>
+              {isCategoryExpanded(category.id) ? (
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-gray-500" />
+              )}
+            </button>
           </div>
 
           {/* Podkategorie */}

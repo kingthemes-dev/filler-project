@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FixedSizeList as List } from 'react-window';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { dynamicCategoriesService, DynamicFilters } from '@/services/dynamic-categories';
+import { DynamicFilters } from '@/services/dynamic-categories';
 
 interface DynamicAttributeFiltersProps {
   onFilterChange: (key: string, value: string) => void;
