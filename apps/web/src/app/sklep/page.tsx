@@ -12,7 +12,7 @@ export async function generateMetadata({ searchParams }: { searchParams?: Promis
   const category = params?.category || '';
   
   // Use static metadata to avoid fetch issues in generateMetadata
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+  const baseUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 
     (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3000');
   
   try {
@@ -113,7 +113,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     });
     
     // Prefetch categories with error handling
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    const baseUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 
       (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3000');
     await qc.prefetchQuery({
       queryKey: ['shop','categories'],

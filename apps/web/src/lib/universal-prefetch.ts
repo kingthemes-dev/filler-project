@@ -258,7 +258,7 @@ export async function prefetchFiltersWithFallback(
           ...options.config,
           cache: { staleTime: 5 * 60_000, gcTime: 15 * 60_000 }, // Shorter cache times
           api: {
-            baseUrl: options.baseUrl || 'http://localhost:3000',
+            baseUrl: options.baseUrl || process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl',
             endpoints: {
               categories: '/wp-json/wc/v3/products/categories',
               attributes: '/wp-json/wc/v3/products/attributes',
