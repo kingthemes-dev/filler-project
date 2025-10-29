@@ -4,6 +4,9 @@ import { WooShippingMethod } from '@/types/woocommerce';
 import { sentryMetrics } from '@/utils/sentry-metrics';
 import { env } from '@/config/env';
 import { withCircuitBreaker, safeWordPressRequest } from '@/utils/circuit-breaker';
+import { hposApi } from '@/services/hpos-api';
+import { orderLimitHandler } from '@/services/order-limit-handler';
+import { hposPerformanceMonitor } from '@/services/hpos-performance-monitor';
 
 // Redis client (optional)
 let redis: any = null;
@@ -1224,6 +1227,122 @@ async function handleAttributesEndpoint(req: NextRequest) {
   }
 }
 
+// Handle products/categories endpoint
+async function handleProductsCategoriesEndpoint(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  
+  if (!WC_URL || !CK || !CS) {
+    return NextResponse.json(
+      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const categoriesUrl = `${WC_URL}/products/categories?consumer_key=${CK}&consumer_secret=${CS}&${searchParams.toString()}`;
+    
+    console.log('📂 Products categories endpoint - calling WooCommerce API:', categoriesUrl);
+    
+    const response = await fetch(categoriesUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Filler-Store/1.0'
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      console.error('❌ WooCommerce API error for categories:', response.status, response.statusText);
+      return NextResponse.json(
+        { error: 'Błąd pobierania kategorii', details: response.statusText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    
+    console.log('✅ Categories received from WooCommerce:', {
+      categories_count: Array.isArray(data) ? data.length : 0
+    });
+
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "Cache-Control": "public, max-age=300, s-maxage=600, stale-while-revalidate=900",
+        "X-Cache": "MISS",
+      },
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error in handleProductsCategoriesEndpoint:', error);
+    return NextResponse.json(
+      { error: 'Błąd serwera', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// Handle products/attributes endpoint
+async function handleProductsAttributesEndpoint(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  
+  if (!WC_URL || !CK || !CS) {
+    return NextResponse.json(
+      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const attributesUrl = `${WC_URL}/products/attributes?consumer_key=${CK}&consumer_secret=${CS}&${searchParams.toString()}`;
+    
+    console.log('🏷️ Products attributes endpoint - calling WooCommerce API:', attributesUrl);
+    
+    const response = await fetch(attributesUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Filler-Store/1.0'
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      console.error('❌ WooCommerce API error for attributes:', response.status, response.statusText);
+      return NextResponse.json(
+        { error: 'Błąd pobierania atrybutów', details: response.statusText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    
+    console.log('✅ Attributes received from WooCommerce:', {
+      attributes_count: Array.isArray(data) ? data.length : 0
+    });
+
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "Cache-Control": "public, max-age=300, s-maxage=600, stale-while-revalidate=900",
+        "X-Cache": "MISS",
+      },
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error in handleProductsAttributesEndpoint:', error);
+    return NextResponse.json(
+      { error: 'Błąd serwera', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 // Handle shop endpoint - PRO Architecture: WordPress robi całe filtrowanie
 async function handleShopEndpoint(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -1683,25 +1802,85 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // King Reviews API endpoint
-  if (endpoint === 'reviews') {
-    const productId = searchParams.get('product_id');
-    const url = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-reviews/v1/reviews${productId ? `?product_id=${productId}` : ''}`;
+  // HPOS-optimized orders endpoint with fallback
+  if (endpoint === 'orders' || endpoint.startsWith('orders/')) {
+    console.log('🔄 Orders endpoint:', endpoint);
     
     try {
-      const response = await fetch(url, {
-        headers: { 'Accept': 'application/json' },
-        cache: bypassCache ? 'no-store' : 'default'
-      });
-      
-      if (!response.ok) {
-        return NextResponse.json({ success: false, error: 'Reviews not found' }, { status: response.status });
+      // Handle single order request
+      if (endpoint.startsWith('orders/') && endpoint !== 'orders') {
+        const orderId = parseInt(endpoint.replace('orders/', ''));
+        if (isNaN(orderId)) {
+          return NextResponse.json({ error: 'Invalid order ID' }, { status: 400 });
+        }
+        
+        try {
+          const order = await hposApi.getOrder(orderId);
+          return NextResponse.json(order);
+        } catch (hposError) {
+          console.warn('⚠️ HPOS failed, trying standard WooCommerce API:', hposError);
+          // Fallback to standard WooCommerce API
+          const url = `${WC_URL}/orders/${orderId}?consumer_key=${CK}&consumer_secret=${CS}`;
+          const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`WooCommerce API error: ${response.status}`);
+          }
+          
+          const order = await response.json();
+          return NextResponse.json(order);
+        }
       }
       
-      const data = await response.json();
-      return NextResponse.json(data);
+      // Handle orders list request
+      const customerId = searchParams.get('customer');
+      const status = searchParams.get('status');
+      const page = parseInt(searchParams.get('page') || '1');
+      const perPage = parseInt(searchParams.get('per_page') || '10');
+      
+      try {
+        const orders = await hposApi.getOrders({
+          customer: customerId ? parseInt(customerId) : undefined,
+          status: status || undefined,
+          page,
+          per_page: perPage,
+          orderby: 'date',
+          order: 'desc',
+        });
+        
+        return NextResponse.json(orders);
+      } catch (hposError) {
+        console.warn('⚠️ HPOS failed, trying standard WooCommerce API:', hposError);
+        
+        // Fallback to standard WooCommerce API
+        const params = new URLSearchParams();
+        if (customerId) params.append('customer', customerId);
+        if (status) params.append('status', status);
+        params.append('page', page.toString());
+        params.append('per_page', perPage.toString());
+        params.append('orderby', 'date');
+        params.append('order', 'desc');
+        
+        const url = `${WC_URL}/orders?consumer_key=${CK}&consumer_secret=${CS}&${params}`;
+        const response = await fetch(url, {
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`WooCommerce API error: ${response.status} - ${await response.text()}`);
+        }
+        
+        const orders = await response.json();
+        return NextResponse.json(orders);
+      }
     } catch (error: any) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.error('❌ Orders endpoint error:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch orders', details: error.message },
+        { status: 500 }
+      );
     }
   }
   
@@ -1796,6 +1975,16 @@ export async function GET(req: NextRequest) {
   // Special handling for shop endpoint - use new King Shop API
   if (endpoint === "shop") {
     return handleShopEndpoint(req);
+  }
+  
+  // Special handling for products/categories endpoint
+  if (endpoint === "products/categories") {
+    return handleProductsCategoriesEndpoint(req);
+  }
+  
+  // Special handling for products/attributes endpoint
+  if (endpoint === "products/attributes") {
+    return handleProductsAttributesEndpoint(req);
   }
 
   
@@ -2065,10 +2254,104 @@ export async function POST(req: NextRequest) {
       return await handleCustomerInvoices(req);
     }
 
-    // Special handling for order creation
+    // HPOS-optimized order creation with limit handling
     if (endpoint === 'orders') {
-      console.log('🔄 Handling order creation request');
-      return await handleOrderCreation(body);
+      console.log('🔄 HPOS Order creation request');
+      const orderStartTime = Date.now();
+      
+      try {
+        // Extract customer ID and session ID for limit checking
+        const customerId = body.customer_id || body.billing?.customer_id;
+        const sessionId = req.headers.get('x-session-id') || 'anonymous';
+        
+        // Check order limits
+        if (customerId) {
+          const limitCheck = await orderLimitHandler.checkOrderLimit(customerId, sessionId);
+          
+          if (!limitCheck.allowed) {
+            console.warn('❌ Order limit exceeded', { customerId, reason: limitCheck.reason });
+            
+            // Record limit exceeded
+            hposPerformanceMonitor.recordOrderLimitExceeded();
+            
+            return NextResponse.json({
+              error: 'Przekroczono limit prób zamówienia',
+              message: limitCheck.reason,
+              blockedUntil: limitCheck.blockedUntil,
+              attemptsRemaining: limitCheck.attemptsRemaining,
+            }, { status: 429 });
+          }
+        }
+        
+        // Add HPOS-specific metadata
+        const hposOrderData = {
+          ...body,
+          meta_data: [
+            ...(body.meta_data || []),
+            {
+              key: '_hpos_enabled',
+              value: 'true'
+            },
+            {
+              key: '_created_via',
+              value: 'headless-api'
+            },
+            {
+              key: '_api_version',
+              value: 'hpos-v1'
+            },
+            {
+              key: '_session_id',
+              value: sessionId
+            }
+          ]
+        };
+        
+        const order = await hposApi.createOrder(hposOrderData);
+        
+        // Record successful order creation
+        if (customerId) {
+          await orderLimitHandler.recordOrderAttempt(customerId, sessionId, true);
+        }
+        
+        // Record performance metrics
+        hposPerformanceMonitor.recordOrderCreated(Date.now() - orderStartTime);
+        
+        sentryMetrics.recordWooCommerceOperation(
+          'orders/create',
+          Date.now(),
+          true,
+          { order_id: order.id.toString(), hpos_enabled: 'true' }
+        );
+        
+        return NextResponse.json(order);
+      } catch (error: any) {
+        console.error('❌ HPOS Order creation error:', error);
+        
+        // Record failed order creation
+        const customerId = body.customer_id || body.billing?.customer_id;
+        const sessionId = req.headers.get('x-session-id') || 'anonymous';
+        
+        if (customerId) {
+          await orderLimitHandler.recordOrderAttempt(customerId, sessionId, false);
+        }
+        
+        // Record failed order creation
+        hposPerformanceMonitor.recordOrderFailed();
+        
+        // Record failed order creation
+        sentryMetrics.recordWooCommerceOperation(
+          'orders/create',
+          Date.now(),
+          false,
+          { error: error.message, hpos_enabled: 'true' }
+        );
+        
+        return NextResponse.json(
+          { error: 'Failed to create order', details: error.message },
+          { status: 500 }
+        );
+      }
     }
 
     // Special handling for order tracking
