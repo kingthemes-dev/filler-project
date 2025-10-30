@@ -236,7 +236,6 @@ export default function Header() {
               onMouseEnter={() => setIsShopOpen(false)}
             >
               Strona główna
-              <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
             </Link>
             <div 
               className="relative overflow-visible shop-dropdown-container flex items-center gap-2"
@@ -255,7 +254,6 @@ export default function Header() {
               >
                 Sklep
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopOpen ? 'rotate-180' : ''}`} />
-                <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
               </button>
               <Link
                 href="/sklep"
@@ -266,7 +264,6 @@ export default function Header() {
                 }}
               >
                 Wszystkie produkty
-                <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
               </Link>
               
               {/* Shop Modal is now rendered inside ShopExplorePanel component */}
@@ -277,7 +274,6 @@ export default function Header() {
               onMouseEnter={() => setIsShopOpen(false)}
             >
               O nas
-              <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
             </a>
             <a 
               href="/kontakt" 
@@ -285,7 +281,6 @@ export default function Header() {
               onMouseEnter={() => setIsShopOpen(false)}
             >
               Kontakt
-              <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
             </a>
           </nav>
 
