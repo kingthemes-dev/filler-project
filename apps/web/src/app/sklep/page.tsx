@@ -16,17 +16,6 @@ export async function generateMetadata({ searchParams }: { searchParams?: Promis
     (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3000');
   
   try {
-    // Server-side initial data for immediate render (no blank gap)
-    const initialParams = new URLSearchParams();
-    initialParams.append('endpoint', 'shop');
-    initialParams.append('page', '1');
-    initialParams.append('per_page', '12');
-    if (defaultCategory) initialParams.append('category', defaultCategory);
-    const initialRes = await fetch(`/api/woocommerce?${initialParams.toString()}`, {
-      next: { revalidate: 30 },
-      signal: AbortSignal.timeout(10000)
-    });
-    const initialShopData = initialRes.ok ? await initialRes.json() : { products: [], total: 0, categories: [] };
     // Try to fetch categories from API with full URL
     let categoryData = null;
     try {
