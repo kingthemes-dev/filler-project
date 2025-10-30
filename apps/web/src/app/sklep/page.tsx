@@ -178,11 +178,16 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     if (defaultCategory) ssrParams.append('category', defaultCategory);
     ssrParams.append('orderby', initialFilters.sortBy);
     ssrParams.append('order', initialFilters.sortOrder);
-    const ssrRes = await fetch(`/api/woocommerce?${ssrParams.toString()}`, {
-      next: { revalidate: 30 },
-      signal: AbortSignal.timeout(10000)
-    });
-    const initialShopData = ssrRes.ok ? await ssrRes.json() : { products: [], total: 0, categories: [] };
+    let initialShopData: any = { products: [], total: 0, categories: [] };
+    try {
+      const ssrRes = await fetch(`/api/woocommerce?${ssrParams.toString()}`, {
+        next: { revalidate: 30 },
+        signal: AbortSignal.timeout(10000)
+      });
+      initialShopData = ssrRes.ok ? await ssrRes.json() : initialShopData;
+    } catch (_) {
+      // keep default empty data
+    }
 
     const dehydratedState = dehydrate(qc);
 
