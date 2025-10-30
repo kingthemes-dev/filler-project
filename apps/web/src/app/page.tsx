@@ -8,6 +8,7 @@ import { Metadata } from 'next';
 // Dynamic imports for below-the-fold components
 const KingProductTabsServer = dynamicImport(() => import('@/components/king-product-tabs-server'));
 const NewsletterForm = dynamicImport(() => import('@/components/ui/newsletter-form'));
+const TestFormUnderNewsletter = dynamicImport(() => import('@/components/ui/test-form'));
 
 // ISR - Incremental Static Regeneration
 export const revalidate = 300; // 5 minutes
@@ -123,6 +124,10 @@ export default async function HomePage() {
                 </h2>
                 <div className="max-w-lg mx-auto">
                   <NewsletterForm />
+                </div>
+                {/* Formularz testowy pod newsletterem */}
+                <div className="max-w-3xl mx-auto">
+                  <TestFormUnderNewsletter />
                 </div>
               </div>
             </div>
