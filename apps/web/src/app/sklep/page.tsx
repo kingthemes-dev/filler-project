@@ -201,7 +201,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
         signal: AbortSignal.timeout(10000)
       });
       initialShopData = ssrRes.ok ? await ssrRes.json() : initialShopData;
-    } catch (_) { /* ignore SSR fetch errors */ }
+    } catch (_) { /* keep default empty data */ }
 
     const dehydratedState = dehydrate(qc);
 
