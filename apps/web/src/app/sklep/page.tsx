@@ -176,6 +176,18 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       retryDelay: 500,
     });
 
+    // Server-side initial payload for instant render in client
+    const ssrParams = new URLSearchParams();
+    ssrParams.append('endpoint', 'shop');
+    ssrParams.append('page', '1');
+    ssrParams.append('per_page', '12');
+    if (defaultCategory) ssrParams.append('category', defaultCategory);
+    const ssrRes = await fetch(`/api/woocommerce?${ssrParams.toString()}`, {
+      next: { revalidate: 30 },
+      signal: AbortSignal.timeout(10000)
+    });
+    const initialShopData = ssrRes.ok ? await ssrRes.json() : { products: [], total: 0, categories: [] };
+
     const dehydratedState = dehydrate(qc);
 
     return (
