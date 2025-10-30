@@ -103,39 +103,44 @@ class ShopDataPrefetchService {
     console.log('🚀 Fetching shop data from API...');
     
     try {
-      // Pobierz wszystkie dane równolegle
-      const [categoriesResponse, attributesResponse, productsResponse] = await Promise.all([
-        // Kategorie produktów
-        fetch('/api/woocommerce?endpoint=products/categories&per_page=100', { 
-          cache: 'no-store' 
-        }),
-        
-        // Atrybuty (marki i pojemności)
-        fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-shop/v1/attributes`, { 
-          cache: 'no-store' 
-        }),
-        
-        // Liczba produktów
-        fetch('/api/woocommerce?endpoint=products&per_page=1', { 
-          cache: 'no-store' 
-        })
+      const isBrowser = typeof window !== 'undefined';
+      const base = isBrowser ? '' : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+      const makeUrl = (qs: string) => `${base}/api/woocommerce?${qs}`;
+
+      // Pobierz wszystkie dane równolegle (toleruj błędy)
+      const [categoriesResult, attributesResult, productsResult] = await Promise.allSettled([
+        fetch(makeUrl('endpoint=products/categories&per_page=100'), { cache: 'no-store' }),
+        fetch(makeUrl('endpoint=attributes'), { cache: 'no-store' }),
+        fetch(makeUrl('endpoint=products&per_page=1'), { cache: 'no-store' })
       ]);
 
-      // Sprawdź odpowiedzi
-      if (!categoriesResponse.ok) {
-        throw new Error(`Categories API error: ${categoriesResponse.status}`);
-      }
-      if (!attributesResponse.ok) {
-        throw new Error(`Attributes API error: ${attributesResponse.status}`);
-      }
-      if (!productsResponse.ok) {
-        throw new Error(`Products API error: ${productsResponse.status}`);
-      }
+      // Parsowanie z bezpiecznymi fallbackami (bez przerywania całego prefetchu)
+      let categoriesData: any = [];
+      try {
+        if (categoriesResult.status === 'fulfilled') {
+          const r = categoriesResult.value;
+          categoriesData = r.ok ? await r.json() : [];
+          if (!r.ok) console.warn('⚠️ Categories API error:', r.status);
+        }
+      } catch (_) { categoriesData = []; }
 
-      // Parsuj dane
-      const categoriesData = await categoriesResponse.json();
-      const attributesData = await attributesResponse.json();
-      const totalProducts = parseInt(productsResponse.headers.get('X-WP-Total') || '0');
+      let attributesData: any = {};
+      try {
+        if (attributesResult.status === 'fulfilled') {
+          const r = attributesResult.value;
+          attributesData = r.ok ? await r.json() : {};
+          if (!r.ok) console.warn('⚠️ Attributes API error:', r.status);
+        }
+      } catch (_) { attributesData = {}; }
+
+      let totalProducts = 0;
+      try {
+        if (productsResult.status === 'fulfilled') {
+          const r = productsResult.value;
+          totalProducts = r.ok ? parseInt(r.headers.get('X-WP-Total') || '0') : 0;
+          if (!r.ok) console.warn('⚠️ Products API error:', r.status);
+        }
+      } catch (_) { totalProducts = 0; }
 
       // Przetwórz kategorie
       const categories: ShopCategory[] = Array.isArray(categoriesData)

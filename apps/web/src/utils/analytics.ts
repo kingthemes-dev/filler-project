@@ -365,9 +365,15 @@ export class PerformanceMonitor {
     });
   }
 
+  private lastLogTs: number = 0;
   private recordMetric(name: string, value: number) {
     this.metrics.set(name, value);
-    logger.performance(name, value);
+    // Reduce console noise: log only when explicitly enabled or every 2s max
+    const now = Date.now();
+    if (process.env.NEXT_PUBLIC_PERF_LOGS === 'true' && (now - this.lastLogTs > 2000)) {
+      logger.performance(name, value);
+      this.lastLogTs = now;
+    }
   }
 
   getMetrics(): Record<string, number> {

@@ -250,12 +250,13 @@ export default function KingProductGrid({
       {products.length > 0 ? (
         <>
           <div className={`grid gap-4 lg:gap-6 ${viewMode === 'list' ? 'grid-cols-1' : gridColsClasses[gridCols]}`}>
-            {products.map((product) => (
+            {products.map((product, index) => (
               <KingProductCard
                 key={product.id}
                 product={product}
                 variant={variant}
                 showActions={true}
+                priority={index === 0}
               />
             ))}
           </div>

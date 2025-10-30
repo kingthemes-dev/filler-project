@@ -1,21 +1,22 @@
 // =========================================
 // Environment Variables
 // =========================================
+import { env } from '@/config/env';
+
 export const ENV = {
-  WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL || '',
-  GRAPHQL_URL: process.env.NEXT_PUBLIC_GRAPHQL_URL || '',
-  WC_API_URL: process.env.NEXT_PUBLIC_WC_URL || '', // SECURITY FIX: Use server-side env var
-  WOO_BASE_URL: process.env.WOO_BASE_URL || '',
-  // SECURITY FIX: Remove NEXT_PUBLIC_ prefixes for secrets - these should only be used server-side
-  WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY || '',
-  WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET || '',
-  CDN_URL: process.env.NEXT_PUBLIC_CDN_URL || '',
-  APP_ENV: process.env.NEXT_PUBLIC_APP_ENV || 'development',
-  ENABLE_PWA: process.env.NEXT_PUBLIC_ENABLE_PWA === 'true',
-  ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
-  GA_ID: process.env.NEXT_PUBLIC_GA_ID || '',
-  GTM_ID: process.env.NEXT_PUBLIC_GTM_ID || '',
-  RECAPTCHA_SITE_KEY: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
+  WORDPRESS_URL: env.NEXT_PUBLIC_WORDPRESS_URL,
+  GRAPHQL_URL: '',
+  WC_API_URL: env.NEXT_PUBLIC_WC_URL,
+  WOO_BASE_URL: '',
+  WC_CONSUMER_KEY: env.WC_CONSUMER_KEY,
+  WC_CONSUMER_SECRET: env.WC_CONSUMER_SECRET,
+  CDN_URL: '',
+  APP_ENV: env.NODE_ENV,
+  ENABLE_PWA: false,
+  ENABLE_ANALYTICS: !!(env.NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID || env.NEXT_PUBLIC_GTM_ID),
+  GA_ID: env.NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID || '',
+  GTM_ID: env.NEXT_PUBLIC_GTM_ID || '',
+  RECAPTCHA_SITE_KEY: '',
 } as const;
 
 // =========================================

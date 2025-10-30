@@ -14,7 +14,7 @@ import Image from 'next/image';
 
 export default function CartDrawer() {
   const { isOpen, closeCart, items, total, itemCount, removeItem, updateQuantity } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, fetchUserProfile } = useAuthStore();
   
   // Swipe gesture state
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -30,6 +30,10 @@ export default function CartDrawer() {
   // Analytics tracking
   useEffect(() => {
     if (isOpen) {
+      // Refresh minimal user profile once when cart opens (best-effort)
+      if (isAuthenticated) {
+        fetchUserProfile().catch(() => {/* noop */});
+      }
       analytics.track('cart_opened', { 
         itemCount, 
         totalValue: total,
@@ -364,8 +368,8 @@ export default function CartDrawer() {
                     </Link>
                   </div>
 
-                  {/* Bottom row - Quick Payment Options (only for authenticated users) */}
-                  {isAuthenticated ? (
+                  {/* Bottom row - Quick Payment Options (only for authenticated users with saved billing) */}
+                  {isAuthenticated && Boolean(user?.billing?.address && user?.billing?.postcode && user?.billing?.city && user?.billing?.phone) ? (
                     <div className="space-y-2">
                       {/* Google Pay */}
                       <Link
@@ -397,16 +401,29 @@ export default function CartDrawer() {
                   ) : (
                     // Login Prompt for Quick Payments
                     <div className="py-1">
-                      <Link
-                        href="/moje-konto"
-                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                        onClick={closeCart}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Zaloguj się dla szybszych płatności
-                      </Link>
+                      {isAuthenticated ? (
+                        <Link
+                          href="/checkout"
+                          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                          onClick={closeCart}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Uzupełnij dane w kasie, aby odblokować szybką płatność
+                        </Link>
+                      ) : (
+                        <Link
+                          href="/moje-konto"
+                          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                          onClick={closeCart}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Zaloguj się dla szybszych płatności
+                        </Link>
+                      )}
                     </div>
                   )}
                 </div>

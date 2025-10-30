@@ -39,11 +39,6 @@ if (!WC_URL || !CK || !CS) {
     WC_URL: !!WC_URL,
     CK: !!CK,
     CS: !!CS,
-    NEXT_PUBLIC_WC_URL: process.env.NEXT_PUBLIC_WC_URL,
-    WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY,
-    WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET,
-    NODE_ENV: process.env.NODE_ENV,
-    NEXT_PUBLIC_WORDPRESS_URL: process.env.NEXT_PUBLIC_WORDPRESS_URL,
   });
 }
 
@@ -62,7 +57,7 @@ async function handlePasswordReset(body: { email: string }) {
     console.log('🔄 Password reset request for:', email);
     
     // Użyj custom mu-plugin endpoint
-    const customUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/password-reset`;
+    const customUrl = `${WORDPRESS_URL}/wp-json/custom/v1/password-reset`;
     
     const response = await fetch(customUrl, {
       method: 'POST',
@@ -91,7 +86,7 @@ async function handlePasswordReset(body: { email: string }) {
       console.log('❌ Custom endpoint error response:', errorText);
       
       // Fallback: Sprawdź czy użytkownik istnieje przez WooCommerce API
-      const wcUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/customers`;
+      const wcUrl = `${WORDPRESS_URL}/wp-json/wc/v3/customers`;
       const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
       
       const wcResponse = await fetch(`${wcUrl}?email=${encodeURIComponent(email)}`, {
@@ -145,7 +140,7 @@ async function handlePasswordResetConfirm(body: { key: string; login: string; pa
     console.log('🔄 Password reset confirm for user:', login);
     
     // Użyj custom mu-plugin endpoint
-    const customUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/reset-password`;
+    const customUrl = `${WORDPRESS_URL}/wp-json/custom/v1/reset-password`;
     
     console.log('🔄 Attempting password reset with:', { key: key.substring(0, 10) + '...', login, passwordLength: password.length });
     
@@ -198,8 +193,8 @@ async function handleCustomerInvoices(req: NextRequest) {
   console.log('🔍 customerId:', customerId);
   
   // Debug environment variables
-  console.log('🔍 NEXT_PUBLIC_WORDPRESS_URL:', process.env.NEXT_PUBLIC_WORDPRESS_URL);
-  console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+  console.log('🔍 WORDPRESS_URL:', WORDPRESS_URL);
+  console.log('🔍 NODE_ENV:', env.NODE_ENV);
   
   if (!customerId) {
     return NextResponse.json(
@@ -212,7 +207,7 @@ async function handleCustomerInvoices(req: NextRequest) {
     console.log('🔄 Fetching invoices for customer:', customerId);
     
     // Call WordPress custom API
-    const invoicesUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/invoices?customer_id=${customerId}`;
+    const invoicesUrl = `${WORDPRESS_URL}/wp-json/custom/v1/invoices?customer_id=${customerId}`;
     console.log('🔄 Calling WordPress API:', invoicesUrl);
     
     const response = await fetch(invoicesUrl, {
@@ -283,8 +278,8 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
     console.log('🔄 Checking order eligibility for invoice generation:', orderId);
     
     // First, get order details to check if it's eligible for invoice
-    const orderUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
-    const auth = 'Basic ' + Buffer.from(`${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`).toString('base64');
+    const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
+    const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
     
     const orderResponse = await fetch(orderUrl, {
       headers: {
@@ -343,8 +338,8 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
 async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
   try {
     // Get order details from WooCommerce API
-    const orderUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
-    const auth = 'Basic ' + Buffer.from(`${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`).toString('base64');
+    const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
+    const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
     
     const orderResponse = await fetch(orderUrl, {
       headers: {
@@ -694,7 +689,7 @@ async function handleOrderTracking(req: NextRequest) {
     console.log('🔄 Fetching tracking for order:', orderId);
     
     // Call WordPress custom API
-    const trackingUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/tracking/${orderId}`;
+    const trackingUrl = `${WORDPRESS_URL}/wp-json/custom/v1/tracking/${orderId}`;
     
     const response = await fetch(trackingUrl, {
       method: 'GET',
@@ -750,7 +745,7 @@ async function handleCustomerProfileUpdate(body: any) {
     // 1) Update via custom WP endpoint (best-effort)
     let customerFromCustom: any = null;
     try {
-      const updateUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/customer/update-profile`;
+      const updateUrl = `${WORDPRESS_URL}/wp-json/custom/v1/customer/update-profile`;
       const response = await fetch(updateUrl, {
         method: 'POST',
         headers: {
@@ -868,7 +863,7 @@ async function handleCustomerPasswordChange(body: any) {
     console.log('🔄 Changing customer password:', customer_id);
     
     // Call WordPress custom API
-    const changePasswordUrl = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/custom/v1/customer/change-password`;
+    const changePasswordUrl = `${WORDPRESS_URL}/wp-json/custom/v1/customer/change-password`;
     
     const response = await fetch(changePasswordUrl, {
       method: 'POST',
@@ -1757,8 +1752,23 @@ async function handleCoupons(req: NextRequest) {
 export async function GET(req: NextRequest) {
   console.log('🔍 GET request received:', req.url);
   
-  // Check if required environment variables are available
-  if (!WC_URL || !CK || !CS) {
+  const { searchParams } = new URL(req.url);
+  const endpoint = searchParams.get("endpoint") || "products";
+  const bypassCache = searchParams.get("cache") === "off";
+
+  // Only enforce WC credentials for endpoints that truly need them
+  const requiresWooCreds = (
+    endpoint === 'payment_gateways' ||
+    endpoint === 'shipping_methods' ||
+    endpoint.startsWith('customers/') ||
+    (
+      // generic proxy to wc/v3 below requires creds
+      endpoint !== 'attributes' &&
+      endpoint !== 'shop' &&
+      endpoint === 'products' // generic products passthrough
+    )
+  );
+  if (requiresWooCreds && (!WC_URL || !CK || !CS)) {
     return NextResponse.json(
       { 
         error: "Błąd konfiguracji serwera", 
@@ -1767,18 +1777,14 @@ export async function GET(req: NextRequest) {
           WC_URL: !!WC_URL,
           CK: !!CK,
           CS: !!CS,
-          NEXT_PUBLIC_WC_URL: process.env.NEXT_PUBLIC_WC_URL,
-          WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY,
-          WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET,
+          NEXT_PUBLIC_WC_URL: WC_URL,
+          WC_CONSUMER_KEY: CK,
+          WC_CONSUMER_SECRET: CS,
         }
       },
       { status: 500 }
     );
   }
-
-  const { searchParams } = new URL(req.url);
-  const endpoint = searchParams.get("endpoint") || "products";
-  const bypassCache = searchParams.get("cache") === "off";
   
   // Optimized product endpoint
   if (endpoint.startsWith('king-optimized/product/')) {

@@ -1,42 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/config/env';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const { token } = await request.json();
 
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Token jest wymagany' },
-        { status: 400 }
-      );
+    if (typeof token !== 'string' || token.trim().length === 0) {
+      return NextResponse.json({ success: false, error: 'Brak tokena' }, { status: 400 });
     }
 
-    // Validate admin token
-    const validToken = process.env.ADMIN_TOKEN || 'admin-2024-secure-token';
-    
-    if (token !== validToken) {
-      return NextResponse.json(
-        { error: 'Nieprawidłowy token administratora' },
-        { status: 401 }
-      );
+    const expected = env.ADMIN_CACHE_TOKEN || process.env.ADMIN_TOKEN || '';
+
+    if (expected && token === expected) {
+      return NextResponse.json({ success: true });
     }
 
-    // Log successful admin login
-    console.log('✅ Admin login successful:', {
-      timestamp: new Date().toISOString(),
-      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
-    });
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Autoryzacja pomyślna' 
-    });
-
+    return NextResponse.json({ success: false, error: 'Nieprawidłowy token' }, { status: 401 });
   } catch (error) {
-    console.error('Admin auth error:', error);
-    return NextResponse.json(
-      { error: 'Błąd serwera podczas autoryzacji' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Błąd serwera' }, { status: 500 });
   }
+}
+
+export async function GET(): Promise<NextResponse> {
+  return NextResponse.json({ status: 'ok' });
 }

@@ -32,6 +32,7 @@ export default function MyAccountPage() {
   const { favorites, removeFromFavorites } = useFavoritesStore();
   const { addItem, openCart } = useCartStore();
   const [isEditing, setIsEditing] = useState(false);
+  const [openSection, setOpenSection] = useState<{ profile: boolean; billing: boolean; shipping: boolean }>({ profile: true, billing: false, shipping: false });
   const [activeTab, setActiveTab] = useState('profile');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -438,16 +439,23 @@ export default function MyAccountPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+              className="bg-white rounded-lg shadow-sm border border-gray-200"
             >
-              <div className="flex items-center justify-between mb-6">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setOpenSection(prev => ({ ...prev, profile: !prev.profile }))}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenSection(prev => ({ ...prev, profile: !prev.profile })); }}
+                className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
+                aria-expanded={openSection.profile}
+              >
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                   <User className="w-5 h-5 mr-2" />
                   Dane osobowe
                 </h2>
                 {!isEditing && (
                   <button
-                    onClick={() => setIsEditing(true)}
+                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
                     className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
                   >
                     <Edit className="w-4 h-4" />
@@ -455,6 +463,8 @@ export default function MyAccountPage() {
                   </button>
                 )}
               </div>
+
+              <div className={`${openSection.profile ? 'block' : 'hidden'} lg:block px-6 pb-6`}>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Company */}
@@ -612,9 +622,11 @@ export default function MyAccountPage() {
                   )}
                 </div>
               </div>
+              </div>
 
               {isEditing && (
-                <div className="flex gap-3 mt-6">
+                <div className={`${openSection.profile ? 'flex' : 'hidden'} lg:flex gap-3 px-6 pb-6`}
+                >
                   <button
                     onClick={handleSave}
                     className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center space-x-2"
@@ -632,21 +644,37 @@ export default function MyAccountPage() {
                 </div>
               )}
             </motion.div>
-
-            {/* Billing Address */}
+            
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+              className="bg-white rounded-lg shadow-sm border border-gray-200"
             >
-              <div className="flex items-center justify-between mb-6">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setOpenSection(prev => ({ ...prev, billing: !prev.billing }))}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenSection(prev => ({ ...prev, billing: !prev.billing })); }}
+                className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
+                aria-expanded={openSection.billing}
+              >
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                   <CreditCard className="w-5 h-5 mr-2" />
                   Adres rozliczeniowy
                 </h2>
+                {!isEditing && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); setOpenSection(prev => ({ ...prev, billing: true })); }}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edytuj</span>
+                  </button>
+                )}
               </div>
 
+              <div className={`${openSection.billing ? 'block' : 'hidden'} lg:block px-6 pb-6`}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -733,16 +761,23 @@ export default function MyAccountPage() {
                   </select>
                 </div>
               </div>
+              </div>
             </motion.div>
-
-            {/* Shipping Address */}
+            
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+              className="bg-white rounded-lg shadow-sm border border-gray-200"
             >
-              <div className="flex items-center justify-between mb-6">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setOpenSection(prev => ({ ...prev, shipping: !prev.shipping }))}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenSection(prev => ({ ...prev, shipping: !prev.shipping })); }}
+                className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
+                aria-expanded={openSection.shipping}
+              >
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                   <Truck className="w-5 h-5 mr-2" />
                   Adres dostawy
@@ -770,8 +805,18 @@ export default function MyAccountPage() {
                     <span>Adres dostawy taki sam jak rozliczeniowy</span>
                   </label>
                 )}
+                {!isEditing && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); setOpenSection(prev => ({ ...prev, shipping: true })); }}
+                    className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edytuj</span>
+                  </button>
+                )}
               </div>
 
+              <div className={`${openSection.shipping ? 'block' : 'hidden'} lg:block px-6 pb-6`}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -857,6 +902,7 @@ export default function MyAccountPage() {
                     <option value="SK">Słowacja</option>
                   </select>
                 </div>
+              </div>
               </div>
             </motion.div>
               </>

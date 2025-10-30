@@ -4,13 +4,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/config/env';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Verify authorization
     const authHeader = request.headers.get('authorization');
-    const expectedToken = process.env.REVALIDATE_SECRET;
+    const expectedToken = env.REVALIDATE_SECRET;
     
     if (!authHeader || !expectedToken || authHeader !== `Bearer ${expectedToken}`) {
       return NextResponse.json(

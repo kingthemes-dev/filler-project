@@ -21,13 +21,15 @@ interface KingProductCardProps {
   showActions?: boolean;
   variant?: 'default' | 'compact' | 'featured' | 'list';
   tabType?: string;
+  priority?: boolean;
 }
 
 export default function KingProductCard({ 
   product, 
   showActions = true, 
   variant = 'default',
-  tabType
+  tabType,
+  priority = false
 }: KingProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
@@ -434,7 +436,8 @@ export default function KingProductCard({
                 height={300}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
+                loading={priority ? 'eager' : 'lazy'}
+                priority={priority}
               />
               {isOnSale && (
                 <Badge variant="destructive" className="absolute top-1 sm:top-2 left-1 sm:left-2 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
@@ -468,7 +471,8 @@ export default function KingProductCard({
                 height={300}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
+                loading={priority ? 'eager' : 'lazy'}
+                priority={priority}
               />
               {isOnSale && (
                 <Badge variant="destructive" className="absolute top-2 sm:top-3 left-2 sm:left-3 text-xs sm:text-sm border-2 border-destructive/20 rounded-xl px-2 sm:px-3 py-0.5 sm:py-1">
@@ -600,6 +604,9 @@ export default function KingProductCard({
               width={160}
               height={160}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 768px) 160px, 160px"
+              loading={priority ? 'eager' : 'lazy'}
+              priority={priority}
             />
             
             {/* Badge - Mobile optimized */}
@@ -804,6 +811,9 @@ export default function KingProductCard({
               width={300}
               height={300}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              loading={priority ? 'eager' : 'lazy'}
+              priority={priority}
             />
             
             {/* Badge - top left - Mobile optimized */}

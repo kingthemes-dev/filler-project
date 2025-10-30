@@ -1,9 +1,11 @@
 // Advanced Service Worker for PWA functionality with enhanced caching
-const CACHE_VERSION = 'filler-v2.0.0';
-const STATIC_CACHE = 'filler-static-v2.0.0';
-const DYNAMIC_CACHE = 'filler-dynamic-v2.0.0';
-const API_CACHE = 'filler-api-v2.0.0';
-const IMAGE_CACHE = 'filler-images-v2.0.0';
+const DEBUG = false; // set to true for verbose logging
+const CACHE_VERSION = 'filler-v2.0.1';
+const STATIC_CACHE = 'filler-static-v2.0.1';
+const DYNAMIC_CACHE = 'filler-dynamic-v2.0.1';
+const API_CACHE = 'filler-api-v2.0.1';
+const IMAGE_CACHE = 'filler-images-v2.0.1';
+const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 
 // Cache configuration
 const CACHE_CONFIG = {
@@ -36,27 +38,27 @@ const API_ENDPOINTS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker');
+  DEBUG && console.log('[SW] Installing Service Worker');
   
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[SW] Caching static assets');
+        DEBUG && console.log('[SW] Caching static assets');
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
-        console.log('[SW] Static assets cached successfully');
+        DEBUG && console.log('[SW] Static assets cached successfully');
         return self.skipWaiting();
       })
       .catch((error) => {
-        console.error('[SW] Failed to cache static assets:', error);
+        DEBUG && console.error('[SW] Failed to cache static assets:', error);
       })
   );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker');
+  DEBUG && console.log('[SW] Activating Service Worker');
   
   event.waitUntil(
     caches.keys()
@@ -64,14 +66,14 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-              console.log('[SW] Deleting old cache:', cacheName);
+              DEBUG && console.log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log('[SW] Service Worker activated');
+        DEBUG && console.log('[SW] Service Worker activated');
         return self.clients.claim();
       })
   );
@@ -81,6 +83,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // In development, don't intercept requests at all (avoid dev noise and caching HMR chunks)
+  if (IS_DEV) {
+    return;
+  }
 
   // Skip non-GET requests
   if (request.method !== 'GET') {
@@ -128,7 +135,7 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch((error) => {
-        console.log('[SW] Network failed, trying cache:', url.pathname);
+        DEBUG && console.log('[SW] Network failed, trying cache:', url.pathname);
         
         return caches.match(request)
           .then((cachedResponse) => {
@@ -150,7 +157,7 @@ self.addEventListener('fetch', (event) => {
 
 // Background sync for offline actions
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync triggered:', event.tag);
+  DEBUG && console.log('[SW] Background sync triggered:', event.tag);
   
   if (event.tag === 'background-sync') {
     event.waitUntil(
@@ -162,7 +169,7 @@ self.addEventListener('sync', (event) => {
 
 // Push notification handling
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received');
+  DEBUG && console.log('[SW] Push notification received');
   
   if (event.data) {
     const data = event.data.json();
@@ -186,7 +193,7 @@ self.addEventListener('push', (event) => {
 
 // Notification click handling
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.notification.tag);
+  DEBUG && console.log('[SW] Notification clicked:', event.notification.tag);
   
   event.notification.close();
   
@@ -209,7 +216,7 @@ async function apiCacheStrategy(request) {
     const age = (now.getTime() - cacheDate.getTime()) / 1000;
     
     if (age < CACHE_CONFIG.API_MAX_AGE) {
-      console.log('[SW] Serving API from cache:', request.url);
+      DEBUG && console.log('[SW] Serving API from cache:', request.url);
       return cached;
     }
   }
@@ -218,7 +225,8 @@ async function apiCacheStrategy(request) {
     const response = await fetch(request);
     if (response.status === 200) {
       // Create a new response with cache headers without modifying original
-      const responseToCache = new Response(response.body, {
+      const clonedForCache = response.clone();
+      const responseToCache = new Response(clonedForCache.body, {
         status: response.status,
         statusText: response.statusText,
         headers: {
@@ -230,11 +238,11 @@ async function apiCacheStrategy(request) {
       
       // Cleanup old entries
       cleanupCache(cache, CACHE_CONFIG.MAX_ENTRIES);
-      console.log('[SW] Cached API response:', request.url);
+      DEBUG && console.log('[SW] Cached API response:', request.url);
     }
     return response;
   } catch (error) {
-    console.error('[SW] API request failed:', error);
+    DEBUG && console.error('[SW] API request failed:', error);
     return cached || new Response(
       JSON.stringify({ error: 'Network unavailable' }),
       { status: 503, headers: { 'Content-Type': 'application/json' } }
@@ -247,7 +255,7 @@ async function imageCacheStrategy(request) {
   const cached = await cache.match(request);
   
   if (cached) {
-    console.log('[SW] Serving image from cache:', request.url);
+    DEBUG && console.log('[SW] Serving image from cache:', request.url);
     return cached;
   }
   
@@ -256,11 +264,11 @@ async function imageCacheStrategy(request) {
     if (response.status === 200) {
       cache.put(request, response.clone());
       cleanupCache(cache, CACHE_CONFIG.MAX_ENTRIES);
-      console.log('[SW] Cached image:', request.url);
+      DEBUG && console.log('[SW] Cached image:', request.url);
     }
     return response;
   } catch (error) {
-    console.error('[SW] Image request failed:', error);
+    DEBUG && console.error('[SW] Image request failed:', error);
     // Return placeholder image for offline
     return cache.match('/images/placeholder-product.jpg') || new Response('Image Offline', { status: 503 });
   }
@@ -270,7 +278,7 @@ async function staticCacheStrategy(request) {
   const cached = await caches.match(request);
   
   if (cached) {
-    console.log('[SW] Serving static asset from cache:', request.url);
+    DEBUG && console.log('[SW] Serving static asset from cache:', request.url);
     return cached;
   }
   
@@ -283,7 +291,7 @@ async function staticCacheStrategy(request) {
     }
     return response;
   } catch (error) {
-    console.error('[SW] Static asset request failed:', error);
+    DEBUG && console.error('[SW] Static asset request failed:', error);
     return new Response('Static Resource Offline', { status: 503 });
   }
 }
@@ -306,20 +314,20 @@ async function handleBackgroundSync() {
     // Sync offline favorites
     await syncOfflineFavorites();
     
-    console.log('[SW] Background sync completed');
+  DEBUG && console.log('[SW] Background sync completed');
   } catch (error) {
-    console.error('[SW] Background sync failed:', error);
+  DEBUG && console.error('[SW] Background sync failed:', error);
   }
 }
 
 // Sync offline cart items
 async function syncOfflineCart() {
   // Implementation for syncing offline cart items
-  console.log('[SW] Syncing offline cart items');
+  DEBUG && console.log('[SW] Syncing offline cart items');
 }
 
 // Sync offline favorites
 async function syncOfflineFavorites() {
   // Implementation for syncing offline favorites
-  console.log('[SW] Syncing offline favorites');
+  DEBUG && console.log('[SW] Syncing offline favorites');
 }

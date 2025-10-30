@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/config/env';
 import { Redis } from 'ioredis';
 
 interface HealthStatus {
@@ -101,7 +102,7 @@ class HealthChecker {
     try {
       const startTime = Date.now();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wp/v2/posts?per_page=1`,
+        `${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wp/v2/posts?per_page=1`,
         {
           method: 'GET',
           headers: {
@@ -138,13 +139,13 @@ class HealthChecker {
     try {
       const startTime = Date.now();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_WC_URL}/products?per_page=1`,
+        `${env.NEXT_PUBLIC_WC_URL}/products?per_page=1`,
         {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Basic ${Buffer.from(
-              `${process.env.WC_CONSUMER_KEY}:${process.env.WC_CONSUMER_SECRET}`
+              `${env.WC_CONSUMER_KEY}:${env.WC_CONSUMER_SECRET}`
             ).toString('base64')}`,
           },
           signal: AbortSignal.timeout(5000),

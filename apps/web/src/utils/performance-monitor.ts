@@ -377,8 +377,8 @@ class PerformanceMonitor {
     // Check against budgets
     this.checkBudget(metric);
 
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    // Log to console only if explicitly enabled to reduce spam in dev
+    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_PERF_LOGS === 'true') {
       const status = this.getBudgetStatus(metric.name, metric.value);
       const statusEmoji = status === 'pass' ? '✅' : status === 'warning' ? '⚠️' : '❌';
       console.log(`${statusEmoji} [Performance] ${metric.name}: ${metric.value}ms`, metric.metadata);

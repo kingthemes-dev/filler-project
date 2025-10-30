@@ -15,7 +15,9 @@ class WooCommerceService {
     this.baseUrl = typeof window !== 'undefined'
       ? '/api/woocommerce'
       : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/woocommerce`;
-    console.log('🚀 WooCommerce Optimized Service initialized with baseUrl:', this.baseUrl);
+    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
+      console.log('🚀 WooCommerce Optimized Service initialized with baseUrl:', this.baseUrl);
+    }
   }
 
 
@@ -176,28 +178,38 @@ class WooCommerceService {
   // =========================================
   async getProductBySlug(slug: string): Promise<WooProduct | null> {
     try {
-      console.log(`🔍 Fetching product by slug: ${slug}`);
-      console.log(`🔗 Using baseUrl: ${this.baseUrl}`);
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        console.log(`🔍 Fetching product by slug: ${slug}`);
+        console.log(`🔗 Using baseUrl: ${this.baseUrl}`);
+      }
       
       // Try multiple approaches to find product by slug
       let product: WooProduct | null = null;
       
       // Approach 1: Search by slug (convert slug to readable name)
       const searchTerm = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      console.log(`🔍 Trying search term: ${searchTerm}`);
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        console.log(`🔍 Trying search term: ${searchTerm}`);
+      }
       
       const searchUrl = `${this.baseUrl}?endpoint=products&search=${encodeURIComponent(searchTerm)}&cache=off`;
-      console.log(`🌐 Search URL: ${searchUrl}`);
+      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        console.log(`🌐 Search URL: ${searchUrl}`);
+      }
       
       const searchResponse = await fetch(searchUrl);
       
       if (searchResponse.ok) {
         const searchData = await searchResponse.json();
-        console.log(`📦 Search data received:`, Array.isArray(searchData) ? `Array with ${searchData.length} items` : typeof searchData);
+        if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
+          console.log(`📦 Search data received:`, Array.isArray(searchData) ? `Array with ${searchData.length} items` : typeof searchData);
+        }
         
         // Find product with exact slug match
         product = Array.isArray(searchData) ? searchData.find((p: any) => p.slug === slug) : null;
-        console.log(`✅ Product found via search:`, product ? `${product.name} (ID: ${product.id})` : 'null');
+        if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
+          console.log(`✅ Product found via search:`, product ? `${product.name} (ID: ${product.id})` : 'null');
+        }
       }
       
       // Approach 2: If not found, try direct product endpoint (if we had ID)

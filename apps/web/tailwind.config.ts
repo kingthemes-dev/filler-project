@@ -66,7 +66,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-montserrat)", "system-ui", "sans-serif"],
+        sans: ["var(--font-raleway)", "system-ui", "sans-serif"],
         mono: ["monospace"],
       },
       animation: {

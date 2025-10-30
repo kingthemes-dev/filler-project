@@ -22,6 +22,7 @@ interface LogEntry {
 
 class Logger {
   private logLevel: LogLevel;
+  private lastPerfLogTs = 0;
 
   constructor() {
     this.logLevel = process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG;
@@ -179,6 +180,11 @@ class Logger {
   }
 
   performance(operation: string, duration: number, details?: any): void {
+    // Reduce noise: only log when explicitly enabled via env and at most every 2s
+    if (process.env.NEXT_PUBLIC_PERF_LOGS !== 'true') return;
+    const now = Date.now();
+    if (now - this.lastPerfLogTs < 2000) return;
+    this.lastPerfLogTs = now;
     this.info(`Performance: ${operation}`, {
       operation,
       duration: `${duration}ms`,

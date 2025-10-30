@@ -64,10 +64,10 @@ class DynamicCategoriesService {
   private cache: Map<string, any> = new Map();
 
   constructor() {
-    // Use our Next.js API routes instead of direct WordPress calls
-    this.baseUrl = typeof window === 'undefined' 
-      ? `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/woocommerce` 
-      : '/api/woocommerce';
+    // Use absolute URL on server (Node fetch requires it), relative in browser
+    const isBrowser = typeof window !== 'undefined';
+    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    this.baseUrl = isBrowser ? '/api/woocommerce' : `${base}/api/woocommerce`;
   }
 
   /**
@@ -114,14 +114,31 @@ class DynamicCategoriesService {
     }
     
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=attributes&per_page=100`);
+      // Use local API custom attributes endpoint (maps to King Shop API)
+      const response = await fetch(`${this.baseUrl}?endpoint=attributes`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      const attributes = Array.isArray(data) ? data : (data.attributes || []);
+      let attributes: any[] = [];
+      if (Array.isArray(data)) {
+        attributes = data;
+      } else if (data && typeof data === 'object' && data.attributes && typeof data.attributes === 'object') {
+        // King Shop API shape: attributes is an object keyed by slug
+        attributes = Object.entries(data.attributes).map(([slug, value]: [string, any]) => ({
+          id: (value && value.id) || slug,
+          name: (value && value.name) || slug,
+          slug,
+          type: (value && value.type) || 'select',
+          order_by: (value && value.order_by) || 'menu_order',
+          has_archives: false,
+          terms: []
+        }));
+      } else {
+        attributes = [];
+      }
       
       // Zapisz w cache
       this.cache.set(cacheKey, attributes);
@@ -139,30 +156,24 @@ class DynamicCategoriesService {
    */
   async getAttributeTerms(attributeSlug: string): Promise<WooAttributeTerm[]> {
     try {
-      // Use King Shop API directly - same as mobile menu and desktop dropdown
-      const wordpressUrl = 'https://qvwltjhdjw.cfolks.pl';
-      const response = await fetch(`${wordpressUrl}/wp-json/king-shop/v1/attributes`, { cache: 'no-store' });
+      // Use local API route for attribute terms
+      const response = await fetch(`${this.baseUrl}?endpoint=attributes/${attributeSlug}/terms`, { cache: 'no-store' });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // If endpoint doesn't exist for given slug, gracefully return empty
+        return [];
       }
       
       const data = await response.json();
-      
-      // Extract terms for specific attribute
-      const attributeData = data.attributes?.[attributeSlug];
-      if (attributeData?.terms) {
-        return attributeData.terms.map((term: any) => ({
-          id: term.id,
-          name: term.name,
-          slug: term.slug,
-          count: term.count || 0
-        }));
-      }
-      
-      return [];
+      const termsArray = Array.isArray(data) ? data : [];
+      return termsArray.map((term: any) => ({
+        id: term.id,
+        name: term.name,
+        slug: term.slug,
+        count: term.count || 0
+      }));
     } catch (error) {
-      console.error(`Error fetching terms for attribute ${attributeSlug}:`, error);
+      console.warn(`Error fetching terms for attribute ${attributeSlug}:`, error);
       return [];
     }
   }

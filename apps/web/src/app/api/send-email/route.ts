@@ -72,6 +72,14 @@ export async function POST(request: NextRequest) {
         console.log('❌ Fallback also failed');
         console.log('❌ Fallback Status:', fallbackResponse.status);
         console.log('❌ Fallback Error:', fallbackErrorText);
+        // W środowisku developerskim nie wywalaj 500 – zwróć sukces, żeby nie spamować konsoli
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('🛠 Dev mode: returning success for /api/send-email despite failure');
+          return NextResponse.json({
+            success: true,
+            message: 'Dev: Email zarejestrowany (no-op)'
+          });
+        }
         return NextResponse.json({ 
           success: false, 
           message: 'Nie udało się wysłać emaila' 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { env } from '@/config/env';
 
-const CSRF_SECRET = process.env.CSRF_SECRET || 'default-csrf-secret-change-in-production';
+const CSRF_SECRET = env.CSRF_SECRET;
 
 export function generateCSRFToken(): string {
   const timestamp = Date.now().toString();
@@ -27,6 +27,10 @@ export function validateCSRFToken(token: string): boolean {
 }
 
 export async function csrfMiddleware(request: NextRequest) {
+  // Disable CSRF checks in development to avoid edge runtime limitations
+  if (process.env.NODE_ENV !== 'production') {
+    return NextResponse.next();
+  }
   // Only check POST, PUT, DELETE, PATCH requests
   if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
     return NextResponse.next();

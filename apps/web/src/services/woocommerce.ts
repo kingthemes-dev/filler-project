@@ -1,3 +1,4 @@
+import { env } from '@/config/env';
 import { WooProduct, WooProductQuery, WooApiResponse } from '@/types/woocommerce';
 import { CartItem } from '@/stores/cart-store';
 
@@ -13,9 +14,9 @@ class WooCommerceService {
   constructor() {
     // SECURITY FIX: Remove NEXT_PUBLIC_ prefixes for secrets
     // These should only be used server-side via API routes
-    this.baseUrl = process.env.NEXT_PUBLIC_WC_URL || '';
-    this.consumerKey = process.env.WC_CONSUMER_KEY || '';
-    this.consumerSecret = process.env.WC_CONSUMER_SECRET || '';
+    this.baseUrl = env.NEXT_PUBLIC_WC_URL;
+    this.consumerKey = env.WC_CONSUMER_KEY;
+    this.consumerSecret = env.WC_CONSUMER_SECRET;
     
     // Debug logging (server-side only)
     if (typeof window === 'undefined') {

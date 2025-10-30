@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/config/env';
 
 // Generate unique discount code and create WooCommerce coupon
 async function generateDiscountCode(email: string, source: string): Promise<string> {
@@ -9,9 +10,9 @@ async function generateDiscountCode(email: string, source: string): Promise<stri
   
   // Create coupon in WooCommerce
   try {
-    const WC_URL = process.env.NEXT_PUBLIC_WC_URL;
-    const CK = process.env.WC_CONSUMER_KEY;
-    const CS = process.env.WC_CONSUMER_SECRET;
+    const WC_URL = env.NEXT_PUBLIC_WC_URL;
+    const CK = env.WC_CONSUMER_KEY;
+    const CS = env.WC_CONSUMER_SECRET;
     
     if (WC_URL && CK && CS) {
       const couponData = {
@@ -95,8 +96,8 @@ export async function POST(request: NextRequest) {
 
     // TODO: Integrate with newsletter service (Mailchimp, SendinBlue, etc.)
     // SendinBlue (Brevo) integration
-    const sendinblueApiKey = process.env.SENDINBLUE_API_KEY;
-    const sendinblueListId = parseInt(process.env.SENDINBLUE_LIST_ID || '1');
+    const sendinblueApiKey = env.SENDINBLUE_API_KEY;
+    const sendinblueListId = parseInt(env.SENDINBLUE_LIST_ID || '1');
 
     // Generate discount code for new subscribers
     const discountCode = await generateDiscountCode(email, source);
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     // Send discount code email
     try {
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/api/send-newsletter-email`, {
+      const emailResponse = await fetch(`${env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/send-newsletter-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

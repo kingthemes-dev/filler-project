@@ -32,6 +32,9 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  // Profile fetch guardrails
+  isFetchingProfile?: boolean;
+  lastProfileFetchAt?: number;
 }
 
 export interface AuthActions {
@@ -78,6 +81,8 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      isFetchingProfile: false,
+      lastProfileFetchAt: 0,
 
       // Actions
       login: async (email: string, password: string) => {
@@ -363,11 +368,25 @@ export const useAuthStore = create<AuthStore>()(
       
       // Fetch user profile from WooCommerce
       fetchUserProfile: async () => {
-        const { token, user } = get();
+        const { token, user, isFetchingProfile, lastProfileFetchAt } = get();
         if (!token || !user) return;
+
+        // Skip if already fetching or fetched very recently (15s)
+        if (isFetchingProfile) return;
+        if (lastProfileFetchAt && Date.now() - lastProfileFetchAt < 15000) return;
+
+        // If user already has basic billing data, avoid unnecessary fetches
+        const hasBasicBilling = Boolean(
+          user.billing &&
+          (user.billing.address || user.billing.city || user.billing.postcode || user.billing.phone)
+        );
+        if (hasBasicBilling && lastProfileFetchAt && Date.now() - lastProfileFetchAt < 5 * 60_000) {
+          return;
+        }
         
         try {
           console.log('🔄 Fetching user profile from WooCommerce...');
+          set({ isFetchingProfile: true });
           const response = await fetch('/api/woocommerce?endpoint=customers/' + user.id, {
             method: 'GET',
             headers: {
@@ -418,11 +437,19 @@ export const useAuthStore = create<AuthStore>()(
             }
           };
           
-          set({ user: updatedUser });
+          // Only update if data actually changed to prevent render loops
+          const current = get().user;
+          const changed = JSON.stringify(current) !== JSON.stringify(updatedUser);
+          if (changed) {
+            set({ user: updatedUser });
+          }
+          set({ lastProfileFetchAt: Date.now() });
           console.log('✅ User profile updated:', updatedUser);
           
         } catch (error) {
           console.error('❌ Error fetching user profile:', error);
+        } finally {
+          set({ isFetchingProfile: false });
         }
       }
     }),

@@ -7,14 +7,44 @@ console.log('🔧 Cart Proxy - WC_URL:', WC_URL);
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    
-    // Use our custom mu-plugin endpoint (nonce verification disabled)
-    const cartResponse = await fetch(`${WC_URL}/wp-json/king-cart/v1/add-item`, {
-      method: 'POST',
+    const action = body?.action || 'add';
+    let targetUrl = `${WC_URL}/wp-json/king-cart/v1/add-item`;
+    let method = 'POST';
+    let payload: any = body;
+
+    if (action === 'remove') {
+      targetUrl = `${WC_URL}/wp-json/king-cart/v1/remove-item`;
+      method = 'POST';
+      payload = { key: body.key };
+    } else if (action === 'update') {
+      targetUrl = `${WC_URL}/wp-json/king-cart/v1/update-item`;
+      method = 'POST';
+      payload = { key: body.key, quantity: body.quantity };
+    } else if (action === 'cart') {
+      // Fetch current cart state
+      const getResp = await fetch(`${WC_URL}/wp-json/king-cart/v1/cart`, { method: 'GET' });
+      const getText = await getResp.text();
+      let getJsonText = getText;
+      const getMatch = getText.match(/\{.*\}/);
+      if (getMatch) getJsonText = getMatch[0];
+      const getData = JSON.parse(getJsonText);
+      return NextResponse.json(getData, {
+        status: getResp.status,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      });
+    }
+
+    // Use our custom mu-plugin endpoints (nonce verification disabled)
+    const cartResponse = await fetch(targetUrl, {
+      method,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: method === 'POST' ? JSON.stringify(payload) : undefined,
     });
     
     const cartText = await cartResponse.text();

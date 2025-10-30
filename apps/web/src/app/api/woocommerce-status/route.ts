@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/config/env';
 
 interface WooCommerceStatus {
   api: {
@@ -38,10 +39,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const startTime = Date.now();
     
     // Get environment variables
-    const wcUrl = process.env.NEXT_PUBLIC_WC_URL;
-    const consumerKey = process.env.WC_CONSUMER_KEY;
-    const consumerSecret = process.env.WC_CONSUMER_SECRET;
-    const webhookSecret = process.env.WOOCOMMERCE_WEBHOOK_SECRET;
+    const wcUrl = env.NEXT_PUBLIC_WC_URL;
+    const consumerKey = env.WC_CONSUMER_KEY;
+    const consumerSecret = env.WC_CONSUMER_SECRET;
+    const webhookSecret = env.WOOCOMMERCE_WEBHOOK_SECRET;
 
     if (!wcUrl || !consumerKey || !consumerSecret) {
       return NextResponse.json({

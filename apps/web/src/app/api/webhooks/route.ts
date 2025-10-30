@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   return await webhookHandler.processWebhook(req);
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     message: 'HPOS Webhooks endpoint is active',
     timestamp: new Date().toISOString(),
