@@ -261,9 +261,12 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       
       return data;
     },
-    staleTime: 30000,
+    // Nie refetchuj od razu po hydracji – mamy dane z SSR
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
     enabled: true,
-    refetchOnMount: true,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   // Update products and total from shopQuery data
@@ -524,7 +527,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
               onPriceRangeReset={() => setPriceRange({ min: 0, max: 10000 })}
             />
             
-            {loading || filterLoading ? (
+            {(products.length === 0) && (loading || filterLoading) ? (
               <div className="grid gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="animate-pulse">
