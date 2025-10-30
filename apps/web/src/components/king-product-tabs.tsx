@@ -24,7 +24,6 @@ export default function KingProductTabs() {
 
   // Fetch products for each tab
   const fetchTabProducts = useCallback(async (tabId: string) => {
-    console.log('🔄 fetchTabProducts called for:', tabId);
     console.log('🔄 wooCommerceService:', !!wooCommerceService, typeof wooCommerceService);
     
     if (!wooCommerceService) {
@@ -44,7 +43,7 @@ export default function KingProductTabs() {
     let lastError: Error | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        console.log(`🔄 Frontend attempt ${attempt} for ${tabId}`);
+        // attempt loop
         
         let products: WooProduct[] = [];
 
@@ -86,12 +85,12 @@ export default function KingProductTabs() {
           index === tabIndex ? { ...tab, products, loading: false } : tab
         ));
         
-        console.log(`✅ Frontend success on attempt ${attempt} for ${tabId}`);
+        // success
         return; // Success, exit retry loop
 
       } catch (error) {
         lastError = error as Error;
-        console.log(`❌ Frontend attempt ${attempt} failed for ${tabId}:`, error);
+        // attempt failed
         
         if (attempt < 3) {
           // Wait before retry
@@ -101,7 +100,9 @@ export default function KingProductTabs() {
     }
     
     // All attempts failed
-    console.error(`🚨 All frontend attempts failed for ${tabId}:`, lastError);
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`🚨 All frontend attempts failed for ${tabId}:`, lastError);
+    }
     
     // Set loading to false on error
     setTabs(prev => prev.map((tab, index) => 

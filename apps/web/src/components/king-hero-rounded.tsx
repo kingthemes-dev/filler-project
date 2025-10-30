@@ -39,21 +39,17 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
     try {
       // Priority 1: Products on sale
       if (data?.promocje && data.promocje.length > 0) {
-        const randomIndex = Math.floor(Math.random() * data.promocje.length);
-        console.log('🎯 Hero: Found products on sale:', data.promocje.length);
-        console.log('🎯 Hero: Selected product:', data.promocje[randomIndex].name);
-        return data.promocje[randomIndex];
+        // Deterministyczny wybór pierwszego elementu (bez losowości i logów)
+        return data.promocje[0];
       }
       
       // Priority 2: Featured products
       if (data?.polecane && data.polecane.length > 0) {
-        console.log('🎯 Hero: Using featured product:', data.polecane[0].name);
         return data.polecane[0];
       }
       
       // Priority 3: New products
       if (data?.nowosci && data.nowosci.length > 0) {
-        console.log('🎯 Hero: Using first new product:', data.nowosci[0].name);
         return data.nowosci[0];
       }
       
