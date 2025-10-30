@@ -86,24 +86,33 @@ class Logger {
   }
 
   private log(level: LogLevel, message: string, context?: any): void {
+    // Always allow ERROR/WARN. Gate INFO/DEBUG behind NEXT_PUBLIC_DEBUG
+    const isDebugEnabled = process.env.NEXT_PUBLIC_DEBUG === 'true';
+    if ((level === LogLevel.INFO || level === LogLevel.DEBUG) && !isDebugEnabled) {
+      return;
+    }
     if (level > this.logLevel) return;
 
     const entry = this.formatMessage(level, message, context);
     const levelName = LogLevel[level];
     const emoji = this.getLevelEmoji(level);
 
-    // Console logging with colors in development
+    // Console logging with colors in development (only when debug enabled for non-critical levels)
     if (process.env.NODE_ENV === 'development') {
       const color = this.getLevelColor(level);
-      console.log(
-        `%c${emoji} [${levelName}] ${entry.timestamp}`,
-        `color: ${color}; font-weight: bold`,
-        message,
-        context ? context : ''
-      );
+      if (level <= LogLevel.WARN || isDebugEnabled) {
+        console.log(
+          `%c${emoji} [${levelName}] ${entry.timestamp}`,
+          `color: ${color}; font-weight: bold`,
+          message,
+          context ? context : ''
+        );
+      }
     } else {
-      // Structured logging for production
-      console.log(JSON.stringify(entry));
+      // Structured logging for production (only errors/warns by default)
+      if (level <= LogLevel.WARN || isDebugEnabled) {
+        console.log(JSON.stringify(entry));
+      }
     }
 
     // Send to external logging service in production
