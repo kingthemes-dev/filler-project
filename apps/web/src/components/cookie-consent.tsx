@@ -74,8 +74,10 @@ export default function CookieConsent() {
     // Google Analytics
     if (prefs.analytics && typeof window !== 'undefined' && !(window as any).__gaLoaded) {
       schedule(() => {
+        const gaId = (env as any).NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID || '';
+        if (!gaId) return;
         const script = document.createElement('script');
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${env.NEXT_PUBLIC_GA4_ID}`;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
         script.async = true;
         document.head.appendChild(script);
 
@@ -84,7 +86,7 @@ export default function CookieConsent() {
           (window as any).dataLayer.push(args);
         }
         gtag('js', new Date());
-        gtag('config', env.NEXT_PUBLIC_GA4_ID || '', {
+        gtag('config', gaId, {
           anonymize_ip: true,
           cookie_flags: 'SameSite=None;Secure',
         });
