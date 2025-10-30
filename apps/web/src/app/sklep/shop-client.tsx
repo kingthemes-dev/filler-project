@@ -528,7 +528,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             />
             
             {(products.length === 0) && (loading || filterLoading) ? (
-              <div className="grid gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-3 min-h-[60vh]">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="animate-pulse">
                     <div className="bg-gray-200 rounded-lg aspect-square mb-4"></div>
@@ -540,7 +540,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                 ))}
               </div>
             ) : (
-              <div className={`grid mobile-grid grid-cols-2 lg:grid-cols-3 relative`}>
+              <div className={`grid mobile-grid grid-cols-2 lg:grid-cols-3 relative min-h-[60vh]`}>
                 {/* PRO: Subtle refreshing indicator */}
                 {refreshing && (
                   <div className="absolute top-0 right-0 z-10 bg-white/80 backdrop-blur-sm rounded-lg p-2">
