@@ -1379,8 +1379,10 @@ async function handleShopEndpoint(req: NextRequest) {
     
     const shopUrl = `${WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&${cleanParams.toString()}`;
     
-    console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
-    console.log('🔍 WordPress URL:', WORDPRESS_URL);
+    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+      console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
+      console.log('🔍 WordPress URL:', WORDPRESS_URL);
+    }
     
     // Use circuit breaker for WordPress API calls
     const response = await withCircuitBreaker('wordpress', async () => {
@@ -1403,16 +1405,20 @@ async function handleShopEndpoint(req: NextRequest) {
       return response;
     });
 
-    console.log('🔍 King Shop API response status:', response.status);
+    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+      console.log('🔍 King Shop API response status:', response.status);
+    }
 
     const data = await response.json();
     
-    console.log('✅ Shop data received from WordPress:', {
-      products: data.products?.length || 0,
-      total: data.total,
-      categories: data.categories?.length || 0,
-      attributes: data.attributes ? Object.keys(data.attributes).length : 0
-    });
+    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+      console.log('✅ Shop data received from WordPress:', {
+        products: data.products?.length || 0,
+        total: data.total,
+        categories: data.categories?.length || 0,
+        attributes: data.attributes ? Object.keys(data.attributes).length : 0
+      });
+    }
 
     // WordPress zrobił całe filtrowanie - zwracamy dane jak są
     return NextResponse.json(data, {
