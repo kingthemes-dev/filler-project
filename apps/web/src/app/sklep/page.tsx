@@ -93,7 +93,8 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
   
   try {
     // Prefetch shop data with error handling
-    await qc.prefetchQuery({
+    try {
+      await qc.prefetchQuery({
       queryKey: ['shop','products',{ page: 1, perPage: 12, filters: JSON.stringify(initialFilters) }],
       queryFn: async () => {
         const params = new URLSearchParams();
@@ -101,36 +102,42 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
         params.append('page', '1');
         params.append('per_page', '12');
         if (defaultCategory) params.append('category', defaultCategory);
+          params.append('orderby', initialFilters.sortBy);
+          params.append('order', initialFilters.sortOrder);
         const res = await fetch(`/api/woocommerce?${params.toString()}`, { 
           next: { revalidate: 30 },
           signal: AbortSignal.timeout(10000) // 10s timeout
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!res.ok) return { products: [], total: 0, categories: [] };
         return res.json();
       },
       retry: 2,
       retryDelay: 1000,
-    });
+      });
+    } catch (_) { /* ignore prefetch errors */ }
     
     // Prefetch categories with error handling
     const baseUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 
       (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3000');
-    await qc.prefetchQuery({
+    try {
+      await qc.prefetchQuery({
       queryKey: ['shop','categories'],
       queryFn: async () => {
         const res = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/categories`, {
           next: { revalidate: 600 },
           signal: AbortSignal.timeout(5000)
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!res.ok) return [];
         return res.json();
       },
       retry: 1,
       retryDelay: 500,
-    });
+      });
+    } catch (_) { /* ignore prefetch errors */ }
 
     // Prefetch attributes with error handling - wszystkie atrybuty bez filtrów
-    await qc.prefetchQuery({
+    try {
+      await qc.prefetchQuery({
       queryKey: ['shop','attributes',{ categories: [], search: '', min: 0, max: 10000, selected: [] }],
       queryFn: async () => {
         const params = new URLSearchParams();
@@ -139,16 +146,18 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
           next: { revalidate: 600 },
           signal: AbortSignal.timeout(10000) // 10s timeout
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!res.ok) return {};
         return res.json();
       },
       staleTime: 10 * 60_000,
       retry: 1,
       retryDelay: 500,
-    });
+      });
+    } catch (_) { /* ignore prefetch errors */ }
 
-    // Prefetch dynamic filters (kategorie + atrybuty) - bezpośrednio z API
-    await qc.prefetchQuery({
+    // Prefetch dynamic filters (kategorie + atrybuty) - bezpieczny try/catch
+    try {
+      await qc.prefetchQuery({
       queryKey: ['shop','dynamic-filters'],
       queryFn: async () => {
         const [categoriesRes, attributesRes] = await Promise.all([
@@ -174,7 +183,8 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       staleTime: 10 * 60_000,
       retry: 1,
       retryDelay: 500,
-    });
+      });
+    } catch (_) { /* ignore prefetch errors */ }
 
     // Server-side initial payload for instant render in client
     const ssrParams = new URLSearchParams();
@@ -182,11 +192,16 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     ssrParams.append('page', '1');
     ssrParams.append('per_page', '12');
     if (defaultCategory) ssrParams.append('category', defaultCategory);
-    const ssrRes = await fetch(`/api/woocommerce?${ssrParams.toString()}`, {
-      next: { revalidate: 30 },
-      signal: AbortSignal.timeout(10000)
-    });
-    const initialShopData = ssrRes.ok ? await ssrRes.json() : { products: [], total: 0, categories: [] };
+    ssrParams.append('orderby', initialFilters.sortBy);
+    ssrParams.append('order', initialFilters.sortOrder);
+    let initialShopData: any = { products: [], total: 0, categories: [] };
+    try {
+      const ssrRes = await fetch(`/api/woocommerce?${ssrParams.toString()}`, {
+        next: { revalidate: 30 },
+        signal: AbortSignal.timeout(10000)
+      });
+      initialShopData = ssrRes.ok ? await ssrRes.json() : initialShopData;
+    } catch (_) { /* ignore SSR fetch errors */ }
 
     const dehydratedState = dehydrate(qc);
 
