@@ -210,12 +210,12 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
             <p className="text-gray-600 mb-6">
               Wystąpił problem z połączeniem do sklepu. Spróbuj ponownie za chwilę.
             </p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            <a 
+              href="/sklep" 
+              className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
             >
               Odśwież stronę
-            </button>
+            </a>
           </div>
         </div>
       </HydrationBoundary>
