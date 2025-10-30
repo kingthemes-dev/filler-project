@@ -83,8 +83,8 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     search: '',
     categories: defaultCategory ? [defaultCategory] : [],
     brands: [],
-    minPrice: 0,
-    maxPrice: 10000,
+    minPrice: -1,
+    maxPrice: -1,
     inStock: false,
     onSale: false,
     sortBy: 'date' as const,
@@ -94,7 +94,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
   try {
     // Prefetch shop data with error handling
     await qc.prefetchQuery({
-      queryKey: ['shop','products',{ page: 1, perPage: 12, filters: initialFilters }],
+      queryKey: ['shop','products',{ page: 1, perPage: 12, filters: JSON.stringify(initialFilters) }],
       queryFn: async () => {
         const params = new URLSearchParams();
         params.append('endpoint', 'shop');
