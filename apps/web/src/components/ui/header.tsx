@@ -204,15 +204,20 @@ export default function Header() {
         <div className="px-4 lg:px-6">
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-16 sm:h-20 gap-2 min-h-0">
           {/* Logo */}
-          <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity -mt-[5px]">
-            <Image 
-              src="/images/logo.webp" 
-              alt="FILLER" 
-              width={144} 
-              height={48} 
-              className="h-[38px] sm:h-12 w-auto"
-              priority
-            />
+          <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity -mt-[5px]" aria-label="FILLER - Strona główna">
+            <div
+              className="select-none"
+              style={{
+                fontFamily: 'Raleway, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, \"Apple Color Emoji\", \"Segoe UI Emoji\"',
+                fontWeight: 800,
+                letterSpacing: '0.12em',
+                fontSize: '28px',
+                lineHeight: '38px',
+                color: '#000000'
+              }}
+            >
+              FILLER
+            </div>
           </Link>
 
           {/* Spacer / Middle column for mobile to allow shrink without overflow */}
@@ -221,13 +226,17 @@ export default function Header() {
           {/* Navigation - desktop only */}
           <nav
             className="hidden lg:flex items-center gap-6 flex-none"
+            style={{
+              fontFamily: 'Raleway, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"'
+            }}
           >
             <Link 
               href="/" 
-              className="text-black hover:text-gray-700 transition-colors font-normal tracking-normal text-center"
+              className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold tracking-wide text-center uppercase text-sm"
               onMouseEnter={() => setIsShopOpen(false)}
             >
               Strona główna
+              <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
             </Link>
             <div 
               className="relative overflow-visible shop-dropdown-container flex items-center gap-2"
@@ -240,39 +249,43 @@ export default function Header() {
                   // Dispatch event for banner to listen
                   window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: newValue } }));
                 }}
-                className="text-black hover:text-gray-700 transition-colors font-normal inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 rounded-md px-2 py-1"
+                className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 uppercase tracking-wide text-sm"
                 aria-expanded={isShopOpen}
                 aria-haspopup="true"
               >
                 Sklep
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopOpen ? 'rotate-180' : ''}`} />
+                <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
               </button>
               <Link
                 href="/sklep"
-                className="text-black hover:text-gray-700 transition-colors font-normal tracking-normal"
+                className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold tracking-wide uppercase text-sm"
                 onClick={() => {
                   setIsShopOpen(false);
                   window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
                 }}
               >
                 Wszystkie produkty
+                <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
               </Link>
               
               {/* Shop Modal is now rendered inside ShopExplorePanel component */}
             </div>
             <a 
               href="/o-nas" 
-              className="text-black hover:text-gray-700 transition-colors font-normal tracking-normal text-center"
+              className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold tracking-wide text-center uppercase text-sm"
               onMouseEnter={() => setIsShopOpen(false)}
             >
               O nas
+              <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
             </a>
             <a 
               href="/kontakt" 
-              className="text-black hover:text-gray-700 transition-colors font-normal tracking-normal text-center"
+              className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold tracking-wide text-center uppercase text-sm"
               onMouseEnter={() => setIsShopOpen(false)}
             >
               Kontakt
+              <span className="pointer-events-none absolute left-2 right-2 -bottom-1 h-[2px] bg-black/80 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
             </a>
           </nav>
 
@@ -423,9 +436,9 @@ export default function Header() {
               <div className="relative user-menu-container overflow-visible">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded "
+                  className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center justify-center w-8 h-8 leading-none"
                 >
-                  <User className="w-6 h-6" strokeWidth={1.5} />
+                  <User className="w-6 h-6 block" strokeWidth={1.5} />
                 </button>
 
                 {/* User Dropdown Menu */}
@@ -541,11 +554,11 @@ export default function Header() {
                                   console.error('[Auth] openLogin event error', e);
                                 }
                               }}
-                              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
+                              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center justify-center w-8 h-8 leading-none"
                               data-test="open-login-btn"
                               aria-label="Zaloguj się"
                             >
-                              <User className="w-6 h-6" strokeWidth={1.5} />
+                              <User className="w-6 h-6 block" strokeWidth={1.5} />
                             </button>
                           )}
                           

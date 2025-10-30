@@ -269,8 +269,10 @@ class ErrorTracker {
 
     this.performanceQueue.push(performanceMetric);
 
-    // Log performance metrics
-    console.log(`[Performance] ${metric.name}: ${metric.value}ms`, metric.metadata);
+    // Opcjonalne logowanie performance, tylko gdy jawnie włączone envem
+    if (process.env.NEXT_PUBLIC_PERF_LOGS === 'true') {
+      console.log(`[Performance] ${metric.name}: ${metric.value}ms`, metric.metadata);
+    }
 
     // Flush if queue is full
     if (this.performanceQueue.length >= this.maxQueueSize) {

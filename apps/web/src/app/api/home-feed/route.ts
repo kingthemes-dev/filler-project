@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { env } from '@/config/env';
 
 export const runtime = 'nodejs';
 
-const WP_BASE_URL = process.env.WP_BASE_URL || process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
+const WP_BASE_URL = env.NEXT_PUBLIC_WORDPRESS_URL;
 
 export async function GET() {
   try {
@@ -13,7 +14,10 @@ export async function GET() {
     let hasMorePages = true;
     
     while (hasMorePages) {
-      const shopUrl = `${WP_BASE_URL}/wp-json/king-shop/v1/data?endpoint=shop&per_page=100&page=${page}`;
+      // Proxy przez nasze API, aby uniknąć CORS/HTML i używać centralnego env
+      // Zmniejszamy per_page, aby ograniczyć payload; w dev pobieramy tylko pierwszą stronę
+      const perPage = process.env.NODE_ENV === 'development' ? 24 : 48;
+      const shopUrl = `${env.NEXT_PUBLIC_BASE_URL || ''}/api/woocommerce?endpoint=shop&per_page=${perPage}&page=${page}`.replace(/\/$/, '');
       
       if (process.env.NODE_ENV === 'development') {
         console.log(`🏠 Home feed - calling King Shop API page ${page}:`, shopUrl);
@@ -39,17 +43,21 @@ export async function GET() {
       }
       
       const responseData = await productsResponse.json();
-      const pageProducts = responseData.products || [];
+      const pageProducts = responseData.products || responseData.data?.products || [];
       
       allProducts = [...allProducts, ...pageProducts];
       
       // Check if there are more pages
-      hasMorePages = pageProducts.length === 100; // If we got 100 products, there might be more
+      hasMorePages = pageProducts.length === perPage; // If we got a full page, there might be more
       page++;
       
-      // Safety limit to prevent infinite loops
-      if (page > 10) {
-        console.warn('Reached page limit (10), stopping pagination');
+      // W trybie development pobierz tylko pierwszą stronę, żeby przyspieszyć HMR i TTFB
+      if (process.env.NODE_ENV === 'development') {
+        hasMorePages = false;
+      }
+      // Safety limit to prevent infinite loops w produkcji
+      if (page > 5) {
+        console.warn('Reached page limit (5), stopping pagination');
         break;
       }
     }

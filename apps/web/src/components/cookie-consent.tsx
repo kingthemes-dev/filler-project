@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Cookie, Settings, Check, X as XIcon } from 'lucide-react';
 import Link from 'next/link';
+import { env } from '@/config/env';
 
 interface CookiePreferences {
   necessary: boolean;
@@ -61,33 +62,56 @@ export default function CookieConsent() {
   };
 
   const loadScripts = (prefs: CookiePreferences) => {
-    // Google Analytics
-    if (prefs.analytics && typeof window !== 'undefined') {
-      const script = document.createElement('script');
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}`;
-      script.async = true;
-      document.head.appendChild(script);
-
-      // Declare dataLayer on window object
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      function gtag(...args: any[]) {
-        (window as any).dataLayer.push(args);
+    const schedule = (fn: () => void, delay = 0) => {
+      if (typeof window === 'undefined') return;
+      const idle = (window as any).requestIdleCallback as undefined | ((cb: () => void, opts?: any) => number);
+      if (idle) {
+        idle(() => setTimeout(fn, delay));
+      } else {
+        setTimeout(fn, delay);
       }
-      gtag('js', new Date());
-      gtag('config', process.env.NEXT_PUBLIC_GA4_ID || '', {
-        anonymize_ip: true,
-        cookie_flags: 'SameSite=None;Secure',
-      });
+    };
+    // Google Analytics
+    if (prefs.analytics && typeof window !== 'undefined' && !(window as any).__gaLoaded) {
+      schedule(() => {
+        const script = document.createElement('script');
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${env.NEXT_PUBLIC_GA4_ID}`;
+        script.async = true;
+        document.head.appendChild(script);
+
+        (window as any).dataLayer = (window as any).dataLayer || [];
+        function gtag(...args: any[]) {
+          (window as any).dataLayer.push(args);
+        }
+        gtag('js', new Date());
+        gtag('config', env.NEXT_PUBLIC_GA4_ID || '', {
+          anonymize_ip: true,
+          cookie_flags: 'SameSite=None;Secure',
+        });
+        (window as any).__gaLoaded = true;
+      }, 500);
     }
 
     // Google Ads (if marketing is accepted)
-    if (prefs.marketing && typeof window !== 'undefined') {
-      console.log('Loading Google Ads scripts...');
+    if (prefs.marketing && typeof window !== 'undefined' && !(window as any).__adsLoaded) {
+      schedule(() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Loading Google Ads scripts...');
+        }
+        // miejsce na faktyczny loader Ads kiedy będzie potrzebny
+        (window as any).__adsLoaded = true;
+      }, 3000);
     }
 
     // Facebook Pixel (if marketing is accepted)
-    if (prefs.marketing && typeof window !== 'undefined') {
-      console.log('Loading Facebook Pixel scripts...');
+    if (prefs.marketing && typeof window !== 'undefined' && !(window as any).__fbLoaded) {
+      schedule(() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Loading Facebook Pixel scripts...');
+        }
+        // miejsce na faktyczny loader FB Pixel kiedy będzie potrzebny
+        (window as any).__fbLoaded = true;
+      }, 3000);
     }
   };
 
