@@ -10,10 +10,11 @@ class WooCommerceService {
   private baseUrl: string;
 
   constructor() {
-    // Use absolute URL for server-side, relative for client-side
-    this.baseUrl = typeof window !== 'undefined' 
-      ? '/api/woocommerce' 
-      : `${process.env.NEXT_PUBLIC_WORDPRESS_URL || (process.env.NODE_ENV === 'production' ? 'https://www.filler.pl' : 'http://localhost:3000')}/api/woocommerce`;
+    // Zawsze korzystamy z lokalnego proxy `/api/woocommerce` (SSR i CSR)
+    // Na serwerze ustawiamy absolutny adres bazowy, by uniknąć zależności od WordPress przy SSR w dev
+    this.baseUrl = typeof window !== 'undefined'
+      ? '/api/woocommerce'
+      : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/woocommerce`;
     console.log('🚀 WooCommerce Optimized Service initialized with baseUrl:', this.baseUrl);
   }
 
@@ -502,17 +503,13 @@ class WooCommerceService {
 
   async addToCart(productId: number, quantity: number = 1, variation?: { id: number; attributes: Record<string, string> }): Promise<{ success: boolean; message: string; cart?: { items: CartItem[]; total: number } }> {
     try {
-      const nonceResponse = await this.getNonce();
-      if (!nonceResponse.success) {
-        throw new Error('Failed to get nonce');
-      }
-
       const response = await fetch('/api/cart-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'add',
           id: productId,
           quantity: quantity,
           variation: variation
@@ -536,20 +533,12 @@ class WooCommerceService {
 
   async removeFromCart(itemKey: string): Promise<{ success: boolean; message: string; cart?: { items: CartItem[]; total: number } }> {
     try {
-      const nonceResponse = await this.getNonce();
-      if (!nonceResponse.success) {
-        throw new Error('Failed to get nonce');
-      }
-
-      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-cart/v1/remove-item`, {
+      const response = await fetch('/api/cart-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': nonceResponse.nonce,
         },
-        body: JSON.stringify({
-          key: itemKey
-        }),
+        body: JSON.stringify({ action: 'remove', key: itemKey }),
       });
 
       if (!response.ok) {
@@ -565,21 +554,12 @@ class WooCommerceService {
 
   async updateCartItem(itemKey: string, quantity: number): Promise<{ success: boolean; message: string; cart?: { items: CartItem[]; total: number } }> {
     try {
-      const nonceResponse = await this.getNonce();
-      if (!nonceResponse.success) {
-        throw new Error('Failed to get nonce');
-      }
-
-      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-cart/v1/update-item`, {
+      const response = await fetch('/api/cart-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': nonceResponse.nonce,
         },
-        body: JSON.stringify({
-          key: itemKey,
-          quantity: quantity
-        }),
+        body: JSON.stringify({ action: 'update', key: itemKey, quantity }),
       });
 
       if (!response.ok) {
@@ -595,7 +575,11 @@ class WooCommerceService {
 
   async getCart(): Promise<{ success: boolean; cart?: { items: CartItem[]; total: number }; error?: string }> {
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-cart/v1/cart`);
+      const response = await fetch('/api/cart-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cart' })
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -673,13 +657,11 @@ class WooCommerceService {
   // =========================================
   async loginUser(email: string, password: string): Promise<{ success: boolean; user?: { id: number; email: string; name: string; token: string }; error?: string }> {
     try {
-      // In headless mode, we'll check if user exists in WooCommerce
-      // Note: This is a simplified approach for headless setup
-      const customerResponse = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/customers`, {
+      // Use local API proxy
+      const customerResponse = await fetch(`/api/woocommerce?endpoint=customers&email=${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa(`${env.WC_CONSUMER_KEY}:${env.WC_CONSUMER_SECRET}`)
         },
       });
 
@@ -688,7 +670,7 @@ class WooCommerceService {
       }
 
       const customers = await customerResponse.json();
-      const user = customers.find((c: any) => c.email === email);
+      const user = Array.isArray(customers) ? customers.find((c: any) => c.email === email) : null;
       
       if (!user) {
         return {
@@ -736,11 +718,10 @@ class WooCommerceService {
       
       console.log('🔍 Register user payload:', payload);
       
-      const response = await fetch(`${env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/wc/v3/customers`, {
+      const response = await fetch(`/api/woocommerce?endpoint=customers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa(`${env.WC_CONSUMER_KEY}:${env.WC_CONSUMER_SECRET}`)
         },
         body: JSON.stringify(payload),
       });
@@ -752,7 +733,7 @@ class WooCommerceService {
         // Try to parse error response for better error message
         try {
           const errorData = JSON.parse(errorText);
-          if (errorData.code === 'registration-error-email-exists') {
+          if (errorData.code === 'registration-error-email-exists' || errorData.message?.includes('istnieje')) {
             throw new Error(errorData.message || 'Email już istnieje');
           }
         } catch (parseError) {
