@@ -367,4 +367,5 @@ class StoreApiService {
   }
 }
 
-export default new StoreApiService();
+const storeApiService = new StoreApiService();
+export default storeApiService;

@@ -3,6 +3,8 @@ import { HydrationBoundary, dehydrate, QueryClient } from '@tanstack/react-query
 import { wooCommerceOptimized } from '@/services/woocommerce-optimized';
 import ProductClient from './product-client';
 
+export const revalidate = 300;
+
 interface ProductPageProps {
   params: Promise<{
     slug: string;

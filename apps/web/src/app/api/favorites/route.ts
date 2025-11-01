@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { WooProduct } from '@/types/woocommerce';
 
 // Mock database - w prawdziwej aplikacji używałbyś bazy danych

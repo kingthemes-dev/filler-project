@@ -160,7 +160,7 @@ export class ImageOptimizer {
   }
 
   // Optimize external images
-  private optimizeExternalImage(url: string, options: any): string {
+  private optimizeExternalImage(url: string, _options: any): string {
     // For external images, we can use a proxy service or return original
     // In production, you might want to use a service like Cloudinary or ImageKit
     return url;

@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { universalFilterService, UniversalCategory } from '@/services/universal-filter-service';
+// removed unused imports from universal-filter-service
 import { FilterConfig } from '@/config/filter-config';
 
 interface UniversalCategoryFiltersProps {
@@ -57,9 +57,7 @@ export default function UniversalCategoryFilters({
     });
   };
 
-  const handleCategoryClick = (categorySlug: string) => {
-    onCategoryChange(categorySlug);
-  };
+  // removed unused handleCategoryClick helper
 
   const isCategoryExpanded = (categoryId: string) => expandedCategories.has(categoryId);
   const isCategorySelected = (categorySlug: string) => selectedCategories.includes(categorySlug);

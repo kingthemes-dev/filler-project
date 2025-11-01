@@ -275,7 +275,7 @@ export async function prefetchWithErrorHandling(queryClient: QueryClient) {
         }
       }
     });
-  } catch (error) {
+  } catch {
     console.warn('Primary API failed, trying fallback...');
     
     try {
@@ -290,7 +290,7 @@ export async function prefetchWithErrorHandling(queryClient: QueryClient) {
           }
         }
       });
-    } catch (fallbackError) {
+    } catch {
       console.error('All APIs failed, using cached data');
       // Component will use cached data or show loading state
     }

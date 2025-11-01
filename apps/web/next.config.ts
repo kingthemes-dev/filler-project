@@ -4,9 +4,12 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
-// Debug environment variables
-console.log('🔍 Next.js Config - GTM ID:', process.env.NEXT_PUBLIC_GTM_ID);
-console.log('🔍 Next.js Config - GA4 ID:', process.env.NEXT_PUBLIC_GA4_ID);
+// Debug environment variables (only log once per process)
+if (!(global as any).__nextConfigLogged) {
+  console.log('🔍 Next.js Config - GTM ID:', process.env.NEXT_PUBLIC_GTM_ID);
+  console.log('🔍 Next.js Config - GA4 ID:', process.env.NEXT_PUBLIC_GA4_ID);
+  (global as any).__nextConfigLogged = true;
+}
 
 const nextConfig: NextConfig = {
   eslint: {
@@ -18,8 +21,8 @@ const nextConfig: NextConfig = {
   // Fix for Vercel routes-manifest issue with Next.js 15
   distDir: '.next',
       experimental: {
-        // Temporary: disable experimental features for stable Vercel deployment
-        // optimizePackageImports: false, // Disabled for Vercel stability
+        // Enable package import optimization for better tree-shaking
+        optimizePackageImports: ['framer-motion', 'lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@tanstack/react-query'],
         // ppr: true, // Partial Prerendering - requires Next.js canary
       },
   // Fix for Node.js v18 compatibility - moved to top level

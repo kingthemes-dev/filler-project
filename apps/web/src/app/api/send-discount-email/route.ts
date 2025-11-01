@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       </html>
     `;
 
-    const textContent = `
+    const _textContent = `
 ${source === 'registration' ? '🎉 Witamy!' : '🎁 Dziękujemy!'}
 
 ${source === 'registration' 

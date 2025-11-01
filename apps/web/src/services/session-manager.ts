@@ -40,12 +40,6 @@ interface SessionData {
   };
 }
 
-interface CartSession {
-  sessionId: string;
-  items: any[];
-  totals: any;
-  lastUpdated: Date;
-}
 
 class SessionManager {
   private redis: Redis | null = null;
@@ -457,4 +451,5 @@ class SessionManager {
   }
 }
 
-export default new SessionManager();
+const sessionManager = new SessionManager();
+export default sessionManager;

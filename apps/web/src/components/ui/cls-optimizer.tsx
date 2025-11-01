@@ -99,7 +99,7 @@ export function ImageCLSOptimizer({
   height = 200,
   className = '',
   priority = false,
-  placeholder = 'blur',
+  placeholder: _placeholder = 'blur',
   blurDataURL
 }: ImageCLSOptimizerProps) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -160,6 +160,7 @@ export function ImageCLSOptimizer({
       )}
 
       {/* Actual image */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}

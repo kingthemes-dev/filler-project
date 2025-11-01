@@ -17,7 +17,6 @@ import wooCommerceService from '@/services/woocommerce-optimized';
 import { 
   validateNIP, 
   validatePhone, 
-  validateEmail, 
   validateName, 
   validateCompanyName, 
   validateAddress, 
@@ -28,7 +27,7 @@ import {
 
 export default function MyAccountPage() {
   const router = useRouter();
-  const { user, isAuthenticated, updateUser, updateProfile, changePassword, logout, fetchUserProfile } = useAuthStore();
+  const { user, isAuthenticated, updateProfile, changePassword, logout, fetchUserProfile } = useAuthStore();
   const { favorites, removeFromFavorites } = useFavoritesStore();
   const { addItem, openCart } = useCartStore();
   const [isEditing, setIsEditing] = useState(false);

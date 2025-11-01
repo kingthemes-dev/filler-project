@@ -643,10 +643,11 @@ function throttle<T extends (...args: any[]) => any>(func: T, limit: number): T 
 export const behaviorTracker = new BehaviorTracker();
 
 // Export all analytics utilities
-export default {
+const analyticsExports = {
   analytics,
   performanceMonitor,
   errorTracker,
   behaviorTracker,
   EVENT_TYPES
 };
+export default analyticsExports;

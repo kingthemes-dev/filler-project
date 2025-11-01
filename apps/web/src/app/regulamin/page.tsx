@@ -35,7 +35,7 @@ export default function RegulaminPage() {
             <div className="prose prose-gray max-w-none">
               <p className="text-gray-700 leading-relaxed mb-4">
                 Niniejszy regulamin określa zasady korzystania ze sklepu internetowego 
-                <strong> King Beauty Store</strong> (dalej: "Sklep") dostępnego pod adresem 
+                <strong> King Beauty Store</strong> (dalej: &quot;Sklep&quot;) dostępnego pod adresem 
                 <code className="bg-gray-100 px-2 py-1 rounded">kingbeautystore.pl</code>.
               </p>
               <p className="text-gray-700 leading-relaxed">

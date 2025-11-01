@@ -40,7 +40,7 @@ export default function FreeShippingBanner() {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [hasScrolled]);
 
   // Listen for shop modal open/close events
   useEffect(() => {

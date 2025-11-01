@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, ShoppingBag } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -61,11 +61,8 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
   };
 
   const featuredProduct = selectFeaturedProduct();
-  const isLoading = !featuredProduct;
 
-  const formatPrice = (price: string) => {
-    return `${parseFloat(price).toFixed(2)} PLN`;
-  };
+  // removed unused formatPrice helper
 
   const formatPriceInline = (price: string) => {
     return `${parseFloat(price).toFixed(2)} PLN`;
@@ -76,16 +73,14 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
     <section className="relative h-auto min-h-[400px] sm:min-h-[450px] lg:min-h-[500px] rounded-2xl sm:rounded-3xl overflow-hidden">
       <div className="absolute inset-0 h-full">
         <div className="relative h-full overflow-hidden">
-          {/* Background Image - optimized for LCP - native img for fastest load */}
+          {/* Background Image - optimized for LCP */}
           <div className="absolute inset-0 z-0">
-            <img
+            <Image
               src="/images/hero/hero-bg.webp"
               alt="Hero background"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              width="1920"
-              height="1080"
+              priority
+              width={1920}
+              height={1080}
               className="absolute inset-0 w-full h-full object-cover object-center"
             />
             {/* Overlay */}

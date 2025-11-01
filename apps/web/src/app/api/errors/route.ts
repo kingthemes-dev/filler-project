@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { logger } from '@/utils/logger';
 import { redisCache } from '@/lib/redis';
 

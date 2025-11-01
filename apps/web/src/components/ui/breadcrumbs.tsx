@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChevronRight, Home, MoreHorizontal } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface BreadcrumbItem {
@@ -29,24 +29,11 @@ export default function Breadcrumbs({
   variant = 'default',
   size = 'md'
 }: BreadcrumbsProps) {
-  const [isOverflowing, setIsOverflowing] = useState(false);
+  // removed unused overflow state
   const [showOverflow, setShowOverflow] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Check if breadcrumbs are overflowing
-  useEffect(() => {
-    const checkOverflow = () => {
-      if (containerRef.current) {
-        const container = containerRef.current;
-        const isOverflow = container.scrollWidth > container.clientWidth;
-        setIsOverflowing(isOverflow);
-      }
-    };
-
-    checkOverflow();
-    window.addEventListener('resize', checkOverflow);
-    return () => window.removeEventListener('resize', checkOverflow);
-  }, [items]);
+  // removed overflow measurement effect
 
   // Size variants
   const sizeClasses = {

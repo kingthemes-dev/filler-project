@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { env } from '@/config/env';
 import { revalidatePath, revalidateTag } from 'next/cache';
 

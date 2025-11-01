@@ -2,7 +2,7 @@
  * Performance optimization utilities
  */
 
-import { memo, useMemo, useCallback, startTransition } from 'react';
+import { memo, useMemo, startTransition } from 'react';
 import { logger } from './logger';
 
 // Debounce function for search and input
@@ -256,7 +256,7 @@ export const optimizedComponents = {
 };
 
 // Export performance utilities
-export default {
+const performanceExports = {
   debounce,
   throttle,
   useIntersectionObserver,
@@ -273,3 +273,4 @@ export default {
   checkPerformanceBudget,
   optimizedComponents
 };
+export default performanceExports;

@@ -138,7 +138,7 @@ export function getFocusableElements(container: HTMLElement): HTMLElement[] {
 export function useScreenReader() {
   const [announcements, setAnnouncements] = useState<string[]>([]);
   
-  const announce = (message: string, priority: 'polite' | 'assertive' = 'polite') => {
+  const announce = (message: string, _priority: 'polite' | 'assertive' = 'polite') => {
     setAnnouncements(prev => [...prev, message]);
     
     // Clear announcement after a delay
@@ -446,7 +446,7 @@ export function AccessibleModal({
   );
 }
 
-export default {
+const accessibilityExports = {
   ARIA,
   KEYBOARD_KEYS,
   useFocusManagement,
@@ -460,3 +460,4 @@ export default {
   AccessibleButton,
   AccessibleModal
 };
+export default accessibilityExports;

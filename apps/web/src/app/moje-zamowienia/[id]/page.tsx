@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { Package, ArrowLeft, Calendar, CheckCircle, Clock, Truck, User, MapPin, CreditCard } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { formatPrice } from '@/utils/format-price';

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import ModalCloseButton from './modal-close-button';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingBag, Trash2, Plus, Minus, Truck, CreditCard, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Trash2, Plus, Minus, Truck, ArrowRight } from 'lucide-react';
 import { useCartStore, type CartItem } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { analytics } from '@headless-woo/shared/utils/analytics';
@@ -19,8 +19,6 @@ export default function CartDrawer() {
   // Swipe gesture state
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [swipeProgress, setSwipeProgress] = useState(0);
   
   // Loading states
   const [isUpdating, setIsUpdating] = useState(false);
@@ -40,7 +38,7 @@ export default function CartDrawer() {
         isAuthenticated 
       });
     }
-  }, [isOpen, itemCount, total, isAuthenticated]);
+  }, [isOpen, itemCount, total, isAuthenticated, fetchUserProfile]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -112,24 +110,16 @@ export default function CartDrawer() {
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
-    setIsDragging(true);
-    setSwipeProgress(0);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
     
-    if (touchStart && isOpen) {
-      const distance = e.targetTouches[0].clientX - touchStart;
-      const progress = Math.min(Math.max(distance / 100, 0), 1); // Normalize to 0-1
-      setSwipeProgress(progress);
-    }
+    // no-op visual tracking
   };
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) {
-      setSwipeProgress(0);
-      setIsDragging(false);
       return;
     }
     
@@ -141,8 +131,7 @@ export default function CartDrawer() {
       closeCart();
     }
     
-    setSwipeProgress(0);
-    setIsDragging(false);
+    // reset
   };
 
   return (

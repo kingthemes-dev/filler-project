@@ -8,7 +8,7 @@ describe('ErrorTracker', () => {
 
   beforeEach(() => {
     errorTracker = new ErrorTracker();
-    (fetch as jest.Mock).mockClear();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -64,7 +64,8 @@ describe('ErrorTracker', () => {
 
   describe('Error Flushing', () => {
     it('should flush errors when queue is full', async () => {
-      (fetch as jest.Mock).mockResolvedValue({ ok: true });
+      // Ensure fetch is a mock for this test
+      (global as any).fetch = jest.fn().mockResolvedValue({ ok: true });
 
       // Fill the error queue
       for (let i = 0; i < 60; i++) {

@@ -33,9 +33,6 @@ export default function PopupChipsMotion({ labels, isOpen, density = 'med', clas
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [dims, setDims] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
-  // Do not render anything if closed (perf)
-  if (!isOpen) return null;
-
   const items = useMemo(() => {
     const base = (labels && labels.length ? labels : DEFAULT_LABELS).slice();
     return base.slice(0, getMaxByDensity(density));
@@ -75,6 +72,8 @@ export default function PopupChipsMotion({ labels, isOpen, density = 'med', clas
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
+
+  if (!isOpen) return null;
 
   return (
     <div

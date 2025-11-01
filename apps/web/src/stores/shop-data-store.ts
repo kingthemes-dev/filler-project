@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import shopDataPrefetch, { ShopData, ShopCategory, ShopAttribute, ShopAttributes } from '@/services/shop-data-prefetch';
+import shopDataPrefetch, { ShopCategory, ShopAttribute, ShopAttributes } from '@/services/shop-data-prefetch';
 
 // Types
 export interface ShopDataState {

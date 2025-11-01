@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UI_SPACING } from '@/config/constants';
+// removed unused UI_SPACING import
 
 type PageContainerProps = {
   children: React.ReactNode;

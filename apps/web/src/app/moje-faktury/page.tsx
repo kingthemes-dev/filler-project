@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import { motion } from 'framer-motion';
 import { FileText, Download, Calendar, Euro, Eye } from 'lucide-react';
@@ -39,13 +39,7 @@ export default function MyInvoicesPage() {
   }, [isAuthenticated, router]);
 
   // Fetch invoices
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      fetchInvoices();
-    }
-  }, [isAuthenticated, user?.id]);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -84,7 +78,13 @@ export default function MyInvoicesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      fetchInvoices();
+    }
+  }, [isAuthenticated, user?.id, fetchInvoices]);
 
   const getStatusInfo = (status: string) => {
     switch (status) {

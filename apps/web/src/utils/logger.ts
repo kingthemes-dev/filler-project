@@ -67,7 +67,7 @@ class Logger {
           const parsed = JSON.parse(authData);
           return parsed.state?.user?.id?.toString();
         }
-      } catch (error) {
+      } catch {
         // Ignore parsing errors
       }
     }
@@ -78,7 +78,7 @@ class Logger {
     if (typeof window !== 'undefined') {
       try {
         return sessionStorage.getItem('sessionId') || undefined;
-      } catch (error) {
+      } catch {
         return undefined;
       }
     }
@@ -141,7 +141,7 @@ class Logger {
     }
   }
 
-  private async sendToExternalService(entry: LogEntry): Promise<void> {
+  private async sendToExternalService(_entry: LogEntry): Promise<void> {
     // TODO: Implement external logging service (Sentry, LogRocket, etc.)
     // For now, we'll just log to console in production
     try {

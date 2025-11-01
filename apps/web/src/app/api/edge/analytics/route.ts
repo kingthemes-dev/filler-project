@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         },
       }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to process analytics event' },
       { status: 500 }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get analytics summary (mock data for edge function)
     const summary = {
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         'Vercel-CDN-Cache-Control': 'max-age=300',
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to get analytics summary' },
       { status: 500 }

@@ -65,7 +65,12 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            if (
+              cacheName !== STATIC_CACHE &&
+              cacheName !== DYNAMIC_CACHE &&
+              cacheName !== API_CACHE &&
+              cacheName !== IMAGE_CACHE
+            ) {
               DEBUG && console.log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -217,24 +222,21 @@ async function apiCacheStrategy(request) {
     
     if (age < CACHE_CONFIG.API_MAX_AGE) {
       DEBUG && console.log('[SW] Serving API from cache:', request.url);
-      return cached;
+      // Return a clone to avoid locked body issues when the same Response
+      // instance is used by multiple consumers (Chrome safety)
+      return cached.clone();
     }
   }
   
   try {
     const response = await fetch(request);
     if (response.status === 200) {
-      // Create a new response with cache headers without modifying original
-      const clonedForCache = response.clone();
-      const responseToCache = new Response(clonedForCache.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: {
-          ...Object.fromEntries(response.headers.entries()),
-          'sw-cache-date': new Date().toISOString()
-        }
-      });
-      cache.put(request, responseToCache);
+      // Clone for cache and append sw-cache-date header safely
+      const cacheClone = response.clone();
+      const headers = new Headers(cacheClone.headers);
+      headers.set('sw-cache-date', new Date().toISOString());
+      const bodyForCache = await cacheClone.blob();
+      await cache.put(request, new Response(bodyForCache, { status: response.status, statusText: response.statusText, headers }));
       
       // Cleanup old entries
       cleanupCache(cache, CACHE_CONFIG.MAX_ENTRIES);

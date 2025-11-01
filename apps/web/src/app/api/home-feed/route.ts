@@ -3,7 +3,6 @@ import { env } from '@/config/env';
 
 export const runtime = 'nodejs';
 
-const WP_BASE_URL = env.NEXT_PUBLIC_WORDPRESS_URL;
 
 export async function GET() {
   try {

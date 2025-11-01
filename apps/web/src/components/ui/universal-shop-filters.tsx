@@ -8,8 +8,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal, ArrowLeft, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { X, Filter, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import UniversalCategoryFilters from './universal-category-filters';
 import UniversalAttributeFilters from './universal-attribute-filters';
 import { FilterConfig } from '@/config/filter-config';
@@ -48,20 +47,20 @@ interface UniversalShopFiltersProps {
 }
 
 export default function UniversalShopFilters({
-  categories,
+  categories: _categories,
   filters,
   priceRange,
   setPriceRange,
   onFilterChange,
   onCategoryChange,
-  onClearFilters,
+  onClearFilters: _onClearFilters,
   showFilters,
   onToggleFilters,
   totalProducts,
   filterConfig,
   preset = 'woocommerce',
-  wooCommerceCategories,
-  products = []
+  wooCommerceCategories: _wooCommerceCategories,
+  products: _products = []
 }: UniversalShopFiltersProps) {
   const [expandedSections, setExpandedSections] = useState({
     categories: true,

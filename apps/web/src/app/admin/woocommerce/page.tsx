@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ExternalLink, CheckCircle, XCircle, AlertTriangle, Clock, ShoppingCart, Users, Package, Webhook } from 'lucide-react';
+import { RefreshCw, ExternalLink, CheckCircle, XCircle, AlertTriangle, Clock, Users, Webhook } from 'lucide-react';
 
 interface WooCommerceStatus {
   api: {

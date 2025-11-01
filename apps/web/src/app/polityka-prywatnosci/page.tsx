@@ -387,7 +387,7 @@ export default function PolitykaPrywatnosciPage() {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <h3 className="font-medium text-red-900 mb-2">🗑️ Prawo usunięcia</h3>
                   <p className="text-red-800 text-sm">
-                    Możesz żądać usunięcia danych w określonych przypadkach ("prawo do bycia zapomnianym").
+                    Możesz żądać usunięcia danych w określonych przypadkach (&quot;prawo do bycia zapomnianym&quot;).
                   </p>
                 </div>
               </div>

@@ -8,7 +8,6 @@
  * w sessionStorage z możliwością odświeżania.
  */
 
-import { env } from '@/config/env';
 
 // Types
 export interface ShopCategory {
@@ -122,7 +121,7 @@ class ShopDataPrefetchService {
           categoriesData = r.ok ? await r.json() : [];
           if (!r.ok) console.warn('⚠️ Categories API error:', r.status);
         }
-      } catch (_) { categoriesData = []; }
+      } catch { categoriesData = []; }
 
       let attributesData: any = {};
       try {
@@ -131,7 +130,7 @@ class ShopDataPrefetchService {
           attributesData = r.ok ? await r.json() : {};
           if (!r.ok) console.warn('⚠️ Attributes API error:', r.status);
         }
-      } catch (_) { attributesData = {}; }
+      } catch { attributesData = {}; }
 
       let totalProducts = 0;
       try {
@@ -140,7 +139,7 @@ class ShopDataPrefetchService {
           totalProducts = r.ok ? parseInt(r.headers.get('X-WP-Total') || '0') : 0;
           if (!r.ok) console.warn('⚠️ Products API error:', r.status);
         }
-      } catch (_) { totalProducts = 0; }
+      } catch { totalProducts = 0; }
 
       // Przetwórz kategorie
       const categories: ShopCategory[] = Array.isArray(categoriesData)

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Clock, Activity } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
 
 interface ApiEndpoint {
   name: string;
@@ -20,7 +20,7 @@ export default function ApiStatus() {
   const [endpoints, setEndpoints] = useState<ApiEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const apiEndpoints = [
+  const apiEndpoints = useMemo(() => ([
     {
       name: 'Health Check',
       url: '/api/health',
@@ -51,9 +51,9 @@ export default function ApiStatus() {
       url: '/api/webhooks',
       method: 'POST'
     }
-  ];
+  ]), []);
 
-  const checkApiEndpoints = async () => {
+  const checkApiEndpoints = useCallback(async () => {
     try {
       setLoading(true);
       const results: ApiEndpoint[] = [];
@@ -104,13 +104,13 @@ export default function ApiStatus() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiEndpoints]);
 
   useEffect(() => {
     checkApiEndpoints();
     const interval = setInterval(checkApiEndpoints, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [checkApiEndpoints]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

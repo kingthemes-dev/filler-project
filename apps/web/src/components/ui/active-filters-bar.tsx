@@ -33,7 +33,7 @@ interface ActiveFiltersBarProps {
 export default function ActiveFiltersBar({
   filters,
   categories,
-  totalProducts,
+  totalProducts: _totalProducts,
   activeFiltersCount,
   onFilterChange,
   onClearFilters,

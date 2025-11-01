@@ -396,4 +396,5 @@ class BackgroundJobsService {
   }
 }
 
-export default new BackgroundJobsService();
+const backgroundJobsService = new BackgroundJobsService();
+export default backgroundJobsService;

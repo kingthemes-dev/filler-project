@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { performanceMonitor } from '@/utils/performance-monitor';
 
 export async function GET() {

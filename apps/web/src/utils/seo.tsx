@@ -337,7 +337,7 @@ export function SEOStructuredData({ data }: { data: any }) {
   );
 }
 
-export default {
+const seoExports = {
   SEO_CONFIG,
   generateMetadata,
   generateProductStructuredData,
@@ -351,3 +351,4 @@ export default {
   trackSEOMetrics,
   SEOStructuredData
 };
+export default seoExports;

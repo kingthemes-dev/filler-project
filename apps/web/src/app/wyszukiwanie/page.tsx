@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import PageContainer from '@/components/ui/page-container';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -12,8 +12,8 @@ import SearchTracking from '@/components/seo/search-tracking';
 import { logger } from '@/utils/logger';
 import KingProductCard from '@/components/king-product-card';
 import ShopFilters from '@/components/ui/shop-filters';
-import { wooCommerceOptimized } from '@/services/woocommerce-optimized';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
+// removed unused wooCommerceOptimized import
+// removed unused Breadcrumbs import
 import { Button } from '@/components/ui/button';
 
 function SearchResultsContent() {
@@ -21,7 +21,7 @@ function SearchResultsContent() {
   const query = searchParams.get('q') || '';
   
   const [searchResults, setSearchResults] = useState<WooProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [_isLoading, setIsLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -43,15 +43,8 @@ function SearchResultsContent() {
     }
   }, []);
 
-  // Search products when query or filters change
-  useEffect(() => {
-    if (query && wooService) {
-      performSearch();
-    }
-  }, [query, filters, sortBy, currentPage, wooService]);
-
   // Perform search with advanced search service
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     if (!query) return;
 
     setIsLoading(true);
@@ -96,7 +89,14 @@ function SearchResultsContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [query, currentPage, sortBy, filters]);
+
+  // Search products when query or filters change
+  useEffect(() => {
+    if (query && wooService) {
+      performSearch();
+    }
+  }, [performSearch, query, wooService]);
 
   // Handle filter change
   const handleFilterChange = (filterType: string, value: string | number | boolean) => {
@@ -140,7 +140,7 @@ function SearchResultsContent() {
     return { categories, priceRanges, ratingOptions };
   };
 
-  const { categories, priceRanges, ratingOptions } = getFilterOptions();
+  const { categories: _categories, priceRanges: _priceRanges, ratingOptions: _ratingOptions } = getFilterOptions();
 
   if (!query) {
     return (

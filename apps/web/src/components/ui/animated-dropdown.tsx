@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { ChevronDown, Check, X, Search, Filter, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Check, X, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface AnimatedDropdownOption {
@@ -79,7 +79,7 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const controls = useAnimation();
+  // removed unused controls
 
   // Get selected options
   const selectedOptions = React.useMemo(() => {

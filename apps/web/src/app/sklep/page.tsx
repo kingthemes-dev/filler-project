@@ -114,7 +114,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       retry: 2,
       retryDelay: 1000,
       });
-    } catch (_) { /* ignore prefetch errors */ }
+    } catch { /* ignore prefetch errors */ }
     
     // Prefetch categories with error handling
     const baseUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 
@@ -133,7 +133,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       retry: 1,
       retryDelay: 500,
       });
-    } catch (_) { /* ignore prefetch errors */ }
+    } catch { /* ignore prefetch errors */ }
 
     // Prefetch attributes with error handling - wszystkie atrybuty bez filtrów
     try {
@@ -153,7 +153,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       retry: 1,
       retryDelay: 500,
       });
-    } catch (_) { /* ignore prefetch errors */ }
+    } catch { /* ignore prefetch errors */ }
 
     // Prefetch dynamic filters (kategorie + atrybuty) - bezpieczny try/catch
     try {
@@ -184,7 +184,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       retry: 1,
       retryDelay: 500,
       });
-    } catch (_) { /* ignore prefetch errors */ }
+    } catch { /* ignore prefetch errors */ }
 
     // Server-side initial payload for instant render in client
     const ssrParams = new URLSearchParams();
@@ -201,7 +201,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
         signal: AbortSignal.timeout(10000)
       });
       initialShopData = ssrRes.ok ? await ssrRes.json() : initialShopData;
-    } catch (_) { /* keep default empty data */ }
+    } catch { /* keep default empty data */ }
 
     const dehydratedState = dehydrate(qc);
 

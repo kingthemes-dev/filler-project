@@ -3,6 +3,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { webhookHandler } from '@/services/webhook-handler';
 
 export async function POST(req: NextRequest) {

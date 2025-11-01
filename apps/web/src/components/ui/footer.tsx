@@ -1,6 +1,6 @@
 'use client';
 
-import { Facebook, Instagram, Mail, Phone, MapPin, Clock, Award, Truck, Shield, Building2, User, CreditCard, Info, Download, Smartphone } from 'lucide-react';
+import { Facebook, Instagram, Mail, Phone, MapPin, Clock, Building2, User, CreditCard, Info, Download } from 'lucide-react';
 
 export default function Footer() {
   return (

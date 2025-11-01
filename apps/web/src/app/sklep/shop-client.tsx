@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import PageContainer from '@/components/ui/page-container';
-import { Search, Filter, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 import KingProductCard from '@/components/king-product-card';
 
 // Import filters directly for instant loading
 import ShopFilters from '@/components/ui/shop-filters';
 import ActiveFiltersBar from '@/components/ui/active-filters-bar';
-import { wooCommerceOptimized as wooCommerceService } from '@/services/woocommerce-optimized';
+// removed unused wooCommerceService import
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import Pagination from '@/components/ui/pagination';
 
@@ -74,7 +74,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   // Debug logs removed for cleaner console
   
   // Zawsze wywołuj hooks - dane są prefetchowane
-  const { categories, mainCategories, hierarchicalCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
+  const { categories, mainCategories: _mainCategories, hierarchicalCategories, getSubCategories: _getSubCategories, isLoading: _categoriesLoading } = useShopCategories();
   const { brands, capacities, zastosowanie, isLoading: attributesLoading } = useShopAttributes();
   const { totalProducts: storeTotalProducts, initialize } = useShopDataStore();
   
@@ -168,16 +168,51 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       const categoriesChanged = JSON.stringify(currentCategories.sort()) !== JSON.stringify(urlCategories.sort());
       const brandsChanged = JSON.stringify(currentBrands.sort()) !== JSON.stringify(urlBrands.sort());
       
+      // Check if any pa_* attributes changed
+      let attrsChanged = false;
+      Object.keys(newAttrs).forEach(key => {
+        // Get current values as array (handle both array and string)
+        let currentValues: string[] = [];
+        if (Array.isArray(prev[key])) {
+          currentValues = [...(prev[key] as string[])];
+        } else if (typeof prev[key] === 'string' && prev[key]) {
+          currentValues = (prev[key] as string).split(',').map(v => v.trim()).filter(Boolean);
+        }
+        
+        const urlValues = newAttrs[key].sort();
+        if (JSON.stringify(currentValues.sort()) !== JSON.stringify(urlValues)) {
+          attrsChanged = true;
+        }
+      });
+      
+      // Also check if any pa_* attributes were removed from URL
+      Object.keys(prev).forEach(key => {
+        if (key.startsWith('pa_') && !newAttrs.hasOwnProperty(key)) {
+          attrsChanged = true;
+        }
+      });
+      
       // URL comparison debug removed
       
-      if (categoriesChanged || brandsChanged || Object.keys(newAttrs).length > 0) {
+      if (categoriesChanged || brandsChanged || attrsChanged || Object.keys(newAttrs).length > 0) {
         // URL params changed, updating filters
-        return {
+        const updatedFilters = {
           ...prev,
           categories: urlCategories,
           brands: urlBrands,
-          ...newAttrs,
         };
+        
+        // Remove pa_* attributes that are no longer in URL
+        Object.keys(updatedFilters).forEach(key => {
+          if (key.startsWith('pa_') && !newAttrs.hasOwnProperty(key)) {
+            delete (updatedFilters as any)[key];
+          }
+        });
+        
+        // Add/update pa_* attributes from URL
+        Object.assign(updatedFilters, newAttrs);
+        
+        return updatedFilters;
       }
       
       // URL params unchanged, keeping current filters
@@ -200,8 +235,17 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     Object.keys(filters).forEach((key) => {
       if (key.startsWith('pa_')) {
         const v = filters[key];
-        if (Array.isArray(v) && v.length) params.set(key, v.join(','));
-        else if (typeof v === 'string' && v) params.set(key, v);
+        // Handle both array and string values - always preserve pa_* filters
+        let values: string[] = [];
+        if (Array.isArray(v)) {
+          values = v;
+        } else if (typeof v === 'string' && v) {
+          values = v.split(',').map(val => val.trim()).filter(Boolean);
+        }
+        
+        if (values.length > 0) {
+          params.set(key, values.join(','));
+        }
       }
     });
     const qs = params.toString();
@@ -247,8 +291,19 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       if (filters.minPrice > 0) params.append('min_price', String(filters.minPrice));
       if (filters.maxPrice > 0 && filters.maxPrice < 10000) params.append('max_price', String(filters.maxPrice));
       Object.keys(filters).forEach(key => {
-        if (key.startsWith('pa_') && Array.isArray(filters[key]) && (filters[key] as string[]).length > 0) {
-          params.append(key, (filters[key] as string[]).join(','));
+        if (key.startsWith('pa_')) {
+          const filterValue = filters[key];
+          // Handle both array and string values (from URL or state)
+          let values: string[] = [];
+          if (Array.isArray(filterValue)) {
+            values = filterValue;
+          } else if (typeof filterValue === 'string' && filterValue) {
+            values = filterValue.split(',').map(v => v.trim()).filter(Boolean);
+          }
+          
+          if (values.length > 0) {
+            params.append(key, values.join(','));
+          }
         }
       });
       
@@ -298,7 +353,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   // Debounced filter update dla lepszej wydajności - tylko dla produktów
   const debouncedProductUpdate = useDebouncedCallback(
-    (newFilters: FilterState) => {
+    (_newFilters: FilterState) => {
   // Debounced product update triggered
       // React Query automatycznie zaktualizuje produkty na podstawie zmiany queryKey
     },
@@ -321,23 +376,48 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       newFilters = { ...filters, [key]: newArray };
     } else if (key.startsWith('pa_')) {
       // Handle dynamic attribute filters (comma-separated values)
-      // Handle both string (comma-separated) and array values
-      let attributeValues: string[];
-      if (typeof value === 'string') {
-        attributeValues = value.split(',').filter(v => v.trim());
-      } else if (Array.isArray(value)) {
-        attributeValues = value;
-      } else {
-        attributeValues = [String(value)];
+      // Always merge with existing values, never replace
+      const currentValue = filters[key];
+      let currentArray: string[] = [];
+      
+      // Get current values as array
+      if (Array.isArray(currentValue)) {
+        currentArray = [...currentValue];
+      } else if (typeof currentValue === 'string' && currentValue) {
+        currentArray = currentValue.split(',').map(v => v.trim()).filter(Boolean);
       }
       
-      // Attribute filter change debug removed
+      // Parse new value(s)
+      let newValues: string[];
+      if (typeof value === 'string') {
+        newValues = value.split(',').map(v => v.trim()).filter(Boolean);
+      } else if (Array.isArray(value)) {
+        newValues = value;
+      } else {
+        newValues = [String(value)];
+      }
+      
+      // For each new value, toggle it (add if not exists, remove if exists)
+      let finalArray = [...currentArray];
+      newValues.forEach(newVal => {
+        if (finalArray.includes(newVal)) {
+          // Remove if exists
+          finalArray = finalArray.filter(v => v !== newVal);
+        } else {
+          // Add if doesn't exist
+          finalArray.push(newVal);
+        }
+      });
+      
+      // Remove duplicates and sort for consistency
+      finalArray = [...new Set(finalArray)].sort();
+      
       // PRO: If no values, remove the attribute completely
-      if (attributeValues.length === 0) {
+      if (finalArray.length === 0) {
         newFilters = { ...filters };
         delete newFilters[key];
       } else {
-        newFilters = { ...filters, [key]: attributeValues };
+        newFilters = { ...filters, [key]: finalArray };
       }
     } else {
       // Handle other filters
@@ -443,22 +523,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     return items;
   };
 
-  const clearSingleFilter = (key: string, value: string) => {
-    if (key === 'search') setFilters((p) => { analytics.track('filter_remove', { key, value }); return ({ ...p, search: '' }); });
-    else if (key === 'category') setFilters((p) => ({ ...p, categories: p.categories.filter((c) => c !== value) }));
-    else if (key === 'brands') setFilters((p) => ({ ...p, brands: (p.brands as string[]).filter((b) => b !== value) }));
-    else if (key === 'minPrice') setFilters((p) => ({ ...p, minPrice: -1 }));
-    else if (key === 'maxPrice') setFilters((p) => ({ ...p, maxPrice: -1 }));
-    else if (key === 'inStock') setFilters((p) => ({ ...p, inStock: false }));
-    else if (key === 'onSale') setFilters((p) => ({ ...p, onSale: false }));
-    else if (key.startsWith('pa_')) setFilters((p) => {
-      const v = p[key];
-      const values = Array.isArray(v) ? v : typeof v === 'string' ? v.split(',').filter(Boolean) : [];
-      const next = values.filter((val) => val !== value);
-      analytics.track('filter_remove', { key, value });
-      return { ...p, [key]: next } as any;
-    });
-  };
+  // removed unused clearSingleFilter
 
   // totalPages is now managed by state
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { performanceMonitor } from '@/utils/performance-monitor';
+// removed unused performanceMonitor import
 
 /**
  * Client-side Performance Tracker Component

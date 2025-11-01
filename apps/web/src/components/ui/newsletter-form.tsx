@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Check, Mail, AlertCircle, Sparkles } from 'lucide-react';
+import { Check, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function NewsletterForm() {
   const [email, setEmail] = useState('');
@@ -50,7 +49,7 @@ export default function NewsletterForm() {
         const data = await response.json();
         setError(data.message || 'Wystąpił błąd podczas zapisywania');
       }
-    } catch (error) {
+    } catch {
       setError('Wystąpił błąd podczas zapisywania');
     } finally {
       setIsLoading(false);

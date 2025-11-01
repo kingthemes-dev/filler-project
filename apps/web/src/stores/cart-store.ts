@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import wooCommerceService from '@/services/woocommerce-optimized';
-import storeApiService from '@/services/store-api';
-import cartPersistenceService from '@/services/cart-persistence';
-import sessionManager from '@/services/session-manager';
 import { calculatePriceWithVAT } from '@/utils/format-price';
 
 // Types
@@ -100,7 +97,7 @@ export const useCartStore = create<CartStore>()(
             } else {
               // WooCommerce API sync skipped debug removed
             }
-          } catch (apiError) {
+          } catch {
             // This should not happen anymore, but just in case
             // WooCommerce API sync skipped debug removed
           }

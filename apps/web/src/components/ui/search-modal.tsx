@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Clock, TrendingUp, Star, ArrowRight } from 'lucide-react';
+import { Search, Clock, TrendingUp, Star, ArrowRight } from 'lucide-react';
 import ModalCloseButton from './modal-close-button';
 import { WooProduct } from '@/types/woocommerce';
 import { formatPrice } from '@/utils/format-price';
@@ -111,10 +111,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }
   }, [isOpen]);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    saveToHistory(query);
-  };
+  // removed unused handleSearch helper
 
   const handleHistoryClick = (query: string) => {
     setSearchQuery(query);
@@ -264,7 +261,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     {/* Suggestions (top 5) */}
                     {suggestions.length > 0 && (
                       <>
-                        {suggestions.map((product, index) => (
+                        {suggestions.map((product) => (
                           <motion.div
                             key={product.id}
                             initial={{ opacity: 0, y: 10 }}

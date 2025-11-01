@@ -2,19 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, User, Phone, Building, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import ModalCloseButton from '../modal-close-button';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { 
-  validateName, 
   validateEmail, 
-  validatePhone, 
-  validateCompanyName, 
-  validateNIP, 
   validatePassword, 
-  validateConfirmPassword,
-  formatPhone 
+  validateConfirmPassword
 } from '@/utils/validation';
 
 interface RegisterModalProps {

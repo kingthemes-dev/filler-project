@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 // import { Switch } from '@/components/ui/switch'; // Switch component not available
-import { RefreshCw, Save, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Save, Eye, EyeOff } from 'lucide-react';
 
 interface Settings {
   woocommerce: {
@@ -138,7 +138,7 @@ export default function SettingsPage() {
       // Clear status after 3 seconds
       setTimeout(() => setConnectionStatus(null), 3000);
       
-    } catch (error) {
+    } catch {
       setConnectionStatus('Connection failed!');
       setTimeout(() => setConnectionStatus(null), 3000);
     } finally {

@@ -37,7 +37,7 @@ export default function AdminLogin() {
       } else {
         setError('Nieprawidłowy token administratora');
       }
-    } catch (err) {
+    } catch {
       setError('Błąd połączenia. Spróbuj ponownie.');
     } finally {
       setLoading(false);

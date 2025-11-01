@@ -3,6 +3,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { hposPerformanceMonitor } from '@/services/hpos-performance-monitor';
 
 export async function GET(req: NextRequest) {

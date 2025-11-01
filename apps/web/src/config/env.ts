@@ -50,7 +50,7 @@ const REQUIRED_SERVER_VARS = [
 ] as const;
 
 // Optional environment variables
-const OPTIONAL_ENV_VARS = [
+const _OPTIONAL_ENV_VARS = [
   'SENDINBLUE_API_KEY',
   'SENDINBLUE_LIST_ID',
   'NEXT_PUBLIC_GA_ID',
@@ -92,7 +92,7 @@ function validateEnv(): EnvConfig {
     try {
       new URL(wordpressUrl);
       new URL(baseUrl);
-    } catch (error) {
+    } catch {
       if (!isBrowser) {
         console.warn('Invalid URL in environment variables, using defaults');
       }

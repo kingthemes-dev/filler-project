@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import PageContainer from '@/components/ui/page-container';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Truck, Shield } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import { formatPrice } from '@/utils/format-price';
-import wooCommerceService, { wooCommerceOptimized } from '@/services/woocommerce-optimized';
+import { wooCommerceOptimized } from '@/services/woocommerce-optimized';
 import ReviewsList from '@/components/ui/reviews-list';
-import Image from 'next/image';
+// removed unused Image import
 import ReviewForm from '@/components/ui/review-form';
 import Link from 'next/link';
 import SimilarProducts from '@/components/ui/similar-products';
@@ -29,7 +29,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
   usePerformanceMonitoring();
 
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'shipping'>('description');
-  const [selectedCapacity, setSelectedCapacity] = useState<string>('');
+  const [selectedCapacity] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -102,7 +102,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
         "datePublished": review.date_created
       }))
     };
-  }, [productQuery.data, reviewsQuery.data, slug]);
+  }, [productQuery.data, reviewsQuery.data]);
 
   // Breadcrumb JSON-LD
   const breadcrumbJsonLd = useMemo(() => {
@@ -162,10 +162,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
     return Math.round(((parseFloat(product.regular_price) - parseFloat(product.sale_price)) / parseFloat(product.regular_price)) * 100);
   }, [product, isOnSale]);
 
-  const getVariationPrice = (capacity: string): number => {
-    const variation = variations.find(v => (v.attributes || []).some(a => (a.slug?.includes('pojemnosc') || a.slug?.includes('pojemność')) && a.option === capacity));
-    return variation ? parseFloat(variation.price) : parseFloat(product?.price || '0');
-  };
+  // removed getVariationPrice helper (unused)
 
   const handleAddToCart = () => {
     if (!product) return;

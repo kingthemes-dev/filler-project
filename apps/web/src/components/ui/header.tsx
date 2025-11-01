@@ -1,19 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UI_SPACING } from '@/config/constants';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, User, Heart, ShoppingCart, Menu, X, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Youtube, Plus, Tag } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Plus, Tag } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
-import { useWishlist } from '@/hooks/use-wishlist';
+// import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
-import Image from 'next/image';
 import EmailNotificationCenter from './email/email-notification-center';
 import ShopExplorePanel from './shop-explore-panel';
-import SearchModal from './search-modal';
-import { useShopDataStore, useShopCategories, useShopAttributes, useShopStats } from '@/stores/shop-data-store';
+import dynamic from 'next/dynamic';
+const SearchModal = dynamic(() => import('./search-modal'), { ssr: false });
+import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
 
 
 
@@ -25,9 +24,9 @@ export default function Header() {
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
-  const [isShopExpanded, setIsShopExpanded] = useState(false);
-  const [isBrandsExpanded, setIsBrandsExpanded] = useState(false);
-  const [shopHoverTimeout, setShopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isShopExpanded] = useState(false);
+  const [isBrandsExpanded] = useState(false);
+  const [shopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   
   // 🚀 SENIOR LEVEL - Slide Navigation State
@@ -35,9 +34,9 @@ export default function Header() {
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
   
   // Użyj prefetched data z store
-  const { categories, mainCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
+  const { categories, mainCategories: _mainCategories, getSubCategories: _getSubCategories, isLoading: categoriesLoading } = useShopCategories();
   const { brands, isLoading: brandsLoading } = useShopAttributes();
-  const { totalProducts, initialize } = useShopDataStore();
+  const { totalProducts: _totalProducts, initialize } = useShopDataStore();
   
   // Reset view when closing mobile menu
   const closeMobileMenu = () => {
@@ -62,8 +61,7 @@ export default function Header() {
   
   // Safely access stores with error handling
   let itemCount = 0, openCart = () => {}, user = null, isAuthenticated = false, logout = () => {};
-  let openFavoritesModal = () => {}, getFavoritesCount = () => 0, favorites = [];
-  let wishlistCount = 0;
+  let openFavoritesModal = () => {}, favorites = [];
   
   try {
     const cartStore = useCartStore();
@@ -85,20 +83,17 @@ export default function Header() {
   try {
     const favoritesStore = useFavoritesStore();
     openFavoritesModal = favoritesStore.openFavoritesModal;
-    getFavoritesCount = favoritesStore.getFavoritesCount;
     favorites = favoritesStore.favorites;
   } catch (error) {
     console.warn('Favorites store not available:', error);
   }
 
-  const { getItemCount } = useWishlist();
-  wishlistCount = getItemCount();
+  // wishlist removed
 
-  // Fix hydration issue by syncing favorites count after mount
+  // Mount flag for client-only UI updates
   useEffect(() => {
     setIsMounted(true);
-    setFavoritesCount(getFavoritesCount());
-  }, [getFavoritesCount]);
+  }, []);
 
 
   // Update favorites count when favorites array changes
@@ -432,6 +427,8 @@ export default function Header() {
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center justify-center w-8 h-8 leading-none"
+                  aria-label="Menu użytkownika"
+                  aria-expanded={showUserMenu}
                 >
                   <User className="w-6 h-6 block" strokeWidth={1.5} />
                 </button>

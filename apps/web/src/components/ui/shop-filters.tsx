@@ -3,8 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Filter, ChevronDown, ChevronUp, SlidersHorizontal, ArrowLeft, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { X, Filter, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import HierarchicalCategoryFilters from './hierarchical-category-filters';
 import DynamicAttributeFilters from './dynamic-attribute-filters';
 
@@ -43,22 +42,22 @@ interface ShopFiltersProps {
 }
 
 export default function ShopFilters({
-  categories,
+  categories: _categories,
   filters,
   priceRange,
   setPriceRange,
   onFilterChange,
-  onCategoryChange,
-  onClearFilters,
+  onCategoryChange: _onCategoryChange,
+  onClearFilters: _onClearFilters,
   showFilters,
   onToggleFilters,
   totalProducts,
-  attributesLoading,
+  attributesLoading: _attributesLoading,
   dynamicFiltersData,
   contextualAttributes,
   contextualLoading,
   wooCommerceCategories,
-  products = []
+  products: _products = []
 }: ShopFiltersProps) {
   const [expandedSections, setExpandedSections] = useState({
     categories: true,

@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, User, Heart, ShoppingCart, ChevronRight, Sparkles, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ChevronRight, Sparkles, Filter } from 'lucide-react';
 import Link from 'next/link';
-import { useCartStore } from '@/stores/cart-store';
-import { useAuthStore } from '@/stores/auth-store';
-import { useFavoritesStore } from '@/stores/favorites-store';
+import { useRouter, useSearchParams } from 'next/navigation';
+// removed unused stores
 import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
-import AnimatedDropdown from './animated-dropdown';
+// removed unused AnimatedDropdown
 
 interface ShopExplorePanelProps {
   open: boolean;
@@ -16,14 +15,75 @@ interface ShopExplorePanelProps {
 }
 
 export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   
   // Użyj prefetched data z store
-  const { categories, mainCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
+  const { categories: _categories, mainCategories, getSubCategories, isLoading: categoriesLoading } = useShopCategories();
   const { brands, zastosowanie, isLoading: attributesLoading } = useShopAttributes(); // Użyj wszystkich marek zamiast brandsForModal
   const { initialize, isLoading: storeLoading } = useShopDataStore();
+
+  // Helper function to build URL with existing params + new filter
+  // Uses window.location.search to always get current URL params (not stale from hook)
+  const buildFilterUrl = (newParams: Record<string, string>) => {
+    const params = new URLSearchParams();
+    
+    // Get current URL params from window (always fresh) or fallback to searchParams hook
+    const currentUrlParams = typeof window !== 'undefined' 
+      ? new URLSearchParams(window.location.search) 
+      : searchParams;
+    
+    // Collect all existing values for array-like params
+    const existingArrayParams: Record<string, string[]> = {};
+    currentUrlParams.forEach((value, key) => {
+      if (key === 'category' || key === 'brands' || key.startsWith('pa_')) {
+        if (!existingArrayParams[key]) {
+          existingArrayParams[key] = [];
+        }
+        // Handle comma-separated values from existing params
+        const values = value.split(',').map(v => v.trim()).filter(Boolean);
+        existingArrayParams[key].push(...values);
+      } else {
+        // Non-array params - preserve only if not being updated
+        if (!newParams.hasOwnProperty(key)) {
+          params.append(key, value);
+        }
+      }
+    });
+    
+    // Add/update new params with proper merging
+    Object.entries(newParams).forEach(([key, value]) => {
+      if (value) {
+        // For array-like params (category, brands, pa_*), merge with existing
+        if (key === 'category' || key === 'brands' || key.startsWith('pa_')) {
+          const existingValues = existingArrayParams[key] || [];
+          // Check if value is not already in existing values
+          if (!existingValues.includes(value)) {
+            const allValues = [...existingValues, value];
+            // Set all values as comma-separated string (consistent with shop-client.tsx)
+            params.set(key, allValues.join(','));
+          } else {
+            // Value already exists, keep existing
+            params.set(key, existingArrayParams[key].join(','));
+          }
+        } else {
+          params.set(key, value);
+        }
+      }
+    });
+    
+    // Add remaining array params that weren't updated
+    Object.entries(existingArrayParams).forEach(([key, values]) => {
+      if (!newParams.hasOwnProperty(key) && values.length > 0) {
+        params.set(key, [...new Set(values)].join(',')); // Remove duplicates
+      }
+    });
+    
+    return `/sklep?${params.toString()}`;
+  };
 
   // Inicjalizuj store przy otwarciu modala
   useEffect(() => {
@@ -43,12 +103,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
     setHoveredCategory(categoryId);
   };
 
-  const handleCategoryLeave = () => {
-    // Dodaj delay przed zamknięciem, żeby użytkownik miał czas na przejście między kategoriami
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredCategory(null);
-    }, 200); // Zwiększony delay do 200ms
-  };
+  // removed unused handleCategoryLeave
 
   const handleCategoryContainerLeave = () => {
     // Dodaj większy delay dla całego kontenera kategorii
@@ -189,8 +244,9 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                               e.stopPropagation();
                               
                               if (!hasSubcategories) {
-                                // Jeśli nie ma podkategorii, przekieruj bezpośrednio
-                                window.location.href = `/sklep?category=${encodeURIComponent(category.slug)}`;
+                                // Jeśli nie ma podkategorii, przekieruj z zachowaniem istniejących filtrów
+                                const url = buildFilterUrl({ category: category.slug });
+                                router.push(url);
                                 onClose();
                                 window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
                               }
@@ -228,7 +284,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                                       transition={{ delay: index * 0.05 }}
                                     >
                                       <Link
-                                        href={`/sklep?category=${encodeURIComponent(subcategory.slug)}`}
+                                        href={buildFilterUrl({ category: subcategory.slug })}
                                         className="flex items-center p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -286,7 +342,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                         transition={{ delay: index * 0.05 }}
                       >
                         <Link
-                          href={`/sklep?pa_zastosowanie=${encodeURIComponent(term.slug || term.name)}`}
+                          href={buildFilterUrl({ pa_zastosowanie: term.slug || term.name })}
                           className="block px-4 py-3 rounded-xl border border-gray-200 text-sm bg-transparent hover:border-blue-300 hover:bg-blue-50/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -343,7 +399,7 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
                         transition={{ delay: index * 0.02, duration: 0.2 }}
                       >
                         <Link
-                          href={`/sklep?brands=${encodeURIComponent(brand.value)}`}
+                          href={buildFilterUrl({ brands: brand.value })}
                           className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-transparent px-3 py-1.5 text-[10px] text-gray-900 hover:bg-blue-50/20 hover:border-blue-300 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all duration-200 group min-h-[24px]"
                           onClick={(e) => {
                             e.stopPropagation();

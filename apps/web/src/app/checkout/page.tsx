@@ -1,18 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { 
   CreditCard, 
-  Truck, 
   User, 
   Lock,
   CheckCircle,
   ArrowLeft,
   Shield,
-  AlertCircle,
   ChevronRight
 } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
@@ -64,7 +62,7 @@ interface CheckoutForm {
 }
 
 function CheckoutPageInner() {
-  const { items, total, itemCount, clearCart } = useCartStore();
+  const { items, total, clearCart } = useCartStore();
   
   // Debug total value
   // Checkout total debug removed
@@ -103,15 +101,15 @@ function CheckoutPageInner() {
 
   // Payment state
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [cardDetails, setCardDetails] = useState({
+  const [cardDetails, _setCardDetails] = useState({
     cardNumber: '',
     expiryMonth: '',
     expiryYear: '',
     cvv: '',
     cardholderName: ''
   });
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [_paymentError, setPaymentError] = useState<string | null>(null);
+  const [_isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [quickPaymentSelected, setQuickPaymentSelected] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -146,9 +144,7 @@ function CheckoutPageInner() {
     return titles[method] || method;
   };
 
-  const getSelectedShippingMethod = () => {
-    return shippingMethods.find(m => m.method_id === form.shippingMethod);
-  };
+  // removed unused helper getSelectedShippingMethod
   
   // Shipping state
   const [shippingMethods, setShippingMethods] = useState<Array<{
@@ -162,10 +158,10 @@ function CheckoutPageInner() {
     zone_name: string;
   }>>([]);
   const [, setShippingCost] = useState(0);
-  const [isLoadingShipping, setIsLoadingShipping] = useState(false);
+  const [_isLoadingShipping, setIsLoadingShipping] = useState(false);
 
   // Load shipping methods
-  const loadShippingMethods = async () => {
+  const loadShippingMethods = useCallback(async () => {
     // Loading shipping methods debug removed
     setIsLoadingShipping(true);
     try {
@@ -197,7 +193,7 @@ function CheckoutPageInner() {
     } finally {
       setIsLoadingShipping(false);
     }
-  };
+  }, [form.shippingCountry, form.shippingCity, form.shippingPostcode, form.shippingMethod]);
 
   // Load payment methods and handle URL params
   useEffect(() => {
@@ -264,7 +260,7 @@ function CheckoutPageInner() {
         }, 100);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, loadShippingMethods, user]);
 
   // Fetch user profile when authenticated
   useEffect(() => {
@@ -424,14 +420,14 @@ function CheckoutPageInner() {
     if (form.shippingCountry && form.shippingCity) {
       loadShippingMethods();
     }
-  }, [form.shippingCountry, form.shippingCity, form.shippingPostcode]);
+  }, [form.shippingCountry, form.shippingCity, form.shippingPostcode, loadShippingMethods]);
 
   // Load shipping methods when user reaches step 2
   useEffect(() => {
     if (currentStep >= 2) {
       loadShippingMethods();
     }
-  }, [currentStep]);
+  }, [currentStep, loadShippingMethods]);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -643,7 +639,7 @@ function CheckoutPageInner() {
       
       // Send order confirmation email
       try {
-        const orderEmailData = {
+        const _orderEmailData = {
           orderNumber: newOrderNumber,
           customerName: `${form.firstName} ${form.lastName}`,
           customerEmail: form.email,
@@ -703,7 +699,7 @@ function CheckoutPageInner() {
           if (emailResponse.ok) {
             // Email wysłany pomyślnie debug removed
           } else {
-            const errorText = await emailResponse.text();
+            const _errorText = await emailResponse.text();
             // Błąd wysyłania emaila debug removed
           }
         } catch (error) {

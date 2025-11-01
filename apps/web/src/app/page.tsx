@@ -1,7 +1,5 @@
-import Image from 'next/image';
 import dynamicImport from 'next/dynamic';
 import KingHeroRounded from '@/components/king-hero-rounded';
-import { Button } from '@/components/ui/button';
 import { Award, Truck, Headphones, Shield } from 'lucide-react';
 import { Metadata } from 'next';
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { env } from '@/config/env';
 
 // Generate unique discount code and create WooCommerce coupon

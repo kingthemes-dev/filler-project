@@ -5,7 +5,6 @@
 
 import { Redis } from 'ioredis';
 import storeApiService from './store-api';
-import sessionManager from './session-manager';
 
 interface CartItem {
   id: string;
@@ -376,4 +375,5 @@ class CartPersistenceService {
   }
 }
 
-export default new CartPersistenceService();
+const cartPersistenceService = new CartPersistenceService();
+export default cartPersistenceService;

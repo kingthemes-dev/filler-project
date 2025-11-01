@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { dynamicCategoriesService, HierarchicalCategory } from '@/services/dynamic-categories';
+import { dynamicCategoriesService } from '@/services/dynamic-categories';
 import { useQuery } from '@tanstack/react-query';
 
 interface DynamicCategoryFiltersProps {
@@ -16,7 +16,7 @@ interface DynamicCategoryFiltersProps {
 export default function DynamicCategoryFilters({ 
   onCategoryChange, 
   selectedCategories,
-  totalProducts,
+  totalProducts: _totalProducts,
   dynamicFiltersData
 }: DynamicCategoryFiltersProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -48,9 +48,7 @@ export default function DynamicCategoryFilters({
     });
   };
 
-  const handleCategoryClick = (categorySlug: string) => {
-    onCategoryChange(categorySlug);
-  };
+  // removed unused handleCategoryClick
 
   const isCategoryExpanded = (categoryId: string) => expandedCategories.has(categoryId);
   const isCategorySelected = (categorySlug: string) => selectedCategories.includes(categorySlug);

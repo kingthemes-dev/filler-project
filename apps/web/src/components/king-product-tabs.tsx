@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import KingProductCard from './king-product-card';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import { WooProduct } from '@/types/woocommerce';
-import Link from 'next/link';
 
 interface TabData {
   id: string;
@@ -24,19 +23,11 @@ export default function KingProductTabs() {
 
   // Fetch products for each tab
   const fetchTabProducts = useCallback(async (tabId: string) => {
-    console.log('🔄 wooCommerceService:', !!wooCommerceService, typeof wooCommerceService);
-    
-    if (!wooCommerceService) {
-      console.error('❌ wooCommerceService is not available');
-      return;
-    }
-    
-    const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-    if (tabIndex === -1) return;
+    if (!wooCommerceService) return;
 
-    // Set loading state
-    setTabs(prev => prev.map((tab, index) => 
-      index === tabIndex ? { ...tab, loading: true } : tab
+    // Set loading state without relying on captured tabs
+    setTabs(prev => prev.map((tab) => 
+      tab.id === tabId ? { ...tab, loading: true } : tab
     ));
 
     // Retry logic for frontend
@@ -81,8 +72,8 @@ export default function KingProductTabs() {
         }
 
         // Update tab with products
-        setTabs(prev => prev.map((tab, index) => 
-          index === tabIndex ? { ...tab, products, loading: false } : tab
+        setTabs(prev => prev.map((tab) => 
+          tab.id === tabId ? { ...tab, products, loading: false } : tab
         ));
         
         // success
@@ -105,8 +96,8 @@ export default function KingProductTabs() {
     }
     
     // Set loading to false on error
-    setTabs(prev => prev.map((tab, index) => 
-      index === tabIndex ? { ...tab, loading: false } : tab
+    setTabs(prev => prev.map((tab) => 
+      tab.id === tabId ? { ...tab, loading: false } : tab
     ));
   }, []);
 

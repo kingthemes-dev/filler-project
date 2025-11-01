@@ -26,7 +26,6 @@ export async function prefetchUniversalFilters(
     preset = 'woocommerce',
     config,
     baseUrl,
-    timeout = 10000,
     retries = 2
   } = options;
 
@@ -57,8 +56,8 @@ export async function prefetchUniversalFilters(
         console.log(`🚀 Prefetching categories for ${preset}...`);
         try {
           return await service.getCategories();
-        } catch (error) {
-          console.warn(`⚠️ Categories prefetch failed, returning empty array:`, error);
+        } catch (err) {
+          console.warn(`⚠️ Categories prefetch failed, returning empty array:`, err);
           return [];
         }
       },
@@ -74,8 +73,8 @@ export async function prefetchUniversalFilters(
         console.log(`🚀 Prefetching attributes for ${preset}...`);
         try {
           return await service.getAttributes();
-        } catch (error) {
-          console.warn(`⚠️ Attributes prefetch failed, returning empty object:`, error);
+        } catch (err) {
+          console.warn(`⚠️ Attributes prefetch failed, returning empty object:`, err);
           return {};
         }
       },
@@ -91,8 +90,8 @@ export async function prefetchUniversalFilters(
         console.log(`🚀 Prefetching all filters for ${preset}...`);
         try {
           return await service.getAllFilters();
-        } catch (error) {
-          console.warn(`⚠️ All filters prefetch failed, returning empty data:`, error);
+        } catch (err) {
+          console.warn(`⚠️ All filters prefetch failed, returning empty data:`, err);
           return { categories: [], attributes: {} };
         }
       },
@@ -196,7 +195,7 @@ export async function prefetchAutoDetectedFilters(
         }
       });
     }
-  } catch (error) {
+  } catch {
     console.log('🔍 WooCommerce detection failed, trying Shopify...');
   }
 
@@ -218,7 +217,7 @@ export async function prefetchAutoDetectedFilters(
         }
       });
     }
-  } catch (error) {
+  } catch {
     console.log('🔍 Shopify detection failed, using custom config...');
   }
 

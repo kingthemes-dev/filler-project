@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { logger } from '@/utils/logger';
 
 export async function POST(request: NextRequest) {

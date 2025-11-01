@@ -50,8 +50,7 @@ export default function KingProductGrid({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: '', max: '' });
   
-  // Cache key for products
-  const cacheKey = `${categoryId}-${featured}-${onSale}-${searchTerm}-${limit}`;
+  // (removed) cacheKey was unused and could trigger unnecessary effects
 
   // Grid columns configuration
   const gridColsClasses = {
@@ -103,7 +102,7 @@ export default function KingProductGrid({
     } finally {
       setLoading(false);
     }
-  }, [categoryId, featured, onSale, searchTerm, limit, orderBy, order, cacheKey]);
+  }, [categoryId, featured, onSale, searchTerm, limit, orderBy, order]);
 
   // Initial fetch
   useEffect(() => {

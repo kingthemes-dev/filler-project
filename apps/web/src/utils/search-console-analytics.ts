@@ -3,20 +3,9 @@
  * Tracks organic search traffic and SEO metrics
  */
 
-interface SearchConsoleEvent {
-  search_term: string;
-  search_engine: string;
-  page_location: string;
-  page_title: string;
-  click_position?: number;
-  impressions?: number;
-  ctr?: number;
-}
+// removed unused SearchConsoleEvent interface
 
-interface SEOEvent {
-  event_name: string;
-  parameters: Record<string, any>;
-}
+// removed unused SEOEvent interface
 
 class SearchConsoleAnalytics {
   private ga4Id: string;
@@ -49,13 +38,6 @@ class SearchConsoleAnalytics {
    */
   public trackSiteSearch(query: string, resultsCount: number = 0): void {
     if (!this.isInitialized) return;
-
-    const event: SearchConsoleEvent = {
-      search_term: query,
-      search_engine: 'site_search',
-      page_location: window.location.href,
-      page_title: document.title,
-    };
 
     this.sendToGA4('search', {
       search_term: query,

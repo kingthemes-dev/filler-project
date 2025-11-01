@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { cache } from '@/lib/cache';
 
 const ADMIN_TOKEN = process.env.ADMIN_CACHE_TOKEN || 'dev-token-123';

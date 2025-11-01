@@ -318,7 +318,7 @@ export const mockRouter = {
   asPath: '/'
 };
 
-export default {
+const testHelpersExports = {
   mockEnv,
   mockFetch,
   mockLocalStorage,
@@ -339,3 +339,4 @@ export default {
   mockApiResponses,
   mockRouter
 };
+export default testHelpersExports;

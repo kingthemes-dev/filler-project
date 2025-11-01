@@ -24,7 +24,8 @@ describe('buildApiUrl', () => {
     const params = { q: 'test & query', category: 'beauty/cosmetics' };
     
     const result = buildApiUrl(baseUrl, endpoint, params);
-    expect(result).toContain('q=test%20%26%20query');
+    // Accept '+' or '%20' for spaces depending on encoder
+    expect(result).toMatch(/q=test(%20|\+)%26(%20|\+)query/);
     expect(result).toContain('category=beauty%2Fcosmetics');
   });
 });

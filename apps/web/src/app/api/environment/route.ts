@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function GET() {
       success: true,
       environment
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({
       success: false,
       error: 'Failed to get environment info'

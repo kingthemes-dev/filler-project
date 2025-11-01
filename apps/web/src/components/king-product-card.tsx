@@ -13,7 +13,8 @@ import { useCartStore } from '@/stores/cart-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 // Wishlist tymczasowo wyłączony na kartach
 // import { useWishlist } from '@/hooks/use-wishlist';
-import QuickViewModal from '@/components/ui/quick-view-modal';
+import dynamic from 'next/dynamic';
+const QuickViewModal = dynamic(() => import('@/components/ui/quick-view-modal'), { ssr: false });
 import { formatPrice } from '@/utils/format-price';
 
 interface KingProductCardProps {
@@ -33,7 +34,7 @@ export default function KingProductCard({
 }: KingProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  const [showVariants, setShowVariants] = useState(false);
+  // removed unused showVariants state
   const [selectedVariant, setSelectedVariant] = useState<string>('');
   const [variationsLoaded, setVariationsLoaded] = useState(false);
   const [variations, setVariations] = useState<Array<{
@@ -46,7 +47,7 @@ export default function KingProductCard({
     menu_order: number;
   }>>([]);
   const [isHovered, setIsHovered] = useState(false);
-  const [isButtonHovered, setIsButtonHovered] = useState(false);
+  // removed unused isButtonHovered state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -174,7 +175,6 @@ export default function KingProductCard({
 
   const handleVariantSelect = (variant: string) => {
     setSelectedVariant(variant);
-    setShowVariants(false);
   };
 
   const handleShowVariants = async () => {
@@ -207,7 +207,6 @@ export default function KingProductCard({
         console.error('Błąd ładowania wariantów:', error);
       }
     }
-    setShowVariants(true);
     setIsDropdownOpen(true);
   };
 
@@ -294,35 +293,7 @@ export default function KingProductCard({
   };
 
   // Get attribute name for display
-  const getAttributeName = () => {
-    if (variations.length > 0) {
-      const firstVariation = variations[0];
-      const firstAttr = firstVariation.attributes?.find((attr: { slug: string; option: string }) => 
-        attr.slug && attr.option
-      );
-      if (firstAttr) {
-        // Map common attribute slugs to display names
-        const attrNames: { [key: string]: string } = {
-          'pa_pojemnosc': 'Pojemność',
-          'pa_kolor': 'Kolor',
-          'pa_rozmiar': 'Rozmiar',
-          'pa_material': 'Materiał',
-          'pa_typ': 'Typ'
-        };
-        return attrNames[firstAttr.slug] || firstAttr.slug.replace('pa_', '').replace('_', ' ').toUpperCase();
-      }
-    }
-    
-    // Fallback to product attributes
-    if (product.attributes && product.attributes.length > 0) {
-      const firstAttr = product.attributes.find((attr) => 
-        (attr as any).options && (attr as any).options.length > 0
-      );
-      return (firstAttr as any)?.name || 'Wariant';
-    }
-    
-    return 'Wariant';
-  };
+  // removed unused getAttributeName helper
 
   const isOnSale = wooCommerceService.isProductOnSale(product);
   const discount = wooCommerceService.getProductDiscount(product);
@@ -353,16 +324,7 @@ export default function KingProductCard({
   const regularPrice = wooCommerceService.formatPrice(product.regular_price);
 
   // Helper function to get brand from attributes
-  const getBrand = (): string | null => {
-    if (!product.attributes) return null;
-    const brandAttr = product.attributes.find((attr: { name: string; options: string[] }) => 
-      attr.name.toLowerCase().includes('marka')
-    );
-    if (!brandAttr) return null;
-    const first = brandAttr.options?.[0];
-    if (!first) return null;
-    return typeof first === 'string' ? first : (first as any)?.name || (first as any)?.slug || String(first);
-  };
+  // removed unused getBrand helper
 
   // Helper function to get main category (parent: 0)
   const getMainCategory = (): string | null => {
@@ -415,7 +377,7 @@ export default function KingProductCard({
 
   const renderStockStatus = () => {
     if (product.stock_status === 'outofstock') {
-      return <Badge variant="secondary" className="text-xs">Niedostępny</Badge>;
+      return <Badge variant="secondary" className="text-xs">Brak w magazynie</Badge>;
     }
     if (product.stock_status === 'onbackorder') {
       return <Badge variant="secondary" className="text-xs">Na zamówienie</Badge>;
@@ -441,15 +403,15 @@ export default function KingProductCard({
               />
               {isOnSale && (
                 <Badge variant="destructive" className="absolute top-1 sm:top-2 left-1 sm:left-2 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
-                  -{discount}%
+                  PROMOCJA
                 </Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="px-5 py-2">
-            <h3 className="font-medium text-sm text-foreground line-clamp-2 mb-1">
+            <h2 className="font-medium text-sm text-foreground line-clamp-2 mb-1">
               {product.name}
-            </h3>
+            </h2>
             {renderPrice()}
             {renderRating()}
           </CardContent>
@@ -476,7 +438,7 @@ export default function KingProductCard({
               />
               {isOnSale && (
                 <Badge variant="destructive" className="absolute top-2 sm:top-3 left-2 sm:left-3 text-xs sm:text-sm border-2 border-destructive/20 rounded-xl px-2 sm:px-3 py-0.5 sm:py-1">
-                  -{discount}%
+                  PROMOCJA
                 </Badge>
               )}
               {product.featured && !isOnSale && (
@@ -492,9 +454,9 @@ export default function KingProductCard({
             </div>
           </CardHeader>
           <CardContent className="px-6 py-3">
-            <h3 className="font-semibold text-lg text-foreground line-clamp-2 mb-2">
+            <h2 className="font-semibold text-lg text-foreground line-clamp-2 mb-2">
               {product.name}
-            </h3>
+            </h2>
             <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
               {product.short_description}
             </p>
@@ -519,6 +481,8 @@ export default function KingProductCard({
                             ? 'bg-black text-white border-black'
                             : 'bg-white text-gray-700 border-gray-300 hover:border-black'
                         }`}
+                        aria-label={`Wybierz wariant ${variant}`}
+                        aria-pressed={selectedVariant === variant}
                       >
                         {variant}
                       </button>
@@ -542,6 +506,7 @@ export default function KingProductCard({
                   disabled={isLoading || product.stock_status === 'outofstock'}
                   className="flex-1 h-10 py-2 hover:bg-black hover:text-white transition-colors text-sm"
                   size="sm"
+                  data-testid="add-to-cart"
                 >
                   <ShoppingCart className="w-4 h-4 -mr-1 sm:mr-2" />
                   <span className="text-xs sm:text-sm">{isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}</span>
@@ -562,6 +527,7 @@ export default function KingProductCard({
                 onClick={handleToggleFavorite}
                 className={`px-3 h-10 hover:bg-black hover:text-white transition-colors ${isClient && isFavorite(product.id) ? 'text-destructive' : ''}`}
                 aria-label={isClient && isFavorite(product.id) ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+                data-testid="favorite-button"
               >
                 <Heart className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current' : ''}`} />
               </Button>
@@ -600,7 +566,7 @@ export default function KingProductCard({
           <div className="w-40 h-40 flex-shrink-0 relative">
             <Image
               src={imageUrl}
-              alt={product.name}
+              alt={Array.isArray((product as any).images) && (product as any).images[0] && (product as any).images[0].alt ? (product as any).images[0].alt : product.name}
               width={160}
               height={160}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -613,7 +579,7 @@ export default function KingProductCard({
             <div className="absolute top-1 sm:top-2 left-1 sm:left-2">
               {isOnSale ? (
                 <Badge className="bg-red-100 text-red-800 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border-0">
-                  Promocja
+                  PROMOCJA
                 </Badge>
               ) : product.featured ? (
                 <Badge className="bg-green-100 text-green-800 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border-0">
@@ -625,9 +591,9 @@ export default function KingProductCard({
           
           <div className="flex-1 px-6 py-4 flex flex-col justify-between">
             <div>
-              <h3 className="font-semibold text-lg text-gray-900 group-hover:text-black transition-colors line-clamp-2">
+              <h2 className="font-semibold text-lg text-gray-900 group-hover:text-black transition-colors line-clamp-2">
                 {product.name}
-              </h3>
+              </h2>
               
               
               <div className="mt-1">
@@ -820,7 +786,7 @@ export default function KingProductCard({
             <div className="absolute top-2 left-2">
               {tabType === 'promocje' || isOnSale ? (
                 <Badge className="bg-red-100 text-red-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
-                  Promocja
+                  PROMOCJA
                 </Badge>
               ) : tabType === 'nowosci' ? (
                 <Badge className="bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
@@ -858,6 +824,7 @@ export default function KingProductCard({
                 }}
                 className="w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
                 aria-label={isClient && isFavorite(product.id) ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+                data-testid="favorite-button"
               >
                 <Heart className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current text-red-500' : 'text-gray-700'}`} />
               </button>
@@ -874,9 +841,8 @@ export default function KingProductCard({
           <p className="font-bold text-foreground text-base sm:text-lg mb-1 line-clamp-2">
             {product.name}
           </p>
-          <div className="text-lg sm:text-xl font-bold text-foreground mb-1">
-            {price}
-          </div>
+          {renderPrice()}
+        {renderStockStatus()}
           
           {/* AUTO: Product Attributes - All attributes in gray badges */}
           {product.attributes && product.attributes.length > 0 && (
@@ -915,7 +881,7 @@ export default function KingProductCard({
           isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
           <div className="flex flex-col justify-center items-center h-full p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">Wybierz wariant</h3>
+            <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Wybierz wariant</h2>
             <div className="flex flex-wrap gap-3 justify-center">
               {getAvailableVariants().map((variant: string) => {
                 const variation = variations.find((v: { 
@@ -944,6 +910,7 @@ export default function KingProductCard({
                       }
                     }}
                     className="flex flex-col items-center p-3 border border-gray-200 rounded-xl hover:border-gray-900 hover:shadow-md transition-all duration-200 bg-white"
+                    aria-label={`Wybierz wariant ${variant}`}
                   >
                     <span className="text-sm font-medium text-gray-900 mb-1">
                       {variant}
@@ -987,17 +954,14 @@ export default function KingProductCard({
                 }
               }}
               onMouseEnter={() => {
-                setIsButtonHovered(true);
                 if (product.type === 'variable' && !variationsLoaded) {
                   handleShowVariants();
                 }
               }}
-              onMouseLeave={() => {
-                setIsButtonHovered(false);
-              }}
               disabled={isLoading || product.stock_status === 'outofstock'}
               className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-3 font-medium text-sm"
               size="lg"
+            data-testid="add-to-cart"
             >
               <ShoppingCart className="w-4 h-4 -mr-1 sm:mr-2" />
               <span className="text-xs sm:text-sm">{isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}</span>

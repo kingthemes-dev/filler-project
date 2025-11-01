@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(_request: NextRequest): Promise<NextResponse> {
   try {
     // Warm cache by preloading common endpoints
     const endpoints = [

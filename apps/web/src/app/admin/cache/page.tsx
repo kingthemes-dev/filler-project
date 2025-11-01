@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Database, Trash2, Activity, Clock } from 'lucide-react';
 
@@ -54,17 +53,7 @@ export default function CacheStatus() {
     }
   };
 
-  const clearCache = async () => {
-    try {
-      // This would need to be implemented in the API
-      const response = await fetch('/api/cache/clear', { method: 'POST' });
-      if (response.ok) {
-        await fetchCacheStats();
-      }
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-    }
-  };
+  // removed unused clearCache helper (use handleClearCache)
 
   useEffect(() => {
     fetchCacheStats();

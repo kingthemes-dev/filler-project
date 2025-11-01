@@ -8,7 +8,7 @@ describe('PerformanceMonitor', () => {
 
   beforeEach(() => {
     performanceMonitor = new PerformanceMonitor();
-    (fetch as jest.Mock).mockClear();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {

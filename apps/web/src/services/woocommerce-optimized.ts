@@ -667,7 +667,7 @@ class WooCommerceService {
   // =========================================
   // Authentication Methods
   // =========================================
-  async loginUser(email: string, password: string): Promise<{ success: boolean; user?: { id: number; email: string; name: string; token: string }; error?: string }> {
+  async loginUser(email: string, _password: string): Promise<{ success: boolean; user?: { id: number; email: string; name: string; token: string }; error?: string }> {
     try {
       // Use local API proxy
       const customerResponse = await fetch(`/api/woocommerce?endpoint=customers&email=${encodeURIComponent(email)}`, {
@@ -748,7 +748,7 @@ class WooCommerceService {
           if (errorData.code === 'registration-error-email-exists' || errorData.message?.includes('istnieje')) {
             throw new Error(errorData.message || 'Email już istnieje');
           }
-        } catch (parseError) {
+        } catch {
           // If parsing fails, use generic error
         }
         
@@ -789,7 +789,7 @@ class WooCommerceService {
     return Math.round(((regularPrice - salePrice) / regularPrice) * 100);
   }
 
-  getProductImageUrl(product: WooProduct, size: string = 'medium'): string {
+  getProductImageUrl(product: WooProduct, _size: string = 'medium'): string {
     if (!product.images || product.images.length === 0) {
       return '/images/placeholder-product.jpg';
     }

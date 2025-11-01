@@ -2,11 +2,9 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import ModalCloseButton from './modal-close-button';
-import { X, Heart, Trash2 } from 'lucide-react';
+import { Heart, Trash2 } from 'lucide-react';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { WooProduct } from '@/types/woocommerce';
 import KingProductCard from '@/components/king-product-card';
 
 export default function FavoritesModal() {
@@ -17,7 +15,7 @@ export default function FavoritesModal() {
     removeFromFavorites,
     clearFavorites,
     isLoading,
-    lastSyncTime
+    lastSyncTime: _lastSyncTime
   } = useFavoritesStore();
   
   const handleRemoveFromFavorites = (productId: number) => {

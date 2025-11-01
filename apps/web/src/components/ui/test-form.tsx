@@ -20,7 +20,7 @@ export default function TestFormUnderNewsletter() {
         body: JSON.stringify({ name, email, message, source: 'newsletter-test-form' })
       });
       setSent(true);
-    } catch (_) {
+    } catch {
       setSent(true);
     } finally {
       setLoading(false);

@@ -119,7 +119,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
       },
 
       toggleFavorite: async (product: WooProduct) => {
-        const { favorites, isFavorite } = get();
+        const { isFavorite } = get();
         
         if (isFavorite(product.id)) {
           await get().removeFromFavorites(product.id);

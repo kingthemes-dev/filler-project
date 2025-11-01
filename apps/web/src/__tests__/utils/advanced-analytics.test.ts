@@ -1,4 +1,4 @@
-import { AdvancedAnalytics } from '@/utils/advanced-analytics';
+import { AdvancedAnalytics, ADVANCED_ANALYTICS_CONFIG } from '@/utils/advanced-analytics';
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -7,6 +7,9 @@ describe('AdvancedAnalytics', () => {
   let analytics: AdvancedAnalytics;
 
   beforeEach(() => {
+    // Speed up batching for tests
+    ADVANCED_ANALYTICS_CONFIG.flushInterval = 100;
+    ADVANCED_ANALYTICS_CONFIG.batchSize = 5;
     analytics = new AdvancedAnalytics();
     (fetch as jest.Mock).mockClear();
   });
@@ -87,13 +90,13 @@ describe('AdvancedAnalytics', () => {
     it('should flush events when queue is full', async () => {
       (fetch as jest.Mock).mockResolvedValue({ ok: true });
 
-      // Fill the event queue
+      // Fill the event queue (exceeds batchSize)
       for (let i = 0; i < 25; i++) {
         analytics.trackEvent('test_event', { data: `test-${i}` });
       }
 
-      // Wait for flush
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for at least one interval to trigger flush
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       expect(fetch).toHaveBeenCalled();
     });

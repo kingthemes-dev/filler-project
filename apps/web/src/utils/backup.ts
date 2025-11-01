@@ -118,15 +118,15 @@ export class DatabaseBackup {
   }
 
   // Create incremental backup
-  async createIncrementalBackup(lastBackupId: string): Promise<BackupData> {
+  async createIncrementalBackup(_lastBackupId: string): Promise<BackupData> {
     const backupId = this.generateBackupId();
     const timestamp = new Date().toISOString();
     
-    logger.info('Starting incremental database backup', { backupId, lastBackupId });
+    logger.info('Starting incremental database backup', { backupId, lastBackupId: _lastBackupId });
 
     try {
       // Get changes since last backup
-      const changes = await this.getChangesSinceBackup(lastBackupId);
+      const changes = await this.getChangesSinceBackup(_lastBackupId);
       
       if (changes.length === 0) {
         logger.info('No changes since last backup', { backupId });
@@ -217,7 +217,7 @@ export class DatabaseBackup {
     return `mysqldump -h ${this.dbConfig.host} -P ${this.dbConfig.port} -u ${this.dbConfig.username} -p${this.dbConfig.password} ${this.dbConfig.database}`;
   }
 
-  private buildIncrementalDumpCommand(changes: string[]): string {
+  private buildIncrementalDumpCommand(_changes: string[]): string {
     // This would need to be implemented based on your specific needs
     // For now, return a basic dump command
     return this.buildDumpCommand();
@@ -227,22 +227,22 @@ export class DatabaseBackup {
     return `mysql -h ${this.dbConfig.host} -P ${this.dbConfig.port} -u ${this.dbConfig.username} -p${this.dbConfig.password} ${this.dbConfig.database} < ${backupPath}`;
   }
 
-  private async executeCommand(command: string, outputPath?: string): Promise<void> {
+  private async executeCommand(command: string, _outputPath?: string): Promise<void> {
     // This would need to be implemented with actual command execution
     // For now, simulate the process
-    logger.info('Executing backup command', { command, outputPath });
+    logger.info('Executing backup command', { command });
     
     // Simulate command execution
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
-  private async calculateChecksum(filePath: string): Promise<string> {
+  private async calculateChecksum(_filePath: string): Promise<string> {
     // This would calculate actual file checksum
     // For now, return a mock checksum
     return Math.random().toString(36).substring(2, 15);
   }
 
-  private async getFileSize(filePath: string): Promise<number> {
+  private async getFileSize(_filePath: string): Promise<number> {
     // This would get actual file size
     // For now, return a mock size
     return Math.floor(Math.random() * 1000000);
@@ -260,13 +260,13 @@ export class DatabaseBackup {
     };
   }
 
-  private async getChangesSinceBackup(lastBackupId: string): Promise<string[]> {
+  private async getChangesSinceBackup(_lastBackupId: string): Promise<string[]> {
     // This would identify changes since last backup
     // For now, return empty array
     return [];
   }
 
-  private async verifyBackup(backupPath: string): Promise<boolean> {
+  private async verifyBackup(_backupPath: string): Promise<boolean> {
     // This would verify backup integrity
     // For now, return true
     return true;
@@ -369,40 +369,40 @@ export class FileBackup {
     return `files_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   }
 
-  private async createDirectory(path: string): Promise<void> {
+  private async createDirectory(_path: string): Promise<void> {
     // This would create actual directory
-    logger.info('Creating directory', { path });
+    logger.info('Creating directory', { path: _path });
   }
 
-  private async copyDirectory(src: string, dest: string): Promise<void> {
+  private async copyDirectory(_src: string, _dest: string): Promise<void> {
     // This would copy actual directory
-    logger.info('Copying directory', { src, dest });
+    logger.info('Copying directory', { src: _src, dest: _dest });
   }
 
-  private async createArchive(sourcePath: string, archivePath: string): Promise<void> {
+  private async createArchive(_sourcePath: string, _archivePath: string): Promise<void> {
     // This would create actual archive
-    logger.info('Creating archive', { sourcePath, archivePath });
+    logger.info('Creating archive', { sourcePath: _sourcePath, archivePath: _archivePath });
   }
 
-  private async extractArchive(archivePath: string, extractPath: string): Promise<void> {
+  private async extractArchive(_archivePath: string, _extractPath: string): Promise<void> {
     // This would extract actual archive
-    logger.info('Extracting archive', { archivePath, extractPath });
+    logger.info('Extracting archive', { archivePath: _archivePath, extractPath: _extractPath });
   }
 
-  private async removeDirectory(path: string): Promise<void> {
+  private async removeDirectory(_path: string): Promise<void> {
     // This would remove actual directory
-    logger.info('Removing directory', { path });
+    logger.info('Removing directory', { path: _path });
   }
 
-  private async calculateChecksum(filePath: string): Promise<string> {
+  private async calculateChecksum(_filePath: string): Promise<string> {
     return Math.random().toString(36).substring(2, 15);
   }
 
-  private async getFileSize(filePath: string): Promise<number> {
+  private async getFileSize(_filePath: string): Promise<number> {
     return Math.floor(Math.random() * 1000000);
   }
 
-  private async getFileMetadata(path: string): Promise<{
+  private async getFileMetadata(_path: string): Promise<{
     database_version: string;
     files_count: number;
     tables_count: number;
@@ -414,7 +414,7 @@ export class FileBackup {
     };
   }
 
-  private async verifyBackup(backupPath: string): Promise<boolean> {
+  private async verifyBackup(_backupPath: string): Promise<boolean> {
     return true;
   }
 }
@@ -560,7 +560,7 @@ export class BackupManager {
 // Create singleton instance
 export const backupManager = new BackupManager();
 
-export default {
+const backupExports = {
   backupManager,
   DatabaseBackup,
   FileBackup,
@@ -568,3 +568,4 @@ export default {
   BackupManager,
   BACKUP_CONFIG
 };
+export default backupExports;

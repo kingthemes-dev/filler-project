@@ -70,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
               priority: 0.7,
             }))
           }
-        } catch (jsonError) {
+        } catch {
           try {
             // Extract the first JSON array from the response as a fallback
             const match = responseText.match(/\[[\s\S]*\]/)
@@ -85,8 +85,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 }))
               }
             }
-          } catch (fallbackError) {
-            console.error('Error parsing products JSON (fallback):', fallbackError)
+          } catch {
+            console.error('Error parsing products JSON (fallback)')
             console.error('Response text preview:', responseText.substring(0, 500))
             // Fallback: keep only static pages
           }
@@ -128,7 +128,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             }))
             dynamicPages = [...dynamicPages, ...categoryPages]
           }
-        } catch (jsonError) {
+        } catch {
           try {
             const match = responseText.match(/\[[\s\S]*\]/)
             if (match) {
@@ -143,8 +143,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 dynamicPages = [...dynamicPages, ...categoryPages]
               }
             }
-          } catch (fallbackError) {
-            console.error('Error parsing categories JSON (fallback):', fallbackError)
+          } catch {
+            console.error('Error parsing categories JSON (fallback):')
             console.error('Response text preview:', responseText.substring(0, 500))
             // Continue with existing dynamicPages (products)
           }

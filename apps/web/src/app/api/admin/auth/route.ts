@@ -16,7 +16,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json({ success: false, error: 'Nieprawidłowy token' }, { status: 401 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, error: 'Błąd serwera' }, { status: 500 });
   }
 }

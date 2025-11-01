@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(_request: NextRequest): Promise<NextResponse> {
   try {
     // Check environment variables (server-side only)
     const woocommerce = {

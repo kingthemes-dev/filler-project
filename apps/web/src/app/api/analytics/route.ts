@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { logger } from '@/utils/logger';
 import { redisCache } from '@/lib/redis';
 
@@ -138,7 +139,7 @@ async function updateSessionMetrics(sessionId: string, events: AnalyticsEvent[])
 }
 
 // Process real-time metrics
-async function processRealTimeMetrics(events: AnalyticsEvent[], sessionId: string) {
+async function processRealTimeMetrics(events: AnalyticsEvent[], _sessionId: string) {
   try {
     const metrics = {
       total_events: events.length,

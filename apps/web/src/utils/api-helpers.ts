@@ -4,7 +4,7 @@
 
 import { env } from '@/config/env';
 import { CustomError, ERROR_CODES, handleNetworkRequest } from './error-handler';
-import { RequestConfig, ApiResponse } from '@/types/api';
+import { RequestConfig } from '@/types/api';
 
 // Base API configuration
 const API_CONFIG = {
@@ -26,7 +26,18 @@ export class WooCommerceAPI {
   }
 
   private getAuthHeader(): string {
-    return `Basic ${Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64')}`;
+    const raw = `${this.consumerKey}:${this.consumerSecret}`;
+    try {
+      // Node.js (global Buffer)
+      const B = (globalThis as any).Buffer;
+      if (B && typeof B.from === 'function') {
+        return `Basic ${B.from(raw).toString('base64')}`;
+      }
+    } catch {}
+    // Browser fallback
+    // btoa expects binary string; unescape(encodeURIComponent()) handles unicode
+    const encoded = typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(raw))) : '';
+    return `Basic ${encoded}`;
   }
 
   private async makeRequest<T>(
@@ -251,6 +262,49 @@ export function generateDiscountCode(email: string, source: string): string {
   const emailPrefix = email.split('@')[0].slice(0, 3).toUpperCase();
   const sourcePrefix = source === 'registration' ? 'REG' : 'NEWS';
   return `${sourcePrefix}${emailPrefix}${timestamp}`;
+}
+
+// Backwards-compatible helpers expected by tests
+export function buildApiUrl(baseUrl: string, endpoint: string, params?: Record<string, string | number | boolean>): string {
+  const base = (baseUrl || env.NEXT_PUBLIC_BASE_URL || '').replace(/\/$/, '');
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = new URL(`${base}${path}`);
+  if (params && Object.keys(params).length > 0) {
+    for (const [k, v] of Object.entries(params)) {
+      url.searchParams.set(k, String(v));
+    }
+  }
+  return url.toString();
+}
+
+export function sanitizeInput(value: any): string {
+  if (typeof value !== 'string') return value ? String(value).trim() : '';
+  return value
+    .replace(/<[^>]*>/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .trim();
+}
+
+export function validateEmail(email: any): boolean {
+  if (typeof email !== 'string') return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+export function formatError(err: unknown): { message: string; type: string; timestamp: string; stack?: string } {
+  if (err instanceof Error) {
+    return {
+      message: err.message,
+      type: err.name || 'Error',
+      timestamp: new Date().toISOString(),
+      stack: err.stack,
+    };
+  }
+  if (typeof err === 'string') {
+    return { message: err, type: 'string', timestamp: new Date().toISOString() };
+  }
+  return { message: 'Unknown error', type: 'unknown', timestamp: new Date().toISOString() };
 }
 
 // API instances

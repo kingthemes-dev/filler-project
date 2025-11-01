@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FixedSizeList as List } from 'react-window';
-import { DynamicFilters } from '@/services/dynamic-categories';
+// removed unused DynamicFilters import
 
 interface DynamicAttributeFiltersProps {
   onFilterChange: (key: string, value: string) => void;
@@ -27,7 +27,7 @@ interface DynamicAttributeFiltersProps {
 export default function DynamicAttributeFilters({ 
   onFilterChange, 
   selectedFilters,
-  totalProducts,
+  totalProducts: _totalProducts,
   dynamicFiltersData,
   contextualAttributes,
   contextualLoading,
@@ -91,14 +91,25 @@ export default function DynamicAttributeFilters({
 
   const handleAttributeTermClick = (attributeSlug: string, termSlug: string) => {
     // handleAttributeTermClick debug removed
-    const filterValue = selectedFilters[`pa_${attributeSlug}`];
-    const currentTerms = Array.isArray(filterValue) ? filterValue : [];
+    const filterKey = `pa_${attributeSlug}`;
+    const filterValue = selectedFilters[filterKey];
+    
+    // Get current terms as array
+    let currentTerms: string[] = [];
+    if (Array.isArray(filterValue)) {
+      currentTerms = [...filterValue];
+    } else if (typeof filterValue === 'string' && filterValue) {
+      currentTerms = filterValue.split(',').map(t => t.trim()).filter(Boolean);
+    }
+    
+    // Toggle the term (add if not exists, remove if exists)
     const newTerms = currentTerms.includes(termSlug)
       ? currentTerms.filter(t => t !== termSlug)
       : [...currentTerms, termSlug];
     
     // New terms debug removed
-    onFilterChange(`pa_${attributeSlug}`, newTerms.join(','));
+    // Pass as array or comma-separated string - handleFilterChange will handle both
+    onFilterChange(filterKey, newTerms.join(','));
   };
 
   const isAttributeExpanded = (attributeSlug: string) => expandedAttributes.has(attributeSlug);

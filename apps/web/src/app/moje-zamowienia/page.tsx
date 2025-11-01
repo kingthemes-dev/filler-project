@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import { motion } from 'framer-motion';
 import { Package, Truck, CheckCircle, Clock, Eye, Download, Calendar } from 'lucide-react';
@@ -60,13 +60,7 @@ export default function MyOrdersPage() {
   }, [isAuthenticated, router]);
 
   // Fetch real orders from WooCommerce API
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      fetchOrders();
-    }
-  }, [isAuthenticated, user?.id]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -123,7 +117,13 @@ export default function MyOrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      fetchOrders();
+    }
+  }, [isAuthenticated, user?.id, fetchOrders]);
 
   const mapOrderStatus = (wcStatus: string): 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' => {
     const statusMap: Record<string, 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'> = {
@@ -228,11 +228,7 @@ export default function MyOrdersPage() {
   };
 
   // Check if order is eligible for invoice generation (using mapped statuses)
-  const isOrderEligibleForInvoice = (status: Order['status']): boolean => {
-    // Use the same logic as /moje-faktury - eligible statuses are those that map to completed/processing/on-hold
-    const eligibleStatuses = ['processing', 'shipped', 'delivered'];
-    return eligibleStatuses.includes(status);
-  };
+  // Not used currently; kept logic in WooCommerce function
 
   // Check if order is eligible for invoice generation (using original WooCommerce statuses)
   const isOrderEligibleForInvoiceWooCommerce = (wcStatus: string): boolean => {

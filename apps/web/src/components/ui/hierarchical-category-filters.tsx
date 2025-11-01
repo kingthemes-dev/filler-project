@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface SubCategory {
   id: string;
@@ -217,7 +217,6 @@ export default function HierarchicalCategoryFilters({
   };
 
   const isCategoryExpanded = (categoryId: string) => expandedCategories.has(categoryId);
-  const isCategorySelected = (categoryId: string) => selectedCategories.includes(categoryId);
   const isSubcategorySelected = (subcategoryId: string) => selectedCategories.includes(subcategoryId);
 
   return (

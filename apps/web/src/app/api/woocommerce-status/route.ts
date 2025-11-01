@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { env } from '@/config/env';
 
 interface WooCommerceStatus {
@@ -34,9 +35,9 @@ interface WooCommerceStatus {
   };
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(_request: NextRequest): Promise<NextResponse> {
   try {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     
     // Get environment variables
     const wcUrl = env.NEXT_PUBLIC_WC_URL;
@@ -91,8 +92,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       });
       
       if (productsResponse.ok) {
-        const productsData = await productsResponse.json();
-        const totalPages = parseInt(productsResponse.headers.get('X-WP-TotalPages') || '0');
+        const _productsData = await productsResponse.json();
+        const _totalPages = parseInt(productsResponse.headers.get('X-WP-TotalPages') || '0');
         const total = parseInt(productsResponse.headers.get('X-WP-Total') || '0');
         
         products = {

@@ -71,12 +71,12 @@ class HPOSApiService {
     useCache: boolean = true
   ): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
-    const cacheKey = `hpos:${endpoint}:${JSON.stringify(options)}`;
+    const _cacheKey = `hpos:${endpoint}:${JSON.stringify(options)}`;
     const requestStartTime = Date.now();
 
     // Check cache first
     if (useCache && options.method === 'GET') {
-      const cached = this.cache.get(cacheKey);
+      const cached = this.cache.get(_cacheKey);
       if (cached && cached.expires > Date.now()) {
         logger.info('HPOS cache hit', { endpoint });
         hposPerformanceMonitor.recordCacheHit();
@@ -118,7 +118,7 @@ class HPOSApiService {
         
         // Cache successful responses
         if (useCache && options.method === 'GET') {
-          this.cache.set(cacheKey, {
+          this.cache.set(_cacheKey, {
             data,
             expires: Date.now() + (5 * 60 * 1000), // 5 minutes cache
           });
@@ -157,7 +157,7 @@ class HPOSApiService {
    * Get orders with HPOS optimization and caching
    */
   async getOrders(query: HPOSOrderQuery = {}): Promise<HPOSOrder[]> {
-    const cacheKey = JSON.stringify(query);
+    // removed unused cacheKey variable
     
     // Try cache first
     const cached = await hposCache.get('orders', 'list', query);

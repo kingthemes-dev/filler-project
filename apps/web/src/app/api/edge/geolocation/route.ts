@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         'Vercel-CDN-Cache-Control': 'max-age=3600',
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to get geolocation data' },
       { status: 500 }

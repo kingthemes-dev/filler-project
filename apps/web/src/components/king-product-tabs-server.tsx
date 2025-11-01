@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import KingProductCard from './king-product-card';
 import { WooProduct } from '@/types/woocommerce';
-import Link from 'next/link';
+// removed unused Link
 import { Sparkles, Tag, Star, TrendingUp } from 'lucide-react';
 // Removed shadcn/ui tabs import - using custom implementation
 
@@ -27,22 +27,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   const [activeTab, setActiveTab] = useState('nowosci');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Keyboard navigation for tabs
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-      event.preventDefault();
-      const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
-      const nextIndex = event.key === 'ArrowLeft' 
-        ? (currentIndex - 1 + tabs.length) % tabs.length
-        : (currentIndex + 1) % tabs.length;
-      setActiveTab(tabs[nextIndex].id);
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+  // keyboard handling will be defined after tabs memo
 
   // Helpers: merge and deduplicate by id
   const mergeUnique = (arrays: WooProduct[][]): WooProduct[] => {
@@ -97,12 +82,29 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
     }
   };
 
-  const tabs: TabData[] = [
+  const tabs: TabData[] = useMemo(() => ([
     { id: 'nowosci', label: 'Nowości', products: nowosci },
     { id: 'promocje', label: 'Promocje', products: promocje },
     { id: 'polecane', label: 'Polecane', products: polecane },
     { id: 'bestsellery', label: 'Bestsellery', products: bestsellery }
-  ];
+  ]), [nowosci, promocje, polecane, bestsellery]);
+
+  // Keyboard navigation for tabs (after tabs are defined)
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
+      const nextIndex = event.key === 'ArrowLeft'
+        ? (currentIndex - 1 + tabs.length) % tabs.length
+        : (currentIndex + 1) % tabs.length;
+      setActiveTab(tabs[nextIndex].id);
+    }
+  }, [activeTab, tabs]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const activeTabData = tabs.find(tab => tab.id === activeTab) || tabs[0];
 
@@ -118,8 +120,9 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   }, [activeTab]);
 
   return (
-    <section className="mt-6 py-12 sm:py-16 bg-white rounded-2xl sm:rounded-3xl overflow-hidden">
+    <section className="mt-6 py-12 sm:py-16 bg-white rounded-2xl sm:rounded-3xl overflow-hidden" aria-labelledby="products-heading">
       <div className="px-4 sm:px-6 md:px-8 lg:px-12">
+        <h2 id="products-heading" className="sr-only">Produkty</h2>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Custom Tabs Implementation - No shadcn/ui */}
           <div className="w-full">
@@ -142,6 +145,8 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                     activeTab === tab.id ? '' : ''
                   }`}
                   disabled={isTransitioning}
+                  aria-label={`Pokaż ${tab.label}`}
+                  aria-pressed={activeTab === tab.id}
                   style={{
                     color: activeTab === tab.id ? 'white' : '#374151',
                     backgroundColor: 'transparent'
@@ -222,30 +227,4 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   );
 }
 
-function ProductTabsSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-8 w-20 bg-muted rounded animate-pulse" />
-          ))}
-        </div>
-        <div className="h-6 w-32 bg-muted rounded animate-pulse" />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 mobile-grid">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <div key={i} className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm animate-pulse">
-            <div className="px-4 sm:px-6 pb-0">
-              <div className="aspect-square bg-muted rounded-lg" />
-            </div>
-            <div className="px-4 sm:px-6 pt-3">
-              <div className="h-4 bg-muted rounded mb-2" />
-              <div className="h-3 bg-muted rounded w-2/3" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// removed unused ProductTabsSkeleton

@@ -271,7 +271,7 @@ export class MockPaymentService {
   /**
    * Symuluj potwierdzenie płatności
    */
-  async confirmPayment(transactionId: string): Promise<boolean> {
+  async confirmPayment(_transactionId: string): Promise<boolean> {
     await this.delay(500);
     
     // Symuluj potwierdzenie (99% szans na sukces)
@@ -281,7 +281,7 @@ export class MockPaymentService {
   /**
    * Symuluj zwrot pieniędzy
    */
-  async refundPayment(transactionId: string, amount: number): Promise<PaymentResponse> {
+  async refundPayment(_transactionId: string, _amount: number): Promise<PaymentResponse> {
     await this.delay(2000);
     
     return {

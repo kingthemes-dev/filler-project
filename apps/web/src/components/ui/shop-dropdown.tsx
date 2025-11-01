@@ -2,9 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check, X, Search, Filter } from 'lucide-react';
+import { ChevronDown, Check, X, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import AdvancedDropdown from './advanced-dropdown';
+// removed unused AdvancedDropdown import
 
 export interface ShopDropdownOption {
   id: string | number;

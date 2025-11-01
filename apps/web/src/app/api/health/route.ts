@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { env } from '@/config/env';
 import { Redis } from 'ioredis';
 
@@ -85,7 +86,7 @@ class HealthChecker {
         responseTime,
         lastCheck: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch {
       // Redis is not available - return degraded instead of error
       return {
         status: 'degraded',
@@ -123,11 +124,11 @@ class HealthChecker {
         responseTime,
         lastCheck: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch {
       return {
         status: 'error',
         lastCheck: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Unknown error',
       };
     }
   }
@@ -163,11 +164,11 @@ class HealthChecker {
         responseTime,
         lastCheck: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch {
       return {
         status: 'error',
         lastCheck: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Unknown error',
       };
     }
   }
@@ -291,7 +292,7 @@ class HealthChecker {
 
 const healthChecker = new HealthChecker();
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(_request: NextRequest): Promise<NextResponse> {
   try {
     const health = await healthChecker.checkHealth();
     
@@ -314,14 +315,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function HEAD(request: NextRequest): Promise<NextResponse> {
+export async function HEAD(_request: NextRequest): Promise<NextResponse> {
   // Simple health check for load balancers
   try {
     const health = await healthChecker.checkHealth();
     const statusCode = health.status === 'ok' ? 200 : 503;
     
     return new NextResponse(null, { status: statusCode });
-  } catch (error) {
+  } catch {
     return new NextResponse(null, { status: 503 });
   }
 }

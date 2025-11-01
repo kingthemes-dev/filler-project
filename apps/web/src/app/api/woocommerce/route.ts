@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { cache } from '@/lib/cache';
 import { WooShippingMethod } from '@/types/woocommerce';
 import { sentryMetrics } from '@/utils/sentry-metrics';
 import { env } from '@/config/env';
-import { withCircuitBreaker, safeWordPressRequest } from '@/utils/circuit-breaker';
+import { withCircuitBreaker } from '@/utils/circuit-breaker';
 import { hposApi } from '@/services/hpos-api';
 import { orderLimitHandler } from '@/services/order-limit-handler';
 import { hposPerformanceMonitor } from '@/services/hpos-performance-monitor';
@@ -72,13 +73,13 @@ async function handlePasswordReset(body: { email: string }) {
     console.log('🔄 Custom endpoint response headers:', Object.fromEntries(response.headers.entries()));
 
     if (response.ok) {
-      const data = await response.json();
-      console.log('✅ Custom password reset API response:', data);
+      const _data = await response.json();
+      console.log('✅ Custom password reset API response:', _data);
       
       return NextResponse.json({
-        success: data.success,
-        message: data.message,
-        debug_info: data.debug_info
+        success: _data.success,
+        message: _data.message,
+        debug_info: _data.debug_info
       });
     } else {
       console.log('❌ Custom password reset API failed:', response.status);
@@ -160,7 +161,7 @@ async function handlePasswordResetConfirm(body: { key: string; login: string; pa
     console.log('🔄 Password reset response status:', response.status);
 
     if (response.ok) {
-      const data = await response.json();
+      const _data = await response.json();
       console.log('✅ Password reset successful for user:', login);
       
       return NextResponse.json({
@@ -223,7 +224,7 @@ async function handleCustomerInvoices(req: NextRequest) {
 
     const raw = await response.text();
     let data: any = null;
-    try { data = raw ? JSON.parse(raw) : null; } catch (e) { /* not json */ }
+    try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
     if (!response.ok) {
       const msg = (data && (data.error || data.message)) || raw || 'Błąd pobierania faktur';
       return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: response.status || 502 });
@@ -403,7 +404,7 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
 /**
  * OLD FUNCTION - REMOVED
  */
-function generateSimplePdf_OLD(html: string, orderId: string, order: any): string {
+function _generateSimplePdf_OLD(html: string, orderId: string, order: any): string {
   // Extract order data from order object
   const orderDate = new Date(order.date_created).toLocaleDateString('pl-PL');
   const invoiceNumber = `FV/${new Date().getFullYear()}/${order.number}`;
@@ -566,7 +567,7 @@ ${2000 + 600}
 /**
  * Generate HTML template for invoice
  */
-function generateInvoiceHtmlTemplate(order: any) {
+function _generateInvoiceHtmlTemplate(order: any) {
   const orderDate = new Date(order.date_created).toLocaleDateString('pl-PL');
   const invoiceNumber = `FV/${new Date().getFullYear()}/${order.number}`;
   
@@ -702,7 +703,7 @@ async function handleOrderTracking(req: NextRequest) {
 
     const raw = await response.text();
     let data: any = null;
-    try { data = raw ? JSON.parse(raw) : null; } catch (e) { /* not json */ }
+    try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
     if (!response.ok) {
       const msg = (data && (data.error || data.message)) || raw || 'Błąd pobierania śledzenia';
       return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: response.status || 502 });
@@ -760,13 +761,13 @@ async function handleCustomerProfileUpdate(body: any) {
       });
       const raw = await response.text();
       let data: any = null;
-      try { data = raw ? JSON.parse(raw) : null; } catch (e) { /* not json */ }
+      try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
       if (response.ok && data && data.success) {
         customerFromCustom = data.customer || null;
       } else {
         console.log('ℹ️ Custom update-profile did not return success, continuing with Woo update');
       }
-    } catch (e) {
+    } catch {
       console.log('ℹ️ Custom update-profile call failed, continuing with Woo update');
     }
 
@@ -823,7 +824,7 @@ async function handleCustomerProfileUpdate(body: any) {
 
     const wooRaw = await wooResp.text();
     let wooData: any = null;
-    try { wooData = wooRaw ? JSON.parse(wooRaw) : null; } catch (_) { /* not json */ }
+    try { wooData = wooRaw ? JSON.parse(wooRaw) : null; } catch { /* not json */ }
     if (!wooResp.ok) {
       const msg = (wooData && (wooData.error || wooData.message)) || wooRaw || 'Błąd aktualizacji klienta w WooCommerce';
       return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: wooResp.status || 502 });
@@ -881,7 +882,7 @@ async function handleCustomerPasswordChange(body: any) {
 
     const raw = await response.text();
     let data: any = null;
-    try { data = raw ? JSON.parse(raw) : null; } catch (e) { /* not json */ }
+    try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
     if (!response.ok) {
       const msg = response.status === 404
         ? 'Funkcja zmiany hasła nie jest jeszcze dostępna. Skontaktuj się z administratorem.'
@@ -910,7 +911,7 @@ async function handleCustomerPasswordChange(body: any) {
   }
 }
 
-async function handleOrderCreation(body: any) {
+async function _handleOrderCreation(body: any) {
   const { 
     billing, 
     shipping, 
@@ -1002,7 +1003,7 @@ async function handleOrderCreation(body: any) {
 
     const raw = await response.text();
     let data: any = null;
-    try { data = raw ? JSON.parse(raw) : null; } catch (e) { /* not json */ }
+    try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
     
     if (!response.ok) {
       const msg = (data && (data.message || data.error)) || raw || 'Błąd tworzenia zamówienia';
@@ -1473,7 +1474,7 @@ async function handleShippingMethods(req: NextRequest) {
     let zonesParsed: Array<{ id: number; name: string }>; 
     try {
       zonesParsed = JSON.parse(zonesText);
-    } catch (_) {
+    } catch {
       console.error('Shipping zones returned non-JSON (truncated):', zonesText.substring(0, 200));
       zonesParsed = [] as any;
     }
@@ -1506,7 +1507,7 @@ async function handleShippingMethods(req: NextRequest) {
         // Prefer native JSON parsing first
         try {
           methods = await JSON.parse(responseText);
-        } catch (_) {
+        } catch {
           // If parsing fails due to raw HTML inside fields (e.g. method_description),
           // sanitize the payload by stripping HTML-bearing properties before parsing again.
           try {
@@ -1952,14 +1953,15 @@ export async function GET(req: NextRequest) {
       const url = `${WC_URL}/payment_gateways?consumer_key=${CK}&consumer_secret=${CS}`;
       const r = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' }, cache: 'no-store' });
       const text = await r.text();
-      let data: any = null; try { data = text ? JSON.parse(text) : null; } catch (_) {}
+      let data: any = null; try { data = text ? JSON.parse(text) : null; } catch {}
       if (!r.ok) {
         const msg = (data && (data.message || data.error)) || text || 'Błąd pobierania metod płatności';
         return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: r.status || 502 });
       }
       return NextResponse.json({ success: true, gateways: Array.isArray(data) ? data : [] });
-    } catch (e) {
-      return NextResponse.json({ success: false, error: e instanceof Error ? e.message : String(e) }, { status: 502 });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return NextResponse.json({ success: false, error: message }, { status: 502 });
     }
   }
 

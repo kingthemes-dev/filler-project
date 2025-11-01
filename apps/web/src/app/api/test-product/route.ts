@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { wooCommerceOptimized } from '@/services/woocommerce-optimized';
 
 export async function GET(request: NextRequest) {

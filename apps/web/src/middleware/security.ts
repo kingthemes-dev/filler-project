@@ -3,7 +3,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { env } from '@/config/env';
 import { logger } from '@/utils/logger';
 
 // Security headers configuration
@@ -128,7 +127,6 @@ function getClientIP(request: NextRequest): string {
 // Rate limiting check
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
-  const windowStart = now - RATE_LIMIT_CONFIG.windowMs;
   
   // Clean old entries
   for (const [key, value] of rateLimitStore.entries()) {

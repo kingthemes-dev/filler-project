@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FixedSizeList as List } from 'react-window';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { universalFilterService, UniversalAttribute } from '@/services/universal-filter-service';
+// removed unused imports from universal-filter-service
 import { FilterConfig } from '@/config/filter-config';
 
 interface UniversalAttributeFiltersProps {
@@ -32,10 +32,10 @@ interface UniversalAttributeFiltersProps {
 export default function UniversalAttributeFilters({ 
   onFilterChange, 
   selectedFilters,
-  totalProducts,
+  totalProducts: _totalProducts,
   config,
   preset = 'woocommerce',
-  currentFilters = { categories: [] }
+  currentFilters: _currentFilters = { categories: [] }
 }: UniversalAttributeFiltersProps) {
   const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(new Set());
 
@@ -51,8 +51,8 @@ export default function UniversalAttributeFilters({
     enabled: true,
   });
 
-  // Use prefetched data - should be instant!
-  const attributes = attributesQuery.data || {};
+  // Use prefetched data - should be instant! (memoized for stable identity)
+  const attributes = useMemo(() => attributesQuery.data || {}, [attributesQuery.data]);
   const loading = attributesQuery.isLoading && !attributesQuery.data; // Only show loading if no data at all
 
   const toggleAttribute = (attributeSlug: string) => {

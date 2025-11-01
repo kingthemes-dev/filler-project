@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Star, Plus, Minus, Droplets, ChevronDown, ChevronUp } from 'lucide-react';
+import { ShoppingCart, Star, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import ModalCloseButton from './modal-close-button';
 import { useCartStore } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
@@ -37,37 +37,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
   const { addItem, openCart } = useCartStore();
 
-  // Helper function to get variation price
-  const getVariationPrice = (capacity: string): number => {
-    const variation = variations.find(v => {
-      const hasCapacityAttr = v.attributes && v.attributes.some((attr) => 
-        (attr as any).name?.toLowerCase().includes('pojemność') && attr.option === capacity
-      );
-      return hasCapacityAttr;
-    });
-    
-    const price = variation ? parseFloat(variation.price) : parseFloat(product?.price || '0');
-    // Getting variation price debug removed
-    return price;
-  };
-
-  // Helper function to get sorted capacity options
-  const getSortedCapacityOptions = (): string[] => {
-    if (!product?.attributes) return [];
-    
-    const capacityAttr = product.attributes.find((attr: { name: string; options: string[] }) => 
-      attr.name.toLowerCase().includes('pojemność')
-    );
-    
-    if (!capacityAttr) return [];
-    
-    // Sort by menu_order if available, otherwise by natural order
-    return capacityAttr.options.sort((a: string, b: string) => {
-      const aNum = parseFloat(a.replace(/[^\d.]/g, ''));
-      const bNum = parseFloat(b.replace(/[^\d.]/g, ''));
-      return aNum - bNum;
-    });
-  };
+  // removed unused helpers: getVariationPrice, getSortedCapacityOptions
 
   // Fetch variations when product changes
   useEffect(() => {
@@ -183,27 +153,10 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.sale_price)) / parseFloat(product.regular_price)) * 100)
     : 0;
 
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-4 h-4 ${
-          i < Math.floor(rating) 
-            ? 'text-yellow-400 fill-current' 
-            : 'text-gray-300'
-        }`}
-      />
-    ));
-  };
+  // removed unused helper renderStars
 
   // Normalize any attribute option (string | {id,name,slug,...}) to string label
-  const toOptionLabel = (option: any): string => {
-    if (typeof option === 'string') return option;
-    if (option && typeof option === 'object') {
-      return option.name || option.slug || String(option.id ?? '');
-    }
-    return String(option ?? '');
-  };
+  // removed unused helper toOptionLabel
 
   // Safe image helper – uses original resolution, no resizing
   const getSafeImageSrc = (src?: string): string => {
@@ -227,7 +180,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       url.searchParams.delete('quality');
       url.search = url.search.toString();
       trimmed = url.href.replace('https://dummy-base/', '');
-    } catch (_) {}
+    } catch {}
     
     // Some APIs return relative paths – allow absolute http(s) only
     if (/^https?:\/\//i.test(trimmed)) return trimmed;

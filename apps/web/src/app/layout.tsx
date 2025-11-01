@@ -7,11 +7,10 @@ import DeferClientUI from '@/components/defer-client-ui';
 import FreeShippingBanner from '@/components/ui/free-shipping-banner';
 import ShopDataPrefetcher from '@/components/shop-data-prefetcher';
 import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
-import { initializeSearchConsoleAnalytics } from '@/utils/search-console-analytics';
 import { env } from '@/config/env';
 
 // Expert Level 9.6/10 - Free Implementation
-import { errorTracker, analytics, performanceMonitor } from '@headless-woo/shared';
+// removed unused monitoring imports to reduce bundle and lints
 
 
 const montserrat = Raleway({
@@ -131,12 +130,11 @@ export default function RootLayout({
         <link rel="preconnect" href={env.NEXT_PUBLIC_WORDPRESS_URL} crossOrigin="" />
         <link rel="dns-prefetch" href={env.NEXT_PUBLIC_WORDPRESS_URL} />
         {/* Preconnect to external services for better performance */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="" />
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         {/* next/font Montserrat already in use; remove external CSS to avoid render-blocking */}
