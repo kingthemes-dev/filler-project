@@ -1183,8 +1183,9 @@ async function handleAttributesEndpoint(req: NextRequest) {
           'Accept': 'application/json',
           'User-Agent': 'Filler-Store/1.0'
         },
-        cache: 'no-store',
-        signal: AbortSignal.timeout(10000) // 10s timeout
+        cache: 'force-cache', // 🚀 OPTIMIZATION: Force cache dla WordPress API (revalidate przez Next.js)
+        next: { revalidate: 30 }, // Revalidate co 30s
+        signal: AbortSignal.timeout(5000) // 🚀 OPTIMIZATION: Zredukowany z 10s do 5s
       });
       
       if (!response.ok) {
@@ -1394,8 +1395,8 @@ async function handleShopEndpoint(req: NextRequest) {
           'Accept': 'application/json',
           'User-Agent': 'Filler-Store/1.0'
         },
-        cache: 'no-store',
-        signal: AbortSignal.timeout(10000) // 10s timeout
+        next: { revalidate: 30 }, // 🚀 OPTIMIZATION: Cache przez Next.js z revalidate 30s
+        signal: AbortSignal.timeout(5000) // 🚀 OPTIMIZATION: Zredukowany z 10s do 5s
       });
       
       if (!response.ok) {
@@ -1422,12 +1423,14 @@ async function handleShopEndpoint(req: NextRequest) {
     }
 
     // WordPress zrobił całe filtrowanie - zwracamy dane jak są
+    // 🚀 OPTIMIZATION: Agresywniejsze cache headers dla lepszej wydajności
     return NextResponse.json(data, {
       status: 200,
       headers: {
         "content-type": "application/json",
-        "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=300",
+        "Cache-Control": "public, max-age=60, s-maxage=180, stale-while-revalidate=300",
         "X-Cache": "MISS",
+        "CDN-Cache-Control": "public, max-age=180",
       },
     });
 

@@ -255,7 +255,7 @@ export default function KingProductGrid({
                 product={product}
                 variant={variant}
                 showActions={true}
-                priority={index === 0}
+                priority={index < 4} // 🚀 PRIORITY 1: Priority dla pierwszych 4 produktów (above-the-fold)
               />
             ))}
           </div>

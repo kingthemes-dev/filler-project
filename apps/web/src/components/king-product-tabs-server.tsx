@@ -192,11 +192,12 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
                 </div>
               ) : activeTabData.products.length > 0 ? (
                 <div className="grid grid-cols-2 lg:grid-cols-4 mobile-grid">
-                  {activeTabData.products.slice(0, 4).map((product) => (
+                  {activeTabData.products.slice(0, 4).map((product, index) => (
                     <KingProductCard
                       key={product.id}
                       product={product}
                       variant="default"
+                      priority={index < 4} // 🚀 PRIORITY 1: Priority dla pierwszych 4 produktów (above-the-fold)
                     />
                   ))}
                 </div>

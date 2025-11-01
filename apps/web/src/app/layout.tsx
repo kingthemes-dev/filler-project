@@ -126,8 +126,8 @@ export default function RootLayout({
             }
           } catch(e) { /* noop */ }
         `}} />
-        {/* Preconnect to WordPress for faster API calls */}
-        <link rel="preconnect" href={env.NEXT_PUBLIC_WORDPRESS_URL} crossOrigin="" />
+        {/* 🚀 PRIORITY 1: Preconnect to WordPress for faster API calls */}
+        <link rel="preconnect" href={env.NEXT_PUBLIC_WORDPRESS_URL} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={env.NEXT_PUBLIC_WORDPRESS_URL} />
         {/* Preconnect to external services for better performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />

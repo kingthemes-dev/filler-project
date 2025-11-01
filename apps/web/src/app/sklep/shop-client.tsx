@@ -612,11 +612,12 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                     <div className="w-4 h-4 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
                   </div>
                 )}
-                {products.map((product) => (
+                {products.map((product, index) => (
                   <MemoizedProductCard
                     key={product.id}
                     product={product}
                     variant={'default'}
+                    priority={index < 4} // 🚀 PRIORITY 1: Priority dla pierwszych 4 produktów (above-the-fold)
                   />
                 ))}
               </div>
