@@ -339,25 +339,35 @@ const requestCache = new Map();
 - [x] Cache headers
 - [x] Next.js cache dla API
 
-### 🎯 **Następne kroki (Priority 1 - 1-2 tygodnie)**:
-1. **Preconnect dla WordPress API** (5 min) - najłatwiejsze
-2. **Font preload** (10 min) - quick win
-3. **Image priority optimization** (30 min) - sprawdź wszystkie komponenty
-4. **CDN verification** (15 min) - upewnij się, że działa
+### ✅ **Wykonane (Priority 1)**:
+- [x] Preconnect dla WordPress API
+- [x] Font preload (Raleway)
+- [x] Image priority optimization (pierwsze 4 produkty)
+- [x] React Query staleTime (30min dla kategorii/atrybutów)
+- [x] CDN verification (Vercel automatycznie)
 
-### 📊 **Oczekiwane rezultaty po Priority 1**:
-- **TTFB**: 0.5-1s → **0.3-0.7s**
-- **FCP**: 1-1.5s → **0.8-1.2s**
-- **LCP**: 1.5-2s → **1.2-1.6s**
+### ✅ **Wykonane (Priority 2 - część)**:
+- [x] Smaller Initial Payload (per_page: 12 → 8)
+- [x] Request Deduplication (in-memory cache, 100ms window)
+- [x] PERFORMANCE-OPTIMIZATION.md zaktualizowany (GraphQL analiza)
 
-### 🚀 **Po Priority 1 → Priority 2** (zaktualizowane - bez GraphQL):
-1. **Edge Functions** (1-2 dni) → ~200-300ms oszczędności
-2. **WordPress Redis Cache** (2-3 dni) → ~500ms-1s oszczędności
-3. **Smaller Initial Payload** (1 dzień) → ~200-300ms oszczędności
-4. **Request Deduplication** (kilka godzin) → ~100-200ms oszczędności
+### 📊 **Oczekiwane rezultaty po Priority 1 + Priority 2 (część)**:
+- **TTFB**: 0.5-1s → **0.2-0.6s** (poprawa ~300-400ms)
+- **FCP**: 1-1.5s → **0.7-1.1s** (poprawa ~300-400ms)
+- **LCP**: 1.5-2s → **1.1-1.5s** (poprawa ~400-500ms)
 
-**Suma oszczędności Priority 2**: ~900ms-1.6s w ~1 tydzień pracy  
-**ROI**: Lepsze niż GraphQL (szybsze wdrożenie, podobne rezultaty)
+### 🚀 **Pozostałe Priority 2 (opcjonalne - większy impact)**:
+1. **WordPress Redis Cache** (2-3 dni, WordPress side) → ~500ms-1s oszczędności
+   - **Status**: ⭐⭐⭐ Największy impact - wymaga dostępu do WordPress
+   - **ROI**: Najlepszy z pozostałych opcji
+   
+2. **Edge Functions** (1-2 dni, wymaga refaktoryzacji) → ~200-300ms oszczędności
+   - **Status**: ⚠️ Wymaga pracy - ioredis/Buffer nie działają na Edge
+   - **Uwaga**: Trzeba przenieść cache logic lub użyć Edge-compatible alternatyw
+
+**Suma wykonanych oszczędności Priority 2**: ~300-500ms  
+**Suma potencjalnych oszczędności z pozostałych**: ~700ms-1.3s  
+**ROI**: WordPress Redis Cache ma najlepszy ROI (największy impact, WordPress side)
 
 ---
 
@@ -426,10 +436,30 @@ if (typeof window !== 'undefined') {
 ```
 
 ## Status
-✅ **Optymalizacje zaimplementowane**
-⏳ **Oczekiwanie na testy Lighthouse w produkcji**
+✅ **Priority 0 + Priority 1: Ukończone (100%)**  
+✅ **Priority 2: Częściowo ukończone (2/4 optymalizacji)**
+- ✅ Smaller Initial Payload
+- ✅ Request Deduplication
+- ⏳ WordPress Redis Cache (WordPress side - wymaga dostępu)
+- ⏳ Edge Functions (opcjonalne - wymaga refaktoryzacji)
+
+### 📊 Podsumowanie wykonanych optymalizacji:
+- **Priority 0**: 4/4 ✅ (100%)
+- **Priority 1**: 5/5 ✅ (100%)
+- **Priority 2**: 2/4 ✅ (50% - 2 najłatwiejsze wykonane)
+
+### 🎯 Oczekiwane rezultaty po wszystkich wykonanych optymalizacjach:
+- **TTFB**: 0.2-0.6s (było 2-3s) → **~80% poprawy**
+- **FCP**: 0.7-1.1s (było 3-4s) → **~75% poprawy**
+- **LCP**: 1.1-1.5s (było 4-5s) → **~70% poprawy**
+
+### 🚀 Następne kroki (opcjonalne):
+1. **WordPress Redis Cache** - największy potencjalny impact (~500ms-1s)
+2. **Edge Functions** - dodatkowe ~200-300ms (wymaga refaktoryzacji)
+3. **Lighthouse test w produkcji** - weryfikacja rzeczywistych rezultatów
 
 ---
-**Data**: 2024-11-01
+**Data**: 2024-11-01  
+**Ostatnia aktualizacja**: Priority 2 - smaller payload + request deduplication  
 **Autor**: Senior Dev Optimization
 
