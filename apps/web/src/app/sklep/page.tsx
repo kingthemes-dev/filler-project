@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import ShopClient from './shop-client';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import { Metadata } from 'next';
+import { getFirstProductImageUrl } from '@/components/product-image-server-preload';
 
 // PRO: Static generation with ISR for better performance
 export const revalidate = 300; // 5 minutes
@@ -190,16 +191,32 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
 
     const dehydratedState = dehydrate(qc);
 
+    // 🚀 LCP Optimization: Server-side preload dla pierwszego obrazu produktu
+    const firstProductImage = initialShopData?.products?.length > 0 
+      ? getFirstProductImageUrl(initialShopData.products)
+      : null;
+
     return (
-      <HydrationBoundary state={dehydratedState}>
-        <Suspense fallback={
-          <div className="min-h-screen bg-white flex items-center justify-center">
-            <div className="w-12 h-12 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-          </div>
-        }>
-          <ShopClient initialShopData={initialShopData} />
-        </Suspense>
-      </HydrationBoundary>
+      <>
+        {/* 🚀 LCP Optimization: Preload pierwszego obrazu produktu (server-side, nie blokuje FCP) */}
+        {firstProductImage && (
+          <link
+            rel="preload"
+            as="image"
+            href={firstProductImage}
+            fetchPriority="high"
+          />
+        )}
+        <HydrationBoundary state={dehydratedState}>
+          <Suspense fallback={
+            <div className="min-h-screen bg-white flex items-center justify-center">
+              <div className="w-12 h-12 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+            </div>
+          }>
+            <ShopClient initialShopData={initialShopData} />
+          </Suspense>
+        </HydrationBoundary>
+      </>
     );
   } catch (error) {
     console.error('Error in ShopPage SSR:', error);

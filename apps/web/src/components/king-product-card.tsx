@@ -400,6 +400,7 @@ export default function KingProductCard({
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading={priority ? 'eager' : 'lazy'}
                 priority={priority}
+                quality={85}
               />
               {isOnSale && (
                 <Badge variant="destructive" className="absolute top-1 sm:top-2 left-1 sm:left-2 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
@@ -435,6 +436,7 @@ export default function KingProductCard({
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading={priority ? 'eager' : 'lazy'}
                 priority={priority}
+                quality={85}
               />
               {isOnSale && (
                 <Badge variant="destructive" className="absolute top-2 sm:top-3 left-2 sm:left-3 text-xs sm:text-sm border-2 border-destructive/20 rounded-xl px-2 sm:px-3 py-0.5 sm:py-1">

@@ -5,19 +5,30 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import PageContainer from '@/components/ui/page-container';
 import { Search } from 'lucide-react';
-import KingProductCard from '@/components/king-product-card';
+// 🚀 LCP Optimization: ShopProductsGrid z Suspense dla streaming rendering
+import ShopProductsGrid from '@/components/shop-products-grid';
 
-// Import filters directly for instant loading
-import ShopFilters from '@/components/ui/shop-filters';
-import ActiveFiltersBar from '@/components/ui/active-filters-bar';
-// removed unused wooCommerceService import
-import Breadcrumbs from '@/components/ui/breadcrumbs';
-import Pagination from '@/components/ui/pagination';
+// 🚀 Bundle Optimization: Dynamic imports dla below-the-fold components
+import dynamic from 'next/dynamic';
+const ShopFilters = dynamic(() => import('@/components/ui/shop-filters'), { 
+  ssr: false,
+  loading: () => <div className="w-full h-64 bg-gray-50 animate-pulse rounded-lg" />
+});
+const ActiveFiltersBar = dynamic(() => import('@/components/ui/active-filters-bar'), { 
+  ssr: false 
+});
+const Breadcrumbs = dynamic(() => import('@/components/ui/breadcrumbs'), { 
+  ssr: false 
+});
+const Pagination = dynamic(() => import('@/components/ui/pagination'), { 
+  ssr: false 
+});
 
 import { WooProduct } from '@/types/woocommerce';
 import { useQuery } from '@tanstack/react-query';
 import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
 import { useDebouncedCallback } from 'use-debounce';
+// Removed ProductImagePreload - using server-side preload instead
 
 interface FilterState {
   search: string;
@@ -592,35 +603,14 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
               onPriceRangeReset={() => setPriceRange({ min: 0, max: 10000 })}
             />
             
-            {(products.length === 0) && (loading || filterLoading) ? (
-              <div className="grid gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-3 min-h-[60vh]">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="bg-gray-200 rounded-lg aspect-square mb-4"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {/* 🚀 LCP Optimization: ShopProductsGrid z Suspense dla streaming rendering */}
+            {(loading || filterLoading) && products.length === 0 ? (
+              <ShopProductsGrid products={[]} refreshing={false} />
             ) : (
-              <div className={`grid mobile-grid grid-cols-2 lg:grid-cols-3 relative min-h-[60vh]`}>
-                {/* PRO: Subtle refreshing indicator */}
-                {refreshing && (
-                  <div className="absolute top-0 right-0 z-10 bg-white/80 backdrop-blur-sm rounded-lg p-2">
-                    <div className="w-4 h-4 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-                  </div>
-                )}
-                {products.map((product, index) => (
-                  <MemoizedProductCard
-                    key={product.id}
-                    product={product}
-                    variant={'default'}
-                    priority={index < 4} // 🚀 PRIORITY 1: Priority dla pierwszych 4 produktów (above-the-fold)
-                  />
-                ))}
-              </div>
+              <ShopProductsGrid 
+                products={products} 
+                refreshing={refreshing}
+              />
             )}
             
         {/* PRO: Paginacja */}
@@ -656,5 +646,4 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   );
 }
 
-// Memoized product card to prevent unnecessary re-renders
-const MemoizedProductCard = memo(KingProductCard);
+// Removed MemoizedProductCard - moved to ShopProductsGrid component for better code splitting

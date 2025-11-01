@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import LoginModal from './login-modal';
-import RegisterModal from './register-modal';
+import dynamic from 'next/dynamic';
+
+// 🚀 Bundle Optimization: Dynamic imports dla modali (tylko gdy używane)
+const LoginModal = dynamic(() => import('./login-modal'), { ssr: false });
+const RegisterModal = dynamic(() => import('./register-modal'), { ssr: false });
 
 export default function AuthModalManager() {
   const [isOpen, setIsOpen] = useState(false);

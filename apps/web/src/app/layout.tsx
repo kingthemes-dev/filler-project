@@ -99,8 +99,9 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* 🚀 Bundle Optimization: Analytics loaded with lazyOnload instead of afterInteractive */}
         {/* Consent-gated loading for GTM/GA to reduce unused JS and improve LCP */}
-        <Script id="consent-gated-analytics" strategy="afterInteractive" dangerouslySetInnerHTML={{__html: `
+        <Script id="consent-gated-analytics" strategy="lazyOnload" dangerouslySetInnerHTML={{__html: `
           try {
             var prefs = localStorage.getItem('cookie_preferences');
             var parsed = prefs ? JSON.parse(prefs) : null;
@@ -185,11 +186,12 @@ export default function RootLayout({
                             onlyIfEmpty={true} 
                           />
                         
+                        {/* 🚀 Bundle Optimization: PWA SW registration with lazyOnload */}
                         {/* PWA Service Worker Registration */}
                         {process.env.NODE_ENV === 'production' && (
                           <Script
                             id="pwa-sw-register"
-                            strategy="afterInteractive"
+                            strategy="lazyOnload"
                             dangerouslySetInnerHTML={{
                               __html: `
                                 if ('serviceWorker' in navigator) {
@@ -208,10 +210,11 @@ export default function RootLayout({
                           />
                         )}
                         
+                        {/* 🚀 Bundle Optimization: PWA install prompt with lazyOnload */}
                         {/* PWA Install Prompt - idle callback to avoid impacting FCP */}
                         <Script
                           id="pwa-install-prompt"
-                          strategy="afterInteractive"
+                          strategy="lazyOnload"
                           dangerouslySetInnerHTML={{
                             __html: `requestIdleCallback?.(() => {
                               let deferredPrompt;
@@ -223,11 +226,12 @@ export default function RootLayout({
                           }}
                         />
                         
+                        {/* 🚀 Bundle Optimization: Expert monitoring loaded with lazyOnload */}
                         {/* Expert monitoring only if explicitly enabled via env */}
                         {process.env.NEXT_PUBLIC_EXPERT_MONITORING === 'true' && (
                           <Script
                             id="expert-monitoring-init"
-                            strategy="afterInteractive"
+                            strategy="lazyOnload"
                             dangerouslySetInnerHTML={{
                               __html: `requestIdleCallback?.(() => {
                                 window.performanceMonitor?.getStats?.();

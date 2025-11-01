@@ -1,9 +1,18 @@
 'use client';
 
 import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
 // import { analytics } from '@headless-woo/shared';
+
+// 🚀 Bundle Optimization: Dynamic import dla devtools (tylko w development)
+const ReactQueryDevtools = 
+  process.env.NODE_ENV === 'development'
+    ? React.lazy(() => 
+        import('@tanstack/react-query-devtools').then((mod) => ({
+          default: mod.ReactQueryDevtools,
+        }))
+      )
+    : () => null;
 
 export default function ReactQueryProvider({ children }: { children: React.ReactNode }) {
   const [client] = React.useState(() => new QueryClient({
@@ -35,7 +44,11 @@ export default function ReactQueryProvider({ children }: { children: React.React
   return (
     <QueryClientProvider client={client}>
       {children}
-      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+      {process.env.NODE_ENV === 'development' && (
+        <React.Suspense fallback={null}>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </React.Suspense>
+      )}
     </QueryClientProvider>
   );
 }

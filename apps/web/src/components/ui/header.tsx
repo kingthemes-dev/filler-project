@@ -8,10 +8,12 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
 // import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
-import EmailNotificationCenter from './email/email-notification-center';
-import ShopExplorePanel from './shop-explore-panel';
 import dynamic from 'next/dynamic';
+
+// 🚀 Bundle Optimization: Dynamic imports dla modali (below-the-fold, tylko gdy używane)
 const SearchModal = dynamic(() => import('./search-modal'), { ssr: false });
+const ShopExplorePanel = dynamic(() => import('./shop-explore-panel'), { ssr: false });
+const EmailNotificationCenter = dynamic(() => import('./email/email-notification-center'), { ssr: false });
 import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
 
 
