@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, ChevronRight, Sparkles, Filter } from 'lucide-react';
 import Link from 'next/link';
@@ -14,7 +14,7 @@ interface ShopExplorePanelProps {
   onClose: () => void;
 }
 
-export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProps) {
+function ShopExplorePanelContent({ open, onClose }: ShopExplorePanelProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
@@ -422,6 +422,14 @@ export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProp
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+export default function ShopExplorePanel({ open, onClose }: ShopExplorePanelProps) {
+  return (
+    <Suspense fallback={null}>
+      <ShopExplorePanelContent open={open} onClose={onClose} />
+    </Suspense>
   );
 }
 

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import ShopClient from './shop-client';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import { Metadata } from 'next';
@@ -207,7 +208,13 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
 
     return (
       <HydrationBoundary state={dehydratedState}>
-        <ShopClient initialShopData={initialShopData} />
+        <Suspense fallback={
+          <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="w-12 h-12 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+          </div>
+        }>
+          <ShopClient initialShopData={initialShopData} />
+        </Suspense>
       </HydrationBoundary>
     );
   } catch (error) {
