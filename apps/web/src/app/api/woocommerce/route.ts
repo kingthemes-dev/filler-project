@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { cache } from '@/lib/cache';
+
+// 🚀 PRIORITY 2: Request deduplication - cache identycznych requestów w 100ms window
+const requestCache = new Map<string, { data: any; timestamp: number; headers: Headers }>();
+const DEDUP_WINDOW = 100; // 100ms window dla deduplication
+const MAX_CACHE_SIZE = 100; // Maksymalna liczba cached requests (zapobiega memory leak)
+
+function getCacheKey(req: NextRequest): string {
+  const url = new URL(req.url);
+  // Cache key = endpoint + wszystkie parametry
+  return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
+function cleanupOldCache() {
+  if (requestCache.size > MAX_CACHE_SIZE) {
+    // Usuń najstarsze 20% entries
+    const entries = Array.from(requestCache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const toRemove = Math.floor(entries.length * 0.2);
+    for (let i = 0; i < toRemove; i++) {
+      requestCache.delete(entries[i][0]);
+    }
+  }
+}
 import { WooShippingMethod } from '@/types/woocommerce';
 import { sentryMetrics } from '@/utils/sentry-metrics';
 import { env } from '@/config/env';
@@ -1387,8 +1410,8 @@ async function handleShopEndpoint(req: NextRequest) {
     }
     
     // Use circuit breaker for WordPress API calls
-    const response = await withCircuitBreaker('wordpress', async () => {
-      const response = await fetch(shopUrl, {
+    const wpResponse = await withCircuitBreaker('wordpress', async () => {
+      const fetchResponse = await fetch(shopUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1399,19 +1422,19 @@ async function handleShopEndpoint(req: NextRequest) {
         signal: AbortSignal.timeout(5000) // 🚀 OPTIMIZATION: Zredukowany z 10s do 5s
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      if (!fetchResponse.ok) {
+        const errorText = await fetchResponse.text();
+        throw new Error(`HTTP ${fetchResponse.status}: ${errorText.substring(0, 200)}`);
       }
       
-      return response;
+      return fetchResponse;
     });
 
     if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
-      console.log('🔍 King Shop API response status:', response.status);
+      console.log('🔍 King Shop API response status:', wpResponse.status);
     }
 
-    const data = await response.json();
+    const data = await wpResponse.json();
     
     if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
       console.log('✅ Shop data received from WordPress:', {
@@ -1424,7 +1447,7 @@ async function handleShopEndpoint(req: NextRequest) {
 
     // WordPress zrobił całe filtrowanie - zwracamy dane jak są
     // 🚀 OPTIMIZATION: Agresywniejsze cache headers dla lepszej wydajności
-    return NextResponse.json(data, {
+    const nextResponse = NextResponse.json(data, {
       status: 200,
       headers: {
         "content-type": "application/json",
@@ -1433,6 +1456,17 @@ async function handleShopEndpoint(req: NextRequest) {
         "CDN-Cache-Control": "public, max-age=180",
       },
     });
+
+    // 🚀 PRIORITY 2: Cache response dla request deduplication (tylko dla shop endpoint)
+    const shopCacheKey = getCacheKey(req);
+    cleanupOldCache();
+    requestCache.set(shopCacheKey, {
+      data,
+      timestamp: Date.now(),
+      headers: nextResponse.headers,
+    });
+
+    return nextResponse;
 
   } catch (error) {
     console.error('❌ Shop endpoint error:', error);
@@ -1760,6 +1794,21 @@ async function handleCoupons(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // 🚀 PRIORITY 2: Request deduplication - sprawdź cache przed wykonaniem
+  const cacheKey = getCacheKey(req);
+  const cached = requestCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < DEDUP_WINDOW) {
+    // Return cached response with same headers
+    const cachedResponse = NextResponse.json(cached.data, {
+      status: 200,
+      headers: {
+        ...Object.fromEntries(cached.headers.entries()),
+        'X-Cache': 'DEDUP',
+      },
+    });
+    return cachedResponse;
+  }
+
   console.log('🔍 GET request received:', req.url);
   
   const { searchParams } = new URL(req.url);

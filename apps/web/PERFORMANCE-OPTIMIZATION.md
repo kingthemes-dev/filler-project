@@ -134,71 +134,101 @@ gcTime: 60 * 60_000, // 1 godzina garbage collection
 
 ### 🎯 PRIORYTET 2: Średnioterminowe (1-2 miesiące, wymaga pracy)
 
-#### 1. **GraphQL API Layer**
-**Problem**: REST API wymaga wielu requestów (N+1 problem)  
-**Rozwiązanie**: WordPress GraphQL plugin (WPGraphQL)
-```typescript
-// Przed (REST - wiele requestów):
-GET /api/woocommerce?endpoint=shop
-GET /api/woocommerce?endpoint=categories
-GET /api/woocommerce?endpoint=attributes
+#### ⚠️ **GraphQL API Layer - NIE WYMAGANE**
+**Analiza**: GraphQL nie jest potrzebne w tym przypadku!  
+**Dlaczego**:
+- ✅ WordPress endpoint `king-shop/v1/data` już zwraca wszystko w jednym requestcie
+  - `products` + `categories` + `attributes` w jednej odpowiedzi
+- ✅ Problem N+1 nie występuje (mamy batch endpoint)
+- ✅ Równoległe prefetche już działają
+- ✅ Cache jest dobrze skonfigurowane
 
-// Po (GraphQL - jeden request):
-POST /graphql
-query {
-  shop(page: 1) {
-    products { id, name, price }
-    categories { id, name, slug }
-    attributes { name, terms }
-  }
-}
-```
-**Oszczędność**: ~1-1.5s (redukcja z 3+ requestów do 1)  
-**Czas implementacji**: 2-3 tygodnie
+**Wniosek**: GraphQL dałoby ~1-1.5s oszczędności, ale wymaga 2-3 tygodni pracy + WordPress plugin setup.  
+**Lepsza alternatywa**: Edge Functions + WordPress Redis Cache = ~900ms-1.6s oszczędności w ~1 tydzień.
 
-#### 2. **Edge Functions dla Cache**
-**Problem**: API route wykonuje się na Node.js (wolniejsze)  
-**Rozwiązanie**: Przenieś `/api/woocommerce` na Edge Functions
+**Status**: ❌ **POMIŃ** - nie jest wymagane, lepsze ROI z innymi optymalizacjami
+
+#### 1. **Edge Functions dla Cache** ⭐ NAJWIĘKSZY IMPACT
+**Problem**: API route wykonuje się na Node.js (wolniejsze cold start, wyższe opóźnienia)  
+**Rozwiązanie**: Przenieś cache layer na Edge Functions
 ```typescript
 // apps/web/src/app/api/woocommerce/route.ts
 export const runtime = 'edge'; // Zmiana z 'nodejs'
-// UWAGA: Edge nie wspiera niektórych Node.js APIs (Buffer, require)
+// Cache responses na Edge (Vercel Edge Network)
 ```
 **Oszczędność**: ~200-300ms na każdym requestcie  
-**Ograniczenia**: Edge Functions mają limity (10s timeout, brak niektórych Node.js APIs)
+**Ograniczenia**: 
+- Edge Functions mają limity (10s timeout, brak niektórych Node.js APIs)
+- Wymaga refaktoryzacji części kodu (Buffer → TextEncoder, require → dynamic import)
+**Czas implementacji**: 1-2 dni
+**Priorytet**: ⭐⭐⭐ Najwyższy - największy impact z najmniejszym wysiłkiem
 
-#### 3. **WordPress Query Optimization**
-**Problem**: WordPress queries mogą być nieoptymalne  
+#### 2. **WordPress Redis Cache** ⭐ NAJWIĘKSZY IMPACT (WordPress side)
+**Problem**: WordPress queries mogą być nieoptymalne, brak cache po stronie WordPress  
 **Rozwiązanie**:
+- **Redis object cache**: Włącz Redis dla WordPress (`wp_redis_cache`)
 - **Database indexes**: Dodaj indeksy dla `wp_posts.post_date`, `wp_postmeta.meta_key`
-- **Query caching**: Włącz Redis object cache w WordPress
-- **Eager loading**: Użyj `include` zamiast lazy loading dla związanych danych
+- **Query caching**: Cache shop queries w Redis (TTL: 5-10 minut)
 
 ```php
 // WordPress mu-plugin optimization
 // Cache shop queries w Redis
 add_action('init', function() {
-  if (!wp_cache_get('shop_products')) {
-    // Fetch and cache
+  $cache_key = 'shop_products_' . md5(serialize($_GET));
+  $cached = wp_cache_get($cache_key, 'shop_data');
+  if ($cached !== false) {
+    return $cached;
   }
+  // Fetch and cache w Redis
+  $data = fetch_shop_data();
+  wp_cache_set($cache_key, $data, 'shop_data', 600); // 10 min TTL
+  return $data;
 });
 ```
 
-**Oszczędność**: ~500ms-1s na WordPress queries  
-**Czas implementacji**: 1 tydzień
+**Oszczędność**: ~500ms-1s na WordPress queries (największy single improvement)  
+**Czas implementacji**: 2-3 dni (WordPress setup + Redis configuration)
+**Priorytet**: ⭐⭐⭐ Najwyższy - największy impact po stronie WordPress
 
-#### 4. **API Response Compression**
-**Problem**: Duże JSON responses (shop data może być >100KB)  
-**Rozwiązanie**: Next.js automatycznie kompresuje, ale sprawdź:
+#### 3. **Smaller Initial Payload** ⚡ QUICK WIN
+**Problem**: Duże JSON responses (shop data może być >100KB), transfer za dużo danych na start  
+**Rozwiązanie**:
 ```typescript
-// apps/web/next.config.ts
-compress: true, // ✅ Już włączone w produkcji
+// Zmniejsz per_page dla initial load
+per_page: 12 → 8 // Mniejsze initial payload (~30% mniej danych)
+
+// WordPress endpoint - selective fields (jeśli endpoint to wspiera)
+// Zamiast pełnych obiektów produktów, tylko potrzebne pola:
+fields: 'id,name,price,images[0],slug,stock_status'
 ```
 
-**Dodatkowo**: Rozważ paginację lub zmniejszenie `per_page` dla initial load:
+**Oszczędność**: ~200-300ms (mniejszy transfer danych, szybsze parsing JSON)  
+**Czas implementacji**: 1 dzień  
+**Priorytet**: ⭐⭐ Wysoki - łatwe wdrożenie, dobry impact
+
+#### 4. **Request Deduplication**
+**Problem**: Równoczesne identyczne requesty (np. wiele kart produktów jednocześnie)  
+**Rozwiązanie**: In-memory cache w Next.js API route
 ```typescript
-per_page: 12 → 8 // Mniejsze initial payload
+// apps/web/src/app/api/woocommerce/route.ts
+const requestCache = new Map<string, { data: any; timestamp: number }>();
+const DEDUP_WINDOW = 100; // 100ms window dla deduplication
+
+export async function GET(req: NextRequest) {
+  const cacheKey = req.url;
+  const cached = requestCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < DEDUP_WINDOW) {
+    return NextResponse.json(cached.data);
+  }
+  // ... fetch data ...
+  requestCache.set(cacheKey, { data, timestamp: Date.now() });
+  return NextResponse.json(data);
+}
 ```
+
+**Oszczędność**: ~100-200ms (zero duplicate requests w 100ms window)  
+**Czas implementacji**: Kilka godzin  
+**Priorytet**: ⭐ Średni - łatwe, ale mniejszy impact
 
 ---
 
@@ -320,10 +350,14 @@ const requestCache = new Map();
 - **FCP**: 1-1.5s → **0.8-1.2s**
 - **LCP**: 1.5-2s → **1.2-1.6s**
 
-### 🚀 **Po Priority 1 → Priority 2**:
-- GraphQL API (największy impact)
-- Edge Functions
-- WordPress query optimization
+### 🚀 **Po Priority 1 → Priority 2** (zaktualizowane - bez GraphQL):
+1. **Edge Functions** (1-2 dni) → ~200-300ms oszczędności
+2. **WordPress Redis Cache** (2-3 dni) → ~500ms-1s oszczędności
+3. **Smaller Initial Payload** (1 dzień) → ~200-300ms oszczędności
+4. **Request Deduplication** (kilka godzin) → ~100-200ms oszczędności
+
+**Suma oszczędności Priority 2**: ~900ms-1.6s w ~1 tydzień pracy  
+**ROI**: Lepsze niż GraphQL (szybsze wdrożenie, podobne rezultaty)
 
 ---
 

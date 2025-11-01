@@ -84,7 +84,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const [totalProducts, setTotalProducts] = useState(initialShopData?.total || 0);
   
   const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(12); // PRO: 12 produktów na stronę
+  const [productsPerPage] = useState(8); // 🚀 PRIORITY 2: 8 produktów na stronę (mniejszy initial payload)
   const [showFilters, setShowFilters] = useState(false);
   // fixed grid view – list variant removed
   const [filterLoading, setFilterLoading] = useState(false);
