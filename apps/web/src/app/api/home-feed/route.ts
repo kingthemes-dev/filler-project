@@ -3,26 +3,37 @@ import { env } from '@/config/env';
 
 export const runtime = 'nodejs';
 
-
 export async function GET() {
   try {
-    // PRO Architecture: Call WordPress King Shop API directly (same as /api/woocommerce?endpoint=shop)
+    // PRO Architecture: Call WordPress King Shop API directly (bypassing internal API during SSG)
+    // This works during build time (SSG) when internal fetch won't work
+    const WORDPRESS_URL = env.NEXT_PUBLIC_WORDPRESS_URL;
+    
+    if (!WORDPRESS_URL) {
+      console.error('❌ NEXT_PUBLIC_WORDPRESS_URL is not defined');
+      return NextResponse.json({
+        nowosci: [],
+        promocje: [],
+        polecane: [],
+        bestsellery: []
+      }, { status: 200 });
+    }
+    
     // Fetch ALL pages to get all products
     let allProducts: any[] = [];
     let page = 1;
     let hasMorePages = true;
     
     while (hasMorePages) {
-      // Proxy przez nasze API, aby uniknąć CORS/HTML i używać centralnego env
-      // Zmniejszamy per_page, aby ograniczyć payload; w dev pobieramy tylko pierwszą stronę
+      // Call WordPress API directly instead of internal API (works during SSG/build)
       const perPage = process.env.NODE_ENV === 'development' ? 24 : 48;
-      const shopUrl = `${env.NEXT_PUBLIC_BASE_URL || ''}/api/woocommerce?endpoint=shop&per_page=${perPage}&page=${page}`.replace(/\/$/, '');
+      const shopUrl = `${WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&per_page=${perPage}&page=${page}`;
       
       if (process.env.NODE_ENV === 'development') {
         console.log(`🏠 Home feed - calling King Shop API page ${page}:`, shopUrl);
       }
       
-      // Fetch products using our optimized API with timeout
+      // Fetch products directly from WordPress API with timeout
       const productsResponse = await fetch(shopUrl, {
         method: 'GET',
         headers: {
