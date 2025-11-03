@@ -13,6 +13,8 @@ import {
   Shield,
   ChevronRight
 } from 'lucide-react';
+import PageContainer from '@/components/ui/page-container';
+import PageHeader from '@/components/ui/page-header';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import { SHIPPING_CONFIG } from '@/config/constants';
@@ -23,7 +25,6 @@ import { useAuthStore } from '@/stores/auth-store';
 import RegisterModal from '@/components/ui/auth/register-modal';
 import { validateEmail, validatePhone, validatePostalCode, validateName, validateAddress } from '@/utils/validation';
 import { Button } from '@/components/ui/button';
-import PageHeader from '@/components/ui/page-header';
 
 interface CheckoutForm {
   // Billing Information
@@ -809,7 +810,7 @@ function CheckoutPageInner() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
+      <PageContainer className="pb-12">
         
         {/* Quick Payment Banner */}
         {quickPaymentSelected && (
@@ -1625,7 +1626,7 @@ function CheckoutPageInner() {
             </div>
           </div>
         </div>
-      </div>
+      </PageContainer>
 
       {/* Register Modal */}
       <RegisterModal

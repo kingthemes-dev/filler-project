@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/ui/page-header';
+import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Download, Calendar, Euro, Eye, User, Package, Heart } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -267,19 +268,19 @@ export default function MyInvoicesPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
+        <PageContainer className="pb-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
             <p className="text-gray-600">Ładowanie faktur...</p>
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
+      <PageContainer className="pb-12">
         {/* Header */}
         <PageHeader 
           title="Moje faktury"
@@ -546,7 +547,7 @@ export default function MyInvoicesPage() {
             </motion.div>
           </motion.div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }

@@ -32,13 +32,13 @@ export default function PageHeader({
               {subtitle}
             </p>
           )}
-          {breadcrumbs.length > 0 && (
-            <Breadcrumbs 
-              items={breadcrumbs} 
-              variant="minimal" 
-              size="sm" 
-            />
-          )}
+        {breadcrumbs.length > 0 && (
+          <Breadcrumbs 
+            items={breadcrumbs} 
+            variant="minimal" 
+            size="sm" 
+          />
+        )}
         </div>
       </div>
     </div>

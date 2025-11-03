@@ -230,12 +230,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       {isOpen && (
         <>
           {/* Backdrop with blur */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
-            onClick={onClose}
+          onClick={onClose}
           />
           
           {/* Modal */}
@@ -250,9 +250,9 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             }}
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
+            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
               {/* Content */}
               <div className="flex flex-col lg:flex-row h-full relative">
                 {/* Close Button - Top Right of Content */}
@@ -575,8 +575,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       </div>
                     )}
                   </div>
+                  </div>
               </div>
-            </div>
           </motion.div>
         </>
       )}

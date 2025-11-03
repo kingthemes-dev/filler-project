@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useAuthModalStore } from '@/stores/auth-modal-store';
 
 // 🚀 Bundle Optimization: Dynamic imports dla modali (tylko gdy używane)
 const LoginModal = dynamic(() => import('./login-modal'), { ssr: false });
@@ -10,6 +11,7 @@ const RegisterModal = dynamic(() => import('./register-modal'), { ssr: false });
 export default function AuthModalManager() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentModal, setCurrentModal] = useState<'login' | 'register'>('login');
+  const { openAuthModal, closeAuthModal } = useAuthModalStore();
 
   // Listen for custom events to open modals
   useEffect(() => {
@@ -17,12 +19,14 @@ export default function AuthModalManager() {
       console.log('[AuthModalManager] openLogin received');
       setCurrentModal('login');
       setIsOpen(true);
+      openAuthModal();
     };
 
     const handleOpenRegister = () => {
       console.log('[AuthModalManager] openRegister received');
       setCurrentModal('register');
       setIsOpen(true);
+      openAuthModal();
     };
 
     // Window listeners (primary)
@@ -57,6 +61,7 @@ export default function AuthModalManager() {
 
   const handleClose = () => {
     setIsOpen(false);
+    closeAuthModal();
   };
 
   const switchToLogin = () => {

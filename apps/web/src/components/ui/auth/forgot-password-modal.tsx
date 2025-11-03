@@ -109,20 +109,20 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
       {isOpen && (
         <>
           {/* Backdrop with blur */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-md z-[70]"
-            onClick={handleClose}
-          />
-          
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.2 }}
+        onClick={handleClose}
+      />
+
+      {/* Modal */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[80] flex items-center justify-center p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget) handleClose();
@@ -130,7 +130,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
           >
             <div
               className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto"
-            >
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center">
@@ -307,8 +307,8 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
             </form>
           )}
         </div>
-            </div>
-          </motion.div>
+        </div>
+      </motion.div>
         </>
       )}
     </AnimatePresence>

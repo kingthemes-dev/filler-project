@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Package, ArrowLeft, Calendar, CheckCircle, Clock, Truck, User, MapPin, CreditCard } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { formatPrice } from '@/utils/format-price';
+import PageContainer from '@/components/ui/page-container';
 
 interface OrderItem {
 	id: number;
@@ -152,12 +153,12 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 	if (loading) {
 		return (
     <div className="min-h-screen bg-white">
-				<div className="max-w-[95vw] mx-auto px-6 py-8 pb-16">
+				<PageContainer className="px-6 py-8 pb-16">
 					<div className="text-center">
 						<div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
 						<p className="text-gray-600">Ładowanie zamówienia...</p>
 					</div>
-				</div>
+				</PageContainer>
 			</div>
 		);
 	}

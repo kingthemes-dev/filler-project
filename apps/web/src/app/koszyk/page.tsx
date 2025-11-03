@@ -8,7 +8,6 @@ import Link from 'next/link';
 import PageContainer from '@/components/ui/page-container';
 import Image from 'next/image';
 import PageHeader from '@/components/ui/page-header';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export default function CartPage() {
   const { items, total, itemCount, removeItem, updateQuantity, clearCart } = useCartStore();
@@ -31,13 +30,7 @@ export default function CartPage() {
       <div className="min-h-screen bg-white py-12 pb-16">
         <PageContainer>
           {/* Header with Title and Breadcrumbs */}
-          <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-white border border-gray-200 rounded-3xl -mt-[10px] lg:mx-0 px-4 lg:px-8 pt-5 pb-6 sm:pt-6 sm:pb-8 mb-8">
- leave
-            <div className="flex flex-col items-center justify-center gap-2 lg:gap-3 text-center">
-              <h1 className="text-3xl font-normal text-gray-900">Koszyk</h1>
-              <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
-            </div>
-          </div>
+          <PageHeader title="Koszyk" breadcrumbs={breadcrumbs} />
           
           <div className="max-w-2xl mx-auto text-center">
             <motion.div
@@ -76,7 +69,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
+      <PageContainer className="pb-12">
         {/* Header with Title and Breadcrumbs */}
         <PageHeader 
           title="Koszyk"
@@ -241,7 +234,7 @@ export default function CartPage() {
             </div>
           </div>
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }

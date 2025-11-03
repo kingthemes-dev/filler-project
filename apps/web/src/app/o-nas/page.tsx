@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import PageContainer from '@/components/ui/page-container';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
+import PageHeader from '@/components/ui/page-header';
 import { Award, Truck, Headphones, Shield } from 'lucide-react';
 
 export default function AboutPage() {
@@ -15,14 +15,7 @@ export default function AboutPage() {
     <div className="bg-white">
       <PageContainer>
         {/* Header with Title and Breadcrumbs */}
-        <div className="sticky top-[7rem] z-40 bg-gradient-to-br from-gray-50 via-gray-100 to-white border border-gray-200 rounded-3xl -mt-[10px] lg:mx-0 px-4 lg:px-8 pt-5 pb-6 sm:pt-6 sm:pb-8 mb-8">
-          <div className="flex flex-col items-center justify-center gap-2 lg:gap-3 text-center">
-            <h1 className="text-3xl font-normal tracking-tight text-gray-900">
-              O nas
-            </h1>
-            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
-          </div>
-        </div>
+        <PageHeader title="O nas" breadcrumbs={breadcrumbs} />
 
         {/* Main Content */}
         <section className="py-8">

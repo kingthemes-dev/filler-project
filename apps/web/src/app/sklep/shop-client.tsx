@@ -545,9 +545,9 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   return (
     <div className="min-h-screen bg-white">
-      <PageContainer className="py-4 pb-12">
+      <PageContainer className="pb-12">
         {/* Header with Title and Breadcrumbs */}
-        <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-white border border-gray-200 rounded-3xl -mt-[10px] lg:mx-0 px-4 lg:px-8 pt-5 pb-6 sm:pt-6 sm:pb-8 mb-8">
+        <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-white border border-gray-200 rounded-3xl px-4 lg:px-8 pt-5 pb-6 sm:pt-6 sm:pb-8 mb-8">
           <div className="flex flex-col items-center justify-center gap-2 lg:gap-3 text-center">
             <h1 className="text-3xl font-normal text-gray-900">Sklep</h1>
             <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />

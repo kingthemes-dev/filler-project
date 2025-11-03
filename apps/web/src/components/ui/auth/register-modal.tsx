@@ -162,20 +162,20 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin, onRegi
       {isOpen && (
         <>
           {/* Backdrop with blur */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-md z-[70]"
-            onClick={onClose}
-          />
-          
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.2 }}
+          onClick={onClose}
+        />
+
+        {/* Modal */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[80] flex items-center justify-center p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget) onClose();
@@ -183,7 +183,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin, onRegi
           >
             <div
               className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto"
-            >
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -461,7 +461,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin, onRegi
             </div>
           </form>
             </div>
-          </motion.div>
+        </motion.div>
         </>
       )}
     </AnimatePresence>

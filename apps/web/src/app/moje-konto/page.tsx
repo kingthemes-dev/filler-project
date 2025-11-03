@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/ui/page-header';
+import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, Heart, ShoppingCart, Eye, FileText, Package, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -375,7 +376,7 @@ export default function MyAccountPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
+      <PageContainer className="pb-12">
         {/* Header */}
         <PageHeader 
           title="Moje konto"
@@ -452,7 +453,7 @@ export default function MyAccountPage() {
                 <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
                   activeTab === 'favorites' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
                 }`}>
-                  Ulubione
+                Ulubione
                 </span>
               </button>
               <button
@@ -469,7 +470,7 @@ export default function MyAccountPage() {
                 <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
                   activeTab === 'invoices' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
                 }`}>
-                  Faktury
+                Faktury
                 </span>
               </button>
             </div>
@@ -1183,7 +1184,7 @@ export default function MyAccountPage() {
             </div>
           </div>
         </div>
-      </div>
+      </PageContainer>
 
       {/* Password Change Modal */}
       {showPasswordModal && (

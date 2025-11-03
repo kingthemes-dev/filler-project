@@ -7,6 +7,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useWishlist } from '@/hooks/use-wishlist';
 import { useCartStore } from '@/stores/cart-store';
+import { useQuickViewStore } from '@/stores/quickview-store';
+import { WooProduct } from '@/types/woocommerce';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,8 +34,7 @@ export default function WishlistPage() {
   ];
   
   const { addItem, openCart } = useCartStore();
-  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const { openQuickView, isOpen: isQuickViewOpen, product: quickViewProduct, closeQuickView } = useQuickViewStore();
 
   useEffect(() => {
     // Load wishlist from server on mount
@@ -58,7 +59,7 @@ export default function WishlistPage() {
   };
 
   const handleQuickView = (item: any) => {
-    setSelectedProduct({
+    const product = {
       id: item.id,
       name: item.name,
       slug: item.slug,
@@ -66,9 +67,23 @@ export default function WishlistPage() {
       regular_price: item.regular_price,
       sale_price: item.sale_price,
       images: item.images,
-      stock_status: item.stock_status
-    });
-    setIsQuickViewOpen(true);
+      stock_status: item.stock_status,
+      type: 'simple' as const,
+      permalink: item.permalink || `/produkt/${item.slug}`,
+      sku: '',
+      description: '',
+      short_description: '',
+      on_sale: false,
+      featured: false,
+      categories: [],
+      tags: [],
+      attributes: [],
+      default_attributes: [],
+      variations: [],
+      related_ids: [],
+      meta_data: []
+    } as unknown as WooProduct;
+    openQuickView(product);
   };
 
   if (isLoading) {
@@ -78,7 +93,7 @@ export default function WishlistPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-white py-8 pb-16">
-        <div className="max-w-[95vw] mx-auto mobile-container">
+        <PageContainer>
           {/* Header with Title and Breadcrumbs */}
           <PageHeader 
             title="Lista życzeń"
@@ -95,7 +110,7 @@ export default function WishlistPage() {
               Spróbuj ponownie
             </Button>
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
@@ -103,7 +118,7 @@ export default function WishlistPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-white py-8 pb-16">
-        <div className="max-w-[95vw] mx-auto mobile-container">
+        <PageContainer>
           {/* Header with Title and Breadcrumbs */}
           <PageHeader 
             title="Lista życzeń"
@@ -124,7 +139,7 @@ export default function WishlistPage() {
               </Button>
             </Link>
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
@@ -269,16 +284,11 @@ export default function WishlistPage() {
       </div>
 
       {/* Quick View Modal */}
-      {selectedProduct && (
-        <QuickViewModal
-          isOpen={isQuickViewOpen}
-          onClose={() => {
-            setIsQuickViewOpen(false);
-            setSelectedProduct(null);
-          }}
-          product={selectedProduct}
-        />
-      )}
+      <QuickViewModal
+        isOpen={isQuickViewOpen}
+        onClose={closeQuickView}
+        product={quickViewProduct}
+      />
     </PageContainer>
   );
 }

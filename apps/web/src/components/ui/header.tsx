@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, User, Heart, ShoppingCart, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Plus, Tag } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
+import { useQuickViewStore } from '@/stores/quickview-store';
+import { useAuthModalStore } from '@/stores/auth-modal-store';
 // import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -63,7 +65,7 @@ export default function Header() {
   
   // Safely access stores with error handling
   let itemCount = 0, openCart = () => {}, user = null, isAuthenticated = false, logout = () => {};
-  let openFavoritesModal = () => {}, favorites = [];
+  let openFavoritesModal = () => {}, favorites = [], favoritesIsModalOpen = false;
   
   try {
     const cartStore = useCartStore();
@@ -86,9 +88,32 @@ export default function Header() {
     const favoritesStore = useFavoritesStore();
     openFavoritesModal = favoritesStore.openFavoritesModal;
     favorites = favoritesStore.favorites;
+    favoritesIsModalOpen = favoritesStore.isModalOpen;
   } catch (error) {
     console.warn('Favorites store not available:', error);
   }
+  
+  let quickViewIsOpen = false;
+  try {
+    const quickViewStore = useQuickViewStore();
+    quickViewIsOpen = quickViewStore.isOpen;
+  } catch (error) {
+    console.warn('QuickView store not available:', error);
+  }
+  
+  // Check if any modal is open (search, favorites, quickview, auth)
+  // Access stores directly in useMemo to avoid closure issues
+  const favoritesStore = useFavoritesStore();
+  const quickViewStore = useQuickViewStore();
+  const authModalStore = useAuthModalStore();
+  
+  const isAnyModalOpen = useMemo(() => {
+    const searchOpen = isSearchModalOpen || false;
+    const favOpen = typeof favoritesIsModalOpen !== 'undefined' ? favoritesIsModalOpen : (favoritesStore?.isModalOpen || false);
+    const qvOpen = quickViewIsOpen || (quickViewStore?.isOpen || false);
+    const authOpen = authModalStore?.isOpen || false;
+    return searchOpen || favOpen || qvOpen || authOpen;
+  }, [isSearchModalOpen, favoritesIsModalOpen, quickViewIsOpen, favoritesStore?.isModalOpen, quickViewStore?.isOpen, authModalStore?.isOpen]);
 
   // wishlist removed
 
@@ -192,14 +217,19 @@ export default function Header() {
   return (
     <>
       <header 
-          className={`sticky top-4 z-50 will-change-transform transition-all duration-300 mx-auto max-w-[95vw] rounded-3xl overflow-visible ${
-          isScrolled || isMobileMenuOpen
-            ? `${isShopOpen ? 'bg-white shadow-md border border-gray-300' : 'bg-white shadow-md border border-gray-300'}` 
-            : `${isShopOpen ? 'bg-white' : 'bg-white'}`
+          suppressHydrationWarning
+          className={`fixed top-0 inset-x-4 sm:inset-x-4 md:inset-x-6 lg:inset-x-8 z-[101] will-change-transform transition-all duration-300 overflow-visible ${
+          isAnyModalOpen
+            ? 'hidden'
+            : isMobileMenuOpen
+              ? 'bg-white'
+              : isScrolled
+                ? 'bg-white'
+                : 'bg-white'
         }`}
       >
         <div className="px-4 lg:px-6">
-          <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-16 sm:h-20 gap-2 min-h-0">
+          <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-14 sm:h-16 gap-2 min-h-0">
           {/* Logo */}
           <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity -mt-[5px]" aria-label="FILLER - Strona główna">
             <div
@@ -285,7 +315,10 @@ export default function Header() {
           <div className="lg:hidden col-start-3 flex items-center gap-3 justify-end min-w-0 flex-shrink-0">
             {/* Mobile Search Icon */}
             <button
-              onClick={() => setIsSearchModalOpen(true)}
+              onClick={() => {
+                if (isMobileMenuOpen) closeMobileMenu();
+                setIsSearchModalOpen(true);
+              }}
               className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
               aria-label="Szukaj"
             >
@@ -294,17 +327,25 @@ export default function Header() {
             {isAuthenticated ? (
               <div className="relative user-menu-container">
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
+                  onClick={() => {
+                    if (isMobileMenuOpen) closeMobileMenu();
+                    if (isSearchModalOpen) setIsSearchModalOpen(false);
+                    setShowUserMenu(!showUserMenu);
+                  }}
+                className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
                   aria-label="Menu użytkownika"
                   aria-expanded={showUserMenu}
-                >
-                  <User className="w-6 h-6" strokeWidth={1.5} />
+              >
+                <User className="w-6 h-6" strokeWidth={1.5} />
                 </button>
               </div>
             ) : (
               <button
-                onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
+                onClick={() => {
+                  if (isMobileMenuOpen) closeMobileMenu();
+                  if (isSearchModalOpen) setIsSearchModalOpen(false);
+                  window.dispatchEvent(new CustomEvent('openLogin'));
+                }}
                 className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
                 aria-label="Zaloguj się"
               >
@@ -314,7 +355,11 @@ export default function Header() {
 
             {/* Mobile Favorites Icon */}
             <button
-              onClick={() => openFavoritesModal()}
+              onClick={() => {
+                if (isMobileMenuOpen) closeMobileMenu();
+                if (isSearchModalOpen) setIsSearchModalOpen(false);
+                openFavoritesModal();
+              }}
               className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors relative"
               aria-label="Ulubione"
             >
@@ -346,6 +391,7 @@ export default function Header() {
                 if (isMobileMenuOpen) {
                   closeMobileMenu();
                 } else {
+                  if (isSearchModalOpen) setIsSearchModalOpen(false);
                   setIsMobileMenuOpen(true);
                   setMobileMenuView('main');
                 }
@@ -406,7 +452,10 @@ export default function Header() {
           >
             {/* Search Icon */}
             <button 
-              onClick={() => setIsSearchModalOpen(true)}
+              onClick={() => {
+                if (isMobileMenuOpen) closeMobileMenu();
+                setIsSearchModalOpen(true);
+              }}
               className="flex items-center justify-center text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
               title="Szukaj"
               aria-label="Szukaj"
@@ -417,7 +466,11 @@ export default function Header() {
             {/* Email Notification Center - Admin Only */}
             {isAuthenticated && user?.role === 'admin' && (
               <button 
-                onClick={() => setIsEmailCenterOpen(true)}
+                onClick={() => {
+                  if (isMobileMenuOpen) closeMobileMenu();
+                  if (isSearchModalOpen) setIsSearchModalOpen(false);
+                  setIsEmailCenterOpen(true);
+                }}
                 className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded"
                 title="Email Notification Center"
                 aria-label="Centrum powiadomień email"
@@ -430,40 +483,50 @@ export default function Header() {
             {isAuthenticated ? (
               <div className="relative user-menu-container overflow-visible">
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  onClick={() => {
+                    if (isMobileMenuOpen) closeMobileMenu();
+                    if (isSearchModalOpen) setIsSearchModalOpen(false);
+                    setShowUserMenu(!showUserMenu);
+                  }}
                   className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center justify-center w-8 h-8 leading-none"
                   aria-label="Menu użytkownika"
                   aria-expanded={showUserMenu}
                 >
                   <User className="w-6 h-6 block" strokeWidth={1.5} />
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    console.log('[Auth] openLogin click');
-                    const evt = new CustomEvent('openLogin');
-                    window.dispatchEvent(evt);
-                    if (typeof document !== 'undefined') {
-                      document.dispatchEvent(evt);
-                    }
-                  } catch (e) {
-                    console.error('[Auth] openLogin event error', e);
-                  }
-                }}
-                className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center justify-center w-8 h-8 leading-none"
-                data-test="open-login-btn"
-                aria-label="Zaloguj się"
-              >
-                <User className="w-6 h-6 block" strokeWidth={1.5} />
-              </button>
-            )}
-
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                  if (isMobileMenuOpen) closeMobileMenu();
+                  if (isSearchModalOpen) setIsSearchModalOpen(false);
+                                try {
+                                  console.log('[Auth] openLogin click');
+                                  const evt = new CustomEvent('openLogin');
+                                  window.dispatchEvent(evt);
+                                  if (typeof document !== 'undefined') {
+                                    document.dispatchEvent(evt);
+                                  }
+                                } catch (e) {
+                                  console.error('[Auth] openLogin event error', e);
+                                }
+                              }}
+                              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center justify-center w-8 h-8 leading-none"
+                              data-test="open-login-btn"
+                              aria-label="Zaloguj się"
+                            >
+                              <User className="w-6 h-6 block" strokeWidth={1.5} />
+                            </button>
+                          )}
+                          
             <button 
               className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
-              onClick={openFavoritesModal}
+              onClick={() => {
+                if (isMobileMenuOpen) closeMobileMenu();
+                if (isSearchModalOpen) setIsSearchModalOpen(false);
+                openFavoritesModal();
+              }}
               title="Ulubione"
               aria-label="Ulubione produkty"
             >
@@ -498,22 +561,21 @@ export default function Header() {
           </div>
           </div>
         </div>
-      </header>
-      
-      {/* Mobile Menu - Attached to Header */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            className="fixed top-[100px] left-1/2 -translate-x-1/2 w-[95vw] max-w-[95vw] bg-gradient-to-r from-gray-50 via-white to-gray-50 overflow-hidden rounded-b-3xl border-l border-r border-b border-gray-300 shadow-lg z-[60] lg:hidden"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            data-mobile-menu
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="mobile-menu-title"
-          >
+        
+        {/* Mobile Menu - Header Expansion */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              className="fixed inset-x-0 top-14 h-[calc(100vh-3.5rem)] bg-white overflow-hidden lg:absolute lg:top-full lg:left-0 lg:right-0 lg:w-full lg:h-auto lg:max-h-[80vh] lg:flex lg:flex-col lg:hidden flex flex-col z-[101]"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'calc(100vh - 3.5rem)', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              data-mobile-menu
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="mobile-menu-title"
+            >
                 {/* 🚀 SENIOR LEVEL - Slide Navigation Content */}
                 <AnimatePresence mode="wait">
                   {/* MAIN VIEW */}
@@ -526,29 +588,29 @@ export default function Header() {
                       className="flex flex-col h-full"
                     >
 
-                      {/* Main Navigation */}
-                      <div className="flex-1 overflow-y-auto p-4 pb-0">
+                      {/* Main Navigation - All in One */}
+                      <div className="flex-1 overflow-y-auto p-4">
                         <div className="space-y-1">
                           <a 
                             href="/" 
-                            className="block text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            className="block text-black py-3"
                             onClick={closeMobileMenu}
                           >
                             Strona główna
                           </a>
                           
                           {/* Sklep - Slide to Sklep View */}
-                          <button
+                          <div
                             onClick={() => setMobileMenuView('sklep')}
-                            className="w-full flex items-center justify-between text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            className="flex items-center gap-2 text-black py-3"
                           >
                             <span>Sklep</span>
                             <ChevronRight className="w-4 h-4" />
-                          </button>
+                          </div>
                           
                           <a 
                             href="/o-nas" 
-                            className="block text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            className="block text-black py-3"
                             onClick={closeMobileMenu}
                           >
                             O nas
@@ -556,48 +618,39 @@ export default function Header() {
                           
                           <a 
                             href="/kontakt" 
-                            className="block text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-transparent hover:border-gray-300 rounded-lg"
+                            className="block text-black py-3"
                             onClick={closeMobileMenu}
                           >
                             Kontakt
                           </a>
+
+                          {!isAuthenticated && (
+                            <Link 
+                              href="/moje-konto" 
+                              className="block text-black py-3"
+                              onClick={closeMobileMenu}
+                            >
+                              Zaloguj się
+                            </Link>
+                          )}
+
+                        {isAuthenticated && (
+                            <div
+                            onClick={() => { logout(); closeMobileMenu(); }}
+                              className="text-black py-3"
+                          >
+                              Wyloguj się
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Footer */}
-                      <div className="border-t border-gray-200 p-4 bg-gray-50">
-                        {!isAuthenticated && (
-                          <div className="mb-2">
-                            <Link 
-                              href="/moje-konto" 
-                              className="w-full flex items-center justify-center space-x-2 p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-black hover:text-gray-800"
-                              onClick={closeMobileMenu}
-                            >
-                              <User className="w-5 h-5" />
-                              <span className="text-sm font-medium">Zaloguj się</span>
-                            </Link>
-                          </div>
-                        )}
-
-                        {/* Logout Button */}
-                        {isAuthenticated && (
-                          <button
-                            onClick={() => { logout(); closeMobileMenu(); }}
-                            className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-red-600"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <LogOut className="w-5 h-5" />
-                              <span className="text-sm font-medium">Wyloguj się</span>
-                            </div>
-                          </button>
-                        )}
-
-                        {/* Social Media */}
-                        <div className="pb-4">
-                          <div className="flex justify-center space-x-4">
+                      {/* Social Media Icons - Fixed at bottom */}
+                      <div className="px-4 pb-4 pt-4 border-t border-gray-100">
+                        <div className="flex space-x-4">
                             <a 
                               href="tel:+48123456789" 
-                              className="flex items-center justify-center p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                            className="text-gray-600"
                               onClick={closeMobileMenu}
                             >
                               <Phone className="w-4 h-4" />
@@ -606,7 +659,7 @@ export default function Header() {
                               href="https://facebook.com" 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="flex items-center justify-center p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                            className="text-gray-600"
                               onClick={closeMobileMenu}
                             >
                               <Facebook className="w-4 h-4" />
@@ -615,12 +668,11 @@ export default function Header() {
                               href="https://instagram.com" 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="flex items-center justify-center p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+                            className="text-gray-600"
                               onClick={closeMobileMenu}
                             >
                               <Instagram className="w-4 h-4" />
                             </a>
-                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -637,7 +689,7 @@ export default function Header() {
                       className="flex flex-col h-full"
                     >
                       {/* Header with Back Button */}
-                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between p-4">
                         <button
                           onClick={() => setMobileMenuView('main')}
                           className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
@@ -648,7 +700,7 @@ export default function Header() {
                       </div>
 
                       {/* Filter-Style UI - Clean Design */}
-                      <div className="flex-1 overflow-y-auto p-4">
+                      <div className="flex-1 overflow-y-auto p-4 pt-0">
                         <div className="space-y-2">
                           {categoriesLoading ? (
                             <div className="text-sm text-gray-500 text-center py-8">Ładowanie kategorii...</div>
@@ -802,7 +854,7 @@ export default function Header() {
                       className="flex flex-col h-full"
                     >
                       {/* Header with Back Button */}
-                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between p-4">
                         <button
                           onClick={() => setMobileMenuView('sklep')}
                           className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
@@ -813,7 +865,7 @@ export default function Header() {
                       </div>
 
                       {/* Brands Grid */}
-                      <div className="flex-1 overflow-y-auto p-4">
+                      <div className="flex-1 overflow-y-auto p-4 pt-0">
                         <div className="flex flex-wrap gap-2">
                           {brandsLoading ? (
                             <div className="text-sm text-gray-500">Ładowanie marek...</div>
@@ -837,8 +889,10 @@ export default function Header() {
                   )}
                 </AnimatePresence>
               </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+        
+      </header>
       
       {/* Shop Dropdown - rendered outside header */}
       <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
@@ -865,16 +919,10 @@ export default function Header() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="fixed bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-[70]"
-              style={{
-                top: '80px',
-                right: '16px',
-                width: 'calc(100vw - 32px)',
-                maxWidth: '280px'
-              }}
+              className="fixed top-20 right-4 md:right-4 w-[calc(100vw-3rem)] sm:w-[calc(100vw-3rem)] md:w-auto md:max-w-[280px] bg-white rounded-xl py-2 z-[70]"
             >
               {/* User Info */}
-              <div className="px-4 py-3 border-b border-gray-100">
+              <div className="px-4 py-3">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <User className="w-5 h-5 text-white" />
@@ -936,7 +984,7 @@ export default function Header() {
               </div>
 
               {/* Logout */}
-              <div className="border-t border-gray-100 pt-1">
+              <div className="pt-1">
                 <button
                   onClick={() => {
                     logout();

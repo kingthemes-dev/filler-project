@@ -13,7 +13,14 @@
 
 @layer base {
   /* iPhone 14 Pro horizontal scroll fix */
-  html, body {
+  html {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    font-family: 'Raleway', system-ui, sans-serif !important;
+  }
+  
+  body {
     overflow-x: hidden;
     width: 100%;
     max-width: 100vw;
@@ -26,6 +33,14 @@
     touch-action: pan-y;
     overscroll-behavior: none;
     font-family: 'Raleway', system-ui, sans-serif !important;
+    padding-top: 56px; /* Fixed header height on mobile (h-14 = 56px) */
+  }
+  
+  /* Fixed header height on desktop (h-16 = 64px) */
+  @media (min-width: 640px) {
+    body {
+      padding-top: 64px;
+    }
   }
   
   * {

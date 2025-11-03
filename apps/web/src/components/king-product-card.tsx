@@ -11,6 +11,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/stores/cart-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
+import { useQuickViewStore } from '@/stores/quickview-store';
 // Wishlist tymczasowo wyłączony na kartach
 // import { useWishlist } from '@/hooks/use-wishlist';
 import dynamic from 'next/dynamic';
@@ -33,7 +34,7 @@ export default function KingProductCard({
   priority = false
 }: KingProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const { openQuickView, isOpen: isQuickViewOpen, product: quickViewProduct, closeQuickView } = useQuickViewStore();
   // removed unused showVariants state
   const [selectedVariant, setSelectedVariant] = useState<string>('');
   const [variationsLoaded, setVariationsLoaded] = useState(false);
@@ -170,7 +171,7 @@ export default function KingProductCard({
   };
 
   const handleQuickView = () => {
-    setIsQuickViewOpen(true);
+    openQuickView(product);
   };
 
   const handleVariantSelect = (variant: string) => {
@@ -540,9 +541,9 @@ export default function KingProductCard({
         
         {/* Quick View Modal */}
         <QuickViewModal
-          isOpen={isQuickViewOpen}
-          onClose={() => setIsQuickViewOpen(false)}
-          product={product}
+          isOpen={isQuickViewOpen && quickViewProduct?.id === product.id}
+          onClose={closeQuickView}
+          product={quickViewProduct}
         />
       </Card>
     );
@@ -738,9 +739,9 @@ export default function KingProductCard({
         
         {/* Quick View Modal */}
         <QuickViewModal
-          isOpen={isQuickViewOpen}
-          onClose={() => setIsQuickViewOpen(false)}
-          product={product}
+          isOpen={isQuickViewOpen && quickViewProduct?.id === product.id}
+          onClose={closeQuickView}
+          product={quickViewProduct}
         />
       </Card>
     );
@@ -1039,9 +1040,9 @@ export default function KingProductCard({
       
       {/* Quick View Modal */}
       <QuickViewModal
-        isOpen={isQuickViewOpen}
-        onClose={() => setIsQuickViewOpen(false)}
-        product={product}
+        isOpen={isQuickViewOpen && quickViewProduct?.id === product.id}
+        onClose={closeQuickView}
+        product={quickViewProduct}
       />
     </Card>
   );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/ui/page-header';
+import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Truck, CheckCircle, Clock, Eye, Download, Calendar, User, Heart, FileText } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -271,19 +272,19 @@ export default function MyOrdersPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
+        <PageContainer className="pb-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
             <p className="text-gray-600">Ładowanie zamówień...</p>
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
+      <PageContainer className="pb-12">
         {/* Header */}
         <PageHeader 
           title="Moje zamówienia"
@@ -582,7 +583,7 @@ export default function MyOrdersPage() {
             })}
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }

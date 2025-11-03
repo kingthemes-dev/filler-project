@@ -90,24 +90,24 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
 
   return (
     <>
-      <AnimatePresence>
+    <AnimatePresence>
         {isOpen && (
           <>
             {/* Backdrop with blur */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-md z-[70]"
-              onClick={onClose}
-            />
-            
-            {/* Modal */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ duration: 0.2 }}
+          onClick={onClose}
+        />
+
+        {/* Modal */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ duration: 0.2 }}
               className="fixed inset-0 z-[80] flex items-center justify-center p-4"
               onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
@@ -115,7 +115,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             >
               <div
                 className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto"
-              >
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -236,7 +236,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             </div>
           </form>
               </div>
-            </motion.div>
+        </motion.div>
           </>
         )}
       </AnimatePresence>
