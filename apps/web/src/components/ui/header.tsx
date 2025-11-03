@@ -193,7 +193,7 @@ export default function Header() {
     <>
       <header 
           className={`sticky top-4 z-50 will-change-transform transition-all duration-300 mx-auto max-w-[95vw] rounded-3xl overflow-visible ${
-          isScrolled 
+          isScrolled || isMobileMenuOpen
             ? `${isShopOpen ? 'bg-white shadow-md border border-gray-300' : 'bg-white shadow-md border border-gray-300'}` 
             : `${isShopOpen ? 'bg-white' : 'bg-white'}`
         }`}
@@ -292,13 +292,16 @@ export default function Header() {
               <Search className="w-6 h-6" strokeWidth={1.5} />
             </button>
             {isAuthenticated ? (
-              <Link
-                href="/moje-konto"
-                className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
-                aria-label="Moje konto"
-              >
-                <User className="w-6 h-6" strokeWidth={1.5} />
-              </Link>
+              <div className="relative user-menu-container">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="shrink-0 flex items-center justify-center text-black hover:text-gray-800 transition-colors"
+                  aria-label="Menu użytkownika"
+                  aria-expanded={showUserMenu}
+                >
+                  <User className="w-6 h-6" strokeWidth={1.5} />
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('openLogin'))}
@@ -398,7 +401,7 @@ export default function Header() {
 
           {/* Desktop icons - hidden on mobile */}
           <div 
-            className="hidden lg:flex items-center space-x-6 justify-end pr-2 overflow-visible"
+            className="hidden lg:flex items-center space-x-4 justify-end pr-2 overflow-visible"
             onMouseEnter={() => setIsShopOpen(false)}
           >
             {/* Search Icon */}
@@ -434,128 +437,30 @@ export default function Header() {
                 >
                   <User className="w-6 h-6 block" strokeWidth={1.5} />
                 </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    console.log('[Auth] openLogin click');
+                    const evt = new CustomEvent('openLogin');
+                    window.dispatchEvent(evt);
+                    if (typeof document !== 'undefined') {
+                      document.dispatchEvent(evt);
+                    }
+                  } catch (e) {
+                    console.error('[Auth] openLogin event error', e);
+                  }
+                }}
+                className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center justify-center w-8 h-8 leading-none"
+                data-test="open-login-btn"
+                aria-label="Zaloguj się"
+              >
+                <User className="w-6 h-6 block" strokeWidth={1.5} />
+              </button>
+            )}
 
-                {/* User Dropdown Menu */}
-                <AnimatePresence>
-                  {showUserMenu && (
-                    <>
-                      <div className="fixed inset-0 z-[60]" onClick={() => setShowUserMenu(false)} />                      
-                      {/* Dropdown */}
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="fixed bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-[70]"
-                      style={{
-                        top: '80px',
-                        right: '60px',
-                        width: '280px'
-                      }}
-                    >
-                                    {/* User Info */}
-                                    <div className="px-4 py-3 border-b border-gray-100">
-                                      <div className="flex items-center space-x-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                          <User className="w-5 h-5 text-white" />
-                                        </div>
-                                        <div>
-                                          <p className="font-medium text-gray-900 text-sm">
-                                            {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.email}
-                                          </p>
-                                          <p className="text-xs text-gray-500">{user?.email}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Menu Items */}
-                                    <div className="py-1">
-                                      <Link
-                                        href="/moje-konto"
-                                        className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                                        onClick={() => setShowUserMenu(false)}
-                                      >
-                                        <Settings className="w-4 h-4" />
-                                        <span>Moje konto</span>
-                                      </Link>
-                                      
-                                      <Link
-                                        href="/moje-zamowienia"
-                                        className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                                        onClick={() => setShowUserMenu(false)}
-                                      >
-                                        <Package className="w-4 h-4" />
-                                        <span>Moje zamówienia</span>
-                                      </Link>
-
-                                      <button
-                                        onClick={() => {
-                                          openFavoritesModal();
-                                          setShowUserMenu(false);
-                                        }}
-                                        className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors w-full text-left"
-                                      >
-                                        <Heart className="w-4 h-4" />
-                                        <span>Ulubione</span>
-                                        {favoritesCount > 0 && (
-                                          <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                            {favoritesCount}
-                                          </span>
-                                        )}
-                                      </button>
-                                      
-                                      {/* Invoices */}
-                                      <Link
-                                        href="/moje-faktury"
-                                        className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                                        onClick={() => setShowUserMenu(false)}
-                                      >
-                                        <FileText className="w-4 h-4" />
-                                        <span>Faktury</span>
-                                      </Link>
-                                    </div>
-
-                                    {/* Logout */}
-                                    <div className="border-t border-gray-100 pt-1">
-                                      <button
-                                        onClick={() => {
-                                          logout();
-                                          setShowUserMenu(false);
-                                        }}
-                                        className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors w-full text-left"
-                                      >
-                                        <LogOut className="w-4 h-4" />
-                                        <span>Wyloguj się</span>
-                                      </button>
-                                    </div>
-                                  </motion.div>
-                                  </>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                try {
-                                  console.log('[Auth] openLogin click');
-                                  const evt = new CustomEvent('openLogin');
-                                  window.dispatchEvent(evt);
-                                  if (typeof document !== 'undefined') {
-                                    document.dispatchEvent(evt);
-                                  }
-                                } catch (e) {
-                                  console.error('[Auth] openLogin event error', e);
-                                }
-                              }}
-                              className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded flex items-center justify-center w-8 h-8 leading-none"
-                              data-test="open-login-btn"
-                              aria-label="Zaloguj się"
-                            >
-                              <User className="w-6 h-6 block" strokeWidth={1.5} />
-                            </button>
-                          )}
-                          
             <button 
               className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
               onClick={openFavoritesModal}
@@ -593,21 +498,22 @@ export default function Header() {
           </div>
           </div>
         </div>
-        
-        {/* Mobile Menu - Header Expansion */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              className="bg-gradient-to-r from-gray-50 via-white to-gray-50 overflow-hidden rounded-b-2xl border border-gray-300 shadow-xl"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              data-mobile-menu
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="mobile-menu-title"
-            >
+      </header>
+      
+      {/* Mobile Menu - Attached to Header */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            className="fixed top-[100px] left-1/2 -translate-x-1/2 w-[95vw] max-w-[95vw] bg-gradient-to-r from-gray-50 via-white to-gray-50 overflow-hidden rounded-b-3xl border-l border-r border-b border-gray-300 shadow-lg z-[60] lg:hidden"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            data-mobile-menu
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-menu-title"
+          >
                 {/* 🚀 SENIOR LEVEL - Slide Navigation Content */}
                 <AnimatePresence mode="wait">
                   {/* MAIN VIEW */}
@@ -660,44 +566,7 @@ export default function Header() {
 
                       {/* Footer */}
                       <div className="border-t border-gray-200 p-4 bg-gray-50">
-                        {isAuthenticated ? (
-                          <div className="space-y-1 mb-2">
-                            <Link 
-                              href="/moje-konto" 
-                              className="flex items-center space-x-3 text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
-                              onClick={closeMobileMenu}
-                            >
-                              <User className="w-5 h-5" />
-                              <span className="text-sm font-medium">Moje konto</span>
-                            </Link>
-
-                            <Link 
-                              href="/moje-zamowienia" 
-                              className="flex items-center space-x-3 text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
-                              onClick={closeMobileMenu}
-                            >
-                              <Package className="w-5 h-5" />
-                              <span className="text-sm font-medium">Moje zamówienia</span>
-                            </Link>
-
-                            <Link 
-                              href="/moje-faktury" 
-                              className="flex items-center space-x-3 text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
-                              onClick={closeMobileMenu}
-                            >
-                              <FileText className="w-5 h-5" />
-                              <span className="text-sm font-medium">Faktury</span>
-                            </Link>
-
-                            <button
-                              onClick={() => { openFavoritesModal(); closeMobileMenu(); }}
-                              className="w-full flex items-center space-x-3 text-black hover:text-gray-800 hover:bg-gray-100 transition-colors py-3 px-4 border-l-2 border-b-0 border-transparent hover:border-gray-300 rounded-lg"
-                            >
-                              <Heart className="w-5 h-5" />
-                              <span className="text-sm font-medium">Lista życzeń</span>
-                            </button>
-                          </div>
-                        ) : (
+                        {!isAuthenticated && (
                           <div className="mb-2">
                             <Link 
                               href="/moje-konto" 
@@ -714,7 +583,7 @@ export default function Header() {
                         {isAuthenticated && (
                           <button
                             onClick={() => { logout(); closeMobileMenu(); }}
-                            className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-red-600 mt-2"
+                            className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 text-gray-700 hover:text-red-600"
                           >
                             <div className="flex items-center space-x-3">
                               <LogOut className="w-5 h-5" />
@@ -968,10 +837,8 @@ export default function Header() {
                   )}
                 </AnimatePresence>
               </motion.div>
-          )}
-        </AnimatePresence>
-        
-      </header>
+        )}
+      </AnimatePresence>
       
       {/* Shop Dropdown - rendered outside header */}
       <ShopExplorePanel open={isShopOpen} onClose={() => setIsShopOpen(false)} />
@@ -987,6 +854,104 @@ export default function Header() {
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
       />
+      
+      {/* User Dropdown Menu - Global (works for both desktop and mobile) */}
+      <AnimatePresence>
+        {showUserMenu && isAuthenticated && (
+          <>
+            <div className="fixed inset-0 z-[60]" onClick={() => setShowUserMenu(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="fixed bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-[70]"
+              style={{
+                top: '80px',
+                right: '16px',
+                width: 'calc(100vw - 32px)',
+                maxWidth: '280px'
+              }}
+            >
+              {/* User Info */}
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">
+                      {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.email}
+                    </p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu Items */}
+              <div className="py-1">
+                <Link
+                  href="/moje-konto"
+                  className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Moje konto</span>
+                </Link>
+                
+                <Link
+                  href="/moje-zamowienia"
+                  className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Moje zamówienia</span>
+                </Link>
+
+                <button
+                  onClick={() => {
+                    openFavoritesModal();
+                    setShowUserMenu(false);
+                  }}
+                  className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors w-full text-left"
+                >
+                  <Heart className="w-4 h-4" />
+                  <span>Ulubione</span>
+                  {favoritesCount > 0 && (
+                    <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {favoritesCount}
+                    </span>
+                  )}
+                </button>
+                
+                {/* Invoices */}
+                <Link
+                  href="/moje-faktury"
+                  className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Faktury</span>
+                </Link>
+              </div>
+
+              {/* Logout */}
+              <div className="border-t border-gray-100 pt-1">
+                <button
+                  onClick={() => {
+                    logout();
+                    setShowUserMenu(false);
+                  }}
+                  className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors w-full text-left"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Wyloguj się</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       
       {/* Favorites Modal */}
     </>

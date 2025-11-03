@@ -1,11 +1,14 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ModalCloseButton from './modal-close-button';
 import { Heart, Trash2 } from 'lucide-react';
 import { useFavoritesStore } from '@/stores/favorites-store';
 import { Button } from '@/components/ui/button';
 import KingProductCard from '@/components/king-product-card';
+import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
+import { useViewportHeightVar } from '@/hooks/use-viewport-height-var';
 
 export default function FavoritesModal() {
   const { 
@@ -17,6 +20,15 @@ export default function FavoritesModal() {
     isLoading,
     lastSyncTime: _lastSyncTime
   } = useFavoritesStore();
+  
+  useViewportHeightVar();
+  
+  useEffect(() => {
+    if (isModalOpen) {
+      lockBodyScroll();
+      return () => unlockBodyScroll();
+    }
+  }, [isModalOpen]);
   
   const handleRemoveFromFavorites = (productId: number) => {
     removeFromFavorites(productId);
@@ -31,32 +43,26 @@ export default function FavoritesModal() {
   return (
     <AnimatePresence>
       {isModalOpen && (
-        <>
-          {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col"
+          style={{
+            height: '100dvh',
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)'
+          }}
+          onClick={closeFavoritesModal}
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[70]"
-            onClick={closeFavoritesModal}
-          />
-          
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-            onClick={(e) => {
-              // Close when clicking on the empty area (overlay container)
-              if (e.target === e.currentTarget) closeFavoritesModal();
-            }}
+            className="bg-white h-full w-full md:w-auto md:max-w-4xl md:mx-auto md:rounded-2xl md:shadow-xl md:max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div 
-              className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center space-x-2 sm:space-x-3">
@@ -134,9 +140,8 @@ export default function FavoritesModal() {
                   </div>
                 )}
               </div>
-            </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );

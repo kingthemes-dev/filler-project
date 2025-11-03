@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import RegisterModal from '@/components/ui/auth/register-modal';
 import { validateEmail, validatePhone, validatePostalCode, validateName, validateAddress } from '@/utils/validation';
 import { Button } from '@/components/ui/button';
+import PageHeader from '@/components/ui/page-header';
 
 interface CheckoutForm {
   // Billing Information
@@ -808,7 +809,7 @@ function CheckoutPageInner() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container py-8 pb-16">
+      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
         
         {/* Quick Payment Banner */}
         {quickPaymentSelected && (
@@ -858,17 +859,23 @@ function CheckoutPageInner() {
           </motion.div>
         )}
         {/* Header */}
-        <div className="mb-8">
+        <PageHeader 
+          title="Finalizacja zamówienia"
+          breadcrumbs={[
+            { label: 'Strona główna', href: '/' },
+            { label: 'Koszyk', href: '/koszyk' },
+            { label: 'Kasa', href: '/checkout' }
+          ]}
+        />
+        
+        <div className="mb-6">
           <Link
             href="/koszyk"
-            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4"
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Wróć do koszyka
           </Link>
-          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
-            Finalizacja zamówienia
-          </h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

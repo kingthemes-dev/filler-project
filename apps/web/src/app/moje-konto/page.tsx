@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/ui/page-header';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, Heart, ShoppingCart, Eye, FileText, Package, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
@@ -375,7 +375,7 @@ export default function MyAccountPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[95vw] mx-auto mobile-container py-8 pb-16">
+      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
         {/* Header */}
         <PageHeader 
           title="Moje konto"
@@ -388,49 +388,98 @@ export default function MyAccountPage() {
 
         {/* Tabs */}
         <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+          <div className="w-full">
+            <div className="grid grid-cols-4 bg-white border border-gray-300 p-1 rounded-[28px] sm:h-[80px] h-auto relative overflow-hidden shadow-sm">
+              {/* Animated background indicator with layoutId for smooth transition */}
+              <motion.div 
+                layoutId="accountActiveTab"
+                className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-[#0f1a26] rounded-[22px] shadow-lg"
+                style={{
+                  left: `calc(${(['profile', 'orders', 'favorites', 'invoices'].indexOf(activeTab) * 100) / 4}% + 2px)`,
+                  width: `calc(${100 / 4}% - 6px)`,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30
+                }}
+              />
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'profile'
-                    ? 'border-black text-black'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
               >
-                <User className="w-4 h-4 inline mr-2" />
-                Profil
+                <div className={`transition-all duration-300 ${
+                  activeTab === 'profile' ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
+                } ${
+                  activeTab === 'profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  <User className="w-5 h-5 sm:w-5 sm:h-5" />
+                </div>
+                <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
+                  activeTab === 'profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  Moje konto
+                </span>
+              </button>
+              <button
+                onClick={() => router.push('/moje-zamowienia')}
+                className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
+              >
+                <div className={`transition-all duration-300 ${
+                  activeTab === 'orders' ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
+                } ${
+                  activeTab === 'orders' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  <Package className="w-5 h-5 sm:w-5 sm:h-5" />
+                </div>
+                <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
+                  activeTab === 'orders' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  Zamówienia
+                </span>
               </button>
               <button
                 onClick={() => setActiveTab('favorites')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'favorites'
-                    ? 'border-black text-black'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
               >
-                <Heart className="w-4 h-4 inline mr-2" />
-                Ulubione
-                {favorites.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {favorites.length}
-                  </Badge>
-                )}
+                <div className={`transition-all duration-300 ${
+                  activeTab === 'favorites' ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
+                } ${
+                  activeTab === 'favorites' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  <Heart className="w-5 h-5 sm:w-5 sm:h-5" />
+                </div>
+                <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
+                  activeTab === 'favorites' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  Ulubione
+                </span>
               </button>
               <button
                 onClick={() => router.push('/moje-faktury')}
-                className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm"
+                className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
               >
-                <FileText className="w-4 h-4 inline mr-2" />
-                Faktury
+                <div className={`transition-all duration-300 ${
+                  activeTab === 'invoices' ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
+                } ${
+                  activeTab === 'invoices' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  <FileText className="w-5 h-5 sm:w-5 sm:h-5" />
+                </div>
+                <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
+                  activeTab === 'invoices' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                }`}>
+                  Faktury
+                </span>
               </button>
-            </nav>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
+            <AnimatePresence mode="wait">
             {activeTab === 'profile' && (
               <>
                 {/* Personal Information */}
@@ -1032,6 +1081,7 @@ export default function MyAccountPage() {
                 )}
               </motion.div>
             )}
+            </AnimatePresence>
           </div>
 
           {/* Sidebar */}

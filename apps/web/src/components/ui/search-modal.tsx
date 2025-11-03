@@ -9,6 +9,8 @@ import { formatPrice } from '@/utils/format-price';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
+import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
+import { useViewportHeightVar } from '@/hooks/use-viewport-height-var';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -23,6 +25,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Initialize viewport height variable
+  useViewportHeightVar();
 
   // Load search history from localStorage
   useEffect(() => {
@@ -101,12 +106,12 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when modal is open
+  // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      lockBodyScroll();
       return () => {
-        document.body.style.overflow = 'unset';
+        unlockBodyScroll();
       };
     }
   }, [isOpen]);
@@ -151,31 +156,27 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col"
+          style={{
+            height: '100dvh',
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)'
+          }}
+          onClick={onClose}
+        >
+          {/* Modal Container */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[70]"
-            onClick={onClose}
-          />
-          
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-[80] flex items-start justify-center pt-16"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) onClose();
-            }}
+            className="bg-white h-full w-full md:w-auto md:max-w-[600px] md:mx-auto md:rounded-3xl md:shadow-xl md:max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div 
-              className="bg-white rounded-3xl shadow-xl w-[calc(100%-2rem)] max-w-[600px] mx-4 max-h-[80vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
               {/* Header */}
               <div className="flex items-center border-b border-gray-200 px-4 py-3">
                 <div className="flex items-center flex-1">
@@ -287,9 +288,8 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   </div>
                 )}
               </div>
-            </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );

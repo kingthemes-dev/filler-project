@@ -7,6 +7,8 @@ import ModalCloseButton from '../modal-close-button';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import ForgotPasswordModal from './forgot-password-modal';
+import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
+import { useViewportHeightVar } from '@/hooks/use-viewport-height-var';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -23,6 +25,15 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  
+  useViewportHeightVar();
+  
+  useEffect(() => {
+    if (isOpen && !showForgotPassword) {
+      lockBodyScroll();
+      return () => unlockBodyScroll();
+    }
+  }, [isOpen, showForgotPassword]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -78,31 +89,29 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key="login-modal"
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        {/* Backdrop */}
-        <motion.div
-          className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        />
-
-        {/* Modal */}
-        <motion.div
-          className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto"
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ duration: 0.2 }}
-        >
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col"
+            style={{
+              height: '100dvh',
+              paddingTop: 'env(safe-area-inset-top)',
+              paddingBottom: 'env(safe-area-inset-bottom)'
+            }}
+            onClick={onClose}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="bg-white h-full w-full md:w-auto md:max-w-md md:mx-auto md:rounded-2xl md:shadow-xl md:max-h-[90vh] flex flex-col my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -222,8 +231,10 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
               </button>
             </div>
           </form>
-        </motion.div>
-      </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Forgot Password Modal */}
       {showForgotPassword && (
@@ -234,6 +245,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
           onBackToLogin={() => setShowForgotPassword(false)}
         />
       )}
-    </AnimatePresence>
+    </>
   );
 }

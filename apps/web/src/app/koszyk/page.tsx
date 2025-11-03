@@ -75,15 +75,15 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-8 pb-16">
-      <div className="max-w-[95vw] mx-auto mobile-container">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-[95vw] mx-auto mobile-container py-4 pb-12">
         {/* Header with Title and Breadcrumbs */}
         <PageHeader 
           title="Koszyk"
           breadcrumbs={breadcrumbs}
         />
         
-        {/* Header */}
+        {/* Content */}
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -92,9 +92,9 @@ export default function CartPage() {
             className="mb-8"
           >
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Koszyk ({itemCount})
-              </h1>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Produkty ({itemCount})
+              </h2>
               <button
                 onClick={clearCart}
                 className="text-red-600 hover:text-red-700 font-medium transition-colors"

@@ -11,6 +11,8 @@ import wooCommerceService from '@/services/woocommerce-optimized';
 import Image from 'next/image';
 import { formatPrice } from '@/utils/format-price';
 import { WooProduct } from '@/types/woocommerce';
+import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
+import { useViewportHeightVar } from '@/hooks/use-viewport-height-var';
 
 interface QuickViewModalProps {
   isOpen: boolean;
@@ -36,6 +38,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const { addItem, openCart } = useCartStore();
+  
+  useViewportHeightVar();
 
   // removed unused helpers: getVariationPrice, getSortedCapacityOptions
 
@@ -85,12 +89,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+      lockBodyScroll();
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      unlockBodyScroll();
     };
   }, [isOpen, onClose]);
 
@@ -228,15 +232,20 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col"
+          style={{
+            height: '100dvh',
+            paddingTop: 'env(safe-area-inset-top)',
+            paddingBottom: 'env(safe-area-inset-bottom)'
+          }}
           onClick={onClose}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[80vh] overflow-y-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="bg-white h-full w-full md:w-auto md:max-w-4xl md:mx-auto md:rounded-2xl md:shadow-2xl md:max-h-[95vh] flex flex-col overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
               {/* Content */}

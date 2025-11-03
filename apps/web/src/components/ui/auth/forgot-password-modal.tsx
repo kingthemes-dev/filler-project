@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, Mail, AlertCircle } from 'lucide-react';
 import ModalCloseButton from '../modal-close-button';
 import { Button } from '@/components/ui/button';
+import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
+import { useViewportHeightVar } from '@/hooks/use-viewport-height-var';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -18,6 +20,15 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
   const [validationError, setValidationError] = useState('');
+  
+  useViewportHeightVar();
+  
+  useEffect(() => {
+    if (isOpen) {
+      lockBodyScroll();
+      return () => unlockBodyScroll();
+    }
+  }, [isOpen]);
 
   const validateEmail = (email: string) => {
     if (!email) {
@@ -95,27 +106,24 @@ export default function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: 
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col"
+      style={{
+        height: '100dvh',
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)'
+      }}
+      onClick={handleClose}
     >
-      {/* Backdrop */}
       <motion.div
-                    className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={handleClose}
-      />
-
-      {/* Modal */}
-      <motion.div
-        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto"
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="bg-white h-full w-full md:w-auto md:max-w-md md:mx-auto md:rounded-2xl md:shadow-xl md:max-h-[90vh] flex flex-col my-auto"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
