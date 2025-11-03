@@ -17,9 +17,6 @@ export default function FreeShippingBanner() {
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - nettoTotal);
   const hasCart = itemCount > 0;
 
-  // Calculate progress percentage
-  const progress = Math.min(100, (nettoTotal / FREE_SHIPPING_THRESHOLD) * 100);
-
   // Show/hide on scroll direction: hide when scrolling down, show when scrolling up or at top
   useEffect(() => {
     const handleScroll = () => {
@@ -99,16 +96,6 @@ export default function FreeShippingBanner() {
               </p>
             </div>
           </div>
-          
-          {/* Progress bar - only show if cart has items */}
-          {hasCart && (
-            <div className="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          )}
         </div>
       </div>
     </motion.div>

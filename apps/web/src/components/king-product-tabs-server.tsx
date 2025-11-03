@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import KingProductCard from './king-product-card';
 import { WooProduct } from '@/types/woocommerce';
 // removed unused Link
@@ -26,6 +26,10 @@ interface KingProductTabsServerProps {
 export default function KingProductTabsServer({ data }: KingProductTabsServerProps) {
   const [activeTab, setActiveTab] = useState('nowosci');
   const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // Swipe gesture state for mobile
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // keyboard handling will be defined after tabs memo
 
@@ -70,13 +74,13 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   const getTabIcon = (tabId: string) => {
     switch (tabId) {
       case 'nowosci':
-        return <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />;
+        return <Sparkles className="w-5 h-5" />;
       case 'promocje':
-        return <Tag className="w-5 h-5 sm:w-6 sm:h-6" />;
+        return <Tag className="w-5 h-5" />;
       case 'polecane':
-        return <Star className="w-5 h-5 sm:w-6 sm:h-6" />;
+        return <Star className="w-5 h-5" />;
       case 'bestsellery':
-        return <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />;
+        return <TrendingUp className="w-5 h-5" />;
       default:
         return null;
     }
@@ -119,6 +123,34 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
     setTimeout(() => setIsTransitioning(false), 300);
   }, [activeTab]);
 
+  // Swipe gesture handlers for mobile
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe || isRightSwipe) {
+      const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
+      const nextIndex = isLeftSwipe
+        ? (currentIndex + 1) % tabs.length
+        : (currentIndex - 1 + tabs.length) % tabs.length;
+      handleTabChange(tabs[nextIndex].id);
+    }
+  }, [touchStart, touchEnd, tabs, activeTab, handleTabChange]);
+
   return (
     <section className="mt-6 py-12 sm:py-16 bg-white rounded-2xl sm:rounded-3xl overflow-hidden" aria-labelledby="products-heading">
       <div className="px-4 sm:px-6 md:px-8 lg:px-12">
@@ -127,38 +159,44 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
           {/* Custom Tabs Implementation - No shadcn/ui */}
           <div className="w-full">
             {/* Custom Tabs Container */}
-            <div className="grid grid-cols-4 bg-transparent border border-gray-200 p-0 rounded-2xl sm:rounded-3xl h-auto relative overflow-hidden">
-              {/* Animated background indicator */}
-              <div 
-                className="absolute top-0 bottom-0 bg-gradient-to-r from-black to-gray-800 rounded-2xl sm:rounded-3xl transition-all duration-500 ease-out"
+            <div 
+              className="grid grid-cols-4 bg-white border border-gray-300 p-1 rounded-[28px] h-[80px] relative overflow-hidden shadow-sm"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Animated background indicator with layoutId for smooth transition */}
+              <motion.div 
+                layoutId="activeTab"
+                className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-[#0f1a26] rounded-[22px] shadow-lg"
                 style={{
-                  left: `calc(${(tabs.findIndex(tab => tab.id === activeTab) * 100) / tabs.length}% - 2px)`,
-                  width: `calc(${100 / tabs.length}% + 5px)`,
-                  transform: 'translateX(0)',
+                  left: `calc(${(tabs.findIndex(tab => tab.id === activeTab) * 100) / tabs.length}% + 2px)`,
+                  width: `calc(${100 / tabs.length}% - 6px)`,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30
                 }}
               />
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-base font-bold transition-all duration-300 ease-out border-0 border-transparent rounded-xl group ${
-                    activeTab === tab.id ? '' : ''
-                  }`}
+                  className="relative z-10 flex flex-row items-center justify-center gap-2 px-2 py-3 text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
                   disabled={isTransitioning}
                   aria-label={`Pokaż ${tab.label}`}
                   aria-pressed={activeTab === tab.id}
-                  style={{
-                    color: activeTab === tab.id ? 'white' : '#374151',
-                    backgroundColor: 'transparent'
-                  }}
                 >
-                  <div className={`transition-transform duration-300 ${
-                    activeTab === tab.id ? '' : 'group-hover:scale-110'
+                  <div className={`transition-all duration-300 ${
+                    activeTab === tab.id ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
+                  } ${
+                    activeTab === tab.id ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
                   }`}>
                     {getTabIcon(tab.id)}
                   </div>
-                  <span className={`text-center leading-tight transition-all duration-300 ${
-                    activeTab === tab.id ? '' : 'group-hover:text-black'
+                  <span className={`transition-all duration-300 whitespace-nowrap ${
+                    activeTab === tab.id ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
                   }`}>
                     {tab.label}
                   </span>
