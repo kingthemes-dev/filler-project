@@ -43,26 +43,31 @@ export default function FavoritesModal() {
   return (
     <AnimatePresence>
       {isModalOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col"
-          style={{
-            height: '100dvh',
-            paddingTop: 'env(safe-area-inset-top)',
-            paddingBottom: 'env(safe-area-inset-bottom)'
-          }}
-          onClick={closeFavoritesModal}
-        >
+        <>
+          {/* Backdrop with blur */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[70]"
+            onClick={closeFavoritesModal}
+          />
+          
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="bg-white h-full w-full md:w-auto md:max-w-4xl md:mx-auto md:rounded-2xl md:shadow-xl md:max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) closeFavoritesModal();
+            }}
           >
+            <div 
+              className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center space-x-2 sm:space-x-3">
@@ -140,8 +145,9 @@ export default function FavoritesModal() {
                   </div>
                 )}
               </div>
+            </div>
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

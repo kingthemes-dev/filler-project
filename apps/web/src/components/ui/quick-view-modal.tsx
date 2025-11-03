@@ -228,26 +228,31 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col"
-          style={{
-            height: '100dvh',
-            paddingTop: 'env(safe-area-inset-top)',
-            paddingBottom: 'env(safe-area-inset-bottom)'
-          }}
-          onClick={onClose}
-        >
+        <>
+          {/* Backdrop with blur */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="bg-white h-full w-full md:w-auto md:max-w-4xl md:mx-auto md:rounded-2xl md:shadow-2xl md:max-h-[95vh] flex flex-col overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
+            onClick={onClose}
+          />
+          
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) onClose();
+            }}
           >
+            <div
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Content */}
               <div className="flex flex-col lg:flex-row h-full relative">
                 {/* Close Button - Top Right of Content */}
@@ -571,8 +576,9 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     )}
                   </div>
               </div>
+            </div>
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );
