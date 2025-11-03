@@ -100,7 +100,15 @@ export default function FreeShippingBanner() {
             </div>
           </div>
           
-          {/* Progress bar removed per UX request */}
+          {/* Progress bar - only show if cart has items */}
+          {hasCart && (
+            <div className="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
