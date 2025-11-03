@@ -10,7 +10,7 @@ export default function FreeShippingBanner() {
   const [isShopModalOpen, setIsShopModalOpen] = useState(false);
   const { total, itemCount } = useCartStore();
   const [isVisible, setIsVisible] = useState(true);
-  const [hasScrolled, setHasScrolled] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
   
   const FREE_SHIPPING_THRESHOLD = SHIPPING_CONFIG.FREE_SHIPPING_THRESHOLD;
   const nettoTotal = total / SHIPPING_CONFIG.VAT_RATE;
@@ -20,27 +20,27 @@ export default function FreeShippingBanner() {
   // Calculate progress percentage
   const progress = Math.min(100, (nettoTotal / FREE_SHIPPING_THRESHOLD) * 100);
 
-  // Hide banner after first scroll, never show again
+  // Show/hide on scroll direction: hide when scrolling down, show when scrolling up or at top
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY > 0 && !hasScrolled) {
-        setHasScrolled(true);
-        setIsVisible(false);
-      }
-      
-      // Only show if never scrolled and at very top
-      if (currentScrollY <= 0 && !hasScrolled) {
+      const currentY = window.scrollY || 0;
+      const scrollingDown = currentY > lastScrollY;
+      const atTop = currentY < 10;
+
+      if (atTop) {
         setIsVisible(true);
-      } else {
+      } else if (scrollingDown && currentY > 80) {
         setIsVisible(false);
+      } else if (!scrollingDown) {
+        setIsVisible(true);
       }
+
+      setLastScrollY(currentY);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasScrolled]);
+  }, [lastScrollY]);
 
   // Listen for shop modal open/close events
   useEffect(() => {
