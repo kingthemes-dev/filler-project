@@ -121,7 +121,7 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
 
   return (
     <section className="mt-6 py-12 sm:py-16 bg-white rounded-2xl sm:rounded-3xl overflow-hidden" aria-labelledby="products-heading">
-      <div className="px-4 sm:px-6 md:px-8 lg:px-12">
+      <div className="px-0 sm:px-6 md:px-8 lg:px-12">
         <h2 id="products-heading" className="sr-only">Produkty</h2>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
           {/* Custom Tabs Implementation - No shadcn/ui */}
