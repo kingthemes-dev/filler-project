@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, Heart, ShoppingCart, Eye, FileText, Package, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, ShoppingCart, Eye, FileText, Package, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
-import { useFavoritesStore } from '@/stores/favorites-store';
+
 import { useCartStore } from '@/stores/cart-store';
 import { WooProduct } from '@/types/woocommerce';
 import { useRouter } from 'next/navigation';
@@ -26,10 +26,14 @@ import {
   formatPhone 
 } from '@/utils/validation';
 
+// Debug helper (no logs in prod unless explicitly enabled)
+const __DEBUG__ = process.env.NEXT_PUBLIC_DEBUG === 'true';
+const debugLog = (...args: unknown[]) => { if (__DEBUG__) console.log(...args); };
+
 export default function MyAccountPage() {
   const router = useRouter();
   const { user, isAuthenticated, updateProfile, changePassword, logout, fetchUserProfile } = useAuthStore();
-  const { favorites, removeFromFavorites } = useFavoritesStore();
+
   const { addItem, openCart } = useCartStore();
   const [isEditing, setIsEditing] = useState(false);
   const [openSection, setOpenSection] = useState<{ profile: boolean; billing: boolean; shipping: boolean }>({ profile: true, billing: false, shipping: false });
@@ -84,14 +88,14 @@ export default function MyAccountPage() {
       
       // Also check if NIP is missing (even if other fields are filled)
       
-      console.log('🔍 My Account: Checking billing data:', { 
+      debugLog('🔍 My Account: Checking billing data:', { 
         billing: user.billing, 
         hasEmptyBilling,
         shouldFetch: hasEmptyBilling
       });
       
       if (hasEmptyBilling) {
-        console.log('🔄 My Account: User data incomplete, fetching profile...');
+        debugLog('🔄 My Account: User data incomplete, fetching profile...');
         fetchUserProfile();
       }
     }
@@ -112,7 +116,7 @@ export default function MyAccountPage() {
 
   // Load user data into form
   useEffect(() => {
-    console.log('🔍 My Account useEffect - user check:', { user: !!user, billing: user?.billing });
+    debugLog('🔍 My Account useEffect - user check:', { user: !!user, billing: user?.billing });
     if (user) {
       const meta = (user as any)?.meta_data as Array<{ key: string; value: any }> | undefined;
       const getMeta = (k: string) => meta?.find((m) => m.key === k)?.value;
@@ -175,62 +179,62 @@ export default function MyAccountPage() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
-    console.log('🔍 Validating form data:', formData);
+    debugLog('🔍 Validating form data:', formData);
 
     // Validate required fields
     const firstNameValidation = validateName(formData.firstName, 'Imię');
     if (!firstNameValidation.isValid) {
       errors.firstName = firstNameValidation.message!;
-      console.log('❌ First name validation failed:', firstNameValidation);
+      debugLog('❌ First name validation failed:', firstNameValidation);
     }
 
     const lastNameValidation = validateName(formData.lastName, 'Nazwisko');
     if (!lastNameValidation.isValid) {
       errors.lastName = lastNameValidation.message!;
-      console.log('❌ Last name validation failed:', lastNameValidation);
+      debugLog('❌ Last name validation failed:', lastNameValidation);
     }
 
     // Validate optional fields
     const nipValidation = validateNIP(formData.nip);
     if (!nipValidation.isValid) {
       errors.nip = nipValidation.message!;
-      console.log('❌ NIP validation failed:', nipValidation);
+      debugLog('❌ NIP validation failed:', nipValidation);
     }
 
     const phoneValidation = validatePhone(formData.phone);
     if (!phoneValidation.isValid) {
       errors.phone = phoneValidation.message!;
-      console.log('❌ Phone validation failed:', phoneValidation);
+      debugLog('❌ Phone validation failed:', phoneValidation);
     }
 
     const companyValidation = validateCompanyName(formData.company);
     if (!companyValidation.isValid) {
       errors.company = companyValidation.message!;
-      console.log('❌ Company validation failed:', companyValidation);
+      debugLog('❌ Company validation failed:', companyValidation);
     }
 
     const billingAddressValidation = validateAddress(formData.billingAddress, 'Adres rozliczeniowy');
     if (!billingAddressValidation.isValid) {
       errors.billingAddress = billingAddressValidation.message!;
-      console.log('❌ Billing address validation failed:', billingAddressValidation);
+      debugLog('❌ Billing address validation failed:', billingAddressValidation);
     }
 
     const billingPostcodeValidation = validatePostalCode(formData.billingPostcode);
     if (!billingPostcodeValidation.isValid) {
       errors.billingPostcode = billingPostcodeValidation.message!;
-      console.log('❌ Billing postcode validation failed:', billingPostcodeValidation);
+      debugLog('❌ Billing postcode validation failed:', billingPostcodeValidation);
     }
 
     const shippingAddressValidation = validateAddress(formData.shippingAddress, 'Adres dostawy');
     if (!shippingAddressValidation.isValid) {
       errors.shippingAddress = shippingAddressValidation.message!;
-      console.log('❌ Shipping address validation failed:', shippingAddressValidation);
+      debugLog('❌ Shipping address validation failed:', shippingAddressValidation);
     }
 
     const shippingPostcodeValidation = validatePostalCode(formData.shippingPostcode);
     if (!shippingPostcodeValidation.isValid) {
       errors.shippingPostcode = shippingPostcodeValidation.message!;
-      console.log('❌ Shipping postcode validation failed:', shippingPostcodeValidation);
+      debugLog('❌ Shipping postcode validation failed:', shippingPostcodeValidation);
     }
 
     setValidationErrors(errors);
@@ -240,7 +244,7 @@ export default function MyAccountPage() {
   const handleSave = async () => {
     // Validate form before saving
     if (!validateForm()) {
-      console.log('❌ Form validation failed:', validationErrors);
+      debugLog('❌ Form validation failed:', validationErrors);
       // Errors are now displayed under each field, no need for alert
       return;
     }
@@ -277,7 +281,7 @@ export default function MyAccountPage() {
         alert(`Błąd: ${result.message}`);
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      debugLog('🚨 Error updating profile:', error);
       alert('Wystąpił błąd podczas aktualizacji profilu');
     }
   };
@@ -304,7 +308,7 @@ export default function MyAccountPage() {
         alert(`Błąd: ${result.message}`);
       }
     } catch (error) {
-      console.error('Error changing password:', error);
+      debugLog('🚨 Error changing password:', error);
       alert('Wystąpił błąd podczas zmiany hasła');
     }
   };
@@ -320,13 +324,8 @@ export default function MyAccountPage() {
       permalink: `/produkt/${product.slug}`,
     };
 
-    console.log('🛒 Adding to cart from favorites:', cartItem);
     addItem(cartItem);
     openCart();
-  };
-
-  const handleRemoveFromFavorites = (productId: number) => {
-    removeFromFavorites(productId);
   };
 
   const handleCancel = () => {
@@ -390,14 +389,14 @@ export default function MyAccountPage() {
         {/* Tabs */}
         <div className="mb-8">
           <div className="w-full">
-            <div className="grid grid-cols-4 bg-white border border-gray-300 p-1 rounded-[28px] sm:h-[80px] h-auto relative overflow-hidden shadow-sm">
+            <div className="grid grid-cols-3 bg-white border border-gray-300 p-1 rounded-[28px] sm:h-[80px] h-auto relative overflow-hidden shadow-sm">
               {/* Animated background indicator with layoutId for smooth transition */}
               <motion.div 
                 layoutId="accountActiveTab"
                 className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-[#0f1a26] rounded-[22px] shadow-lg"
                 style={{
-                  left: `calc(${(['profile', 'orders', 'favorites', 'invoices'].indexOf(activeTab) * 100) / 4}% + 2px)`,
-                  width: `calc(${100 / 4}% - 6px)`,
+                  left: `calc(${(['profile', 'orders', 'invoices'].indexOf(activeTab) * 100) / 3}% + 2px)`,
+                  width: `calc(${100 / 3}% - 6px)`,
                 }}
                 transition={{
                   type: "spring",
@@ -437,23 +436,6 @@ export default function MyAccountPage() {
                   activeTab === 'orders' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
                 }`}>
                   Zamówienia
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('favorites')}
-                className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
-              >
-                <div className={`transition-all duration-300 ${
-                  activeTab === 'favorites' ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
-                } ${
-                  activeTab === 'favorites' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`}>
-                  <Heart className="w-5 h-5 sm:w-5 sm:h-5" />
-                </div>
-                <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
-                  activeTab === 'favorites' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`}>
-                Ulubione
                 </span>
               </button>
               <button
@@ -957,131 +939,7 @@ export default function MyAccountPage() {
               </>
             )}
 
-            {activeTab === 'favorites' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                    <Heart className="w-5 h-5 mr-2 text-red-500" />
-                    Moje ulubione produkty
-                  </h2>
-                  <Badge variant="secondary">
-                    {favorites.length} {favorites.length === 1 ? 'produkt' : 'produktów'}
-                  </Badge>
-                </div>
 
-                {favorites.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      Brak ulubionych produktów
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      Dodaj produkty do ulubionych, klikając ikonę serca na kartach produktów
-                    </p>
-                    <Link href="/sklep">
-                      <Button>
-                        Przejdź do sklepu
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {favorites.map((product) => {
-                      const isOnSale = wooCommerceService.isProductOnSale(product);
-                      const discount = wooCommerceService.getProductDiscount(product);
-                      const imageUrl = wooCommerceService.getProductImageUrl(product, 'medium');
-                      const price = wooCommerceService.formatPrice(product.price);
-                      const regularPrice = wooCommerceService.formatPrice(product.regular_price);
-
-                      return (
-                        <div
-                          key={product.id}
-                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                        >
-                          {/* Product Image */}
-                          <div className="relative aspect-square bg-gray-100">
-                            <Image
-                              src={imageUrl}
-                              alt={product.name}
-                              width={200}
-                              height={200}
-                              className="w-full h-full object-cover"
-                            />
-                            {isOnSale && (
-                              <Badge 
-                                variant="destructive" 
-                                className="absolute top-2 left-2"
-                              >
-                                -{discount}%
-                              </Badge>
-                            )}
-                            <button
-                              onClick={() => handleRemoveFromFavorites(product.id)}
-                              className="absolute top-2 right-2 w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
-                            >
-                              <Heart className="w-4 h-4 fill-current text-red-500" />
-                            </button>
-                          </div>
-
-                          {/* Product Info */}
-                          <div className="p-4">
-                            <div className="text-sm text-gray-500 mb-1">
-                              {product.categories && product.categories.length > 0 
-                                ? product.categories[0].name 
-                                : 'Bez kategorii'
-                              }
-                            </div>
-                            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                              {product.name}
-                            </h3>
-                            
-                            {/* Price */}
-                            <div className="mb-4">
-                              {isOnSale ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg font-bold text-foreground">{price}</span>
-                                  <span className="text-sm text-muted-foreground line-through">{regularPrice}</span>
-                                </div>
-                              ) : (
-                                <span className="text-lg font-bold text-foreground">{price}</span>
-                              )}
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1"
-                                asChild
-                              >
-                                <Link href={`/produkt/${product.slug}`}>
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  Zobacz
-                                </Link>
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="flex-1"
-                                onClick={() => handleAddToCart(product)}
-                              >
-                                <ShoppingCart className="w-4 h-4 mr-1" />
-                                Do koszyka
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </motion.div>
-            )}
             </AnimatePresence>
           </div>
 

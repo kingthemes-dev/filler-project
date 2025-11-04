@@ -566,7 +566,7 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="fixed inset-x-0 top-14 h-[calc(100vh-3.5rem)] bg-white overflow-hidden lg:absolute lg:top-full lg:left-0 lg:right-0 lg:w-full lg:h-auto lg:max-h-[80vh] lg:flex lg:flex-col lg:hidden flex flex-col z-[101]"
+              className="fixed inset-x-0 top-14 h-[calc(100vh-3.5rem)] bg-white overflow-hidden z-[101] flex flex-col lg:absolute lg:top-full lg:left-0 lg:right-0 lg:w-full lg:h-auto lg:max-h-[80vh] lg:hidden"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'calc(100vh - 3.5rem)', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}

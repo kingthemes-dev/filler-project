@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Heart, ShoppingCart, Eye, Trash2, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, ShoppingCart, Eye, Trash2, ArrowLeft, User, Package, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useWishlist } from '@/hooks/use-wishlist';
 import { useCartStore } from '@/stores/cart-store';
 import { useQuickViewStore } from '@/stores/quickview-store';
@@ -16,9 +17,9 @@ import { formatPrice } from '@/utils/format-price';
 import QuickViewModal from '@/components/ui/quick-view-modal';
 import PageContainer from '@/components/ui/page-container';
 import PageHeader from '@/components/ui/page-header';
-import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export default function WishlistPage() {
+  const router = useRouter();
   const { 
     items, 
     isLoading, 
@@ -87,7 +88,30 @@ export default function WishlistPage() {
   };
 
   if (isLoading) {
-    return null;
+    return (
+      <div className="min-h-screen bg-white py-8 pb-16">
+        <PageContainer>
+          {/* Header with Title and Breadcrumbs */}
+          <PageHeader 
+            title="Lista życzeń"
+            breadcrumbs={breadcrumbs}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-xl p-4 animate-pulse">
+                <div className="w-full h-48 bg-gray-100 rounded mb-3" />
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
+                <div className="flex space-x-2">
+                  <div className="h-8 w-1/2 bg-gray-200 rounded" />
+                  <div className="h-8 w-1/2 bg-gray-200 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </PageContainer>
+      </div>
+    );
   }
 
   if (error) {
@@ -147,12 +171,48 @@ export default function WishlistPage() {
   return (
     <PageContainer>
       {/* Header with Title and Breadcrumbs */}
-      <div className="pt-8 pb-4 sm:pb-6 px-4 lg:px-8 mb-8">
-        <div className="flex items-center justify-between gap-4 lg:gap-8">
-          <h1 className="text-2xl font-bold text-gray-900">Lista życzeń</h1>
-          <div className="ml-auto">
-            <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
-          </div>
+      <PageHeader 
+        title="Lista życzeń"
+        breadcrumbs={breadcrumbs}
+      />
+
+      {/* Tabs for My Account */}
+      <div className="flex justify-center mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 bg-white border border-gray-300 p-1 rounded-[28px] h-[80px] relative overflow-hidden shadow-sm max-w-full md:max-w-2xl">
+          <AnimatePresence>
+            <button
+              onClick={() => router.push('/moje-konto')}
+              className="relative flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold text-gray-500 transition-colors duration-300 ease-out border-0 border-transparent rounded-[22px] group"
+            >
+              <User className="w-5 h-5" />
+              <span>Moje konto</span>
+            </button>
+            <button
+              onClick={() => router.push('/moje-zamowienia')}
+              className="relative flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold text-gray-500 transition-colors duration-300 ease-out border-0 border-transparent rounded-[22px] group"
+            >
+              <Package className="w-5 h-5" />
+              <span>Zamówienia</span>
+            </button>
+            <button
+              className="relative flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold text-white transition-colors duration-300 ease-out border-0 border-transparent rounded-[22px] group"
+            >
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-gradient-to-r from-black to-[#0f1a26] rounded-[22px] shadow-lg"
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              />
+              <Heart className="w-5 h-5 relative z-10" />
+              <span className="relative z-10">Ulubione</span>
+            </button>
+            <button
+              onClick={() => router.push('/moje-faktury')}
+              className="relative flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold text-gray-500 transition-colors duration-300 ease-out border-0 border-transparent rounded-[22px] group"
+            >
+              <FileText className="w-5 h-5" />
+              <span>Faktury</span>
+            </button>
+          </AnimatePresence>
         </div>
       </div>
       

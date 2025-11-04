@@ -4,10 +4,11 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
 
-// Debug environment variables (only log once per process)
-if (!(global as any).__nextConfigLogged) {
-  console.log('🔍 Next.js Config - GTM ID:', process.env.NEXT_PUBLIC_GTM_ID);
-  console.log('🔍 Next.js Config - GA4 ID:', process.env.NEXT_PUBLIC_GA4_ID);
+// Debug environment variables (only when DEBUG is enabled and only once per process)
+const __isDebug = process.env.NEXT_PUBLIC_DEBUG === 'true';
+if (__isDebug && !(global as any).__nextConfigLogged) {
+  console.log('🔍 Next.js Config - GTM ID:', process.env.NEXT_PUBLIC_GTM_ID ? 'SET' : 'NOT SET');
+  console.log('🔍 Next.js Config - GA4 ID:', process.env.NEXT_PUBLIC_GA4_ID ? 'SET' : 'NOT SET');
   (global as any).__nextConfigLogged = true;
 }
 

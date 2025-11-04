@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Calendar, Euro, Eye, User, Package, Heart } from 'lucide-react';
+import { FileText, Download, Calendar, Euro, Eye, User, Package } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
+import { httpErrorMessage } from '@/utils/error-messages';
 
 export interface Invoice {
   id: string;
@@ -20,12 +21,150 @@ export interface Invoice {
   isEligible?: boolean; // Whether this order is eligible for invoice generation
 }
 
+// Use shared error message utility
+
+// Cache key for sessionStorage
+const INVOICES_CACHE_KEY = 'invoices_cache';
+const INVOICES_CACHE_TIMESTAMP_KEY = 'invoices_cache_timestamp';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Memoized Invoice Item Component
+const InvoiceItem = memo(({ invoice, onViewInvoice }: { invoice: Invoice; onViewInvoice: (invoice: Invoice) => void }) => {
+  const statusInfo = getStatusInfo(invoice.status);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+    >
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">{invoice.number}</h3>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                {statusInfo.icon} {statusInfo.label}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {new Date(invoice.date).toLocaleDateString('pl-PL')}
+              </span>
+              <span className="font-semibold text-gray-900">{formatPrice(invoice.total)} {invoice.currency}</span>
+              <span className="text-gray-500">Zamówienie #{invoice.orderNumber}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => onViewInvoice(invoice)}
+            disabled={!invoice.isEligible}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              invoice.isEligible
+                ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+            }`}
+            title={!invoice.isEligible ? getInvoiceTooltip(invoice.status) : ''}
+          >
+            <Eye className="w-4 h-4" />
+            Zobacz fakturę
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+InvoiceItem.displayName = 'InvoiceItem';
+
+// Status info helper function
+const getStatusInfo = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return {
+        label: 'Zrealizowane',
+        color: 'bg-green-100 text-green-800',
+        icon: '✅'
+      };
+    case 'processing':
+      return {
+        label: 'W trakcie',
+        color: 'bg-blue-100 text-blue-800',
+        icon: '⏳'
+      };
+    case 'on-hold':
+      return {
+        label: 'Wstrzymane',
+        color: 'bg-yellow-100 text-yellow-800',
+        icon: '⏸️'
+      };
+    case 'pending':
+      return {
+        label: 'Oczekujące',
+        color: 'bg-orange-100 text-orange-800',
+        icon: '⏳'
+      };
+    case 'cancelled':
+      return {
+        label: 'Anulowane',
+        color: 'bg-red-100 text-red-800',
+        icon: '❌'
+      };
+    case 'refunded':
+      return {
+        label: 'Zwrócone',
+        color: 'bg-gray-100 text-gray-800',
+        icon: '↩️'
+      };
+    case 'failed':
+      return {
+        label: 'Nieudane',
+        color: 'bg-red-100 text-red-800',
+        icon: '❌'
+      };
+    default:
+      return {
+        label: 'Nieznana',
+        color: 'bg-gray-100 text-gray-800',
+        icon: '❓'
+      };
+  }
+};
+
+// Check if order is eligible for invoice generation
+const isOrderEligibleForInvoice = (status: string): boolean => {
+  const eligibleStatuses = ['completed', 'processing', 'on-hold'];
+  return eligibleStatuses.includes(status);
+};
+
+// Get tooltip message for disabled invoice buttons
+const getInvoiceTooltip = (status: string): string => {
+  switch (status) {
+    case 'pending':
+      return 'Faktura będzie dostępna po opłaceniu zamówienia';
+    case 'cancelled':
+      return 'Faktura niedostępna - zamówienie anulowane';
+    case 'refunded':
+      return 'Faktura niedostępna - zamówienie zwrócone';
+    case 'failed':
+      return 'Faktura niedostępna - płatność nieudana';
+    default:
+      return 'Faktura niedostępna dla tego statusu zamówienia';
+  }
+};
+
+const formatPrice = (price: number) => {
+  return price.toFixed(2);
+};
+
 export default function MyInvoicesPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Redirect if not authenticated (but wait for auth store to load)
   useEffect(() => {
@@ -39,13 +178,50 @@ export default function MyInvoicesPage() {
     return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
-  // Fetch invoices
-  const fetchInvoices = useCallback(async () => {
+  // Fetch invoices with caching
+  const fetchInvoices = useCallback(async (forceRefresh = false) => {
+    if (!user?.id) return;
+
     try {
-      setLoading(true);
+      // Check cache FIRST before setting loading state
+      if (!forceRefresh) {
+        const cachedData = sessionStorage.getItem(INVOICES_CACHE_KEY);
+        const cacheTimestamp = sessionStorage.getItem(INVOICES_CACHE_TIMESTAMP_KEY);
+        
+        if (cachedData && cacheTimestamp) {
+          const cacheAge = Date.now() - parseInt(cacheTimestamp, 10);
+          if (cacheAge < CACHE_DURATION) {
+            try {
+              const parsedData = JSON.parse(cachedData);
+              setInvoices(parsedData);
+              setLoading(false);
+              // Fetch fresh data in background (don't block UI) - only if cache is older than 2 minutes
+              if (cacheAge > 2 * 60 * 1000) {
+                fetchInvoices(true).catch(console.error);
+              }
+              return;
+            } catch (e) {
+              // Cache corrupted, fetch fresh data
+              sessionStorage.removeItem(INVOICES_CACHE_KEY);
+              sessionStorage.removeItem(INVOICES_CACHE_TIMESTAMP_KEY);
+            }
+          }
+        }
+      }
+
+      // Only show loader if we don't have cached data
+      if (invoices.length === 0) {
+        setLoading(true);
+      }
       
-      // Get all orders for the customer
-      const response = await fetch(`/api/woocommerce?endpoint=orders&customer=${user?.id}`);
+      // Add limit and per_page to optimize API call
+      const response = await fetch(`/api/woocommerce?endpoint=orders&customer=${user.id}&per_page=20&orderby=date&order=desc`);
+      
+      if (!response.ok) {
+        setErrorMessage((prev) => prev ?? httpErrorMessage(response.status));
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (Array.isArray(data)) {
@@ -59,22 +235,29 @@ export default function MyInvoicesPage() {
             id: order.id.toString(),
             number: invoiceNumber || `FV/${order.number}`,
             date: invoiceDate || order.date_created,
-            total: parseFloat(order.total), // Keep as PLN (not convert to grosze)
+            total: parseFloat(order.total),
             currency: order.currency || 'PLN',
             status: order.status,
-            download_url: null, // No longer using WCPDF URLs
+            download_url: null,
             orderNumber: order.number,
             isEligible: isEligible
           };
         });
         
         setInvoices(transformedInvoices);
+        
+        // Cache the results
+        sessionStorage.setItem(INVOICES_CACHE_KEY, JSON.stringify(transformedInvoices));
+        sessionStorage.setItem(INVOICES_CACHE_TIMESTAMP_KEY, Date.now().toString());
       } else {
         console.error('Error fetching orders:', data);
         setInvoices([]);
       }
     } catch (error) {
       console.error('Error fetching invoices:', (error as any)?.message || error);
+      if (!errorMessage) {
+        setErrorMessage('Nie udało się pobrać listy faktur. Spróbuj ponownie.');
+      }
       setInvoices([]);
     } finally {
       setLoading(false);
@@ -82,94 +265,37 @@ export default function MyInvoicesPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    // Check cache immediately on mount (before waiting for auth)
+    if (typeof window !== 'undefined') {
+      const cachedData = sessionStorage.getItem(INVOICES_CACHE_KEY);
+      const cacheTimestamp = sessionStorage.getItem(INVOICES_CACHE_TIMESTAMP_KEY);
+      
+      if (cachedData && cacheTimestamp) {
+        const cacheAge = Date.now() - parseInt(cacheTimestamp, 10);
+        if (cacheAge < CACHE_DURATION) {
+          try {
+            const parsedData = JSON.parse(cachedData);
+            setInvoices(parsedData);
+            setLoading(false);
+          } catch (e) {
+            // Cache corrupted
+            sessionStorage.removeItem(INVOICES_CACHE_KEY);
+            sessionStorage.removeItem(INVOICES_CACHE_TIMESTAMP_KEY);
+          }
+        }
+      }
+    }
+    
+    // Then fetch fresh data if authenticated
     if (isAuthenticated && user?.id) {
       fetchInvoices();
     }
   }, [isAuthenticated, user?.id, fetchInvoices]);
 
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return {
-          label: 'Zrealizowane',
-          color: 'bg-green-100 text-green-800',
-          icon: '✅'
-        };
-      case 'processing':
-        return {
-          label: 'W trakcie',
-          color: 'bg-blue-100 text-blue-800',
-          icon: '⏳'
-        };
-      case 'on-hold':
-        return {
-          label: 'Wstrzymane',
-          color: 'bg-yellow-100 text-yellow-800',
-          icon: '⏸️'
-        };
-      case 'pending':
-        return {
-          label: 'Oczekujące',
-          color: 'bg-orange-100 text-orange-800',
-          icon: '⏳'
-        };
-      case 'cancelled':
-        return {
-          label: 'Anulowane',
-          color: 'bg-red-100 text-red-800',
-          icon: '❌'
-        };
-      case 'refunded':
-        return {
-          label: 'Zwrócone',
-          color: 'bg-gray-100 text-gray-800',
-          icon: '↩️'
-        };
-      case 'failed':
-        return {
-          label: 'Nieudane',
-          color: 'bg-red-100 text-red-800',
-          icon: '❌'
-        };
-      default:
-        return {
-          label: 'Nieznana',
-          color: 'bg-gray-100 text-gray-800',
-          icon: '❓'
-        };
-    }
-  };
-
-  // Check if order is eligible for invoice generation
-  const isOrderEligibleForInvoice = (status: string): boolean => {
-    const eligibleStatuses = ['completed', 'processing', 'on-hold'];
-    return eligibleStatuses.includes(status);
-  };
-
-  // Get tooltip message for disabled invoice buttons
-  const getInvoiceTooltip = (status: string): string => {
-    switch (status) {
-      case 'pending':
-        return 'Faktura będzie dostępna po opłaceniu zamówienia';
-      case 'cancelled':
-        return 'Faktura niedostępna - zamówienie anulowane';
-      case 'refunded':
-        return 'Faktura niedostępna - zamówienie zwrócone';
-      case 'failed':
-        return 'Faktura niedostępna - płatność nieudana';
-      default:
-        return 'Faktura niedostępna dla tego statusu zamówienia';
-    }
-  };
-
-  const formatPrice = (price: number) => {
-    return price.toFixed(2);
-  };
-
-  const handleViewInvoice = async (invoice: Invoice) => {
+  const handleViewInvoice = useCallback(async (invoice: Invoice) => {
     // Check if invoice is eligible for viewing
     if (!invoice.isEligible) {
-      alert(getInvoiceTooltip(invoice.status));
+      setErrorMessage(getInvoiceTooltip(invoice.status));
       return;
     }
 
@@ -201,77 +327,49 @@ export default function MyInvoicesPage() {
         setTimeout(() => {
           window.URL.revokeObjectURL(url);
         }, 1000);
-        
-        console.log('✅ Invoice opened for viewing');
       } else {
-        throw new Error('Nieprawidłowy format faktury');
+        throw new Error('Nieprawidłowa odpowiedź z serwera');
       }
-      
     } catch (error) {
-      console.error('❌ Error opening invoice:', error);
-      alert('Błąd podczas otwierania faktury');
+      console.error('Error viewing invoice:', error);
+      setErrorMessage('Nie udało się wyświetlić faktury. Spróbuj ponownie.');
     }
-  };
+  }, []);
 
-  const handleDownloadInvoice = async (invoice: Invoice) => {
-    // Check if invoice is eligible for download
-    if (!invoice.isEligible) {
-      alert(getInvoiceTooltip(invoice.status));
-      return;
-    }
+  // Memoize sorted invoices
+  const sortedInvoices = useMemo(() => {
+    return [...invoices].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [invoices]);
 
-    try {
-      console.log('🔄 Downloading invoice for order:', invoice.id);
-      
-      // Use Next.js API as proxy to avoid CORS issues
-      const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${invoice.id}`);
-      
-      if (!response.ok) {
-        throw new Error('Nie udało się pobrać faktury');
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.base64) {
-        // Convert base64 to blob and download
-        const binaryString = atob(data.base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const blob = new Blob([bytes], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        
-        // Create download link
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = data.filename || `faktura_${invoice.id}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Clean up
-        window.URL.revokeObjectURL(url);
-        
-        console.log('✅ Invoice downloaded successfully');
-      } else {
-        throw new Error('Nieprawidłowy format faktury');
-      }
-      
-    } catch (error) {
-      console.error('❌ Error downloading invoice:', error);
-      alert('Błąd podczas pobierania faktury');
-    }
-  };
-
-  if (loading) {
+  // Show skeleton loader only if we have no data at all
+  if (loading && invoices.length === 0) {
     return (
       <div className="min-h-screen bg-white">
         <PageContainer className="pb-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-600">Ładowanie faktur...</p>
+          <PageHeader 
+            title="Moje faktury"
+            subtitle="Historia Twoich faktur i możliwość ich pobrania"
+            breadcrumbs={[
+              { label: 'Strona główna', href: '/' },
+              { label: 'Moje faktury', href: '/moje-faktury' }
+            ]}
+          />
+          
+          {/* Skeleton Loader */}
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48"></div>
+                  </div>
+                  <div className="h-8 bg-gray-200 rounded w-24"></div>
+                </div>
+                <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            ))}
           </div>
         </PageContainer>
       </div>
@@ -291,17 +389,23 @@ export default function MyInvoicesPage() {
           ]}
         />
 
+        {errorMessage && (
+          <div className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700" role="alert">
+            {errorMessage}
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="mb-8">
           <div className="w-full">
-            <div className="grid grid-cols-4 bg-white border border-gray-300 p-1 rounded-[28px] sm:h-[80px] h-auto relative overflow-hidden shadow-sm">
+            <div className="grid grid-cols-3 bg-white border border-gray-300 p-1 rounded-[28px] sm:h-[80px] h-auto relative overflow-hidden shadow-sm">
               {/* Animated background indicator with layoutId for smooth transition */}
               <motion.div 
                 layoutId="accountActiveTab"
                 className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-[#0f1a26] rounded-[22px] shadow-lg"
                 style={{
-                  left: `calc(${(['profile', 'orders', 'favorites', 'invoices'].indexOf('invoices') * 100) / 4}% + 2px)`,
-                  width: `calc(${100 / 4}% - 6px)`,
+                  left: `calc(${(['profile', 'orders', 'invoices'].indexOf('invoices') * 100) / 3}% + 2px)`,
+                  width: `calc(${100 / 3}% - 6px)`,
                 }}
                 transition={{
                   type: "spring",
@@ -332,17 +436,6 @@ export default function MyInvoicesPage() {
                 </span>
               </button>
               <button
-                onClick={() => router.push('/moje-konto?tab=favorites')}
-                className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
-              >
-                <div className="transition-all duration-300 group-hover:scale-110 text-gray-500 group-hover:text-gray-700">
-                  <Heart className="w-5 h-5 sm:w-5 sm:h-5" />
-                </div>
-                <span className="text-center leading-tight transition-all duration-300 whitespace-nowrap text-gray-500 group-hover:text-gray-700">
-                  Ulubione
-                </span>
-              </button>
-              <button
                 className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
               >
                 <div className="transition-all duration-300 scale-110 text-white">
@@ -356,7 +449,7 @@ export default function MyInvoicesPage() {
           </div>
         </div>
 
-        {invoices.length === 0 ? (
+        {sortedInvoices.length === 0 ? (
           /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -382,85 +475,13 @@ export default function MyInvoicesPage() {
         ) : (
           /* Invoices List */
           <div className="space-y-4">
-            {invoices.map((invoice, index) => {
-              const statusInfo = getStatusInfo(invoice.status);
-              
-              return (
-                <motion.div
-                  key={invoice.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-gray-400" />
-                          <span className="font-semibold text-gray-900">
-                            Faktura {invoice.number}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            (Zamówienie #{invoice.orderNumber})
-                          </span>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color} flex items-center gap-1`}>
-                          <span>{statusInfo.icon}</span>
-                          {statusInfo.label}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-6 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(invoice.date).toLocaleDateString('pl-PL')}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Euro className="w-4 h-4" />
-                          <span>{formatPrice(invoice.total)} {invoice.currency}</span>
-                        </div>
-                        {!invoice.isEligible && (
-                          <div className="flex items-center gap-1 text-orange-600">
-                            <span className="text-xs">⚠️</span>
-                            <span className="text-xs">Faktura niedostępna</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleViewInvoice(invoice)}
-                        disabled={!invoice.isEligible}
-                        title={!invoice.isEligible ? getInvoiceTooltip(invoice.status) : 'Podgląd faktury'}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                          invoice.isEligible
-                            ? 'text-gray-600 hover:text-black hover:bg-gray-50'
-                            : 'text-gray-400 cursor-not-allowed bg-gray-100'
-                        }`}
-                      >
-                        <Eye className="w-4 h-4" />
-                        Podgląd
-                      </button>
-                      <button
-                        onClick={() => handleDownloadInvoice(invoice)}
-                        disabled={!invoice.isEligible}
-                        title={!invoice.isEligible ? getInvoiceTooltip(invoice.status) : 'Pobierz fakturę PDF'}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                          invoice.isEligible
-                            ? 'bg-black text-white hover:bg-gray-800'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        <Download className="w-4 h-4" />
-                        Pobierz PDF
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                         {sortedInvoices.map((invoice) => (
+               <InvoiceItem
+                 key={invoice.id}
+                 invoice={invoice}
+                 onViewInvoice={handleViewInvoice}
+               />
+             ))}
           </div>
         )}
 
@@ -538,7 +559,7 @@ export default function MyInvoicesPage() {
                   Zamknij
                 </button>
                 <button
-                  onClick={() => handleDownloadInvoice(selectedInvoice)}
+                  onClick={() => handleViewInvoice(selectedInvoice)}
                   className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   Pobierz PDF

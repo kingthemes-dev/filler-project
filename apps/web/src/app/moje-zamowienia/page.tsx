@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Truck, CheckCircle, Clock, Eye, Download, Calendar, User, Heart, FileText } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, Eye, Download, Calendar, User, FileText } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatPrice } from '@/utils/format-price';
+import { httpErrorMessage } from '@/utils/error-messages';
 import Image from 'next/image';
 
 interface Order {
@@ -41,12 +42,191 @@ interface Order {
   isEligibleForInvoice?: boolean; // Whether this order is eligible for invoice generation
 }
 
+// Cache key for sessionStorage
+const ORDERS_CACHE_KEY = 'orders_cache';
+const ORDERS_CACHE_TIMESTAMP_KEY = 'orders_cache_timestamp';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Status info helper function
+const getStatusInfo = (status: Order['status']) => {
+  switch (status) {
+    case 'pending':
+      return {
+        label: 'Oczekujące',
+        color: 'text-yellow-600',
+        bgColor: 'bg-yellow-100',
+        icon: Clock
+      };
+    case 'processing':
+      return {
+        label: 'W realizacji',
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-100',
+        icon: Package
+      };
+    case 'shipped':
+      return {
+        label: 'Wysłane',
+        color: 'text-purple-600',
+        bgColor: 'bg-purple-100',
+        icon: Truck
+      };
+    case 'delivered':
+      return {
+        label: 'Dostarczone',
+        color: 'text-green-600',
+        bgColor: 'bg-green-100',
+        icon: CheckCircle
+      };
+    case 'cancelled':
+      return {
+        label: 'Anulowane',
+        color: 'text-red-600',
+        bgColor: 'bg-red-100',
+        icon: Clock
+      };
+    default:
+      return {
+        label: 'Nieznany',
+        color: 'text-gray-600',
+        bgColor: 'bg-gray-100',
+        icon: Clock
+      };
+  }
+};
+
+// Memoized Order Item Component
+const OrderItem = memo(({ order, isSelected, onViewDetails }: { order: Order; isSelected: boolean; onViewDetails: (id: string) => void }) => {
+  const statusInfo = getStatusInfo(order.status);
+  const StatusIcon = statusInfo.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+      data-testid="order-card"
+    >
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">Zamówienie #{order.number}</h3>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color} ${statusInfo.bgColor}`}>
+                <StatusIcon className="w-3 h-3" />
+                {statusInfo.label}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {new Date(order.date).toLocaleDateString('pl-PL')}
+              </span>
+              <span className="font-semibold text-gray-900">{formatPrice(order.total)} zł</span>
+            </div>
+          </div>
+          <button
+            onClick={() => onViewDetails(order.id)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+          >
+            <Eye className="w-4 h-4" />
+            {isSelected ? 'Ukryj szczegóły' : 'Zobacz szczegóły'}
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isSelected && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="border-t border-gray-200 bg-gray-50"
+          >
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Adres rozliczeniowy
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {order.billing.address}<br />
+                    {order.billing.postcode} {order.billing.city}<br />
+                    {order.billing.country}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <Truck className="w-4 h-4" />
+                    Adres dostawy
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {order.shipping.address}<br />
+                    {order.shipping.postcode} {order.shipping.city}<br />
+                    {order.shipping.country}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3">Produkty</h4>
+                <div className="space-y-3">
+                  {order.items.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                      <div className="relative w-16 h-16 flex-shrink-0">
+                        <Image
+                          src={item.image || '/placeholder-product.png'}
+                          alt={item.name}
+                          fill
+                          className="object-cover rounded"
+                          sizes="64px"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+                        <p className="text-sm text-gray-600">Ilość: {item.quantity}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900">{formatPrice(item.price * item.quantity)} zł</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
+                <div className="text-sm">
+                  <span className="text-gray-600">Metoda płatności: </span>
+                  <span className="font-medium text-gray-900">{order.paymentMethod}</span>
+                </div>
+                {order.trackingNumber && (
+                  <div className="text-sm">
+                    <span className="text-gray-600">Numer przesyłki: </span>
+                    <span className="font-medium text-gray-900">{order.trackingNumber}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+});
+
+OrderItem.displayName = 'OrderItem';
+
+// Use shared error message utility
+
 export default function MyOrdersPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Redirect if not authenticated (but wait for auth store to load)
   useEffect(() => {
@@ -60,60 +240,102 @@ export default function MyOrdersPage() {
     return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
-  // Fetch real orders from WooCommerce API
-  const fetchOrders = useCallback(async () => {
+  // Fetch real orders from WooCommerce API with caching
+  const fetchOrders = useCallback(async (forceRefresh = false) => {
+    if (!user?.id) return;
+
     try {
-      setLoading(true);
+      // Check cache FIRST before setting loading state
+      if (!forceRefresh) {
+        const cachedData = sessionStorage.getItem(ORDERS_CACHE_KEY);
+        const cacheTimestamp = sessionStorage.getItem(ORDERS_CACHE_TIMESTAMP_KEY);
+        
+        if (cachedData && cacheTimestamp) {
+          const cacheAge = Date.now() - parseInt(cacheTimestamp, 10);
+          if (cacheAge < CACHE_DURATION) {
+            try {
+              const parsedData = JSON.parse(cachedData);
+              setOrders(parsedData);
+              setLoading(false);
+              // Fetch fresh data in background (don't block UI) - only if cache is older than 2 minutes
+              if (cacheAge > 2 * 60 * 1000) {
+                fetchOrders(true).catch(console.error);
+              }
+              return;
+            } catch (e) {
+              // Cache corrupted, fetch fresh data
+              sessionStorage.removeItem(ORDERS_CACHE_KEY);
+              sessionStorage.removeItem(ORDERS_CACHE_TIMESTAMP_KEY);
+            }
+          }
+        }
+      }
+
+      // Only show loader if we don't have cached data
+      if (orders.length === 0) {
+        setLoading(true);
+      }
       
-      // Use standard WooCommerce orders endpoint with customer filter
-      const response = await fetch(`/api/woocommerce?endpoint=orders&customer=${user?.id}`);
+      // Add limit and per_page to optimize API call
+      const response = await fetch(`/api/woocommerce?endpoint=orders&customer=${user.id}&per_page=20&orderby=date&order=desc`);
+      if (!response.ok) {
+        setErrorMessage((prev) => prev ?? httpErrorMessage(response.status));
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (Array.isArray(data)) {
         // Transform WooCommerce orders to our format
         const transformedOrders = data.map((order: any) => {
           const mappedStatus = mapOrderStatus(order.status);
-          // Use original WooCommerce status for eligibility check (same as /moje-faktury)
           const isEligible = isOrderEligibleForInvoiceWooCommerce(order.status);
-          
           
           return {
             id: order.id.toString(),
             number: order.number,
             date: order.date_created.split('T')[0],
             status: mappedStatus,
-            total: parseFloat(order.total), // Keep as PLN (not convert to grosze)
-            items: order.line_items.map((item: any) => ({
+            total: parseFloat(order.total),
+            items: (order.line_items || []).map((item: any) => ({
               id: item.id,
               name: item.name,
               quantity: item.quantity,
-              price: parseFloat(item.price), // Keep as PLN (not convert to grosze)
+              price: parseFloat(item.price),
               image: item.image?.src || item.product_image || 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp'
             })),
             billing: {
-              address: order.billing.address_1,
-              city: order.billing.city,
-              postcode: order.billing.postcode,
-              country: order.billing.country
+              address: order.billing?.address_1 || '',
+              city: order.billing?.city || '',
+              postcode: order.billing?.postcode || '',
+              country: order.billing?.country || ''
             },
             shipping: {
-              address: order.shipping.address_1,
-              city: order.shipping.city,
-              postcode: order.shipping.postcode,
-              country: order.shipping.country
+              address: order.shipping?.address_1 || '',
+              city: order.shipping?.city || '',
+              postcode: order.shipping?.postcode || '',
+              country: order.shipping?.country || ''
             },
             paymentMethod: mapPaymentMethod(order.payment_method_title || order.payment_method || 'unknown'),
             trackingNumber: order.meta_data?.find((meta: any) => meta.key === '_tracking_number')?.value || null,
             isEligibleForInvoice: isEligible
           };
         });
+        
         setOrders(transformedOrders);
+        
+        // Cache the results
+        sessionStorage.setItem(ORDERS_CACHE_KEY, JSON.stringify(transformedOrders));
+        sessionStorage.setItem(ORDERS_CACHE_TIMESTAMP_KEY, Date.now().toString());
       } else {
         console.error('Error fetching orders:', data);
         setOrders([]);
       }
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error('Error fetching orders:', (error as any)?.message || error);
+      if (!errorMessage) {
+        setErrorMessage('Nie udało się pobrać listy zamówień. Spróbuj ponownie.');
+      }
       setOrders([]);
     } finally {
       setLoading(false);
@@ -121,12 +343,35 @@ export default function MyOrdersPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    // Check cache immediately on mount (before waiting for auth)
+    if (typeof window !== 'undefined') {
+      const cachedData = sessionStorage.getItem(ORDERS_CACHE_KEY);
+      const cacheTimestamp = sessionStorage.getItem(ORDERS_CACHE_TIMESTAMP_KEY);
+      
+      if (cachedData && cacheTimestamp) {
+        const cacheAge = Date.now() - parseInt(cacheTimestamp, 10);
+        if (cacheAge < CACHE_DURATION) {
+          try {
+            const parsedData = JSON.parse(cachedData);
+            setOrders(parsedData);
+            setLoading(false);
+          } catch (e) {
+            // Cache corrupted
+            sessionStorage.removeItem(ORDERS_CACHE_KEY);
+            sessionStorage.removeItem(ORDERS_CACHE_TIMESTAMP_KEY);
+          }
+        }
+      }
+    }
+    
+    // Then fetch fresh data if authenticated
     if (isAuthenticated && user?.id) {
       fetchOrders();
     }
   }, [isAuthenticated, user?.id, fetchOrders]);
 
-  const mapOrderStatus = (wcStatus: string): 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' => {
+  // Memoize status and payment mapping functions
+  const mapOrderStatus = useCallback((wcStatus: string): 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' => {
     const statusMap: Record<string, 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'> = {
       'pending': 'pending',
       'processing': 'processing', 
@@ -139,9 +384,9 @@ export default function MyOrdersPage() {
     };
     
     return statusMap[wcStatus] || 'pending';
-  };
+  }, []);
 
-  const mapPaymentMethod = (paymentMethod: string): string => {
+  const mapPaymentMethod = useCallback((paymentMethod: string): string => {
     const paymentMap: Record<string, string> = {
       'cod': 'Za pobraniem',
       'google_pay': 'Google Pay',
@@ -157,86 +402,24 @@ export default function MyOrdersPage() {
     };
     
     return paymentMap[paymentMethod] || paymentMethod;
-  };
+  }, []);
 
-
-  const handleViewDetails = (orderId: string) => {
-    console.log('🔄 Viewing details for order:', orderId);
-    console.log('🔄 Current selectedOrder:', selectedOrder);
-    console.log('🔄 selectedOrder?.id:', selectedOrder?.id);
-    console.log('🔄 orderId:', orderId);
-    console.log('🔄 Comparison result:', selectedOrder?.id === orderId);
-    
+  const handleViewDetails = useCallback((orderId: string) => {
     const order = orders.find(o => o.id === orderId);
     if (order) {
-      // Toggle details - if already selected, hide; if not, show
-      if (selectedOrder?.id === orderId) {
-        console.log('🔄 Closing details for order:', orderId);
-        setSelectedOrder(null);
-      } else {
-        console.log('🔄 Opening details for order:', orderId);
-        setSelectedOrder(order);
-      }
+      setSelectedOrder(prev => prev?.id === orderId ? null : order);
     }
-  };
+  }, [orders]);
 
-
-  const getStatusInfo = (status: Order['status']) => {
-    switch (status) {
-      case 'pending':
-        return {
-          label: 'Oczekujące',
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-100',
-          icon: Clock
-        };
-      case 'processing':
-        return {
-          label: 'W realizacji',
-          color: 'text-blue-600',
-          bgColor: 'bg-blue-100',
-          icon: Package
-        };
-      case 'shipped':
-        return {
-          label: 'Wysłane',
-          color: 'text-purple-600',
-          bgColor: 'bg-purple-100',
-          icon: Truck
-        };
-      case 'delivered':
-        return {
-          label: 'Dostarczone',
-          color: 'text-green-600',
-          bgColor: 'bg-green-100',
-          icon: CheckCircle
-        };
-      case 'cancelled':
-        return {
-          label: 'Anulowane',
-          color: 'text-red-600',
-          bgColor: 'bg-red-100',
-          icon: Clock
-        };
-      default:
-        return {
-          label: 'Nieznany',
-          color: 'text-gray-600',
-          bgColor: 'bg-gray-100',
-          icon: Clock
-        };
-    }
-  };
-
-  // Check if order is eligible for invoice generation (using mapped statuses)
-  // Not used currently; kept logic in WooCommerce function
-
-  // Check if order is eligible for invoice generation (using original WooCommerce statuses)
-  const isOrderEligibleForInvoiceWooCommerce = (wcStatus: string): boolean => {
-    // Use the same logic as /moje-faktury - eligible WooCommerce statuses
+  const isOrderEligibleForInvoiceWooCommerce = useCallback((status: string): boolean => {
     const eligibleStatuses = ['completed', 'processing', 'on-hold'];
-    return eligibleStatuses.includes(wcStatus);
-  };
+    return eligibleStatuses.includes(status);
+  }, []);
+
+  // Memoize filtered/sorted orders
+  const sortedOrders = useMemo(() => {
+    return [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [orders]);
 
   // Get tooltip message for disabled invoice buttons
   const getInvoiceTooltip = (status: Order['status']): string => {
@@ -269,13 +452,35 @@ export default function MyOrdersPage() {
     );
   }
 
-  if (loading) {
+  // Show skeleton loader only if we have no data at all
+  if (loading && orders.length === 0) {
     return (
       <div className="min-h-screen bg-white">
         <PageContainer className="pb-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black mx-auto mb-4"></div>
-            <p className="text-gray-600">Ładowanie zamówień...</p>
+          <PageHeader 
+            title="Moje zamówienia"
+            subtitle="Historia Twoich zamówień i status realizacji"
+            breadcrumbs={[
+              { label: 'Strona główna', href: '/' },
+              { label: 'Moje zamówienia', href: '/moje-zamowienia' }
+            ]}
+          />
+          
+          {/* Skeleton Loader */}
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-48"></div>
+                  </div>
+                  <div className="h-8 bg-gray-200 rounded w-24"></div>
+                </div>
+                <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            ))}
           </div>
         </PageContainer>
       </div>
@@ -295,17 +500,23 @@ export default function MyOrdersPage() {
           ]}
         />
 
+        {errorMessage && (
+          <div className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700" role="alert">
+            {errorMessage}
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="mb-8">
           <div className="w-full">
-            <div className="grid grid-cols-4 bg-white border border-gray-300 p-1 rounded-[28px] sm:h-[80px] h-auto relative overflow-hidden shadow-sm">
+            <div className="grid grid-cols-3 bg-white border border-gray-300 p-1 rounded-[28px] sm:h-[80px] h-auto relative overflow-hidden shadow-sm">
               {/* Animated background indicator with layoutId for smooth transition */}
               <motion.div 
                 layoutId="accountActiveTab"
                 className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-[#0f1a26] rounded-[22px] shadow-lg"
                 style={{
-                  left: `calc(${(['profile', 'orders', 'favorites', 'invoices'].indexOf('orders') * 100) / 4}% + 2px)`,
-                  width: `calc(${100 / 4}% - 6px)`,
+                  left: `calc(${(['profile', 'orders', 'invoices'].indexOf('orders') * 100) / 3}% + 2px)`,
+                  width: `calc(${100 / 3}% - 6px)`,
                 }}
                 transition={{
                   type: "spring",
@@ -332,17 +543,6 @@ export default function MyOrdersPage() {
                 </div>
                 <span className="text-center leading-tight transition-all duration-300 whitespace-nowrap text-white">
                   Zamówienia
-                </span>
-              </button>
-              <button
-                onClick={() => router.push('/moje-konto?tab=favorites')}
-                className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
-              >
-                <div className="transition-all duration-300 group-hover:scale-110 text-gray-500 group-hover:text-gray-700">
-                  <Heart className="w-5 h-5 sm:w-5 sm:h-5" />
-                </div>
-                <span className="text-center leading-tight transition-all duration-300 whitespace-nowrap text-gray-500 group-hover:text-gray-700">
-                  Ulubione
                 </span>
               </button>
               <button
@@ -385,202 +585,14 @@ export default function MyOrdersPage() {
         ) : (
           // Orders list
           <div className="space-y-6">
-            {orders.map((order, index) => {
-              const statusInfo = getStatusInfo(order.status);
-              const StatusIcon = statusInfo.icon;
-              
-              return (
-                <motion.div
-                  key={order.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
-                >
-                  {/* Order Header */}
-                  <div className="p-6 border-b border-gray-200">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      <div className="flex items-center space-x-4">
-                        <div className={`p-2 rounded-full ${statusInfo.bgColor}`}>
-                          <StatusIcon className={`w-5 h-5 ${statusInfo.color}`} />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {order.number}
-                          </h3>
-                          <div className="flex items-center space-x-4 text-sm text-gray-600">
-                            <span className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-1" />
-                              {formatDate(order.date)}
-                            </span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
-                              {statusInfo.label}
-                            </span>
-                            {!order.isEligibleForInvoice && (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-600 flex items-center gap-1">
-                                <span>⚠️</span>
-                                <span>Faktura niedostępna</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xl font-bold text-gray-900">
-                          {formatPrice(order.total)}
-                        </span>
-                        <button
-                          onClick={() => handleViewDetails(order.id)}
-                          className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span className="text-sm">
-                            {selectedOrder?.id === order.id ? 'Ukryj' : 'Szczegóły'}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Order Details - Collapsible */}
-                  {selectedOrder?.id === order.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="border-t border-gray-200"
-                    >
-                      <div className="p-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                          {/* Order Items */}
-                          <div>
-                            <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                              Produkty
-                            </h4>
-                            <div className="space-y-4">
-                              {order.items.map((item) => (
-                                <div key={item.id} className="flex items-center space-x-4">
-                                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
-                                    {item.image ? (
-                                      <Image
-                                        src={item.image}
-                                        alt={item.name}
-                                        width={64}
-                                        height={64}
-                                        className="w-full h-full object-cover rounded-lg"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full bg-gray-300 rounded-lg flex items-center justify-center">
-                                        <Package className="w-8 h-8 text-gray-500" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h5 className="text-sm font-medium text-gray-900 truncate">
-                                      {item.name}
-                                    </h5>
-                                    <p className="text-sm text-gray-600">
-                                      Ilość: {item.quantity}
-                                    </p>
-                                    <p className="text-sm font-medium text-gray-900">
-                                      {formatPrice(item.price)}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Order Information */}
-                          <div className="space-y-6">
-                            {/* Billing Address */}
-                            <div>
-                              <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                                Adres rozliczeniowy
-                              </h4>
-                              <div className="text-sm text-gray-600 space-y-1">
-                                <p>{order.billing.address}</p>
-                                <p>{order.billing.city}, {order.billing.postcode}</p>
-                                <p>{order.billing.country}</p>
-                              </div>
-                            </div>
-
-                            {/* Shipping Address */}
-                            <div>
-                              <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                                Adres dostawy
-                              </h4>
-                              <div className="text-sm text-gray-600 space-y-1">
-                                <p>{order.shipping.address}</p>
-                                <p>{order.shipping.city}, {order.shipping.postcode}</p>
-                                <p>{order.shipping.country}</p>
-                              </div>
-                            </div>
-
-                            {/* Payment & Tracking */}
-                            <div className="space-y-4">
-                              <div>
-                                <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                                  Płatność
-                                </h4>
-                                <p className="text-sm text-gray-600">{order.paymentMethod}</p>
-                              </div>
-
-                              {order.trackingNumber && (
-                                <div>
-                                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                                    Numer śledzenia
-                                  </h4>
-                                  <div className="flex items-center space-x-3">
-                                    <span className="text-sm font-mono text-gray-800 bg-gray-100 px-3 py-2 rounded">
-                                      {order.trackingNumber}
-                                    </span>
-                                    <button className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
-                                      Śledź przesyłkę
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
-                          {order.isEligibleForInvoice ? (
-                            <Link
-                              href="/moje-faktury"
-                              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                            >
-                              <Download className="w-4 h-4" />
-                              <span>Pobierz fakturę</span>
-                            </Link>
-                          ) : (
-                            <button
-                              disabled
-                              title={getInvoiceTooltip(order.status)}
-                              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed transition-colors"
-                            >
-                              <Download className="w-4 h-4" />
-                              <span>Pobierz fakturę</span>
-                            </button>
-                          )}
-                          
-                          {order.status === 'shipped' && (
-                            <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                              <Truck className="w-4 h-4" />
-                              <span>Śledź przesyłkę</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </motion.div>
-              );
-            })}
+            {sortedOrders.map((order) => (
+              <OrderItem
+                key={order.id}
+                order={order}
+                isSelected={selectedOrder?.id === order.id}
+                onViewDetails={handleViewDetails}
+              />
+            ))}
           </div>
         )}
       </PageContainer>

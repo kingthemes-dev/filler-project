@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 export const runtime = 'nodejs';
+// Debug helper (no logs in prod unless explicitly enabled)
+const __DEBUG__ = process.env.NEXT_PUBLIC_DEBUG === 'true';
+const debugLog = (...args: unknown[]) => { if (__DEBUG__) console.log(...args); };
+const maskUrlSecrets = (urlString: string | URL) => {
+  try {
+    const u = new URL(String(urlString));
+    if (u.searchParams.has('consumer_key')) u.searchParams.set('consumer_key', '***');
+    if (u.searchParams.has('consumer_secret')) u.searchParams.set('consumer_secret', '***');
+    return u.toString();
+  } catch {
+    return '[invalid-url]';
+  }
+};
 import { cache } from '@/lib/cache';
 
 // 🚀 PRIORITY 2: Request deduplication - cache identycznych requestów w 100ms window
@@ -69,7 +83,15 @@ if (!WC_URL || !CK || !CS) {
 
 // Handle password reset using WordPress REST API
 async function handlePasswordReset(body: { email: string }) {
-  const { email } = body;
+  const schema = z.object({ email: z.string().email('Nieprawidłowy email') });
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane' },
+      { status: 400 }
+    );
+  }
+  const { email } = parsed.data;
 
   if (!email) {
     return NextResponse.json(
@@ -152,7 +174,19 @@ async function handlePasswordReset(body: { email: string }) {
 }
 
 async function handlePasswordResetConfirm(body: { key: string; login: string; password: string }) {
-  const { key, login, password } = body;
+  const schema = z.object({
+    key: z.string().min(10, 'Nieprawidłowy klucz'),
+    login: z.string().min(1, 'Login jest wymagany'),
+    password: z.string().min(8, 'Hasło musi mieć co najmniej 8 znaków')
+  });
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane' },
+      { status: 400 }
+    );
+  }
+  const { key, login, password } = parsed.data;
 
   if (!key || !login || !password) {
     return NextResponse.json(
@@ -287,10 +321,10 @@ async function handleCustomerInvoices(req: NextRequest) {
 }
 
 async function handleCustomerInvoicePdf(req: NextRequest) {
-  console.log('🔍 handleCustomerInvoicePdf called');
+  debugLog('🔍 handleCustomerInvoicePdf called');
   const { searchParams } = new URL(req.url);
   const orderId = searchParams.get('order_id');
-  console.log('🔍 orderId:', orderId);
+  debugLog('🔍 orderId:', orderId);
   
   if (!orderId) {
     return NextResponse.json(
@@ -300,7 +334,7 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
   }
 
   try {
-    console.log('🔄 Checking order eligibility for invoice generation:', orderId);
+    debugLog('🔄 Checking order eligibility for invoice generation:', orderId);
     
     // First, get order details to check if it's eligible for invoice
     const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
@@ -330,10 +364,10 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
       }, { status: 403 });
     }
     
-    console.log('✅ Order is eligible for invoice generation');
-    console.log('🔄 Generating improved PDF for order:', orderId);
+    debugLog('✅ Order is eligible for invoice generation');
+    debugLog('🔄 Generating improved PDF for order:', orderId);
     
-    // Generate improved PDF using InvoiceGenerator
+    // Generate improved PDF using InvoiceGenerator with timeout and sanitization
     const improvedPdf = await generateImprovedInvoicePdf(orderId, {
       base64: '',
       filename: `faktura_${orderId}.pdf`,
@@ -347,81 +381,137 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
       mime: improvedPdf.mime
     });
 
-  } catch (error) {
-    console.error('🚨 Error fetching customer invoice PDF:', error);
+  } catch (error: any) {
+    debugLog('🚨 Error fetching customer invoice PDF:', error);
+    
+    // Return specific error message if available
+    const errorMessage = error?.message || 'Nie udało się pobrać PDF';
     
     return NextResponse.json({
       success: false,
-      error: 'Nie udało się pobrać PDF'
+      error: errorMessage
     }, { status: 500 });
   }
 }
 
 /**
+ * Sanitize text for PDF generation (remove HTML, escape special chars, limit length)
+ */
+function sanitizePdfText(text: string | null | undefined, maxLength: number = 200): string {
+  if (!text) return '';
+  // Remove HTML tags, trim, limit length
+  let sanitized = String(text)
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/&[^;]+;/g, '') // Remove HTML entities
+    .trim()
+    .substring(0, maxLength);
+  // Escape special characters that might cause issues in PDF
+  return sanitized.replace(/[\x00-\x1F\x7F]/g, ''); // Remove control characters
+}
+
+/**
  * Generate professional invoice PDF using new InvoiceGenerator
+ * With timeout and PII sanitization
  */
 async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
+  const PDF_GENERATION_TIMEOUT = 30000; // 30 seconds
+  const MAX_PDF_SIZE_BASE64 = 10 * 1024 * 1024; // 10MB base64 (~7.5MB binary)
+  
   try {
-    // Get order details from WooCommerce API
-    const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
-    const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
-    
-    const orderResponse = await fetch(orderUrl, {
-      headers: {
-        'Authorization': auth,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+    // Create timeout promise for entire PDF generation
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout: Generowanie PDF przekroczyło limit czasu')), PDF_GENERATION_TIMEOUT);
     });
     
-    if (!orderResponse.ok) {
-      throw new Error('Nie udało się pobrać danych zamówienia');
+    const pdfGenerationPromise = (async () => {
+      // Get order details from WooCommerce API with timeout
+      const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
+      const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
+      
+      const orderResponse = await fetch(orderUrl, {
+        headers: {
+          'Authorization': auth,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(10000), // 10s timeout for API call
+      });
+      
+      if (!orderResponse.ok) {
+        throw new Error('Nie udało się pobrać danych zamówienia');
+      }
+      
+      const order = await orderResponse.json();
+      
+      // Sanitize order data before using in PDF
+      const sanitizedOrder = {
+        number: sanitizePdfText(order.number, 50),
+        date_created: order.date_created,
+        billing: {
+          first_name: sanitizePdfText(order.billing?.first_name, 100),
+          last_name: sanitizePdfText(order.billing?.last_name, 100),
+          address_1: sanitizePdfText(order.billing?.address_1, 200),
+        },
+        total: sanitizePdfText(order.total, 50),
+      };
+      
+      // Generate simple PDF using jsPDF
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(20);
+      doc.text('FAKTURA VAT', 20, 30);
+      
+      // Add order details (sanitized)
+      doc.setFontSize(12);
+      doc.text(`Zamówienie: ${sanitizedOrder.number}`, 20, 50);
+      doc.text(`Data: ${new Date(sanitizedOrder.date_created).toLocaleDateString('pl-PL')}`, 20, 60);
+      
+      // Add customer info (sanitized)
+      const customerName = `${sanitizedOrder.billing.first_name} ${sanitizedOrder.billing.last_name}`.trim();
+      if (customerName) {
+        doc.text(`Klient: ${customerName}`, 20, 80);
+      }
+      if (sanitizedOrder.billing.address_1) {
+        doc.text(`Adres: ${sanitizedOrder.billing.address_1}`, 20, 90);
+      }
+      
+      // Add total
+      doc.setFontSize(14);
+      doc.text(`RAZEM: ${sanitizedOrder.total} zł`, 20, 120);
+      
+      // Add footer
+      doc.setFontSize(10);
+      doc.text('Dziękujemy za zakupy w KingBrand!', 20, 150);
+      
+      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+      const base64 = pdfBuffer.toString('base64');
+      
+      // Check PDF size limit
+      if (base64.length > MAX_PDF_SIZE_BASE64) {
+        throw new Error(`PDF przekroczył limit rozmiaru (${Math.round(MAX_PDF_SIZE_BASE64 / 1024 / 1024)}MB)`);
+      }
+      
+      return {
+        base64,
+        filename: `faktura_${sanitizedOrder.number.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+        mime: 'application/pdf'
+      };
+    })();
+    
+    // Race between PDF generation and timeout
+    return await Promise.race([pdfGenerationPromise, timeoutPromise]) as any;
+    
+  } catch (error: any) {
+    if (error.name === 'TimeoutError' || error.message?.includes('Timeout')) {
+      debugLog('⏱️ PDF generation timeout', { orderId });
+      throw new Error('Generowanie PDF przekroczyło limit czasu. Spróbuj ponownie.');
     }
     
-    const order = await orderResponse.json();
-    
-    // Generate simple PDF using jsPDF
-    const { jsPDF } = await import('jspdf');
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(20);
-    doc.text('FAKTURA VAT', 20, 30);
-    
-    // Add order details
-    doc.setFontSize(12);
-    doc.text(`Zamówienie: ${order.number}`, 20, 50);
-    doc.text(`Data: ${new Date(order.date_created).toLocaleDateString('pl-PL')}`, 20, 60);
-    
-    // Add customer info
-    doc.text(`Klient: ${order.billing.first_name} ${order.billing.last_name}`, 20, 80);
-    doc.text(`Adres: ${order.billing.address_1}`, 20, 90);
-    
-    // Add total
-    doc.setFontSize(14);
-    doc.text(`RAZEM: ${order.total} zł`, 20, 120);
-    
-    // Add footer
-    doc.setFontSize(10);
-    doc.text('Dziękujemy za zakupy w KingBrand!', 20, 150);
-    
-    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-    const base64 = pdfBuffer.toString('base64');
-    
-    return {
-      base64,
-      filename: `faktura_${orderId}.pdf`,
-      mime: 'application/pdf'
-    };
-    
-  } catch (error) {
-    console.error('Error generating professional PDF:', error);
-    // Fallback to original data
-    return {
-      base64: originalData.base64,
-      filename: originalData.filename,
-      mime: originalData.mime
-    };
+    debugLog('🚨 Error generating professional PDF:', error);
+    // Don't fallback to original data if it contains PII - return error instead
+    throw error;
   }
 }
 
@@ -755,7 +845,38 @@ async function handleOrderTracking(req: NextRequest) {
 }
 
 async function handleCustomerProfileUpdate(body: any) {
-  const { customer_id, profile_data } = body;
+  const schema = z.object({
+    customer_id: z.number().int().positive(),
+    profile_data: z.object({
+      firstName: z.string().trim().min(1),
+      lastName: z.string().trim().min(1),
+      billing: z.object({
+        company: z.string().trim().optional().default(''),
+        nip: z.string().trim().optional().default(''),
+        invoiceRequest: z.union([z.boolean(), z.string()]).optional(),
+        address: z.string().trim().min(1),
+        city: z.string().trim().min(1),
+        postcode: z.string().trim().min(2),
+        country: z.string().length(2),
+        phone: z.string().trim().min(5)
+      }),
+      shipping: z.object({
+        company: z.string().trim().optional().default(''),
+        address: z.string().trim().min(1),
+        city: z.string().trim().min(1),
+        postcode: z.string().trim().min(2),
+        country: z.string().length(2)
+      })
+    })
+  });
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane' },
+      { status: 400 }
+    );
+  }
+  const { customer_id, profile_data } = parsed.data;
 
   if (!customer_id || !profile_data) {
     return NextResponse.json(
@@ -826,8 +947,8 @@ async function handleCustomerProfileUpdate(body: any) {
       meta_data: [] as Array<{ key: string; value: string }>,
     };
 
-    const nip = profile_data.billing?.nip || profile_data.nip;
-    const invoiceReq = profile_data.billing?.invoiceRequest ?? profile_data.invoiceRequest;
+    const nip = profile_data.billing?.nip;
+    const invoiceReq = profile_data.billing?.invoiceRequest;
     if (nip !== undefined) {
       wooPayload.meta_data.push({ key: '_billing_nip', value: String(nip) });
     }
@@ -875,7 +996,19 @@ async function handleCustomerProfileUpdate(body: any) {
 }
 
 async function handleCustomerPasswordChange(body: any) {
-  const { customer_id, current_password, new_password } = body;
+  const schema = z.object({
+    customer_id: z.number().int().positive(),
+    current_password: z.string().min(8),
+    new_password: z.string().min(8)
+  });
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane' },
+      { status: 400 }
+    );
+  }
+  const { customer_id, current_password, new_password } = parsed.data;
 
   if (!customer_id || !current_password || !new_password) {
     return NextResponse.json(
@@ -1260,8 +1393,12 @@ async function handleProductsCategoriesEndpoint(req: NextRequest) {
   }
 
   try {
+    // Ensure smaller payload if client did not specify fields
+    if (!searchParams.has('_fields')) {
+      searchParams.set('_fields', 'id,name,slug,display,image,parent,menu_order,count');
+    }
     const categoriesUrl = `${WC_URL}/products/categories?consumer_key=${CK}&consumer_secret=${CS}&${searchParams.toString()}`;
-    
+
     console.log('📂 Products categories endpoint - calling WooCommerce API:', categoriesUrl);
     
     const response = await fetch(categoriesUrl, {
@@ -1318,8 +1455,12 @@ async function handleProductsAttributesEndpoint(req: NextRequest) {
   }
 
   try {
+    // Ensure smaller payload if client did not specify fields
+    if (!searchParams.has('_fields')) {
+      searchParams.set('_fields', 'id,name,slug,has_archives');
+    }
     const attributesUrl = `${WC_URL}/products/attributes?consumer_key=${CK}&consumer_secret=${CS}&${searchParams.toString()}`;
-    
+
     console.log('🏷️ Products attributes endpoint - calling WooCommerce API:', attributesUrl);
     
     const response = await fetch(attributesUrl, {
@@ -1718,24 +1859,24 @@ async function handleCoupons(req: NextRequest) {
       });
       
       if (!response.ok) {
-        return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400 });
+        return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400, headers: { 'Cache-Control': 'public, max-age=60' } });
       }
       
       const coupons = await response.json();
       
       if (coupons.length === 0) {
-        return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400 });
+        return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400, headers: { 'Cache-Control': 'public, max-age=60' } });
       }
       
       const coupon = coupons[0];
       
       // Check if coupon is still valid
       if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
-        return NextResponse.json({ error: 'Kod rabatowy został już wykorzystany' }, { status: 400 });
+        return NextResponse.json({ error: 'Kod rabatowy został już wykorzystany' }, { status: 400, headers: { 'Cache-Control': 'public, max-age=60' } });
       }
       
       if (coupon.date_expires && new Date(coupon.date_expires) < new Date()) {
-        return NextResponse.json({ error: 'Kod rabatowy wygasł' }, { status: 400 });
+        return NextResponse.json({ error: 'Kod rabatowy wygasł' }, { status: 400, headers: { 'Cache-Control': 'public, max-age=60' } });
       }
       
       // Check per-user usage limit
@@ -1758,7 +1899,7 @@ async function handleCoupons(req: NextRequest) {
           usage_count: coupon.usage_count,
           date_expires: coupon.date_expires
         }
-      });
+      }, { headers: { 'Cache-Control': 'public, max-age=60' } });
     }
     
     // Return all active coupons (for admin purposes)
@@ -1783,7 +1924,7 @@ async function handleCoupons(req: NextRequest) {
         usage_count: coupon.usage_count,
         date_expires: coupon.date_expires
       }))
-    });
+    }, { headers: { 'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=900' } });
     
   } catch (error: unknown) {
     console.error('Coupons API error:', error);
@@ -1810,7 +1951,7 @@ export async function GET(req: NextRequest) {
     return cachedResponse;
   }
 
-  console.log('🔍 GET request received:', req.url);
+  debugLog('🔍 GET request received:', req.url);
   
   const { searchParams } = new URL(req.url);
   const endpoint = searchParams.get("endpoint") || "products";
@@ -1870,7 +2011,7 @@ export async function GET(req: NextRequest) {
 
   // HPOS-optimized orders endpoint with fallback
   if (endpoint === 'orders' || endpoint.startsWith('orders/')) {
-    console.log('🔄 Orders endpoint:', endpoint);
+  debugLog('🔄 Orders endpoint:', endpoint);
     
     try {
       // Handle single order request
@@ -1900,11 +2041,28 @@ export async function GET(req: NextRequest) {
         }
       }
       
-      // Handle orders list request
+      // Handle orders list request - OPTIMIZED FOR CUSTOMER ORDERS
       const customerId = searchParams.get('customer');
       const status = searchParams.get('status');
       const page = parseInt(searchParams.get('page') || '1');
-      const perPage = parseInt(searchParams.get('per_page') || '10');
+      const perPage = parseInt(searchParams.get('per_page') || '20');
+      
+      // Cache key for customer orders
+      const cacheKey = `orders_customer_${customerId}_${page}_${perPage}_${status || 'all'}`;
+      
+      // Check cache first (only for customer orders, cache for 2 minutes)
+      if (customerId && !bypassCache) {
+        const cached = requestCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < 120000) { // 2 minutes cache
+          debugLog('✅ Orders cache HIT:', cacheKey);
+          return NextResponse.json(cached.data, {
+            headers: {
+              'X-Cache': 'HIT',
+              'Cache-Control': 'private, max-age=120'
+            }
+          });
+        }
+      }
       
       try {
         const orders = await hposApi.getOrders({
@@ -1916,11 +2074,23 @@ export async function GET(req: NextRequest) {
           order: 'desc',
         });
         
-        return NextResponse.json(orders);
-      } catch (hposError) {
-        console.warn('⚠️ HPOS failed, trying standard WooCommerce API:', hposError);
+        // Cache the result if customer orders
+        if (customerId && orders && Array.isArray(orders)) {
+          requestCache.set(cacheKey, { data: orders, timestamp: Date.now(), headers: new Headers() });
+          cleanupOldCache();
+        }
         
-        // Fallback to standard WooCommerce API
+        return NextResponse.json(orders, {
+          headers: {
+            'X-Cache': 'MISS',
+            'Cache-Control': 'private, max-age=120'
+          }
+        });
+      } catch (hposError) {
+        debugLog('⚠️ HPOS failed, trying standard WooCommerce API:', hposError);
+        debugLog('⚠️ HPOS failed, trying standard WooCommerce API:', hposError);
+        
+        // Fallback to standard WooCommerce API - OPTIMIZED WITH _fields
         const params = new URLSearchParams();
         if (customerId) params.append('customer', customerId);
         if (status) params.append('status', status);
@@ -1928,10 +2098,13 @@ export async function GET(req: NextRequest) {
         params.append('per_page', perPage.toString());
         params.append('orderby', 'date');
         params.append('order', 'desc');
+        // OPTIMIZATION: Only fetch needed fields to reduce payload size
+        params.append('_fields', 'id,number,status,currency,total,date_created,date_modified,payment_method,payment_method_title,billing,shipping,line_items,meta_data');
         
-        const url = `${WC_URL}/orders?consumer_key=${CK}&consumer_secret=${CS}&${params}`;
+        const url = `${WC_URL}/orders?consumer_key=${CK}&consumer_secret=${CS}&${params.toString()}`;
         const response = await fetch(url, {
-          headers: { 'Accept': 'application/json' }
+          headers: { 'Accept': 'application/json' },
+          cache: bypassCache ? 'no-store' : 'default'
         });
         
         if (!response.ok) {
@@ -1939,7 +2112,19 @@ export async function GET(req: NextRequest) {
         }
         
         const orders = await response.json();
-        return NextResponse.json(orders);
+        
+        // Cache the result if customer orders
+        if (customerId && orders && Array.isArray(orders)) {
+          requestCache.set(cacheKey, { data: orders, timestamp: Date.now(), headers: new Headers() });
+          cleanupOldCache();
+        }
+        
+        return NextResponse.json(orders, {
+          headers: {
+            'X-Cache': 'MISS',
+            'Cache-Control': 'private, max-age=120'
+          }
+        });
       }
     } catch (error: any) {
       console.error('❌ Orders endpoint error:', error);
@@ -2088,13 +2273,26 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("consumer_key", CK || '');
   url.searchParams.set("consumer_secret", CS || '');
 
-  console.log('🔍 API Route Debug:');
-  console.log('WC_URL:', WC_URL);
-  console.log('CK:', CK ? 'SET' : 'NOT SET');
-  console.log('CS:', CS ? 'SET' : 'NOT SET');
-  console.log('Final URL:', url.toString());
-  console.log('Bypass cache:', bypassCache);
-  console.log('Search params:', Object.fromEntries(searchParams.entries()));
+  // Reduce payload for common list endpoints when caller did not request fields explicitly
+  if (endpoint === 'products' && !url.searchParams.has('_fields')) {
+    url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status');
+  }
+
+  // Decide cache policy for pass-through responses
+  const isUserFeatures = endpoint.startsWith('orders') || endpoint.startsWith('customers');
+  const passThroughCacheHeader = isUserFeatures
+    ? 'private, max-age=120'
+    : 'public, max-age=60, s-maxage=180, stale-while-revalidate=300';
+
+  if (__DEBUG__) {
+    console.log('🔍 API Route Debug:');
+    console.log('WC_URL:', WC_URL ? 'SET' : 'NOT SET');
+    console.log('CK:', CK ? 'SET' : 'NOT SET');
+    console.log('CS:', CS ? 'SET' : 'NOT SET');
+    console.log('Final URL:', maskUrlSecrets(url.toString()));
+    console.log('Bypass cache:', bypassCache);
+    console.log('Search params:', Object.fromEntries(searchParams.entries()));
+  }
 
   try {
     // Cache lookup (skip if bypass)
@@ -2114,7 +2312,7 @@ export async function GET(req: NextRequest) {
           status: 200,
           headers: {
             "content-type": "application/json",
-            "Cache-Control": `public, max-age=30, s-maxage=60`,
+            "Cache-Control": `${passThroughCacheHeader}`,
             "ETag": cached.etag,
             "X-Cache": "HIT",
             "X-RateLimit-Limit": "100",
@@ -2134,7 +2332,7 @@ export async function GET(req: NextRequest) {
     let responseTime = 0;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        console.log(`🔄 Attempt ${attempt} for ${url.toString()}`);
+        debugLog(`🔄 Attempt ${attempt} for ${maskUrlSecrets(url.toString())}`);
         
         const startTime = Date.now();
         const r = await fetch(url.toString(), {
@@ -2157,7 +2355,7 @@ export async function GET(req: NextRequest) {
 
         const text = await r.text();
         if (!r.ok) {
-          console.log(`❌ HTTP ${r.status}: ${text}`);
+          debugLog(`❌ HTTP ${r.status}: ${text.slice(0, 300)}`);
           return new NextResponse(text || r.statusText, {
             status: r.status,
             headers: { "content-type": r.headers.get("content-type") || "text/plain" },
@@ -2166,14 +2364,14 @@ export async function GET(req: NextRequest) {
 
         // Check if response is HTML instead of JSON (WordPress error page)
         if (text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html')) {
-          console.log(`❌ WordPress returned HTML instead of JSON: ${text.substring(0, 100)}...`);
+          debugLog(`❌ WordPress returned HTML instead of JSON: ${text.substring(0, 100)}...`);
           
           // Try to get cached data first
           if (!bypassCache && redis && typeof (redis as Record<string, unknown>).get === 'function') {
             try {
               const cachedData = await (redis as any).get(cacheKey) as string;
               if (cachedData) {
-                console.log('✅ Using cached data as fallback');
+                debugLog('✅ Using cached data as fallback');
                 return new NextResponse(cachedData, {
                   status: 200,
                   headers: { 'content-type': 'application/json' }
@@ -2185,7 +2383,7 @@ export async function GET(req: NextRequest) {
           }
           
           // Retry the request once more
-          console.log('🔄 Retrying request...');
+          debugLog('🔄 Retrying request...');
           const retryResponse = await fetch(url, {
             method: 'GET',
             headers: {
@@ -2199,7 +2397,7 @@ export async function GET(req: NextRequest) {
           if (retryResponse.ok) {
             const retryText = await retryResponse.text();
             if (!retryText.trim().startsWith('<!DOCTYPE html>') && !retryText.trim().startsWith('<html')) {
-              console.log('✅ Retry successful, returning data');
+              debugLog('✅ Retry successful, returning data');
               return new NextResponse(retryText, {
                 status: 200,
                 headers: { 'content-type': 'application/json' }
@@ -2208,7 +2406,7 @@ export async function GET(req: NextRequest) {
           }
           
           // Return empty data instead of error to prevent app crashes
-          console.log('⚠️ Returning empty data as fallback');
+          debugLog('⚠️ Returning empty data as fallback');
           const emptyResponse = {
             data: [],
             total: 0,
@@ -2224,7 +2422,7 @@ export async function GET(req: NextRequest) {
           });
         }
         
-        console.log(`✅ Success on attempt ${attempt}`);
+        debugLog(`✅ Success on attempt ${attempt}`);
         
         // Record successful WooCommerce operation
         sentryMetrics.recordWooCommerceOperation(
@@ -2252,7 +2450,7 @@ export async function GET(req: NextRequest) {
           status: 200,
           headers: {
             "content-type": "application/json",
-            "Cache-Control": `public, max-age=30, s-maxage=60`,
+            "Cache-Control": `${passThroughCacheHeader}`,
             "ETag": etag,
             "X-Cache": bypassCache ? "BYPASS" : "MISS",
             "X-RateLimit-Limit": "100",
@@ -2262,7 +2460,7 @@ export async function GET(req: NextRequest) {
         });
       } catch (error) {
         lastError = error as Error;
-        console.log(`❌ Attempt ${attempt} failed:`, error);
+          debugLog(`❌ Attempt ${attempt} failed:`, error);
         
         // Record failed WooCommerce operation
         sentryMetrics.recordWooCommerceOperation(
@@ -2297,7 +2495,7 @@ export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const endpoint = searchParams.get("endpoint") || "products";
 
-  console.log('🔄 POST request to endpoint:', endpoint);
+  debugLog('🔄 POST request to endpoint:', endpoint);
 
   try {
     const body = await req.json();
@@ -2323,7 +2521,7 @@ export async function POST(req: NextRequest) {
 
     // HPOS-optimized order creation with limit handling
     if (endpoint === 'orders') {
-      console.log('🔄 HPOS Order creation request');
+        debugLog('🔄 HPOS Order creation request');
       const orderStartTime = Date.now();
       
       try {
@@ -2336,7 +2534,7 @@ export async function POST(req: NextRequest) {
           const limitCheck = await orderLimitHandler.checkOrderLimit(customerId, sessionId);
           
           if (!limitCheck.allowed) {
-            console.warn('❌ Order limit exceeded', { customerId, reason: limitCheck.reason });
+            debugLog('❌ Order limit exceeded', { customerId, reason: limitCheck.reason });
             
             // Record limit exceeded
             hposPerformanceMonitor.recordOrderLimitExceeded();
@@ -2456,7 +2654,7 @@ export async function POST(req: NextRequest) {
     let lastError: Error | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        console.log(`🔄 POST Attempt ${attempt} for ${url.toString()}`);
+        debugLog(`🔄 POST Attempt ${attempt} for ${maskUrlSecrets(url.toString())}`);
         
         const r = await fetch(url.toString(), {
           method: 'POST',
@@ -2471,21 +2669,21 @@ export async function POST(req: NextRequest) {
 
         const text = await r.text();
         if (!r.ok) {
-          console.log(`❌ POST HTTP ${r.status}: ${text}`);
+          debugLog(`❌ POST HTTP ${r.status}: ${text.slice(0, 300)}`);
           return new NextResponse(text || r.statusText, {
             status: r.status,
             headers: { "content-type": r.headers.get("content-type") || "text/plain" },
           });
         }
         
-        console.log(`✅ POST Success on attempt ${attempt}`);
+        debugLog(`✅ POST Success on attempt ${attempt}`);
         return new NextResponse(text, {
           status: 200,
           headers: { "content-type": "application/json" },
         });
       } catch (error) {
         lastError = error as Error;
-        console.log(`❌ POST Attempt ${attempt} failed:`, error);
+        debugLog(`❌ POST Attempt ${attempt} failed:`, error);
         
         if (attempt < 3) {
           await new Promise(resolve => setTimeout(resolve, attempt * 1000));
