@@ -13,7 +13,7 @@ export const dynamic = 'force-static';
 
 // Generate metadata for homepage
 export const metadata: Metadata = {
-  title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+  title: "FILLER: Hurtownia Medycyny Estetycznej Gdańsk, Gdynia, Pomorskie",
   description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny, szybka dostawa, gwarancja oryginalności. Sprawdź naszą ofertę!",
   keywords: [
     "hurtownia medycyny estetycznej",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     "urządzenia"
   ],
   openGraph: {
-    title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+    title: "FILLER: Hurtownia Medycyny Estetycznej Gdańsk, Gdynia, Pomorskie",
     description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny, szybka dostawa, gwarancja oryginalności.",
     type: "website",
     locale: "pl_PL",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hurtownia Medycyny Estetycznej - TOP Produkty - FILLER",
+    title: "FILLER: Hurtownia Medycyny Estetycznej Gdańsk, Gdynia, Pomorskie",
     description: "Filler to miejsce gdzie znajdziesz profesjonalne produkty medycyny estetycznej. Najlepsze ceny, szybka dostawa, gwarancja oryginalności.",
   },
   alternates: {
