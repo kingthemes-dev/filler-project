@@ -143,6 +143,8 @@
     --sidebar-accent-foreground: 0 0% 14.5%;
     --sidebar-border: 0 0% 92.2%;
     --sidebar-ring: 0 0% 70.8%;
+    /* Standard content text size - matches product description (20% smaller) */
+    --content-text-size: 0.8rem; /* 12.8px - 20% smaller than text-base */
   }
 
   .dark {
@@ -209,6 +211,16 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+
+  /* Standard content text size - unified across all pages (20% smaller than text-base) */
+  .content-text {
+    font-size: var(--content-text-size); /* 12.8px */
+  }
+
+  /* Standard subheading size - matches content text (20% smaller than text-base) */
+  .content-subheading {
+    font-size: var(--content-text-size); /* 12.8px */
   }
 
   /* Elegancki efekt hover dla przycisku "Dodaj do koszyka" */

@@ -14,7 +14,7 @@ export default function Footer() {
         <div className="absolute inset-0 bg-gradient-to-t from-gray-800/50 via-transparent to-gray-900/30"></div>
       </div>
       
-         <div className="relative max-w-[95vw] mx-4 lg:mx-8 xl:mx-auto mobile-container">
+         <div className="relative max-w-[90vw] mx-auto mobile-container">
            {/* Logo i kontakt - Mobile */}
            <div className="lg:hidden mb-8 -mt-4">
              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 py-4 mb-3 relative">
@@ -94,7 +94,7 @@ export default function Footer() {
            <div className="lg:hidden mb-8 -mt-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
-                <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><Building2 className="w-5 h-5 text-white/80" />O firmie</h4>
+                <h4 className="content-subheading text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><Building2 className="w-5 h-5 text-white/80" />O firmie</h4>
                  <div className="space-y-2 text-sm text-gray-300">
                    <a href="/kontakt" className="block hover:text-white transition-colors cursor-pointer">Kontakt</a>
                    <a href="/o-nas" className="block hover:text-white transition-colors cursor-pointer">O nas</a>
@@ -104,7 +104,7 @@ export default function Footer() {
                </div>
                
               <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
-                <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><User className="w-5 h-5 text-white/80" />Moje konto</h4>
+                <h4 className="content-subheading text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><User className="w-5 h-5 text-white/80" />Moje konto</h4>
                  <div className="space-y-2 text-sm text-gray-300">
                    <a href="/moje-zamowienia" className="block hover:text-white transition-colors cursor-pointer">Twoje zamówienia</a>
                    <a href="/moje-konto" className="block hover:text-white transition-colors cursor-pointer">Ustawienia konta</a>
@@ -113,7 +113,7 @@ export default function Footer() {
                </div>
                
               <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
-                <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><CreditCard className="w-5 h-5 text-white/80" />Płatności</h4>
+                <h4 className="content-subheading text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><CreditCard className="w-5 h-5 text-white/80" />Płatności</h4>
                  <div className="space-y-2 text-sm text-gray-300">
                    <a href="/formy-platnosci" className="block hover:text-white transition-colors cursor-pointer">Formy płatności</a>
                    <a href="/czas-koszty-dostawy" className="block hover:text-white transition-colors cursor-pointer">Czas i koszty dostawy</a>
@@ -121,7 +121,7 @@ export default function Footer() {
                </div>
                
               <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left hover:border-white/40 transition-colors h-full flex flex-col justify-start">
-                <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><Info className="w-5 h-5 text-white/80" />Informacje</h4>
+                <h4 className="content-subheading text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><Info className="w-5 h-5 text-white/80" />Informacje</h4>
                  <div className="space-y-2 text-sm text-gray-300">
                    <a href="/polityka-prywatnosci" className="block hover:text-white transition-colors cursor-pointer">Polityka prywatności</a>
                    <a href="/regulamin" className="block hover:text-white transition-colors cursor-pointer">Regulamin sklepu</a>
@@ -135,7 +135,7 @@ export default function Footer() {
            {/* Mobile - Pobierz aplikację - pełna szerokość */}
            <div className="lg:hidden mb-8">
              <div className="bg-transparent border-2 border-white/20 rounded-xl px-4 pt-3 pb-3 text-left">
-               <h4 className="text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><Download className="w-5 h-5 text-white/80" />Pobierz aplikację</h4>
+               <h4 className="content-subheading text-white font-semibold pb-2 mb-3 border-b border-gray-800 flex items-center gap-2"><Download className="w-5 h-5 text-white/80" />Pobierz aplikację</h4>
                <div className="grid grid-cols-2 gap-3">
                  <a href="#" className="flex items-center bg-gradient-to-r from-black/20 to-black/30 border border-white/20 rounded-lg px-3 py-3 hover:bg-gradient-to-l hover:from-black/30 hover:to-black/20 hover:border-white/40  transition-all duration-300 cursor-pointer">
                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center mr-3  transition-transform duration-300">
@@ -170,14 +170,14 @@ export default function Footer() {
           {/* Kontakt - pierwsza kolumna z większym odstępem */}
           <div className="lg:pr-12 lg:ml-4">
             <h3 className="sr-only">Sekcja kontakt</h3>
-            <h4 className="text-lg font-semibold mb-6 text-white">Kontakt</h4>
+            <h4 className="content-subheading font-semibold mb-6 text-white">Kontakt</h4>
             
             <div className="space-y-3 mb-8">
               <div className="flex items-start">
                 <MapPin className="w-4 h-4 mt-1 mr-2 text-gray-400" />
                 <div>
-                  <p className="text-gray-300">ul. Partyzantów 8/101, 80-254</p>
-                  <p className="text-gray-300">Gdańsk, Polska</p>
+                  <p className="content-text text-gray-300">ul. Partyzantów 8/101, 80-254</p>
+                  <p className="content-text text-gray-300">Gdańsk, Polska</p>
                 </div>
               </div>
               
@@ -185,7 +185,7 @@ export default function Footer() {
                 <Phone className="w-4 h-4 mr-2 text-gray-400" />
                 <a 
                   href="tel:+48535956932" 
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="content-text text-gray-300 hover:text-white transition-colors"
                 >
                   +48 535 956 932
                 </a>
@@ -195,7 +195,7 @@ export default function Footer() {
                 <Mail className="w-4 h-4 mr-2 text-gray-400" />
                 <a 
                   href="mailto:kontakt@filler.pl" 
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="content-text text-gray-300 hover:text-white transition-colors"
                 >
                   kontakt@filler.pl
                 </a>
@@ -204,8 +204,8 @@ export default function Footer() {
               <div className="flex items-start">
                 <Clock className="w-4 h-4 mt-1 mr-2 text-gray-400" />
                 <div>
-                  <p className="text-gray-300">Czynne od poniedziałku do piątku,</p>
-                  <p className="text-gray-300 font-semibold">w godzinach 8:00 - 18:00</p>
+                  <p className="content-text text-gray-300">Czynne od poniedziałku do piątku,</p>
+                  <p className="content-text text-gray-300 font-semibold">w godzinach 8:00 - 18:00</p>
                 </div>
               </div>
             </div>
@@ -214,40 +214,40 @@ export default function Footer() {
 
              {/* O firmie */}
              <div>
-               <h4 className="text-lg font-semibold mb-6 text-white">O firmie</h4>
+               <h4 className="content-subheading font-semibold mb-6 text-white">O firmie</h4>
                <ul className="space-y-3">
-                 <li><a href="/kontakt" className="text-gray-300 hover:text-white transition-colors">Kontakt</a></li>
-                 <li><a href="/o-nas" className="text-gray-300 hover:text-white transition-colors">O nas</a></li>
-                 <li><a href="/aplikacja-mobilna" className="text-gray-300 hover:text-white transition-colors">Aplikacja mobilna</a></li>
-                 <li><a href="/program-lojalnosciowy" className="text-gray-300 hover:text-white transition-colors">Program lojalnościowy</a></li>
+                 <li><a href="/kontakt" className="content-text text-gray-300 hover:text-white transition-colors">Kontakt</a></li>
+                 <li><a href="/o-nas" className="content-text text-gray-300 hover:text-white transition-colors">O nas</a></li>
+                 <li><a href="/aplikacja-mobilna" className="content-text text-gray-300 hover:text-white transition-colors">Aplikacja mobilna</a></li>
+                 <li><a href="/program-lojalnosciowy" className="content-text text-gray-300 hover:text-white transition-colors">Program lojalnościowy</a></li>
                </ul>
              </div>
 
           {/* Moje konto */}
           <div>
-            <h4 className="text-lg font-semibold mb-6 text-white">Moje konto</h4>
+            <h4 className="content-subheading font-semibold mb-6 text-white">Moje konto</h4>
             <ul className="space-y-3">
-              <li><a href="/moje-zamowienia" className="text-gray-300 hover:text-white transition-colors">Twoje zamówienia</a></li>
-              <li><a href="/moje-konto" className="text-gray-300 hover:text-white transition-colors">Ustawienia konta</a></li>
-              <li><a href="/lista-zyczen" className="text-gray-300 hover:text-white transition-colors">Ulubione</a></li>
+              <li><a href="/moje-zamowienia" className="content-text text-gray-300 hover:text-white transition-colors">Twoje zamówienia</a></li>
+              <li><a href="/moje-konto" className="content-text text-gray-300 hover:text-white transition-colors">Ustawienia konta</a></li>
+              <li><a href="/lista-zyczen" className="content-text text-gray-300 hover:text-white transition-colors">Ulubione</a></li>
             </ul>
           </div>
 
           {/* Informacje (połączone z płatnościami) */}
           <div>
-            <h4 className="text-lg font-semibold mb-6 text-white">Informacje</h4>
+            <h4 className="content-subheading font-semibold mb-6 text-white">Informacje</h4>
             <ul className="space-y-3">
-              <li><a href="/formy-platnosci" className="text-gray-300 hover:text-white transition-colors">Formy płatności</a></li>
-              <li><a href="/czas-koszty-dostawy" className="text-gray-300 hover:text-white transition-colors">Czas i koszty dostawy</a></li>
-              <li><a href="/polityka-prywatnosci" className="text-gray-300 hover:text-white transition-colors">Polityka prywatności</a></li>
-              <li><a href="/regulamin" className="text-gray-300 hover:text-white transition-colors">Regulamin sklepu</a></li>
-              <li><a href="/zwroty-reklamacje" className="text-gray-300 hover:text-white transition-colors">Zwroty i reklamacje</a></li>
+              <li><a href="/formy-platnosci" className="content-text text-gray-300 hover:text-white transition-colors">Formy płatności</a></li>
+              <li><a href="/czas-koszty-dostawy" className="content-text text-gray-300 hover:text-white transition-colors">Czas i koszty dostawy</a></li>
+              <li><a href="/polityka-prywatnosci" className="content-text text-gray-300 hover:text-white transition-colors">Polityka prywatności</a></li>
+              <li><a href="/regulamin" className="content-text text-gray-300 hover:text-white transition-colors">Regulamin sklepu</a></li>
+              <li><a href="/zwroty-reklamacje" className="content-text text-gray-300 hover:text-white transition-colors">Zwroty i reklamacje</a></li>
             </ul>
           </div>
 
           {/* Pobierz aplikację */}
           <div>
-            <h4 className="text-lg font-semibold mb-6 text-white">Pobierz aplikację</h4>
+            <h4 className="content-subheading font-semibold mb-6 text-white">Pobierz aplikację</h4>
             
             <div className="space-y-3">
               <a 

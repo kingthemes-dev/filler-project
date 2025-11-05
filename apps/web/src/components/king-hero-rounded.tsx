@@ -90,23 +90,23 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           {/* Content */}
           <div className="relative z-20 h-full flex flex-col justify-center md:justify-start items-center md:items-start text-center md:text-left px-4 sm:px-6 md:px-8 lg:px-12 pt-0 md:pt-[50px]">
             {/* Text Content - Centered on mobile, Left aligned on desktop */}
-            <div className="text-white space-y-6 sm:space-y-8 md:space-y-6 max-w-4xl md:max-w-2xl">
-              <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
+            <div className="text-white space-y-3 sm:space-y-4 md:space-y-3 max-w-4xl md:max-w-2xl">
+              <h1 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-semibold leading-tight tracking-tight uppercase">
                 Hurtownia produktów<br />
                 medycyny estetycznej
               </h1>
 
-              <p className="text-base sm:text-lg md:text-xl text-white/85 max-w-3xl md:max-w-2xl mx-auto md:mx-0 leading-relaxed">
+              <p className="content-text text-white/85 max-w-3xl md:max-w-2xl mx-auto md:mx-0 leading-relaxed">
                 Profesjonalne produkty do medycyny estetycznej, mezoterapii i zabiegów kosmetycznych.
                 <br />
                 Najwyższa jakość, certyfikowane preparaty, kompleksowa obsługa.
               </p>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 justify-center md:justify-start">
-                <Button size="lg" asChild className="bg-white/90 backdrop-blur-sm text-black border border-white/70 hover:bg-white hover:border-white text-lg sm:text-xl md:text-xl px-8 sm:px-10 md:px-12 py-4 sm:py-5 md:py-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 font-medium hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+                <Button size="lg" asChild className="bg-white/90 backdrop-blur-sm text-black border border-white/70 hover:bg-white hover:border-white text-sm sm:text-base md:text-base px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 font-medium hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
                   <Link href="/sklep">
                     <span className="inline-flex items-center gap-3">
-                      <ShoppingBag className="w-6 h-6" />
+                      <ShoppingBag className="w-5 h-5" />
                       <span>Sklep</span>
                     </span>
                   </Link>

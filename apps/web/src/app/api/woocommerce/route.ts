@@ -2239,6 +2239,67 @@ export async function GET(req: NextRequest) {
     return handleProductsAttributesEndpoint(req);
   }
 
+  // Special handling for reviews endpoint
+  if (endpoint === "reviews") {
+    const productId = searchParams.get('product_id');
+    if (!productId) {
+      return NextResponse.json(
+        { success: false, error: 'Product ID jest wymagany' },
+        { status: 400 }
+      );
+    }
+    
+    // WooCommerce reviews endpoint: products/{id}/reviews
+    const reviewsEndpoint = `products/${productId}/reviews`;
+    const url = new URL(`${WC_URL.replace(/\/$/, "")}/${reviewsEndpoint}`);
+    searchParams.forEach((v, k) => {
+      if (k !== "endpoint" && k !== "cache" && k !== "product_id") url.searchParams.set(k, v);
+    });
+    url.searchParams.set("consumer_key", CK || '');
+    url.searchParams.set("consumer_secret", CS || '');
+    
+    try {
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; HeadlessWoo/1.0)',
+        },
+      });
+      
+      if (!response.ok) {
+        // Jeśli brak recenzji, zwróć pustą tablicę zamiast błędu
+        if (response.status === 404) {
+          return NextResponse.json({ success: true, reviews: [] });
+        }
+        const errorText = await response.text();
+        return NextResponse.json(
+          { success: false, error: `HTTP error! status: ${response.status}` },
+          { status: response.status }
+        );
+      }
+      
+      const reviews = await response.json();
+      // Transform reviews to match expected format
+      const transformedReviews = Array.isArray(reviews) ? reviews.map((review: any) => ({
+        id: review.id,
+        review: review.review || review.content?.rendered || '',
+        rating: review.rating || 0,
+        reviewer: review.reviewer_name || review.reviewer || '',
+        date_created: review.date_created || review.date || ''
+      })) : [];
+      
+      return NextResponse.json({ success: true, reviews: transformedReviews });
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      return NextResponse.json(
+        { success: false, error: 'Wystąpił błąd podczas pobierania recenzji' },
+        { status: 500 }
+      );
+    }
+  }
+
   
   if (!WC_URL || !CK || !CS) {
     return NextResponse.json(
@@ -2274,8 +2335,15 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("consumer_secret", CS || '');
 
   // Reduce payload for common list endpoints when caller did not request fields explicitly
+  // BUT: if search is used, include more fields as it's likely for product detail page
   if (endpoint === 'products' && !url.searchParams.has('_fields')) {
-    url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status');
+    if (url.searchParams.has('search')) {
+      // For search (product detail page), include all necessary fields
+      url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status,description,short_description,attributes,categories,featured,average_rating,rating_count,cross_sell_ids,related_ids,sku,on_sale');
+    } else {
+      // For list endpoints, keep minimal fields for performance
+      url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status');
+    }
   }
 
   // Decide cache policy for pass-through responses

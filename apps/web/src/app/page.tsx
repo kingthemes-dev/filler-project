@@ -136,10 +136,10 @@ export default async function HomePage() {
               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
                 <Award className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="content-subheading font-semibold text-gray-900 mb-2">
                 Konkurencyjne ceny
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="content-text text-gray-600 leading-relaxed">
                 Atrakcyjne ceny dzięki bezpośredniej współpracy z producentami. Częste promocje i specjalne oferty dla stałych klientów.
               </p>
             </div>
@@ -149,10 +149,10 @@ export default async function HomePage() {
               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
                 <Truck className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="content-subheading font-semibold text-gray-900 mb-2">
                 Szybka realizacja
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="content-text text-gray-600 leading-relaxed">
                 Realizacja zamówień w ciągu 24h. Specjalistyczny transport dla produktów wymagających kontroli temperatury.
               </p>
             </div>
@@ -162,10 +162,10 @@ export default async function HomePage() {
               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
                 <Headphones className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="content-subheading font-semibold text-gray-900 mb-2">
                 Eksperckie doradztwo
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="content-text text-gray-600 leading-relaxed">
                 Zespół specjalistów gotowy do udzielenia fachowej pomocy w wyborze produktów dostosowanych do potrzeb Twojego gabinetu.
               </p>
             </div>
@@ -175,10 +175,10 @@ export default async function HomePage() {
               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-xl border border-gray-200 group-hover:border-gray-300 transition-colors duration-300">
                 <Shield className="w-8 h-8 text-gray-700 group-hover:text-black transition-colors duration-300" strokeWidth={1.5} />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="content-subheading font-semibold text-gray-900 mb-2">
                 Certyfikowane produkty
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="content-text text-gray-600 leading-relaxed">
                 Wszystkie preparaty posiadają odpowiednie certyfikaty i pochodzą wyłącznie od autoryzowanych dystrybutorów.
               </p>
             </div>
