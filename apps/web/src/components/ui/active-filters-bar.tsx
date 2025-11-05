@@ -159,9 +159,9 @@ export default function ActiveFiltersBar({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="bg-white/95 backdrop-blur-sm sticky top-[7.5rem] z-30 rounded-2xl mx-0 mb-5 shadow-sm"
+      className="bg-white sticky top-[7.5rem] z-30 rounded-2xl mx-0 mb-5 border border-gray-200"
     >
-      <div className="px-6 sm:px-10 py-5">
+      <div className="px-3 sm:px-4 py-2.5">
         {/* Mobile Layout - Button left, filters right */}
         <div className="flex items-center gap-3 sm:hidden">
           {/* Clear button - left side */}
@@ -169,7 +169,7 @@ export default function ActiveFiltersBar({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClearFilters}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-gray-100 text-black border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-300 font-medium text-xs flex-shrink-0"
+            className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-black border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-300 font-medium text-xs flex-shrink-0"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Wyczyść filtry</span>
@@ -197,7 +197,7 @@ export default function ActiveFiltersBar({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={chip.onRemove}
-                    className="flex items-center justify-center flex-shrink-0 hover:bg-white/50 rounded-full p-0.5 transition-colors duration-200"
+                    className="flex items-center justify-center flex-shrink-0 hover:bg-gray-200 rounded-full p-0.5 transition-colors duration-200"
                     aria-label={`Usuń filtr ${chip.label}`}
                   >
                     <X className="w-3 h-3" />
@@ -215,7 +215,7 @@ export default function ActiveFiltersBar({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onClearFilters}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-100 text-black border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-300 font-medium text-sm flex-shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-black border border-gray-300 hover:border-gray-400 rounded-lg transition-all duration-300 font-medium text-sm flex-shrink-0"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Wyczyść filtry</span>
@@ -237,14 +237,14 @@ export default function ActiveFiltersBar({
                       delay: index * 0.05,
                       layout: { duration: 0.3 }
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-white border border-gray-300 text-black hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 border border-gray-300 text-black hover:bg-gray-200 hover:border-gray-400 transition-all duration-200"
                   >
                     <span className="truncate max-w-[120px]">{chip.label}</span>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={chip.onRemove}
-                      className="flex-shrink-0 hover:bg-white/50 rounded-full p-0.5 transition-colors duration-200"
+                      className="flex-shrink-0 hover:bg-gray-200 rounded-full p-0.5 transition-colors duration-200"
                       aria-label={`Usuń filtr ${chip.label}`}
                     >
                       <X className="w-3 h-3" />

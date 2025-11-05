@@ -206,22 +206,14 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
-  // Handle scroll for sticky header with fixed positioning
+  // Handle scroll for sticky header - show effects after scrolling down
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
+      // Show sticky effects only after scrolling down 80px (3-4 scrolls)
+      const scrollThreshold = 80;
       setIsScrolled(scrollY > 10);
-      // Header becomes fixed when scrolling down
-      const shouldBeFixed = scrollY > 0;
-      setIsHeaderSticky(shouldBeFixed);
-      
-      // Add/remove padding-top to body when header becomes fixed
-      const headerHeight = window.innerWidth >= 640 ? 64 : 56; // sm:h-16 = 64px, h-14 = 56px
-      if (shouldBeFixed) {
-        document.body.style.paddingTop = `${headerHeight}px`;
-      } else {
-        document.body.style.paddingTop = '0px';
-      }
+      setIsHeaderSticky(scrollY > scrollThreshold);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -231,8 +223,6 @@ export default function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
-      // Cleanup: remove padding on unmount
-      document.body.style.paddingTop = '0px';
     };
   }, []);
 
@@ -241,10 +231,18 @@ export default function Header() {
     <>
       <header 
           suppressHydrationWarning
-          className={`${isHeaderSticky 
-            ? 'fixed top-0 shadow-md bg-white/70 backdrop-blur-lg border-b border-white/30' 
-            : 'relative bg-white'} 
-            inset-x-0 w-full z-[101] will-change-transform transition-all duration-300 overflow-visible rounded-b-2xl`}
+          className="fixed top-0 left-0 right-0 w-full z-[101] overflow-visible rounded-b-2xl bg-white"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            boxShadow: isHeaderSticky ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none',
+            backgroundColor: isHeaderSticky ? 'rgba(255, 255, 255, 0.7)' : 'rgb(255, 255, 255)',
+            backdropFilter: isHeaderSticky ? 'blur(16px)' : 'none',
+            borderBottom: isHeaderSticky ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
+            transition: 'none'
+          }}
       >
         <div className="px-4 lg:px-6 max-w-[90vw] mx-auto w-full">
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-14 sm:h-16 gap-2 min-h-0">

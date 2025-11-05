@@ -84,7 +84,7 @@ export default async function HomePage() {
   // Fetch data on server-side
   const homeFeedData = await getHomeFeedData();
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pt-14 sm:pt-16">
       {/* Global wrapper for consistent margins and border-radius */}
       <div className="mx-4 sm:mx-4 md:mx-6 lg:mx-8">
         {/* Hero Section */}
