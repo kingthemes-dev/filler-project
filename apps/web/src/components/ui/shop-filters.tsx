@@ -582,9 +582,9 @@ export default function ShopFilters({
       </AnimatePresence>
       
       {/* Desktop version - always visible */}
-      <div className="hidden lg:block lg:sticky lg:top-32 lg:self-start">
+      <div className="hidden lg:block lg:flex-shrink-0">
         <div 
-          className="bg-white border border-gray-200/50 shadow-sm rounded-2xl lg:shadow-md lg:backdrop-blur-md h-[calc(100vh-10rem)] flex flex-col"
+          className="bg-white border border-gray-200 rounded-2xl w-80 flex flex-col"
         >
           {/* Desktop Header */}
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 p-4 sm:p-6 flex-shrink-0">
@@ -602,7 +602,7 @@ export default function ShopFilters({
           </div>
           
           {/* Desktop content - scrollable container */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+          <div className="overflow-y-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
             <div className="space-y-4 sm:space-y-6">
               {/* Search Filter */}
               <div className="mb-3 sm:mb-4">

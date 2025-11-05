@@ -95,7 +95,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const [totalProducts, setTotalProducts] = useState(initialShopData?.total || 0);
   
   const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(8); // 🚀 PRIORITY 2: 8 produktów na stronę (mniejszy initial payload)
+  const [productsPerPage] = useState(16); // 16 produktów na stronę
   const [showFilters, setShowFilters] = useState(false);
   // fixed grid view – list variant removed
   const [filterLoading, setFilterLoading] = useState(false);
@@ -145,7 +145,8 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   useEffect(() => {
     if (!searchParams) return;
     const categoryParam = searchParams.get('category') || '';
-    const brandsParam = searchParams.get('brands') || '';
+    // Brands are now in pa_marka parameter
+    const brandsParam = searchParams.get('pa_marka') || searchParams.get('brands') || '';
 
     const urlCategories = categoryParam
       ? categoryParam.split(',').map((s) => s.trim()).filter(Boolean)
@@ -207,21 +208,31 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       
       if (categoriesChanged || brandsChanged || attrsChanged || Object.keys(newAttrs).length > 0) {
         // URL params changed, updating filters
+        // If pa_marka exists in URL, use it for brands
+        const finalBrands = newAttrs['pa_marka'] && newAttrs['pa_marka'].length > 0 
+          ? newAttrs['pa_marka'] 
+          : urlBrands;
+        
         const updatedFilters = {
           ...prev,
           categories: urlCategories,
-          brands: urlBrands,
+          brands: finalBrands,
         };
         
-        // Remove pa_* attributes that are no longer in URL
+        // Remove pa_* attributes that are no longer in URL (but keep pa_marka if it exists)
         Object.keys(updatedFilters).forEach(key => {
           if (key.startsWith('pa_') && !newAttrs.hasOwnProperty(key)) {
             delete (updatedFilters as any)[key];
           }
         });
         
-        // Add/update pa_* attributes from URL
+        // Add/update pa_* attributes from URL (but sync pa_marka with brands)
         Object.assign(updatedFilters, newAttrs);
+        
+        // Sync brands with pa_marka if pa_marka exists
+        if (newAttrs['pa_marka'] && newAttrs['pa_marka'].length > 0) {
+          updatedFilters.brands = newAttrs['pa_marka'];
+        }
         
         return updatedFilters;
       }
@@ -236,15 +247,22 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     const params = new URLSearchParams();
     if (filters.search) params.set('search', filters.search);
     if (filters.categories.length) params.set('category', filters.categories.join(','));
-    if ((filters.brands as string[]).length) params.set('brands', (filters.brands as string[]).join(','));
+    // Note: brands are handled via pa_marka in the pa_* loop below to avoid conflicts
     if (filters.minPrice > 0) params.set('min_price', String(filters.minPrice));
     if (filters.maxPrice > 0 && filters.maxPrice < 10000) params.set('max_price', String(filters.maxPrice));
     if (filters.inStock) params.set('in_stock', 'true');
     if (filters.onSale) params.set('on_sale', 'true');
     params.set('sort', filters.sortBy);
     params.set('order', filters.sortOrder);
+    
+    // Handle brands - convert to pa_marka for URL consistency
+    if (filters.brands && (filters.brands as string[]).length > 0) {
+      params.set('pa_marka', (filters.brands as string[]).join(','));
+    }
+    
+    // Handle all other pa_* attributes (but skip pa_marka if brands is already set)
     Object.keys(filters).forEach((key) => {
-      if (key.startsWith('pa_')) {
+      if (key.startsWith('pa_') && key !== 'pa_marka') {
         const v = filters[key];
         // Handle both array and string values - always preserve pa_* filters
         let values: string[] = [];
@@ -294,13 +312,20 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       params.append('page', currentPage.toString());
       params.append('per_page', productsPerPage.toString());
       if (filters.categories.length > 0) params.append('category', filters.categories.join(','));
-      if (filters.brands && (filters.brands as string[]).length > 0) params.append('brands', (filters.brands as string[]).join(','));
+      // Note: brands are handled via pa_marka in the pa_* loop below to avoid conflicts
       if (filters.search) params.append('search', filters.search);
       params.append('orderby', filters.sortBy === 'name' ? 'title' : filters.sortBy);
       params.append('order', filters.sortOrder);
       if (filters.onSale) params.append('on_sale', 'true');
       if (filters.minPrice > 0) params.append('min_price', String(filters.minPrice));
       if (filters.maxPrice > 0 && filters.maxPrice < 10000) params.append('max_price', String(filters.maxPrice));
+      // Handle brands - convert to pa_marka for API consistency
+      if (filters.brands && (filters.brands as string[]).length > 0) {
+        const brandValues = (filters.brands as string[]).join(',');
+        params.append('pa_marka', brandValues);
+      }
+      
+      // Handle all other pa_* attributes
       Object.keys(filters).forEach(key => {
         if (key.startsWith('pa_')) {
           const filterValue = filters[key];
@@ -556,7 +581,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         
         {/* Usunięto górną wyszukiwarkę – pozostaje ta w panelu filtrów */}
         
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 lg:items-stretch">
           {/* Filters sidebar */}
           <ShopFilters
             categories={allCategories.map(c => ({ ...c, count: c.count || 0 }))}
@@ -603,18 +628,56 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
               onPriceRangeReset={() => setPriceRange({ min: 0, max: 10000 })}
             />
             
-            {/* 🚀 LCP Optimization: ShopProductsGrid z Suspense dla streaming rendering */}
-            {(loading || filterLoading) && products.length === 0 ? (
+            {/* Error State - Senior Level Error Handling */}
+            {shopQuery.isError && (
+              <div className="text-center py-12 px-4">
+                <div className="max-w-md mx-auto">
+                  <div className="text-red-500 mb-4">
+                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Wystąpił błąd podczas ładowania produktów</h3>
+                  <p className="text-gray-600 mb-6">
+                    {shopQuery.error instanceof Error 
+                      ? shopQuery.error.message 
+                      : 'Nie udało się załadować produktów. Spróbuj ponownie.'}
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      onClick={() => shopQuery.refetch()}
+                      className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                      aria-label="Spróbuj ponownie załadować produkty"
+                    >
+                      Spróbuj ponownie
+                    </button>
+                    <button
+                      onClick={clearFilters}
+                      className="px-6 py-3 bg-gray-100 text-gray-900 rounded-xl hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+                      aria-label="Wyczyść wszystkie filtry"
+                    >
+                      Wyczyść filtry
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Loading State */}
+            {!shopQuery.isError && (loading || filterLoading) && products.length === 0 && (
               <ShopProductsGrid products={[]} refreshing={false} />
-            ) : (
+            )}
+            
+            {/* Products Grid */}
+            {!shopQuery.isError && !loading && products.length > 0 && (
               <ShopProductsGrid 
                 products={products} 
                 refreshing={refreshing}
               />
             )}
             
-        {/* PRO: Paginacja */}
-        {!filterLoading && products.length > 0 && totalProducts > productsPerPage && (
+        {/* Paginacja */}
+        {!shopQuery.isError && !filterLoading && products.length > 0 && totalProducts > productsPerPage && (
           <Pagination
             currentPage={currentPage}
             totalPages={Math.ceil(totalProducts / productsPerPage)}
@@ -624,16 +687,18 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           />
         )}
             
-            {!loading && products.length === 0 && (
-              <div className="text-center py-12">
+            {/* Empty State */}
+            {!shopQuery.isError && !loading && products.length === 0 && (
+              <div className="text-center py-12 px-4">
                 <div className="text-gray-400 mb-4">
-                  <Search className="w-16 h-16 mx-auto" />
+                  <Search className="w-16 h-16 mx-auto" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Nie znaleziono produktów</h3>
                 <p className="text-gray-500 mb-4">Spróbuj zmienić kryteria wyszukiwania</p>
                 <button
                   onClick={clearFilters}
-                  className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+                  className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                  aria-label="Wyczyść wszystkie filtry i pokaż wszystkie produkty"
                 >
                   Wyczyść filtry
                 </button>

@@ -12,7 +12,7 @@ interface ShopProductsGridProps {
 // 🚀 LCP Optimization: Skeleton dla szybkiego first paint
 function ProductsSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid mobile-grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 min-h-[60vh]">
+    <div className="grid mobile-grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 min-h-[60vh]">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="animate-pulse">
           <div className="bg-gray-200 rounded-lg aspect-square mb-4"></div>
@@ -36,7 +36,7 @@ const MemoizedProductCard = memo(KingProductCard);
  */
 function ProductsGridContent({ products, refreshing }: ShopProductsGridProps) {
   return (
-    <div className="grid mobile-grid grid-cols-2 lg:grid-cols-3 relative min-h-[60vh]">
+    <div className="grid mobile-grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 relative min-h-[60vh]">
       {/* PRO: Subtle refreshing indicator */}
       {refreshing && (
         <div className="absolute top-0 right-0 z-10 bg-white/80 backdrop-blur-sm rounded-lg p-2">
@@ -63,13 +63,13 @@ function ProductsGridContent({ products, refreshing }: ShopProductsGridProps) {
 export default function ShopProductsGrid({ products, refreshing }: ShopProductsGridProps) {
   // Jeśli brak produktów, pokaż skeleton
   if (products.length === 0) {
-    return <ProductsSkeleton count={8} />;
+    return <ProductsSkeleton count={16} />;
   }
 
   // 🚀 LCP Optimization: Suspense dla progressive rendering
   // Pierwsze produkty renderują się natychmiast, reszta w tle
   return (
-    <Suspense fallback={<ProductsSkeleton count={Math.min(products.length, 8)} />}>
+      <Suspense fallback={<ProductsSkeleton count={Math.min(products.length, 16)} />}>
       <ProductsGridContent products={products} refreshing={refreshing} />
     </Suspense>
   );

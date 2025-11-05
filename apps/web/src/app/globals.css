@@ -24,7 +24,6 @@
     overflow-x: hidden;
     width: 100%;
     max-width: 100vw;
-    position: relative;
     font-family: 'Raleway', system-ui, sans-serif !important;
   }
   
@@ -33,14 +32,6 @@
     touch-action: pan-y;
     overscroll-behavior: none;
     font-family: 'Raleway', system-ui, sans-serif !important;
-    padding-top: 56px; /* Fixed header height on mobile (h-14 = 56px) */
-  }
-  
-  /* Fixed header height on desktop (h-16 = 64px) */
-  @media (min-width: 640px) {
-    body {
-      padding-top: 64px;
-    }
   }
   
   * {
@@ -218,6 +209,20 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+
+  /* Elegancki efekt hover dla przycisku "Dodaj do koszyka" */
+  .product-add-to-cart-button {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: transparent !important;
+  }
+
+  .product-add-to-cart-button:hover {
+    transform: scale(1.03);
+  }
+
+  .product-add-to-cart-button:active {
+    transform: scale(0.98);
   }
 }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, User, Heart, ShoppingCart, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Plus, Tag } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Plus, Tag, Menu } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useFavoritesStore } from '@/stores/favorites-store';
@@ -10,6 +10,7 @@ import { useQuickViewStore } from '@/stores/quickview-store';
 import { useAuthModalStore } from '@/stores/auth-modal-store';
 // import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 // 🚀 Bundle Optimization: Dynamic imports dla modali (below-the-fold, tylko gdy używane)
@@ -21,6 +22,7 @@ import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores
 
 
 export default function Header() {
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -32,6 +34,7 @@ export default function Header() {
   const [isBrandsExpanded] = useState(false);
   const [shopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isHeaderSticky, setIsHeaderSticky] = useState(false);
   
   // 🚀 SENIOR LEVEL - Slide Navigation State
   const [mobileMenuView, setMobileMenuView] = useState<'main' | 'sklep' | 'marki'>('main');
@@ -203,14 +206,34 @@ export default function Header() {
     }
   }, [isMobileMenuOpen]);
 
-  // Handle scroll for glassmorphism effect
+  // Handle scroll for sticky header with fixed positioning
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      const scrollY = window.scrollY;
+      setIsScrolled(scrollY > 10);
+      // Header becomes fixed when scrolling down
+      const shouldBeFixed = scrollY > 0;
+      setIsHeaderSticky(shouldBeFixed);
+      
+      // Add/remove padding-top to body when header becomes fixed
+      const headerHeight = window.innerWidth >= 640 ? 64 : 56; // sm:h-16 = 64px, h-14 = 56px
+      if (shouldBeFixed) {
+        document.body.style.paddingTop = `${headerHeight}px`;
+      } else {
+        document.body.style.paddingTop = '0px';
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    // Check initial scroll position
+    handleScroll();
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      // Cleanup: remove padding on unmount
+      document.body.style.paddingTop = '0px';
+    };
   }, []);
 
 
@@ -218,17 +241,12 @@ export default function Header() {
     <>
       <header 
           suppressHydrationWarning
-          className={`fixed top-0 inset-x-4 sm:inset-x-4 md:inset-x-6 lg:inset-x-8 z-[101] will-change-transform transition-all duration-300 overflow-visible ${
-          isAnyModalOpen
-            ? 'hidden'
-            : isMobileMenuOpen
-              ? 'bg-white'
-              : isScrolled
-                ? 'bg-white'
-                : 'bg-white'
-        }`}
+          className={`${isHeaderSticky 
+            ? 'fixed top-0 shadow-md bg-white/70 backdrop-blur-lg border-b border-white/30' 
+            : 'relative bg-white'} 
+            inset-x-0 w-full z-[101] will-change-transform transition-all duration-300 overflow-visible rounded-b-2xl`}
       >
-        <div className="px-4 lg:px-6">
+        <div className="px-4 lg:px-6 max-w-[90vw] mx-auto w-full">
           <div className="grid grid-cols-[auto,1fr,auto] lg:flex lg:items-center lg:justify-between h-14 sm:h-16 gap-2 min-h-0">
           {/* Logo */}
           <Link href="/" className="flex items-center flex-none flex-shrink-0 hover:opacity-80 transition-opacity -mt-[5px]" aria-label="FILLER - Strona główna">
@@ -252,20 +270,28 @@ export default function Header() {
 
           {/* Navigation - desktop only */}
           <nav
-            className="hidden lg:flex items-center gap-6 flex-none"
+            className="hidden lg:flex items-center gap-1 flex-none"
             style={{
               fontFamily: 'Raleway, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"'
             }}
           >
             <Link 
               href="/" 
-              className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold tracking-wide text-center uppercase text-sm"
+              className={`group relative px-4 py-2 font-semibold tracking-wide uppercase text-sm ${
+                pathname === '/' 
+                  ? 'text-black' 
+                  : 'text-gray-900'
+              }`}
               onMouseEnter={() => setIsShopOpen(false)}
             >
-              Strona główna
+              <span className="relative z-10">Strona główna</span>
+              {/* Animated underline - slides in from left to right */}
+              <span className={`absolute bottom-0.5 left-4 right-4 h-px bg-gray-900 transition-all duration-500 ease-out origin-left ${
+                pathname === '/' ? 'scale-x-0' : 'scale-x-0 group-hover:scale-x-100'
+              }`}></span>
             </Link>
             <div 
-              className="relative overflow-visible shop-dropdown-container flex items-center gap-2"
+              className="relative overflow-visible shop-dropdown-container flex items-center gap-1"
             >
               <button
                 onClick={(e) => {
@@ -275,39 +301,52 @@ export default function Header() {
                   // Dispatch event for banner to listen
                   window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: newValue } }));
                 }}
-                className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-black/20 uppercase tracking-wide text-sm"
+                suppressHydrationWarning
+                className={`group relative px-4 py-2 text-gray-900 font-semibold inline-flex items-center gap-1 outline-none uppercase tracking-wide text-sm ${
+                  isShopOpen ? 'text-black' : ''
+                }`}
                 aria-expanded={isShopOpen}
                 aria-haspopup="true"
               >
-                Sklep
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isShopOpen ? 'rotate-180' : ''}`} />
+                <span className="relative z-10">Sklep</span>
+                <ChevronDown suppressHydrationWarning className={`w-4 h-4 relative z-10 ${isShopOpen ? 'rotate-180 text-gray-900' : 'text-gray-600'}`} />
+                {/* Animated underline - slides in from left to right */}
+                <span className={`absolute bottom-0.5 left-4 right-4 h-px bg-gray-900 transition-all duration-500 ease-out origin-left ${
+                  isShopOpen ? 'scale-x-0' : 'scale-x-0 group-hover:scale-x-100'
+                }`}></span>
               </button>
-              <Link
-                href="/sklep"
-                className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold tracking-wide uppercase text-sm"
-                onClick={() => {
-                  setIsShopOpen(false);
-                  window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
-                }}
-              >
-                Wszystkie produkty
-              </Link>
               
               {/* Shop Modal is now rendered inside ShopExplorePanel component */}
             </div>
             <a 
               href="/o-nas" 
-              className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold tracking-wide text-center uppercase text-sm"
+              className={`group relative px-4 py-2 font-semibold tracking-wide uppercase text-sm ${
+                pathname === '/o-nas' 
+                  ? 'text-black' 
+                  : 'text-gray-900'
+              }`}
               onMouseEnter={() => setIsShopOpen(false)}
             >
-              O nas
+              <span className="relative z-10">O nas</span>
+              {/* Animated underline - slides in from left to right */}
+              <span className={`absolute bottom-0.5 left-4 right-4 h-px bg-gray-900 transition-all duration-500 ease-out origin-left ${
+                pathname === '/o-nas' ? 'scale-x-0' : 'scale-x-0 group-hover:scale-x-100'
+              }`}></span>
             </a>
             <a 
               href="/kontakt" 
-              className="group relative px-2 py-1 rounded-lg text-black hover:text-gray-800 hover:bg-gray-50 transition-all font-semibold tracking-wide text-center uppercase text-sm"
+              className={`group relative px-4 py-2 font-semibold tracking-wide uppercase text-sm ${
+                pathname === '/kontakt' 
+                  ? 'text-black' 
+                  : 'text-gray-900'
+              }`}
               onMouseEnter={() => setIsShopOpen(false)}
             >
-              Kontakt
+              <span className="relative z-10">Kontakt</span>
+              {/* Animated underline - slides in from left to right */}
+              <span className={`absolute bottom-0.5 left-4 right-4 h-px bg-gray-900 transition-all duration-500 ease-out origin-left ${
+                pathname === '/kontakt' ? 'scale-x-0' : 'scale-x-0 group-hover:scale-x-100'
+              }`}></span>
             </a>
           </nav>
 
@@ -566,7 +605,7 @@ export default function Header() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              className="fixed inset-x-0 top-14 h-[calc(100vh-3.5rem)] bg-white overflow-hidden z-[101] flex flex-col lg:absolute lg:top-full lg:left-0 lg:right-0 lg:w-full lg:h-auto lg:max-h-[80vh] lg:hidden"
+              className={`${isHeaderSticky ? 'fixed top-14 sm:top-16' : 'absolute top-full'} left-0 right-0 h-[calc(100vh-3.5rem)] bg-white overflow-hidden z-[101] flex flex-col lg:absolute lg:top-full lg:left-0 lg:right-0 lg:w-full lg:h-auto lg:max-h-[80vh] lg:hidden`}
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'calc(100vh - 3.5rem)', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -576,6 +615,7 @@ export default function Header() {
               aria-modal="true"
               aria-labelledby="mobile-menu-title"
             >
+              <div className="w-full max-w-[90vw] mx-auto h-full flex flex-col">
                 {/* 🚀 SENIOR LEVEL - Slide Navigation Content */}
                 <AnimatePresence mode="wait">
                   {/* MAIN VIEW */}
@@ -587,30 +627,36 @@ export default function Header() {
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                       className="flex flex-col h-full"
                     >
+                      {/* Top border line */}
+                      <div className="px-4 border-t border-gray-100"></div>
 
                       {/* Main Navigation - All in One */}
                       <div className="flex-1 overflow-y-auto p-4">
-                        <div className="space-y-1">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4 px-4">
+                          <Menu className="w-4 h-4" />
+                          Menu
+                        </h3>
+                        <div className="space-y-2 w-full">
                           <a 
                             href="/" 
-                            className="block text-black py-3"
+                            className="flex items-center justify-start w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-lg transition-colors"
                             onClick={closeMobileMenu}
                           >
                             Strona główna
                           </a>
                           
                           {/* Sklep - Slide to Sklep View */}
-                          <div
+                          <button
                             onClick={() => setMobileMenuView('sklep')}
-                            className="flex items-center gap-2 text-black py-3"
+                            className="flex items-center justify-start w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-lg transition-colors"
                           >
                             <span>Sklep</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </div>
+                            <ChevronRight className="w-4 h-4 ml-2" />
+                          </button>
                           
                           <a 
                             href="/o-nas" 
-                            className="block text-black py-3"
+                            className="flex items-center justify-start w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-lg transition-colors"
                             onClick={closeMobileMenu}
                           >
                             O nas
@@ -618,7 +664,7 @@ export default function Header() {
                           
                           <a 
                             href="/kontakt" 
-                            className="block text-black py-3"
+                            className="flex items-center justify-start w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-lg transition-colors"
                             onClick={closeMobileMenu}
                           >
                             Kontakt
@@ -627,51 +673,53 @@ export default function Header() {
                           {!isAuthenticated && (
                             <Link 
                               href="/moje-konto" 
-                              className="block text-black py-3"
+                              className="flex items-center justify-start w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-lg transition-colors"
                               onClick={closeMobileMenu}
                             >
+                              <User className="w-5 h-5 mr-2" />
                               Zaloguj się
                             </Link>
                           )}
 
                         {isAuthenticated && (
-                            <div
+                            <button
                             onClick={() => { logout(); closeMobileMenu(); }}
-                              className="text-black py-3"
+                              className="flex items-center justify-start w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-lg transition-colors"
                           >
+                              <LogOut className="w-5 h-5 mr-2" />
                               Wyloguj się
-                            </div>
+                            </button>
                           )}
                         </div>
                       </div>
 
-                      {/* Social Media Icons - Fixed at bottom */}
-                      <div className="px-4 pb-4 pt-4 border-t border-gray-100">
+                      {/* Social Media Icons - Positioned at 80% from top */}
+                      <div className="px-4 pb-4 pt-4 border-t border-gray-100" style={{ marginTop: 'auto', marginBottom: '20%' }}>
                         <div className="flex space-x-4">
                             <a 
                               href="tel:+48123456789" 
-                            className="text-gray-600"
+                            className="text-gray-600 hover:text-gray-900 transition-colors"
                               onClick={closeMobileMenu}
                             >
-                              <Phone className="w-4 h-4" />
+                              <Phone className="w-6 h-6" />
                             </a>
                             <a 
                               href="https://facebook.com" 
                               target="_blank" 
                               rel="noopener noreferrer"
-                            className="text-gray-600"
+                            className="text-gray-600 hover:text-gray-900 transition-colors"
                               onClick={closeMobileMenu}
                             >
-                              <Facebook className="w-4 h-4" />
+                              <Facebook className="w-6 h-6" />
                             </a>
                             <a 
                               href="https://instagram.com" 
                               target="_blank" 
                               rel="noopener noreferrer"
-                            className="text-gray-600"
+                            className="text-gray-600 hover:text-gray-900 transition-colors"
                               onClick={closeMobileMenu}
                             >
-                              <Instagram className="w-4 h-4" />
+                              <Instagram className="w-6 h-6" />
                             </a>
                         </div>
                       </div>
@@ -888,7 +936,8 @@ export default function Header() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
         
@@ -919,7 +968,7 @@ export default function Header() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="fixed top-20 right-4 md:right-4 w-[calc(100vw-3rem)] sm:w-[calc(100vw-3rem)] md:w-auto md:max-w-[280px] bg-white rounded-xl py-2 z-[70]"
+              className="fixed top-14 sm:top-16 right-2 md:right-2 w-[280px] sm:w-[300px] md:w-auto md:max-w-[280px] bg-white border border-gray-200 rounded-xl py-2 z-[70] shadow-sm"
             >
               {/* User Info */}
               <div className="px-4 py-3">

@@ -19,37 +19,13 @@ export default function AboutPage() {
 
         {/* Main Content */}
         <section className="py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Left Column - Image */}
+          <div className="max-w-4xl mx-auto">
+            {/* Text Content */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="order-2 lg:order-1"
-            >
-              <div className="relative">
-                {/* Mock Image - Full Height */}
-                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden p-8">
-                  <div className="w-full h-full flex items-center justify-center min-h-[500px]">
-                    <div className="text-center">
-                      <div className="w-32 h-32 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg">
-                        <span className="text-5xl font-bold text-gray-800">F</span>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-800 mb-3">Filler.pl</h3>
-                      <p className="text-gray-600 text-lg">Hurtownia medycyny estetycznej</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right Column - Text Content */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="order-1 lg:order-2 flex flex-col justify-center"
+              className="flex flex-col justify-center"
             >
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">
                 Hurtownia medycyny estetycznej Filler.pl

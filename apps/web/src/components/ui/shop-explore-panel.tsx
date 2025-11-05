@@ -170,7 +170,7 @@ function ShopExplorePanelContent({ open, onClose }: ShopExplorePanelProps) {
             id="shop-explore-panel"
             role="dialog"
             aria-modal="true"
-            className="fixed top-[114px] left-0 right-0 flex justify-center p-4 z-50"
+            className="fixed top-14 sm:top-16 left-0 right-0 flex justify-center p-4 z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -186,7 +186,19 @@ function ShopExplorePanelContent({ open, onClose }: ShopExplorePanelProps) {
              >
                <div className="flex-shrink-0 px-4 lg:px-6 pt-6 pb-4 border-b border-gray-200">
                  <div className="flex items-center justify-between">
-                   <h2 className="text-2xl font-bold text-gray-900">Sklep</h2>
+                   <div className="flex items-center gap-4">
+                     <h2 className="text-2xl font-bold text-gray-900">Sklep</h2>
+                     <Link
+                       href="/sklep"
+                       onClick={() => {
+                         onClose();
+                         window.dispatchEvent(new CustomEvent('shopModalToggle', { detail: { open: false } }));
+                       }}
+                       className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                     >
+                       Zobacz wszystkie produkty
+                     </Link>
+                   </div>
                    <button
                      onClick={() => {
                        onClose();

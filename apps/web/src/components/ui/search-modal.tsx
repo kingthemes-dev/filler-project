@@ -172,13 +172,13 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-[80] flex items-start justify-center pt-16 px-4 max-h-screen overflow-y-auto"
+            className="fixed inset-0 z-[80] flex items-start justify-center pt-20 sm:pt-24 px-4 max-h-screen overflow-y-auto"
             onClick={(e) => {
               if (e.target === e.currentTarget) onClose();
             }}
           >
             <div 
-              className="bg-white rounded-3xl shadow-xl w-full max-w-[600px] mx-4 max-h-[80vh] flex flex-col"
+              className="bg-white rounded-3xl shadow-xl w-[90%] max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -196,7 +196,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     autoFocus
                   />
                 </div>
-                <ModalCloseButton onClick={onClose} size="sm" />
+                <ModalCloseButton onClick={onClose} />
               </div>
 
               {/* Content */}

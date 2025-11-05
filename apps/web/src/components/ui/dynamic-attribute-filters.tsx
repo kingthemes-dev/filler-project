@@ -91,7 +91,8 @@ export default function DynamicAttributeFilters({
 
   const handleAttributeTermClick = (attributeSlug: string, termSlug: string) => {
     // handleAttributeTermClick debug removed
-    const filterKey = `pa_${attributeSlug}`;
+    // Ensure filterKey starts with pa_ (attributeSlug may already have it)
+    const filterKey = attributeSlug.startsWith('pa_') ? attributeSlug : `pa_${attributeSlug}`;
     const filterValue = selectedFilters[filterKey];
     
     // Get current terms as array
@@ -103,18 +104,18 @@ export default function DynamicAttributeFilters({
     }
     
     // Toggle the term (add if not exists, remove if exists)
-    const newTerms = currentTerms.includes(termSlug)
-      ? currentTerms.filter(t => t !== termSlug)
-      : [...currentTerms, termSlug];
+    const isSelected = currentTerms.includes(termSlug);
     
-    // New terms debug removed
-    // Pass as array or comma-separated string - handleFilterChange will handle both
-    onFilterChange(filterKey, newTerms.join(','));
+    // Pass only the termSlug - handleFilterChange will handle toggle logic
+    // This ensures proper toggle behavior
+    onFilterChange(filterKey, termSlug);
   };
 
   const isAttributeExpanded = (attributeSlug: string) => expandedAttributes.has(attributeSlug);
   const isTermSelected = (attributeSlug: string, termSlug: string) => {
-    const filterValue = selectedFilters[`pa_${attributeSlug}`];
+    // Ensure filterKey starts with pa_ (attributeSlug may already have it)
+    const filterKey = attributeSlug.startsWith('pa_') ? attributeSlug : `pa_${attributeSlug}`;
+    const filterValue = selectedFilters[filterKey];
     let terms: string[] = [];
     
     if (Array.isArray(filterValue)) {

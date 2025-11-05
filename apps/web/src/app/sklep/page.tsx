@@ -104,7 +104,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     const shopParams = new URLSearchParams();
     shopParams.append('endpoint', 'shop');
     shopParams.append('page', '1');
-    shopParams.append('per_page', '8'); // 🚀 PRIORITY 2: Smaller initial payload (~30% mniej danych)
+    shopParams.append('per_page', '16'); // 16 produktów na stronę
     if (defaultCategory) shopParams.append('category', defaultCategory);
     shopParams.append('orderby', initialFilters.sortBy);
     shopParams.append('order', initialFilters.sortOrder);
@@ -130,7 +130,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     const prefetchPromises = [
       // Shop products query cache
       qc.prefetchQuery({
-        queryKey: ['shop','products',{ page: 1, perPage: 8, filters: JSON.stringify(initialFilters) }], // 🚀 PRIORITY 2: Smaller payload
+        queryKey: ['shop','products',{ page: 1, perPage: 16, filters: JSON.stringify(initialFilters) }],
         queryFn: async () => {
           const res = await fetch(`/api/woocommerce?${shopParams.toString()}`, { 
             next: { revalidate: 30 },

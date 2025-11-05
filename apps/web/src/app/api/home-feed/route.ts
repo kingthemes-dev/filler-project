@@ -72,6 +72,41 @@ export async function GET() {
       }
     }
     
+    // Fetch products on sale separately using API filter
+    let promocjeProducts: any[] = [];
+    try {
+      const promocjeUrl = `${WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&per_page=24&page=1&on_sale=true`;
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🏷️ Home feed - calling King Shop API for promocje:`, promocjeUrl);
+      }
+      
+      const promocjeResponse = await fetch(promocjeUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Filler-Store/1.0'
+        },
+        next: { 
+          revalidate: 300, // 5 minutes
+          tags: ['home-feed-promocje'] 
+        },
+        signal: AbortSignal.timeout(10000) // 10s timeout
+      });
+
+      if (promocjeResponse.ok) {
+        const promocjeData = await promocjeResponse.json();
+        promocjeProducts = promocjeData.products || promocjeData.data?.products || [];
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ Promocje from API (on_sale=true):`, promocjeProducts.length);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch promocje separately, will filter from all products:', error);
+    }
+    
     const products = allProducts;
     
     if (process.env.NODE_ENV === 'development') {
@@ -95,9 +130,30 @@ export async function GET() {
     );
 
     // Organize data into categories with proper fallbacks
+    // Use promocjeProducts from API if available, otherwise filter from validProducts
+    let finalPromocjeProducts: any[] = [];
+    if (promocjeProducts.length > 0) {
+      // Use products fetched with on_sale=true from API
+      finalPromocjeProducts = promocjeProducts.filter((p: any) => 
+        p.price && p.price !== '' && 
+        p.name && p.name !== 'Produkt' &&
+        (p.status === 'publish' || !p.status)
+      );
+    } else {
+      // Fallback: filter from all products if API didn't return promocje
+      finalPromocjeProducts = validProducts.filter((p: any) => {
+        const hasSalePrice = p.sale_price && p.sale_price !== '' && p.sale_price !== '0';
+        const hasOnSaleFlag = p.on_sale === true;
+        const priceDiffers = p.price && p.regular_price && parseFloat(p.price) < parseFloat(p.regular_price);
+        
+        return hasSalePrice || hasOnSaleFlag || priceDiffers;
+      });
+    }
+    
+    
     const data = {
       nowosci: sortedProducts.slice(0, 8), // Latest 8 valid products
-      promocje: validProducts.filter((p: any) => (p.sale_price && p.sale_price !== '') || p.on_sale).slice(0, 8),
+      promocje: finalPromocjeProducts.slice(0, 8),
       polecane: validProducts.filter((p: any) => p.featured).slice(0, 8),
       bestsellery: sortedProducts.slice(0, 8) // For now, just show first 8 as bestsellers
     };

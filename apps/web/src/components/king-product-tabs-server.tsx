@@ -52,7 +52,16 @@ export default function KingProductTabsServer({ data }: KingProductTabsServerPro
   
   const promocje = useMemo(() => {
     const promocjeRaw = data.promocje && data.promocje.length > 0 ? data.promocje : allProducts;
-    return mergeUnique([promocjeRaw]).filter(p => Boolean(p.on_sale)).slice(0, 8);
+    // Filter products that have sale_price, on_sale flag, or price < regular_price (same logic as API)
+    const filtered = mergeUnique([promocjeRaw]).filter(p => {
+      const hasSalePrice = p.sale_price && p.sale_price !== '' && p.sale_price !== '0';
+      const hasOnSaleFlag = p.on_sale === true;
+      const priceDiffers = p.price && p.regular_price && parseFloat(p.price) < parseFloat(p.regular_price);
+      
+      return hasSalePrice || hasOnSaleFlag || priceDiffers;
+    });
+    
+    return filtered.slice(0, 8);
   }, [data.promocje, allProducts]);
   
   const polecane = useMemo(() => {

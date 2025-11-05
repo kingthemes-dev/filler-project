@@ -79,15 +79,20 @@ export default function ActiveFiltersBar({
       });
     }
 
-    // Brands
-    if (filters.brands && (filters.brands as string[]).length > 0) {
-      (filters.brands as string[]).forEach((brand, index) => {
+    // Brands - handle both brands array and pa_marka attribute
+    const brandValues = filters.brands && (filters.brands as string[]).length > 0 
+      ? (filters.brands as string[])
+      : (filters['pa_marka'] && Array.isArray(filters['pa_marka']) ? filters['pa_marka'] : []);
+    
+    if (brandValues.length > 0) {
+      brandValues.forEach((brand, index) => {
         chips.push({
           id: `brand-${index}`,
           label: brand,
           type: 'brand',
           onRemove: () => {
-            // Removing brand debug removed
+            // Remove brand - use brands key for backward compatibility
+            // handleFilterChange will handle the toggle logic
             onFilterChange('brands', brand);
           }
         });

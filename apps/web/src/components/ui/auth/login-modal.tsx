@@ -124,7 +124,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
             <ModalCloseButton 
               onClick={onClose}
               ariaLabel="Zamknij logowanie"
-              size="sm"
             />
           </div>
 

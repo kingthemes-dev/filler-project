@@ -351,16 +351,20 @@ export default function KingProductCard({
   const renderPrice = () => {
     if (isOnSale) {
       return (
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-foreground">{price}</span>
-          <span className="text-sm text-muted-foreground line-through">{regularPrice}</span>
-          <Badge variant="destructive" className="text-xs">
-            -{discount}%
-          </Badge>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-lg sm:text-xl font-bold text-red-600">{price}</span>
+            <span className="text-xs text-gray-400 line-through">{regularPrice}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Badge className="bg-red-500 text-white text-[8px] font-semibold px-1 py-0.5 rounded-md">
+              -{discount}% TANIEJ
+            </Badge>
+          </div>
         </div>
       );
     }
-    return <span className="text-lg font-bold text-foreground">{price}</span>;
+    return <span className="text-lg sm:text-xl font-bold text-foreground">{price}</span>;
   };
 
   const renderRating = () => {
@@ -388,7 +392,7 @@ export default function KingProductCard({
 
   if (variant === 'compact') {
     return (
-      <Card className="group hover:shadow-lg transition-all duration-300 border-border/50">
+      <Card className="group hover:shadow-lg transition-all duration-300 border border-gray-200">
         <Link href={`/produkt/${product.slug}`}>
           <CardHeader className="p-3 pb-0">
             <div className="relative aspect-square overflow-hidden rounded-lg">
@@ -404,7 +408,7 @@ export default function KingProductCard({
                 quality={85}
               />
               {isOnSale && (
-                <Badge variant="destructive" className="absolute top-1 sm:top-2 left-1 sm:left-2 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+                <Badge variant="destructive" className="absolute top-0.5 sm:top-1 left-1 sm:left-2 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 whitespace-nowrap">
                   PROMOCJA
                 </Badge>
               )}
@@ -424,7 +428,7 @@ export default function KingProductCard({
 
   if (variant === 'featured') {
     return (
-      <Card className="group hover:shadow-xl transition-all duration-300 border-border/50 bg-gradient-to-br from-background to-muted/20">
+      <Card className="group hover:shadow-xl transition-all duration-300 border border-gray-200 bg-gradient-to-br from-background to-muted/20">
         <Link href={`/produkt/${product.slug}`}>
           <CardHeader className="p-4 pb-0">
             <div className="relative aspect-square overflow-hidden rounded-lg">
@@ -493,9 +497,10 @@ export default function KingProductCard({
                   </div>
                   {selectedVariant && (
                     <Button 
+                      variant="outline"
                       onClick={handleAddToCart}
                       disabled={isLoading || product.stock_status === 'outofstock'}
-                      className="w-full h-12 py-6 hover:bg-black hover:text-white transition-colors text-base"
+                      className="w-full h-12 py-6 text-base product-add-to-cart-button"
                       size="sm"
                     >
                       <ShoppingCart className="w-4 h-4 -mr-1 sm:mr-2" />
@@ -505,9 +510,10 @@ export default function KingProductCard({
                 </div>
               ) : (
                 <Button 
+                  variant="outline"
                   onClick={handleAddToCartWithVariant}
                   disabled={isLoading || product.stock_status === 'outofstock'}
-                  className="flex-1 h-10 py-2 hover:bg-black hover:text-white transition-colors text-sm"
+                  className="flex-1 h-10 py-2 text-sm product-add-to-cart-button"
                   size="sm"
                   data-testid="add-to-cart"
                 >
@@ -553,7 +559,7 @@ export default function KingProductCard({
   if (variant === 'list') {
     return (
       <Card 
-        className="group hover:shadow-lg transition-all duration-300 border-gray-200 rounded-xl overflow-hidden relative"
+        className="group hover:shadow-lg transition-all duration-300 border border-gray-200 rounded-xl overflow-hidden relative"
         onMouseEnter={() => {
           setIsHovered(true);
           // Load variations on hover for variable products
@@ -578,14 +584,14 @@ export default function KingProductCard({
               priority={priority}
             />
             
-            {/* Badge - Mobile optimized */}
-            <div className="absolute top-1 sm:top-2 left-1 sm:left-2">
+            {/* Badge - Mobile optimized, smaller on 4-column layout */}
+            <div className="absolute top-0.5 sm:top-1 left-1 sm:left-2">
               {isOnSale ? (
-                <Badge className="bg-red-100 text-red-800 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border-0">
+                <Badge className="bg-red-100 text-red-800 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 rounded-full border-0 whitespace-nowrap">
                   PROMOCJA
                 </Badge>
               ) : product.featured ? (
-                <Badge className="bg-green-100 text-green-800 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full border-0">
+                <Badge className="bg-green-100 text-green-800 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 rounded-full border-0 whitespace-nowrap">
                   Polecany
                 </Badge>
               ) : null}
@@ -628,6 +634,7 @@ export default function KingProductCard({
                   </Button>
                 ) : (
                   <Button
+                    variant="outline"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -635,7 +642,7 @@ export default function KingProductCard({
                     }}
                     disabled={product.stock_status === 'outofstock' || isLoading}
                     size="sm"
-                    className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium rounded-2xl"
+                    className="px-8 py-3 text-sm font-medium rounded-2xl product-add-to-cart-button"
                   >
                     {isLoading ? 'Dodawanie...' : 'Dodaj do koszyka'}
                   </Button>
@@ -750,7 +757,7 @@ export default function KingProductCard({
   // Default variant - matching the screenshot design
   return (
     <Card 
-      className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border-gray-200 rounded-2xl sm:rounded-3xl overflow-hidden p-0 relative"
+      className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border border-gray-200 rounded-2xl sm:rounded-3xl overflow-hidden p-0 relative"
       onMouseEnter={() => {
         setIsHovered(true);
         // Load variations on hover for variable products
@@ -785,22 +792,22 @@ export default function KingProductCard({
               priority={priority}
             />
             
-            {/* Badge - top left - Mobile optimized */}
-            <div className="absolute top-2 left-2">
+            {/* Badge - top left - Mobile optimized, smaller on 4-column layout */}
+            <div className="absolute top-1 left-2">
               {tabType === 'promocje' || isOnSale ? (
-                <Badge className="bg-red-100 text-red-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
+                <Badge className="bg-red-100 text-red-800 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 rounded-full border-0 whitespace-nowrap">
                   PROMOCJA
                 </Badge>
               ) : tabType === 'nowosci' ? (
-                <Badge className="bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
+                <Badge className="bg-blue-100 text-blue-800 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 rounded-full border-0 whitespace-nowrap">
                   Nowość
                 </Badge>
               ) : tabType === 'polecane' || product.featured ? (
-                <Badge className="bg-green-100 text-green-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
+                <Badge className="bg-green-100 text-green-800 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 rounded-full border-0 whitespace-nowrap">
                   Polecany
                 </Badge>
               ) : (
-                <Badge className="bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-0">
+                <Badge className="bg-blue-100 text-blue-800 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 rounded-full border-0 whitespace-nowrap">
                   Nowość
                 </Badge>
               )}
@@ -837,11 +844,11 @@ export default function KingProductCard({
           </div>
         </CardHeader>
         
-        <CardContent className="px-3 sm:px-4 py-1 flex-grow">
-          <div className="text-[10px] sm:text-sm text-gray-500 mb-1 flex items-center">
+        <CardContent className="px-2.5 sm:px-3.5 py-0.5 flex-grow">
+          <div className="text-[6px] sm:text-[8px] text-gray-500 mb-0.5 flex items-center">
             {getMainCategory() || 'Bez kategorii'}
           </div>
-          <p className="font-bold text-foreground text-base sm:text-lg mb-1 line-clamp-2">
+          <p className="font-bold text-foreground text-sm sm:text-base mb-0 line-clamp-2">
             {product.name}
           </p>
           {renderPrice()}
@@ -849,7 +856,7 @@ export default function KingProductCard({
           
           {/* AUTO: Product Attributes - All attributes in gray badges */}
           {product.attributes && product.attributes.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5 mt-2">
               {product.attributes.map((attr: { name: string; options: string[] }, attrIndex: number) => {
                 if (!attr.options || !Array.isArray(attr.options)) return null;
                 
@@ -866,7 +873,7 @@ export default function KingProductCard({
                   return (
                     <span
                       key={`${attrIndex}-${optionIndex}`}
-                      className="bg-gray-100 text-gray-600 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+                      className="bg-gray-100 text-gray-600 text-[8px] font-medium px-1 py-0.5 rounded-full"
                     >
                       {optionValue}
                     </span>
@@ -943,7 +950,7 @@ export default function KingProductCard({
       )}
       
       {showActions && (
-        <CardFooter className="px-3 sm:px-4 pb-4 mt-auto">
+        <CardFooter className="px-2.5 sm:px-3.5 pb-3.5 pt-0.5 mt-0">
           <div className="w-full relative" ref={dropdownRef}>
             <Button 
               onClick={(e) => {
@@ -961,13 +968,14 @@ export default function KingProductCard({
                   handleShowVariants();
                 }
               }}
+              variant="outline"
               disabled={isLoading || product.stock_status === 'outofstock'}
-              className="w-full bg-white border border-black text-gray-900 hover:bg-gray-50 rounded-2xl py-3 font-medium text-sm"
+              className="w-full rounded-2xl py-2.5 font-medium text-xs product-add-to-cart-button"
               size="lg"
-            data-testid="add-to-cart"
+              data-testid="add-to-cart"
             >
-              <ShoppingCart className="w-4 h-4 -mr-1 sm:mr-2" />
-              <span className="text-xs sm:text-sm">{isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}</span>
+              <ShoppingCart className="w-3.5 h-3.5 -mr-1 sm:mr-2" />
+              <span className="text-[10px] sm:text-xs">{isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}</span>
             </Button>
             
             {/* Old dropdown removed - using hover overlay instead */}

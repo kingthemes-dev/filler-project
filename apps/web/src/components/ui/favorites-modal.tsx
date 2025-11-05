@@ -94,7 +94,6 @@ export default function FavoritesModal() {
                   <ModalCloseButton 
                     onClick={closeFavoritesModal}
                     ariaLabel="Zamknij ulubione"
-                    size="sm"
                   />
                 </div>
               </div>

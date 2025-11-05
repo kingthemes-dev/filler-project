@@ -91,7 +91,7 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
           <div className="relative z-20 h-full flex flex-col justify-center md:justify-start items-center md:items-start text-center md:text-left px-4 sm:px-6 md:px-8 lg:px-12 pt-0 md:pt-[50px]">
             {/* Text Content - Centered on mobile, Left aligned on desktop */}
             <div className="text-white space-y-6 sm:space-y-8 md:space-y-6 max-w-4xl md:max-w-2xl">
-              <h1 className="text-4xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">
                 Hurtownia produktów<br />
                 medycyny estetycznej
               </h1>
@@ -109,12 +109,6 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
                       <ShoppingBag className="w-6 h-6" />
                       <span>Sklep</span>
                     </span>
-                  </Link>
-                </Button>
-
-                <Button size="lg" asChild className="relative overflow-hidden text-white text-lg sm:text-xl md:text-xl px-8 sm:px-10 md:px-12 py-4 sm:py-5 md:py-6 rounded-2xl transition-all duration-300 font-semibold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 shadow-[0_10px_30px_-10px_rgba(79,70,229,0.8)] ring-2 ring-white/30 hover:ring-white">
-                  <Link href="#newsletter" aria-label="Przejdź do newslettera i odbierz -10% rabatu">
-                    Odbierz -10% rabatu
                   </Link>
                 </Button>
               </div>
