@@ -13,7 +13,7 @@
 | --- | --- | --- |
 | JWT / uwierzytelnianie | ✅ Implementacja w MU (`king-jwt-authentication.php`), rotacja refresh tokenów, scopes. | 🔍 Potwierdzić działanie whitelist/blacklist na produkcji (logi, monitoring). |
 | Rate limiting | ⚠️ Wymaga przeglądu | Middleware (`middleware/security.ts`) ma limiter globalny i wyjątki dla performance testów – trzeba zweryfikować, czy wszystkie mutacje z niego korzystają. |
-| Walidacja danych | ⚠️ Częściowo potwierdzone | Zod + sanitizacja dostępne (`apps/web/src/lib/schemas/internal.ts`). Należy przejść endpointy mutujące i oznaczyć, które mają jeszcze TODO. |
+| Walidacja danych | ⚠️ Częściowo potwierdzone | Zod + sanitizacja dostępne (`apps/web/src/lib/schemas/internal.ts`). CSRF middleware obsługuje JSON, CSP zaostrzone; trzeba przejść mutacje i reCAPTCHA pod kątem walidacji. |
 | Webhooki | ✅ Hardening wdrożony | 🔧 Do zrobienia: metryki RED + alerty (obserwowalność). |
 | Sekrety / env | ⚠️ Do potwierdzenia | README/DEPLOYMENT_GUIDE odnotowują wymagane sekrety – warto przejść checklistę przed kolejnym wdrożeniem. |
 | reCAPTCHA / antybot | ⚠️ Do walidacji | `/api/recaptcha/verify` istnieje; sprawdzić, czy klucze (`RECAPTCHA_SECRET_KEY`, `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`) są skonfigurowane w środowiskach i czy endpointy mutujące rzeczywiście go używają. |
@@ -129,6 +129,8 @@ done
 - [OWASP Rate Limiting Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Rate_Limiting_Cheat_Sheet.html)
 
 ---
+
+- 2025-11-08 – CSRF middleware obsługuje JSON, CSP bez `unsafe-inline`; ESLint ponownie blokuje build (łatwiej wychwycić regresje).  
 
 **Ostatnia aktualizacja:** 2025-11-08 (reset statusu, wymagane potwierdzenie z zespołem)  
 **Kontakt:** wpisz właścicieli po ustaleniach (np. `@security-lead`, `@backend-lead`, `@devops`).**

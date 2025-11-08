@@ -43,6 +43,28 @@ export async function csrfMiddleware(request: NextRequest) {
   if (process.env.NODE_ENV !== 'production') {
     return NextResponse.next();
   }
+
+  const getCsrfToken = async (): Promise<string | null> => {
+    const headerToken =
+      request.headers.get('x-csrf-token') || request.headers.get('csrf-token');
+    if (headerToken) {
+      return headerToken;
+    }
+
+    const contentType = request.headers.get('content-type') || '';
+    const isFormSubmission =
+      contentType.includes('application/x-www-form-urlencoded') ||
+      contentType.includes('multipart/form-data');
+
+    if (!isFormSubmission) {
+      return null;
+    }
+
+    const formData = await request.formData();
+    const token = formData.get('_csrf');
+    return typeof token === 'string' ? token : null;
+  };
+
   // Only check POST, PUT, DELETE, PATCH requests
   if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
     return NextResponse.next();
@@ -65,9 +87,7 @@ export async function csrfMiddleware(request: NextRequest) {
   }
 
   // Get CSRF token from header or form data
-  const csrfToken = request.headers.get('x-csrf-token') || 
-                   request.headers.get('csrf-token') ||
-                   (await request.formData()).get('_csrf') as string;
+  const csrfToken = await getCsrfToken();
 
   if (!csrfToken || !validateCSRFToken(csrfToken)) {
     return NextResponse.json(

@@ -1,4 +1,3 @@
-// @ts-nocheck - React 18/19 type compatibility issues with dynamic imports
 'use client';
 
 import dynamic from 'next/dynamic';
@@ -8,7 +7,7 @@ const ConditionalFooter = dynamic(() => import('@/components/conditional-footer'
 const CartDrawer = dynamic(() => import('@/components/ui/cart-drawer'), { ssr: false });
 const AuthModalManager = dynamic(() => import('@/components/ui/auth/auth-modal-manager'), { ssr: false });
 const FavoritesModal = dynamic(() => import('@/components/ui/favorites-modal'), { ssr: false });
-// @ts-ignore - React 18/19 type compatibility issue
+// @ts-expect-error - dynamic import returns a module namespace without a default export
 const ErrorBoundary = dynamic(() => import('@/components/error-boundary'), { 
   ssr: false,
 });

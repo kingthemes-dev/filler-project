@@ -10,12 +10,12 @@
 
 | Obszar | Poprzedni status | Co wiemy dzisiaj | Kolejny krok |
 | --- | --- | --- | --- |
-| API & MU-plugins | ~60–100% | Dokumentacja (`API.md`, `MU_PLUGINS_*`) zaktualizowana, ale brak świeżych metryk wdrożeniowych. | Spotkanie z właścicielem backendu – potwierdzić P0/P1. |
-| Bezpieczeństwo | 65% | `SECURITY_OVERVIEW.md` wymaga odświeżenia (część TODO pokryta, część do potwierdzenia). | Audyt z zespołem security / DevOps. |
-| Wydajność | 60% | Refaktory `/api/home-feed`, loggerów i rate limitingu wdrożone; brak nowych testów wydajności. | Uruchomić `perf:autocannon` + `perf:k6`, wpisać wyniki do `OPTIMIZATION_PROGRESS.md`. |
-| Jakość / Testy | 30% | Brak aktualnych danych o coverage; checklisty w dokach historyczne. | Zdefiniować plan testów i odnotować w tabeli poniżej. |
-| Observability | 10% | Logging/Sentry częściowo wdrożone, RED metrics/dashboard – status nieznany. | Zespół SRE – przygotować plan implementacji. |
-| Deployment guide | 100% | Struktura aktualna, ale wymaga potwierdzenia przy najbliższym wdrożeniu (kroki testowe). | Po deployu odhaczyć checklistę i dodać notatkę. |
+| API & MU-plugins | ~60–100% | Kod MU bez zmian funkcjonalnych; brak świeżych metryk po synchronizacji. CSRF/CSP zmienione tylko w warstwie web. | Spotkanie z właścicielem backendu – zebrać logi i potwierdzić P0/P1 po ostatnim deployu. |
+| Bezpieczeństwo | 65% | CSRF middleware obsługuje JSON, CSP bez `unsafe-inline`. Rate limiting/reCAPTCHA nadal wymagają walidacji w produkcji. | Audyt z zespołem security + smoke testy reCAPTCHA i rate limitów. |
+| Wydajność | 60% | ESLint ponownie wymuszony; brak aktualnych wyników `perf:autocannon`/`perf:k6` (backend testowy niedostępny). | Uruchomić testy wydajności po podłączeniu środowiska WP i zaktualizować `OPTIMIZATION_PROGRESS.md`. |
+| Jakość / Testy | 30% | Lint znów blokuje build (setki warningów do triage); coverage/E2E nadal historyczne. | Zaplanować cleanup ostrzeżeń ESLint i odświeżyć raport coverage/E2E. |
+| Observability | 10% | Brak postępu – wciąż brak dashboardów RED i alertingu. | Zespół SRE – zdefiniować zakres metryk i harmonogram wdrożenia. |
+| Deployment guide | 100% | Struktura aktualna; dodano wymóg uruchamiania ESLint w CI. | Przy najbliższym wdrożeniu potwierdzić checklistę oraz wyniki testów perf. |
 
 ---
 
@@ -76,6 +76,7 @@
 ## 📝 Notatki robocze
 
 - 2025-11-08 – zresetowano status (synchronizacja dokumentacji).  
+- 2025-11-08 – Zaostrzono CSRF i CSP; ESLint ponownie wymusza build (wyniki perf nadal oczekują na środowisko).  
 - Wymagane: rebaseline P0/P1 w API, security, performance i observability.  
 - Po ustaleniu nowego stanu – pamiętaj o wpisie w `CHANGELOG.md` (sekcja Docs).
 

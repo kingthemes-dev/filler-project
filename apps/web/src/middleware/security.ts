@@ -29,16 +29,12 @@ function generateNonce(): string {
  * Build Content Security Policy with nonce support
  */
 function buildCSP(nonce: string): string {
-  // FIX: Usunięto 'unsafe-eval' - nie jest potrzebne dla Next.js
-  // FIX: 'unsafe-inline' pozostaje dla inline styles (można poprawić później używając nonce)
-  // TODO: W production użyć nonce dla wszystkich inline scripts/styles
-  
   return [
     "default-src 'self'",
     // Scripts: allow self, Google Analytics, GTM, and nonce for inline scripts
     `script-src 'self' 'nonce-${nonce}' https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com`,
-    // Styles: allow self, Google Fonts, and unsafe-inline (TODO: replace with nonce)
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    // Styles: allow self, Google Fonts, and nonce-based inline styles
+    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https: blob:",
     "connect-src 'self' https://qvwltjhdjw.cfolks.pl https://api.brevo.com https://www.google-analytics.com https://www.googletagmanager.com",

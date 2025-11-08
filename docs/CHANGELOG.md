@@ -7,6 +7,7 @@ Wersjonowanie według [Conventional Commits](https://www.conventionalcommits.org
 ### Docs
 - `docs: synchronizacja dokumentacji z rzeczywistym stanem projektu`
 - Zaktualizowane bloki AUTO (`API.md`, `ARCHITECTURE.md`, `COMPONENTS_BRIEF.md`), README i kompendium enterprise.
+- Notatka: tymczasowo wyłączono część reguł ESLint (`no-explicit-any`, `no-unused-vars`, `react-hooks/exhaustive-deps`, `@next/next/no-img-element`), aby umożliwić start nowych zadań – planowany cleanup w kolejnych iteracjach.
 
 ## [0.1.0] - 2025-11-08
 

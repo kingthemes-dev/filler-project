@@ -9,9 +9,9 @@
 
 | Obszar | Co mamy | Co trzeba potwierdzić | Kolejny krok |
 | --- | --- | --- | --- |
-| Rate limiting & exemptions | Middleware `security.ts` ma `isRateLimitExempt()` dla perf testów. | 🔍 Sprawdzić, czy wszystkie mutacje korzystają z limiterów (`validateRateLimit`). | Zamapować endpointy i dodać brakujące wywołania. |
-| `/api/home-feed` optymalizacja | Równoległe pobieranie, mniejsza liczba requestów. | 📊 Brak świeżych metryk p95/p99. | Uruchomić `perf:autocannon:warm/cold` i zapisać wyniki. |
-| Logger & typing cleanup | Endpointy i serwisy korzystają z `logger`. | ✅ Kontynuacja dla stores/utils (planowane osobno). | Monitorować ostrzeżenia ESLint (`no-explicit-any`). |
+| Rate limiting & exemptions | Middleware `security.ts` ma `isRateLimitExempt()` dla perf testów. | 🔍 Trzeba potwierdzić, że wszystkie mutacje używają centralnego limitera (`checkEndpointRateLimit`). | Zamapować endpointy i dodać brakujące wywołania. |
+| `/api/home-feed` optymalizacja | Równoległe pobieranie, mniejsza liczba requestów. | 📊 Brak świeżych metryk p95/p99 (backend testowy offline). | Uruchomić `perf:autocannon:warm/cold` i zapisać wyniki. |
+| Logger & typing cleanup | Endpointy i serwisy korzystają z `logger`; ESLint ponownie pilnuje błędów. | ⚠️ Wciąż setki ostrzeżeń (`no-explicit-any`, hook deps) do triage. | Zaplanować cleanup ostrzeżeń i monitorować regresje. |
 | k6 baseline | Skrypty gotowe (`perf-k6.js`). | 📊 Brak aktualnych raportów (ostatnie odnosiły się do starego kodu). | Uruchomić test i wgrać raport do `performance-results-k6.json`. |
 | Observability (RED) | Brak dashboardu / alertów. | ⏳ Do zaplanowania z zespołem SRE. | Zebrać wymagania i zapisać w backlogu. |
 
@@ -43,7 +43,7 @@ pnpm --filter @headless-woo/web perf:k6
 
 | Data | Scenariusz | p50 | p95 | p99 | Błąd | Notatki |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2025-11-08 | ✅ TODO: uzupełnij | - | - | - | - | - |
+| 2025-11-08 | ⚠️ Testy wstrzymane | - | - | - | brak środowiska | Backend WP niedostępny – testy perf przeniesione po przywróceniu środowiska. |
 
 > Zalecany format notatek: `"Autocannon warm – 100 req/s, concurrency 20"`, `"k6 1m ramp, 50 vus"` itp.
 
@@ -53,10 +53,10 @@ pnpm --filter @headless-woo/web perf:k6
 
 | Priorytet | Zadanie | Stan | Uwagi |
 | --- | --- | --- | --- |
-| P0 | Przebiec baseline i zaktualizować metryki | ☐ | Bez tego nie ruszamy dalej. |
+| P0 | Przebiec baseline i zaktualizować metryki | ☐ | Blocker: brak dostępu do środowiska WP/staging. |
 | P0 | Sprawdzić rate limiting na wszystkich mutacjach | ☐ | Współpraca z security. |
 | P1 | Observability – dashboard / alerty (RED) | ☐ | Do uzgodnienia z SRE. |
-| P1 | Stores/utils – dokończyć `no-explicit-any` | ☐ | Kolejna iteracja refaktoryzacji. |
+| P1 | Stores/utils – dokończyć `no-explicit-any` | ☐ | Triage ostrzeżeń ESLint po re-enforce. |
 | P2 | Cache strategy deep dive (ETag, TTL) | ☐ | Wymaga danych z performance. |
 
 ---
@@ -64,6 +64,7 @@ pnpm --filter @headless-woo/web perf:k6
 ## 5. Notatki historyczne
 
 - 2025-11-08 – dokument wyzerowany po synchronizacji doców; poprzednie dane dostępne w Git history.  
+- 2025-11-08 – ESLint ponownie wymusza build; testy `perf:*` oczekują na przywrócenie środowiska WP.  
 - 2025-11-06–07 – refaktoryzacja loggerów, rate limitingu i `/api/home-feed`.  
 - Archiwalne szczegóły: zobacz historię pliku lub poprzednie commit'y (np. `git show HEAD~1:docs/OPTIMIZATION_PROGRESS.md`).
 

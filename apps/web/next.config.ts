@@ -6,15 +6,18 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 
 // Debug environment variables (only when DEBUG is enabled and only once per process)
 const __isDebug = process.env.NEXT_PUBLIC_DEBUG === 'true';
-if (__isDebug && !(global as any).__nextConfigLogged) {
+type DebugGlobal = typeof globalThis & { __nextConfigLogged?: boolean };
+const debugGlobal = globalThis as DebugGlobal;
+
+if (__isDebug && !debugGlobal.__nextConfigLogged) {
   console.log('🔍 Next.js Config - GTM ID:', process.env.NEXT_PUBLIC_GTM_ID ? 'SET' : 'NOT SET');
   console.log('🔍 Next.js Config - GA4 ID:', process.env.NEXT_PUBLIC_GA4_ID ? 'SET' : 'NOT SET');
-  (global as any).__nextConfigLogged = true;
+  debugGlobal.__nextConfigLogged = true;
 }
 
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // Temporarily disabled due to React 18/19 type compatibility issues
+    ignoreDuringBuilds: false,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,

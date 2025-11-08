@@ -57,13 +57,13 @@ try {
     Object.defineProperty(globalThis, 'fetch', { value: mockFetch, configurable: true, writable: true });
   } catch {
     // Fallback assignment
-    // @ts-ignore
+    // @ts-expect-error - jsdom does not provide a writable fetch property
     globalThis.fetch = mockFetch;
   }
   // Ensure each test gets a fresh mock with default behavior
   beforeEach(() => {
     // Always reset to a fresh jest.fn for predictability across tests
-    // @ts-ignore
+    // @ts-expect-error - jsdom lacks a native fetch implementation per test run
     globalThis.fetch = jest.fn().mockResolvedValue(defaultResponse);
   });
 })();

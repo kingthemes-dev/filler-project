@@ -74,5 +74,9 @@
   {
     "name": "🧾 Auto Update Docs",
     "prompt": "Based on recent changes, detect what part of the project was modified and update only the relevant doc among ARCHITECTURE.md, COMPONENTS_BRIEF.md, API.md, README.md, CHANGELOG.md. Respect AUTO markers (<!-- AUTO:API-START/END -->, <!-- AUTO:FOLDERS-START/END -->, <!-- AUTO:COMP-START/END -->). Keep unrelated sections intact."
+  },
+  {
+    "name": "🧭 Alias Audit + Auto-Fix",
+    "prompt": "Zadanie: wykonaj pełny audyt aliasów importów w projekcie i automatycznie je uporządkuj tak, aby były spójne z rzeczywistą strukturą projektu oraz faktycznym użyciem w kodzie.\n\n### 1️⃣ Analiza struktury projektu\n- Przeskanuj repozytorium i wykryj główny katalog źródłowy (src, apps, packages, itp.).\n- Wypisz wszystkie foldery zawierające kod TypeScript lub JavaScript.\n\n### 2️⃣ Analiza aliasów\n- Odczytaj aliasy z tsconfig*.json, next.config.*, babel.config.* i .eslintrc.*.\n- Dla każdego aliasu sprawdź:\n  - czy docelowy folder istnieje,\n  - czy alias jest używany w kodzie,\n  - czy wskazuje poprawną ścieżkę.\n- Oznacz aliasy jako: używany / nieużywany / błędny / nowy.\n\n### 3️⃣ Auto-Fix\n- Usuń aliasy martwe lub wskazujące na nieistniejące foldery.\n- Dodaj aliasy dla faktycznie używanych struktur.\n- Zaktualizuj tsconfig, next.config i .eslintrc, zachowując format i styl.\n\n### 4️⃣ Wynik\n- Wypisz tabelę aliasów przed i po:\n  ALIAS | ŚCIEŻKA | STATUS_PRZED | STATUS_PO\n- Pokaż diff zmienionych plików.\n- Jeśli git jest włączony, zaproponuj commit: `chore: uporządkowano aliasy TypeScript/Next.js`."
   }
 ]
