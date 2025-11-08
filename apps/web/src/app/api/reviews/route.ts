@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
+import { getReviewsQuerySchema, createReviewSchema } from '@/lib/schemas/reviews';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
 
 // PRO Architecture: Use custom WordPress King Reviews API
 const WORDPRESS_BASE_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
@@ -8,16 +11,25 @@ const KING_REVIEWS_API = `${WORDPRESS_BASE_URL}/wp-json/king-reviews/v1/reviews`
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const productId = searchParams.get('product_id');
     
-    if (!productId) {
-      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+    // Validate query parameters
+    const queryResult = getReviewsQuerySchema.safeParse({
+      product_id: searchParams.get('product_id'),
+    });
+    
+    if (!queryResult.success) {
+      return createErrorResponse(
+        new ValidationError('Invalid query parameters', queryResult.error.errors),
+        { endpoint: 'reviews', method: 'GET' }
+      );
     }
+    
+    const { product_id } = queryResult.data;
 
-    console.log('🔍 Fetching reviews for product:', productId);
+    logger.debug('Fetching reviews for product', { productId: product_id });
     
     // PRO: Use King Reviews API endpoint
-    const url = `${KING_REVIEWS_API}?product_id=${productId}`;
+    const url = `${KING_REVIEWS_API}?product_id=${product_id}`;
     
     const response = await fetch(url, {
       method: 'GET',
@@ -29,12 +41,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error('❌ Reviews API error:', response.status);
+      logger.error('Reviews API error', { status: response.status, productId: product_id });
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const reviews = await response.json();
-    console.log('✅ Reviews fetched:', reviews.length, 'reviews');
+    logger.info('Reviews fetched', { productId: product_id, count: Array.isArray(reviews) ? reviews.length : 0 });
     
     return NextResponse.json(reviews, {
       headers: {
@@ -42,7 +54,11 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('❌ Error fetching reviews:', error);
+    const err = error instanceof Error ? error : new Error('Failed to fetch reviews');
+    logger.error('Error fetching reviews', {
+      message: err.message,
+      productId: request.nextUrl?.searchParams.get('product_id') ?? 'unknown'
+    });
     return NextResponse.json({ error: 'Failed to fetch reviews' }, { status: 500 });
   }
 }
@@ -50,31 +66,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { product_id, review, reviewer, reviewer_email, rating } = body;
 
-    console.log('📝 Creating review:', { product_id, reviewer, rating });
-
-    // Validate required fields
-    if (!product_id || !review || !reviewer || !reviewer_email || !rating) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: product_id, review, reviewer, reviewer_email, rating' 
-      }, { status: 400 });
+    // Validate request body with Zod
+    const validationResult = createReviewSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      logger.warn('Review payload validation error', {
+        issues: validationResult.error.errors
+      });
+      return createErrorResponse(
+        new ValidationError('Invalid review data', validationResult.error.errors),
+        { endpoint: 'reviews', method: 'POST' }
+      );
     }
 
-    // Validate rating
-    if (rating < 1 || rating > 5) {
-      return NextResponse.json({ 
-        error: 'Rating must be between 1 and 5' 
-      }, { status: 400 });
-    }
-
-    const reviewData = {
-      product_id: parseInt(product_id),
-      review,
-      reviewer,
-      reviewer_email,
-      rating: parseInt(rating)
-    };
+    const reviewData = validationResult.data;
+    logger.info('Creating review', {
+      productId: reviewData.product_id,
+      reviewer: reviewData.reviewer,
+      rating: reviewData.rating
+    });
 
     // PRO: Use King Reviews API endpoint
     const response = await fetch(KING_REVIEWS_API, {
@@ -88,12 +99,18 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Error creating review:', errorData);
+      logger.error('Error creating review', {
+        status: response.status,
+        error: errorData
+      });
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
 
     const newReview = await response.json();
-    console.log('✅ Review created successfully:', newReview.id);
+    logger.info('Review created successfully', {
+      reviewId: newReview?.id,
+      productId: reviewData.product_id
+    });
     
     return NextResponse.json(newReview, { 
       status: 201,
@@ -102,9 +119,13 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('❌ Error creating review:', error);
+    const err = error instanceof Error ? error : new Error('Failed to create review');
+    logger.error('Error creating review', {
+      message: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
     return NextResponse.json({ 
-      error: error instanceof Error ? error.message : 'Failed to create review' 
+      error: err.message 
     }, { status: 500 });
   }
 }

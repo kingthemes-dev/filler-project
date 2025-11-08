@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Security Headers Configuration",
+  "description": "Configuration for security headers (CSP, CORS, SEC headers) for Next.js API routes",
+  "version": "1.0.0",
+  "headers": {
+    "Content-Security-Policy": {
+      "description": "Content Security Policy with nonce support",
+      "default-src": ["'self'"],
+      "script-src": [
+        "'self'",
+        "'nonce-{nonce}'",
+        "https://www.googletagmanager.com",
+        "https://www.google-analytics.com",
+        "https://www.google.com",
+        "https://www.gstatic.com"
+      ],
+      "style-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com"
+      ],
+      "font-src": [
+        "'self'",
+        "https://fonts.gstatic.com",
+        "data:"
+      ],
+      "img-src": [
+        "'self'",
+        "data:",
+        "https:",
+        "blob:"
+      ],
+      "connect-src": [
+        "'self'",
+        "https://qvwltjhdjw.cfolks.pl",
+        "https://api.brevo.com",
+        "https://www.google-analytics.com",
+        "https://www.googletagmanager.com"
+      ],
+      "frame-src": ["'none'"],
+      "object-src": ["'none'"],
+      "base-uri": ["'self'"],
+      "form-action": ["'self'"],
+      "frame-ancestors": ["'none'"],
+      "upgrade-insecure-requests": true
+    },
+    "X-Frame-Options": {
+      "value": "DENY",
+      "description": "Prevent clickjacking"
+    },
+    "X-Content-Type-Options": {
+      "value": "nosniff",
+      "description": "Prevent MIME type sniffing"
+    },
+    "X-XSS-Protection": {
+      "value": "1; mode=block",
+      "description": "Enable XSS protection"
+    },
+    "Referrer-Policy": {
+      "value": "strict-origin-when-cross-origin",
+      "description": "Control referrer information"
+    },
+    "Permissions-Policy": {
+      "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+      "description": "Control browser features"
+    },
+    "Strict-Transport-Security": {
+      "value": "max-age=31536000; includeSubDomains; preload",
+      "description": "Force HTTPS (production only)",
+      "productionOnly": true
+    }
+  },
+  "cors": {
+    "description": "CORS configuration per route",
+    "default": {
+      "allowedOrigins": ["${NEXT_PUBLIC_BASE_URL}"],
+      "allowedMethods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      "allowedHeaders": ["Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token"],
+      "maxAge": 86400,
+      "credentials": true
+    },
+    "routes": {
+      "/api/webhooks": {
+        "allowedOrigins": ["*"],
+        "description": "WooCommerce webhooks - allow all origins"
+      },
+      "/api/analytics": {
+        "allowedOrigins": ["*"],
+        "description": "Public analytics - allow all origins"
+      },
+      "/api/edge/analytics": {
+        "allowedOrigins": ["*"],
+        "description": "Edge analytics - allow all origins"
+      }
+    }
+  },
+  "rateLimiting": {
+    "description": "Rate limiting configuration per endpoint",
+    "default": {
+      "maxRequests": 100,
+      "windowMs": 60000,
+      "description": "100 requests per minute"
+    },
+    "endpoints": {
+      "/api/woocommerce": {
+        "GET": {
+          "maxRequests": 200,
+          "windowMs": 60000,
+          "description": "200 GET requests per minute"
+        },
+        "POST": {
+          "maxRequests": 50,
+          "windowMs": 60000,
+          "description": "50 POST requests per minute"
+        }
+      },
+      "/api/orders": {
+        "POST": {
+          "maxRequests": 10,
+          "windowMs": 60000,
+          "description": "10 order creation requests per minute"
+        }
+      },
+      "/api/webhooks": {
+        "POST": {
+          "maxRequests": 1000,
+          "windowMs": 60000,
+          "description": "1000 webhook requests per minute (from WooCommerce)"
+        }
+      },
+      "/api/analytics": {
+        "POST": {
+          "maxRequests": 500,
+          "windowMs": 60000,
+          "description": "500 analytics events per minute"
+        }
+      }
+    }
+  },
+  "notes": [
+    "CSP nonce is generated dynamically per request",
+    "CORS configuration is applied per-route in middleware",
+    "Rate limiting uses IP + token (if authenticated)",
+    "Security headers are applied in middleware/security.ts",
+    "Production-only headers (HSTS) are only set in production environment"
+  ]
+}
+

@@ -5,6 +5,55 @@
 import { env } from '@/config/env';
 import { logger } from './logger';
 
+type AnalyticsParameters = Record<string, unknown>;
+
+interface QueuedEvent {
+  type: string;
+  data: AnalyticsParameters;
+}
+
+type GtagFunction = (...args: unknown[]) => void;
+
+type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+type TrackedError = {
+  message: string;
+  filename?: string;
+  lineno?: number;
+  colno?: number;
+  stack?: string;
+  component?: string;
+  type?: string;
+};
+
+interface ErrorPayload extends TrackedError {
+  timestamp: string;
+  url: string;
+  user_agent: string;
+  error_id: string;
+}
+
+interface ReactErrorDetail {
+  error?: { message?: string; stack?: string };
+  component?: string;
+}
+
+interface InteractionRecord {
+  type: string;
+  timestamp: number;
+  data?: AnalyticsParameters;
+}
+
+declare global {
+  interface Window {
+    dataLayer?: unknown[];
+    gtag?: GtagFunction;
+    Sentry?: {
+      captureException: (error: Error, context?: unknown) => void;
+    };
+  }
+}
+
 // Google Analytics configuration
 export const GA_CONFIG = {
   measurementId: env.NEXT_PUBLIC_GA_ID,
@@ -45,7 +94,7 @@ export const EVENT_TYPES = {
 // Analytics class
 class Analytics {
   private isInitialized = false;
-  private queue: any[] = [];
+  private queue: QueuedEvent[] = [];
 
   constructor() {
     this.initialize();
@@ -63,11 +112,12 @@ class Analytics {
     document.head.appendChild(script);
 
     // Initialize gtag
-    (window as any).dataLayer = (window as any).dataLayer || [];
-    function gtag(...args: any[]) {
-      (window as any).dataLayer.push(args);
-    }
-    (window as any).gtag = gtag;
+    const win = window as typeof window & { dataLayer?: unknown[]; gtag?: GtagFunction };
+    win.dataLayer = win.dataLayer || [];
+    const gtag: GtagFunction = (...args) => {
+      win.dataLayer?.push(args);
+    };
+    win.gtag = gtag;
 
     gtag('js', new Date());
     gtag('config', GA_CONFIG.measurementId!, {
@@ -78,7 +128,7 @@ class Analytics {
     this.isInitialized = true;
     
     // Process queued events
-    this.queue.forEach(event => this.track(event.type, event.data));
+    this.queue.forEach((event) => this.track(event.type, event.data));
     this.queue = [];
 
     logger.info('Analytics initialized', { measurementId: GA_CONFIG.measurementId });
@@ -107,7 +157,7 @@ class Analytics {
   }
 
   // Track custom event
-  track(eventType: string, parameters: Record<string, any> = {}) {
+  track(eventType: string, parameters: AnalyticsParameters = {}) {
     if (!GA_CONFIG.enabled) return;
 
     const event = {
@@ -131,9 +181,9 @@ class Analytics {
   }
 
   // Send event to Google Analytics
-  private sendEvent(eventType: string, parameters: Record<string, any>) {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', eventType, parameters);
+  private sendEvent(eventType: string, parameters: AnalyticsParameters) {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', eventType, parameters);
     }
   }
 
@@ -232,17 +282,17 @@ class Analytics {
 
   // User identification
   setUserId(userId: string) {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('config', GA_CONFIG.measurementId!, {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('config', GA_CONFIG.measurementId!, {
         user_id: userId
       });
     }
   }
 
   // Set user properties
-  setUserProperties(properties: Record<string, any>) {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('config', GA_CONFIG.measurementId!, {
+  setUserProperties(properties: AnalyticsParameters) {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('config', GA_CONFIG.measurementId!, {
         custom_map: properties
       });
     }
@@ -312,7 +362,8 @@ export class PerformanceMonitor {
     try {
       const fidObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          const fid = (entry as any).processingStart - entry.startTime;
+          const fidEntry = entry as PerformanceEventTiming;
+          const fid = fidEntry.processingStart - fidEntry.startTime;
           this.recordMetric('fid', fid);
           analytics.trackPerformance({
             name: 'First Input Delay',
@@ -330,10 +381,12 @@ export class PerformanceMonitor {
     try {
       const clsObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          this.recordMetric('cls', (entry as any).value);
+          const layoutShiftEntry = entry as PerformanceEntry & { value?: number };
+          const shiftValue = layoutShiftEntry.value ?? 0;
+          this.recordMetric('cls', shiftValue);
           analytics.trackPerformance({
             name: 'Cumulative Layout Shift',
-            value: (entry as any).value
+            value: shiftValue
           });
         }
       });
@@ -414,34 +467,36 @@ export class ErrorTracker {
     });
 
     // Unhandled promise rejection handler
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+      const reason = event.reason as { message?: string; stack?: string } | string | undefined;
+      const message =
+        typeof reason === 'object' && reason?.message
+          ? reason.message
+          : typeof reason === 'string'
+            ? reason
+            : 'Unhandled promise rejection';
+
       this.trackError({
-        message: event.reason?.message || 'Unhandled promise rejection',
-        stack: event.reason?.stack,
+        message,
+        stack: typeof reason === 'object' ? reason?.stack : undefined,
         type: 'promise'
       });
     });
 
     // React error boundary integration
-    window.addEventListener('react-error', (event: any) => {
+    window.addEventListener('react-error', (event) => {
+      const reactEvent = event as CustomEvent<ReactErrorDetail>;
+      const detail = reactEvent.detail;
       this.trackError({
-        message: event.detail?.error?.message || 'React error',
-        stack: event.detail?.error?.stack,
-        component: event.detail?.component,
+        message: detail?.error?.message || 'React error',
+        stack: detail?.error?.stack,
+        component: detail?.component,
         type: 'react'
       });
     });
   }
 
-  trackError(error: {
-    message: string;
-    filename?: string;
-    lineno?: number;
-    colno?: number;
-    stack?: string;
-    component?: string;
-    type?: string;
-  }) {
+  trackError(error: TrackedError) {
     if (this.errorCount >= this.maxErrors) {
       logger.warn('Error limit reached, not tracking more errors');
       return;
@@ -449,7 +504,7 @@ export class ErrorTracker {
 
     this.errorCount++;
 
-    const errorData = {
+    const errorPayload: ErrorPayload = {
       ...error,
       timestamp: new Date().toISOString(),
       url: window.location.href,
@@ -457,26 +512,28 @@ export class ErrorTracker {
       error_id: this.generateErrorId()
     };
 
+    const severity = this.getErrorSeverity(error);
+
     // Send to analytics
     analytics.trackError({
       message: error.message,
       stack: error.stack,
       component: error.component,
-      severity: this.getErrorSeverity(error)
+      severity
     });
 
     // Log error
-    logger.error('Error tracked', errorData);
+    logger.error('Error tracked', { ...errorPayload, severity });
 
     // Send to external error tracking service (optional)
-    this.sendToErrorService(errorData);
+    this.sendToErrorService(errorPayload);
   }
 
   private generateErrorId(): string {
     return Math.random().toString(36).substring(2, 15);
   }
 
-  private getErrorSeverity(error: any): 'low' | 'medium' | 'high' | 'critical' {
+  private getErrorSeverity(error: TrackedError): ErrorSeverity {
     if (error.message?.includes('Network') || error.message?.includes('fetch')) {
       return 'medium';
     }
@@ -489,14 +546,15 @@ export class ErrorTracker {
     return 'medium';
   }
 
-  private sendToErrorService(errorData: any) {
+  private sendToErrorService(errorData: ErrorPayload) {
+    const severity = this.getErrorSeverity(errorData);
     // Send to Sentry if available
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.captureException(new Error(errorData.message), {
+    if (typeof window !== 'undefined' && window.Sentry) {
+      window.Sentry.captureException(new Error(errorData.message), {
         tags: {
           component: errorData.component,
           type: errorData.type,
-          severity: this.getErrorSeverity(errorData)
+          severity
         },
         extra: {
           stack: errorData.stack,
@@ -515,7 +573,8 @@ export class ErrorTracker {
         body: JSON.stringify({
           ...errorData,
           service: 'headless-woo',
-          version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'
+          version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+          severity
         })
       }).catch(() => {
         // Ignore errors in error reporting
@@ -531,7 +590,7 @@ export const errorTracker = new ErrorTracker();
 export class BehaviorTracker {
   private sessionStart = Date.now();
   private pageViews: string[] = [];
-  private interactions: any[] = [];
+  private interactions: InteractionRecord[] = [];
 
   constructor() {
     this.initialize();
@@ -555,6 +614,11 @@ export class BehaviorTracker {
 
   private trackPageView(path: string) {
     this.pageViews.push(path);
+    this.interactions.push({
+      type: EVENT_TYPES.PAGE_VIEW,
+      timestamp: Date.now(),
+      data: { page_path: path }
+    });
     analytics.trackPageView(path);
   }
 
@@ -571,9 +635,17 @@ export class BehaviorTracker {
         
         // Track milestone scroll depths
         if ([25, 50, 75, 90, 100].includes(scrollPercent)) {
-          analytics.track('scroll', {
+          const data = {
             scroll_depth: scrollPercent,
             page_path: window.location.pathname
+          };
+          analytics.track('scroll', {
+            ...data
+          });
+          this.interactions.push({
+            type: EVENT_TYPES.SCROLL,
+            timestamp: Date.now(),
+            data
           });
         }
       }
@@ -585,9 +657,15 @@ export class BehaviorTracker {
   private trackTimeOnPage() {
     window.addEventListener('beforeunload', () => {
       const timeOnPage = Date.now() - this.sessionStart;
-      analytics.track('time_on_page', {
+      const data = {
         time_on_page: timeOnPage,
         page_path: window.location.pathname
+      };
+      analytics.track('time_on_page', data);
+      this.interactions.push({
+        type: EVENT_TYPES.TIME_ON_PAGE,
+        timestamp: Date.now(),
+        data
       });
     });
   }
@@ -598,21 +676,33 @@ export class BehaviorTracker {
       
       // Track button clicks
       if (target.tagName === 'BUTTON' || target.closest('button')) {
-        analytics.track('button_click', {
+        const data = {
           button_text: target.textContent?.trim(),
           button_id: target.id,
           button_class: target.className,
           page_path: window.location.pathname
+        };
+        analytics.track('button_click', data);
+        this.interactions.push({
+          type: EVENT_TYPES.BUTTON_CLICK,
+          timestamp: Date.now(),
+          data
         });
       }
       
       // Track link clicks
       if (target.tagName === 'A' || target.closest('a')) {
         const link = target.closest('a') as HTMLAnchorElement;
-        analytics.track('link_click', {
+        const data = {
           link_url: link.href,
           link_text: link.textContent?.trim(),
           page_path: window.location.pathname
+        };
+        analytics.track('link_click', data);
+        this.interactions.push({
+          type: EVENT_TYPES.LINK_CLICK,
+          timestamp: Date.now(),
+          data
         });
       }
     });
@@ -628,13 +718,15 @@ export class BehaviorTracker {
 }
 
 // Throttle utility
-function throttle<T extends (...args: any[]) => any>(func: T, limit: number): T {
-  let inThrottle: boolean;
-  return ((...args: any[]) => {
+function throttle<T extends (...args: unknown[]) => void>(func: T, limit: number): T {
+  let inThrottle = false;
+  return ((...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      window.setTimeout(() => {
+        inThrottle = false;
+      }, limit);
     }
   }) as T;
 }

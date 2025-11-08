@@ -1,5 +1,6 @@
 /**
  * Formatuje cenę w formacie PLN (wejście w złotówkach)
+ * Bez separatorów tysięcy (np. 1999,00 zł zamiast 1 999,00 zł)
  */
 export function formatPrice(price: number | string): string {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -8,12 +9,9 @@ export function formatPrice(price: number | string): string {
     return '0,00 zł';
   }
   
-  return new Intl.NumberFormat('pl-PL', {
-    style: 'currency',
-    currency: 'PLN',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numPrice);
+  // Format bez separatorów tysięcy, tylko z dwoma miejscami po przecinku
+  const formatted = numPrice.toFixed(2).replace('.', ',');
+  return `${formatted} zł`;
 }
 
 /**
@@ -39,12 +37,10 @@ export function formatPriceWithoutVAT(priceWithoutVAT: number): string {
 
 /**
  * Zwraca cenę jako string z dwoma miejscami po przecinku, bez symbolu waluty (wejście w złotówkach)
+ * Bez separatorów tysięcy (np. 1999,00 zamiast 1 999,00)
  */
 export function formatPriceWithoutCurrency(price: number): string {
-  return new Intl.NumberFormat('pl-PL', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(price);
+  return price.toFixed(2).replace('.', ',');
 }
 
 /**

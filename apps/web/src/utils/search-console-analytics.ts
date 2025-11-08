@@ -7,6 +7,18 @@
 
 // removed unused SEOEvent interface
 
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
+type GA4Parameters = Record<string, string | number | boolean | null | undefined>;
+type LayoutShiftEntry = PerformanceEntry & {
+  value?: number;
+  hadRecentInput?: boolean;
+};
+
 class SearchConsoleAnalytics {
   private ga4Id: string;
   private isInitialized: boolean = false;
@@ -64,7 +76,7 @@ class SearchConsoleAnalytics {
   /**
    * Track SEO-related events
    */
-  public trackSEOEvent(eventName: string, parameters: Record<string, any>): void {
+  public trackSEOEvent(eventName: string, parameters: GA4Parameters): void {
     if (!this.isInitialized) return;
 
     this.sendToGA4(eventName, {
@@ -132,8 +144,9 @@ class SearchConsoleAnalytics {
         let clsValue = 0;
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
+            const layoutShift = entry as LayoutShiftEntry;
+            if (!layoutShift.hadRecentInput) {
+              clsValue += layoutShift.value ?? 0;
               this.sendToGA4('web_vitals', {
                 metric_name: 'CLS',
                 metric_value: Math.round(clsValue * 1000) / 1000,
@@ -246,9 +259,9 @@ class SearchConsoleAnalytics {
   /**
    * Send event to GA4
    */
-  private sendToGA4(eventName: string, parameters: Record<string, any>): void {
-    if (typeof window !== 'undefined' && 'gtag' in window) {
-      (window as any).gtag('event', eventName, parameters);
+  private sendToGA4(eventName: string, parameters: GA4Parameters): void {
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', eventName, parameters);
     }
   }
 

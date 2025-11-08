@@ -1,61 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
+import { errorTrackingSchema } from '@/lib/schemas/internal';
+import { validateApiInput } from '@/utils/request-validation';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, data } = body;
+    const sanitizedBody = validateApiInput(body);
+    const validationResult = errorTrackingSchema.safeParse(sanitizedBody);
 
-    // Log to console with proper formatting
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Nieprawidłowe dane raportu błędów', validationResult.error.errors),
+        { endpoint: 'error-tracking', method: 'POST' }
+      );
+    }
+
+    const { type, data } = validationResult.data;
+
     if (type === 'errors') {
       logger.error('Error Tracking Report', {
         count: data.length,
-        errors: data.map((error: any) => ({
+        errors: data.map((error) => ({
           message: error.message,
           category: error.category,
           level: error.level,
           url: error.url,
           timestamp: error.timestamp,
+          metadata: error.metadata,
         })),
       });
 
-      // Store in localStorage for development (in production, this would go to a database)
       if (process.env.NODE_ENV === 'development') {
-        console.group('🚨 Error Tracking Report');
-        data.forEach((error: any, index: number) => {
-          console.log(`${index + 1}. [${error.level.toUpperCase()}] ${error.category}`);
-          console.log(`   Message: ${error.message}`);
-          console.log(`   URL: ${error.url}`);
-          console.log(`   Time: ${error.timestamp}`);
-          if (error.metadata) {
-            console.log(`   Metadata:`, error.metadata);
-          }
+        logger.debug('Dev error report (console mirror)', {
+          entries: data.map((error, index) => ({
+            index,
+            level: (error.level || 'info').toUpperCase(),
+            category: error.category || 'general',
+            message: error.message,
+            url: error.url,
+            timestamp: error.timestamp,
+            metadata: error.metadata ? '[metadata]' : undefined
+          }))
         });
-        console.groupEnd();
       }
     } else if (type === 'performance') {
       logger.info('Performance Metrics Report', {
         count: data.length,
-        metrics: data.map((metric: any) => ({
-          name: metric.name,
-          value: metric.value,
-          url: metric.url,
-          timestamp: metric.timestamp,
-        })),
+        metrics: data,
       });
 
-      // Log performance metrics
       if (process.env.NODE_ENV === 'development') {
-        console.group('⚡ Performance Metrics Report');
-        data.forEach((metric: any, index: number) => {
-          console.log(`${index + 1}. ${metric.name}: ${metric.value}ms`);
-          console.log(`   URL: ${metric.url}`);
-          console.log(`   Time: ${metric.timestamp}`);
-          if (metric.metadata) {
-            console.log(`   Metadata:`, metric.metadata);
-          }
+        logger.debug('Dev performance metrics (console mirror)', {
+          entries: data.map((metric, index) => ({ index, metric }))
         });
-        console.groupEnd();
       }
     }
 

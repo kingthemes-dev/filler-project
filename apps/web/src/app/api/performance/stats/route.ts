@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { performanceMonitor } from '@/utils/performance-monitor';
+import { logger } from '@/utils/logger';
 
 export async function GET() {
   try {
@@ -12,7 +13,7 @@ export async function GET() {
       version: '1.0.0'
     });
   } catch (error) {
-    console.error('Error fetching performance stats:', error);
+    logger.error('Performance stats error', { error });
     return NextResponse.json(
       { error: 'Failed to fetch performance stats' },
       { status: 500 }

@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from '@/components/ui/header';
 import DeferClientUI from '@/components/defer-client-ui';
 import ShopDataPrefetcher from '@/components/shop-data-prefetcher';
+import RecaptchaProvider from '@/components/ui/recaptcha-provider';
 import { generateOrganizationStructuredData, generateWebsiteStructuredData, DEFAULT_ORGANIZATION } from '@/utils/structured-data';
 import { env } from '@/config/env';
 
@@ -171,10 +172,12 @@ export default function RootLayout({
                   >
                         {/* Google Tag Manager (noscript) */}
                         {env.NEXT_PUBLIC_GTM_ID ? <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${env.NEXT_PUBLIC_GTM_ID}`} height="0" width="0" style={{display:'none',visibility:'hidden'}}></iframe></noscript> : null}
-                          <Header />
-                          <DeferClientUI>
-                            {children}
-                          </DeferClientUI>
+                          <RecaptchaProvider>
+                            <Header />
+                            <DeferClientUI>
+                              {children}
+                            </DeferClientUI>
+                          </RecaptchaProvider>
                           
                           {/* Prefetch shop data in background */}
                           <ShopDataPrefetcher 

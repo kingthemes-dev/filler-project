@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { env } from '@/config/env';
+import { newsletterSubscribeSchema } from '@/lib/schemas/newsletter';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
 
 // Generate unique discount code and create WooCommerce coupon
 async function generateDiscountCode(email: string, source: string): Promise<string> {
@@ -60,14 +63,27 @@ async function generateDiscountCode(email: string, source: string): Promise<stri
       
       if (response.ok) {
         const createdCoupon = await response.json();
-        console.log(`✅ Created WooCommerce coupon: ${code} for ${email}`, createdCoupon);
+        logger.info('Created WooCommerce coupon', {
+          code,
+          email,
+          couponId: createdCoupon?.id
+        });
       } else {
         const errorText = await response.text();
-        console.error(`❌ Failed to create WooCommerce coupon: ${code}`, errorText);
+        logger.error('Failed to create WooCommerce coupon', {
+          code,
+          email,
+          status: response.status,
+          error: errorText?.slice(0, 500) ?? 'unknown'
+        });
       }
     }
   } catch (error) {
-    console.error('Error creating WooCommerce coupon:', error);
+    logger.error('Error creating WooCommerce coupon', {
+      email,
+      code,
+      message: (error as Error)?.message
+    });
   }
   
   return code;
@@ -76,24 +92,19 @@ async function generateDiscountCode(email: string, source: string): Promise<stri
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, firstName, lastName, source, consent } = body;
 
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
-      return NextResponse.json(
-        { message: 'Nieprawidłowy adres email' },
-        { status: 400 }
+    // Validate request body with Zod
+    const validationResult = newsletterSubscribeSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Invalid newsletter subscription data', validationResult.error.errors),
+        { endpoint: 'newsletter/subscribe', method: 'POST' }
       );
     }
 
-    // Check consent
-    if (!consent) {
-      return NextResponse.json(
-        { message: 'Wymagana zgoda na przetwarzanie danych' },
-        { status: 400 }
-      );
-    }
+    const { email, name: firstName, source, consent } = validationResult.data;
+    const lastName = ''; // Newsletter schema doesn't include lastName
 
     // TODO: Integrate with newsletter service (Mailchimp, SendinBlue, etc.)
     // SendinBlue (Brevo) integration
@@ -101,10 +112,10 @@ export async function POST(request: NextRequest) {
     const sendinblueListId = parseInt(env.SENDINBLUE_LIST_ID || '1');
 
     // Generate discount code for new subscribers
-    const discountCode = await generateDiscountCode(email, source);
+    const discountCode = await generateDiscountCode(email, source || 'newsletter');
     
     if (!sendinblueApiKey) {
-      console.log('📧 Newsletter subscription (no API key):', {
+      logger.info('Newsletter subscription stored locally', {
         email,
         firstName,
         lastName,
@@ -142,11 +153,14 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('SendinBlue API error:', errorData);
+        logger.error('SendinBlue API error', {
+          email,
+          response: errorData
+        });
         throw new Error('Newsletter service error');
       }
 
-      console.log('📧 Newsletter subscription successful via SendinBlue:', {
+      logger.info('Newsletter subscription via SendinBlue', {
         email,
         source,
         consent,
@@ -171,12 +185,21 @@ export async function POST(request: NextRequest) {
       });
 
       if (emailResponse.ok) {
-        console.log(`✅ Discount email sent to ${email} with code ${discountCode}`);
+        logger.info('Discount email sent after newsletter signup', {
+          email,
+          discountCode
+        });
       } else {
-        console.error(`❌ Failed to send discount email to ${email}`);
+        logger.error('Failed to send discount email after newsletter signup', {
+          email,
+          status: emailResponse.status
+        });
       }
     } catch (emailError) {
-      console.error('Error sending discount email:', emailError);
+      logger.error('Error sending discount email', {
+        email,
+        message: emailError instanceof Error ? emailError.message : 'Unknown error'
+      });
     }
 
     return NextResponse.json({
@@ -187,10 +210,14 @@ export async function POST(request: NextRequest) {
       discountCode: discountCode
     });
 
-  } catch (error: any) {
-    console.error('Newsletter subscription error:', error);
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error('Newsletter subscription error');
+    logger.error('Newsletter subscription error', {
+      message: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
     return NextResponse.json(
-      { message: 'Wystąpił błąd podczas zapisywania' },
+      { message: err.message || 'Wystąpił błąd podczas zapisywania' },
       { status: 500 }
     );
   }

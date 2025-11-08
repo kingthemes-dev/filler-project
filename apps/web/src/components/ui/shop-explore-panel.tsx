@@ -88,9 +88,22 @@ function ShopExplorePanelContent({ open, onClose }: ShopExplorePanelProps) {
   // Inicjalizuj store przy otwarciu modala
   useEffect(() => {
     if (open) {
-      initialize();
+      console.log('🔄 Shop modal opened - initializing store...');
+      initialize().then(() => {
+        // Wait a bit for store to update
+        setTimeout(() => {
+          console.log('✅ Store initialized:', {
+            categories: mainCategories.length,
+            brands: brands.length,
+            zastosowanie: zastosowanie.length
+          });
+        }, 100);
+      }).catch((err) => {
+        console.error('❌ Store initialization failed:', err);
+      });
     }
-  }, [open, initialize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Funkcje do zarządzania hover kategoriami z delay
   const handleCategoryHover = (categoryId: string) => {
@@ -226,6 +239,14 @@ function ShopExplorePanelContent({ open, onClose }: ShopExplorePanelProps) {
                       <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
                     </div>
                     <p className="text-sm">Ładowanie kategorii...</p>
+                  </div>
+                ) : mainCategories.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Filter className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm">Brak kategorii</p>
+                    <p className="text-xs text-gray-400 mt-1">Kategorie będą dostępne wkrótce</p>
                   </div>
                 ) : (
                   /* Kategorie z systemem hover */

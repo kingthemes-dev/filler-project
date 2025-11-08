@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import wooCommerceService from '@/services/woocommerce-optimized';
+import { logger } from '@/utils/logger';
+import type { WooCustomer } from '@/types/woocommerce';
 
 // Types
 export interface User {
@@ -17,6 +19,7 @@ export interface User {
     phone: string;
     company?: string;
     nip?: string;
+    invoiceRequest?: boolean;
   };
   shipping?: {
     address: string;
@@ -46,7 +49,7 @@ export interface AuthActions {
   
   // User management
   updateUser: (userData: Partial<User>) => void;
-  updateProfile: (profileData: any) => Promise<{ success: boolean; message: string; customer?: any }>;
+  updateProfile: (profileData: ProfileUpdatePayload) => Promise<{ success: boolean; message: string; customer?: Partial<User> }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   clearError: () => void;
   
@@ -70,6 +73,83 @@ export interface RegisterData {
 }
 
 export type AuthStore = AuthState & AuthActions;
+
+type WooAddressPayload = {
+  address_1?: string;
+  city?: string;
+  postcode?: string;
+  country?: string;
+  phone?: string;
+  company?: string;
+  nip?: string;
+  invoiceRequest?: boolean | string;
+};
+
+interface WooAuthUserPayload {
+  id: number;
+  email: string;
+  token?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  first_name?: string;
+  last_name?: string;
+  billing?: WooAddressPayload;
+  shipping?: WooAddressPayload;
+}
+
+type ProfileUpdatePayload = Record<string, unknown>;
+
+const mapWooAddress = (address?: WooAddressPayload): Required<User>['billing'] => ({
+  address: address?.address_1 || '',
+  city: address?.city || '',
+  postcode: address?.postcode || '',
+  country: address?.country || 'PL',
+  phone: address?.phone || '',
+  company: address?.company || '',
+  nip: address?.nip || '',
+  invoiceRequest:
+    typeof address?.invoiceRequest === 'boolean'
+      ? address.invoiceRequest
+      : address?.invoiceRequest === 'yes',
+});
+
+const mapWooUserToState = (userData: WooAuthUserPayload, fallback?: Partial<RegisterData>): User => {
+  const firstName =
+    userData.firstName ??
+    userData.first_name ??
+    fallback?.firstName ??
+    userData.name?.split(' ')[0] ??
+    '';
+  const lastName =
+    userData.lastName ??
+    userData.last_name ??
+    fallback?.lastName ??
+    (userData.name ? userData.name.split(' ').slice(1).join(' ') : '') ??
+    '';
+
+  return {
+    id: userData.id,
+    email: userData.email,
+    firstName,
+    lastName,
+    role: 'customer',
+    billing: mapWooAddress(
+      userData.billing ?? {
+        country: 'PL',
+        phone: fallback?.phone,
+        company: fallback?.company,
+        nip: fallback?.nip,
+      },
+    ),
+    shipping: {
+      address: userData.shipping?.address_1 || '',
+      city: userData.shipping?.city || '',
+      postcode: userData.shipping?.postcode || '',
+      country: userData.shipping?.country || 'PL',
+    },
+  };
+};
 
 // Auth Store
 export const useAuthStore = create<AuthStore>()(
@@ -96,31 +176,10 @@ export const useAuthStore = create<AuthStore>()(
             throw new Error('Błąd logowania');
           }
           
-          const userData = response.user;
+          const userData = response.user as WooAuthUserPayload;
           
           // Transform WooCommerce user data to our format
-          const user: User = {
-            id: userData.id,
-            email: userData.email,
-            firstName: (userData as any).first_name || userData.name?.split(' ')[0] || '',
-            lastName: (userData as any).last_name || userData.name?.split(' ').slice(1).join(' ') || '',
-            role: 'customer',
-            billing: {
-              address: (userData as any).billing?.address_1 || '',
-              city: (userData as any).billing?.city || '',
-              postcode: (userData as any).billing?.postcode || '',
-              country: (userData as any).billing?.country || 'PL',
-              phone: (userData as any).billing?.phone || '',
-              company: (userData as any).billing?.company || '',
-              nip: (userData as any).billing?.nip || ''
-            },
-            shipping: {
-              address: (userData as any).shipping?.address_1 || '',
-              city: (userData as any).shipping?.city || '',
-              postcode: (userData as any).shipping?.postcode || '',
-              country: (userData as any).shipping?.country || 'PL'
-            }
-          };
+          const user = mapWooUserToState(userData);
           
           const token = userData.token;
           
@@ -132,11 +191,11 @@ export const useAuthStore = create<AuthStore>()(
             error: null
           });
           
-          console.log('🔐 User logged in via WooCommerce:', user);
-          return true
+          logger.info('AuthStore: User logged in via WooCommerce', { userId: user.id });
+          return true;
           
         } catch (error) {
-          console.error('Login error:', error);
+          logger.error('AuthStore: Login error', { error });
           set({
             error: 'Błąd logowania. Sprawdź email i hasło.',
             isLoading: false
@@ -149,7 +208,10 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         
         try {
-          console.log('🔍 Auth store register data:', userData);
+          logger.debug('AuthStore: Register data received', {
+            email: userData.email,
+            marketingConsent: userData.marketingConsent ?? false,
+          });
           
           // Real WooCommerce API call
           const response = await wooCommerceService.registerUser({
@@ -176,9 +238,9 @@ export const useAuthStore = create<AuthStore>()(
                   source: 'registration'
                 }),
               });
-              console.log('✅ User subscribed to newsletter with 10% discount');
+              logger.info('AuthStore: User subscribed to newsletter after registration', { email: userData.email });
             } catch (error) {
-              console.error('❌ Newsletter subscription error:', error);
+              logger.warn('AuthStore: Newsletter subscription error', { error, email: userData.email });
               // Don't fail registration if newsletter fails
             }
           }
@@ -190,26 +252,18 @@ export const useAuthStore = create<AuthStore>()(
           const newUser = response.user;
           
           // Transform WooCommerce user data to our format
-          const user: User = {
-            id: newUser.id,
-            email: newUser.email,
-            firstName: userData.firstName || '',
-            lastName: userData.lastName || '',
-            role: 'customer',
-            billing: {
-              address: '',
-              city: '',
-              postcode: '',
-              country: 'PL',
-              phone: userData.phone || ''
+          const user = mapWooUserToState(
+            {
+              id: newUser.id,
+              email: newUser.email,
+              billing: {
+                phone: userData.phone,
+                company: userData.company,
+                nip: userData.nip,
+              },
             },
-            shipping: {
-              address: '',
-              city: '',
-              postcode: '',
-              country: 'PL'
-            }
-          };
+            userData,
+          );
           
           const token = 'woo-user-token-' + newUser.id;
           
@@ -221,11 +275,11 @@ export const useAuthStore = create<AuthStore>()(
             error: null
           });
           
-          console.log('🔐 User registered via WooCommerce:', user);
+          logger.info('AuthStore: User registered via WooCommerce', { userId: user.id });
           return true;
           
         } catch (error) {
-          console.error('Registration error:', error);
+          logger.error('AuthStore: Registration error', { error });
           
           // Check if it's an email already exists error
           let errorMessage = 'Błąd rejestracji. Spróbuj ponownie.';
@@ -248,27 +302,41 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
+        const { user } = get();
         set({
           user: null,
           token: null,
           isAuthenticated: false,
           error: null
         });
-        console.log('🔐 User logged out');
+        logger.info('AuthStore: User logged out', { userId: user?.id ?? 'anonymous' });
       },
 
       refreshToken: async () => {
-        // TODO: Implement JWT refresh logic
         const { token } = get();
-        if (!token) return false;
+        
+        if (!token) {
+          logger.warn('AuthStore: Refresh token called without token');
+          return false;
+        }
         
         try {
-          // Simulate token refresh
-          await new Promise(resolve => setTimeout(resolve, 500));
-          console.log('🔐 Token refreshed');
+          const response = await wooCommerceService.refreshJWTToken(token);
+          
+          if (!response.success || !response.token) {
+            throw new Error('Token refresh failed');
+          }
+          
+          set({
+            token: response.token,
+            error: null
+          });
+          
+          logger.info('AuthStore: Token refreshed successfully');
           return true;
         } catch (error) {
-          console.error('Token refresh error:', error);
+          logger.error('AuthStore: Token refresh error', { error });
+          // If refresh fails, logout user
           get().logout();
           return false;
         }
@@ -279,11 +347,11 @@ export const useAuthStore = create<AuthStore>()(
         if (user) {
           const updatedUser = { ...user, ...userData };
           set({ user: updatedUser });
-          console.log('🔐 User updated:', updatedUser);
+          logger.debug('AuthStore: User updated locally', { userId: updatedUser.id });
         }
       },
 
-      updateProfile: async (profileData: any) => {
+      updateProfile: async (profileData: ProfileUpdatePayload) => {
         const { user } = get();
         if (!user?.id) {
           return { success: false, message: 'Użytkownik nie jest zalogowany' };
@@ -302,21 +370,30 @@ export const useAuthStore = create<AuthStore>()(
             }),
           });
 
-          const data = await response.json();
+          const data = await response.json() as {
+            success: boolean;
+            message: string;
+            customer?: Partial<User>;
+            error?: string;
+          };
 
           if (data.success) {
             // Update local user data
             const { updateUser } = get();
-            updateUser(data.customer);
+            if (data.customer) {
+              updateUser(data.customer);
+            }
             
             set({ isLoading: false, error: null });
+            logger.info('AuthStore: Profile updated', { userId: user.id });
             return { success: true, message: data.message, customer: data.customer };
           } else {
             throw new Error(data.error || 'Nie udało się zaktualizować profilu');
           }
-        } catch (err: any) {
-          set({ isLoading: false, error: err.message || 'Wystąpił błąd podczas aktualizacji profilu' });
-          return { success: false, message: err.message || 'Wystąpił błąd podczas aktualizacji profilu' };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Wystąpił błąd podczas aktualizacji profilu';
+          set({ isLoading: false, error: message });
+          return { success: false, message };
         }
       },
 
@@ -340,7 +417,7 @@ export const useAuthStore = create<AuthStore>()(
             }),
           });
 
-          const data = await response.json();
+          const data = await response.json() as { success: boolean; message: string; error?: string };
 
           if (data.success) {
             set({ isLoading: false, error: null });
@@ -348,9 +425,11 @@ export const useAuthStore = create<AuthStore>()(
           } else {
             throw new Error(data.error || 'Nie udało się zmienić hasła');
           }
-        } catch (err: any) {
-          set({ isLoading: false, error: err.message || 'Wystąpił błąd podczas zmiany hasła' });
-          return { success: false, message: err.message || 'Wystąpił błąd podczas zmiany hasła' };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Wystąpił błąd podczas zmiany hasła';
+          set({ isLoading: false, error: message });
+          logger.error('AuthStore: Change password error', { error, userId: user.id });
+          return { success: false, message };
         }
       },
 
@@ -385,7 +464,7 @@ export const useAuthStore = create<AuthStore>()(
         }
         
         try {
-          console.log('🔄 Fetching user profile from WooCommerce...');
+          logger.debug('AuthStore: Fetching user profile from WooCommerce', { userId: user.id });
           set({ isFetchingProfile: true });
           const response = await fetch('/api/woocommerce?endpoint=customers/' + user.id, {
             method: 'GET',
@@ -399,18 +478,33 @@ export const useAuthStore = create<AuthStore>()(
             throw new Error('Failed to fetch user profile');
           }
           
-          const customerData = await response.json();
-          console.log('📋 Customer data from WooCommerce:', customerData);
+          const customerData = (await response.json()) as WooCustomer;
+          logger.debug('AuthStore: Customer data fetched', {
+            userId: customerData.id,
+            hasMeta: Array.isArray(customerData.meta_data) && customerData.meta_data.length > 0,
+          });
           
-          // Extract NIP from meta_data
-          const nipMeta = customerData.meta_data?.find((meta: any) => meta.key === 'billing_nip');
-          const nipValue = nipMeta?.value || '';
+          // Extract NIP from meta_data or billing
+          const nipMeta = customerData.meta_data?.find((meta) => meta.key === 'billing_nip' || meta.key === '_billing_nip');
+          const billingExtras = customerData.billing as unknown as WooAddressPayload | undefined;
+          const rawNipValue = nipMeta?.value ?? billingExtras?.nip ?? '';
+          const nipValue = typeof rawNipValue === 'string' ? rawNipValue : String(rawNipValue ?? '');
           
-          console.log('🔍 NIP extraction:', { 
-            nipMeta, 
-            nipValue, 
-            billingNip: customerData.billing?.nip,
-            metaDataLength: customerData.meta_data?.length 
+          // Extract invoiceRequest from meta_data or billing
+          const invoiceReqMeta = customerData.meta_data?.find((meta) => meta.key === '_invoice_request');
+          const invoiceReqValue =
+            invoiceReqMeta?.value === 'yes' ||
+            billingExtras?.invoiceRequest === true ||
+            billingExtras?.invoiceRequest === 'yes';
+          
+          // Auto-set invoiceRequest to true if NIP is provided but invoiceRequest is not explicitly set
+          const finalInvoiceRequest = invoiceReqValue || (nipValue ? true : false);
+          
+          logger.debug('AuthStore: Invoice fields extraction', {
+            userId: customerData.id,
+            nipValue,
+            invoiceReqValue,
+            finalInvoiceRequest,
           });
           
           // Update user data with full WooCommerce customer data
@@ -427,7 +521,8 @@ export const useAuthStore = create<AuthStore>()(
               country: customerData.billing?.country || 'PL',
               phone: customerData.billing?.phone || '',
               company: customerData.billing?.company || '',
-              nip: nipValue
+              nip: nipValue,
+              invoiceRequest: finalInvoiceRequest
             },
             shipping: {
               address: customerData.shipping?.address_1 || '',
@@ -444,10 +539,14 @@ export const useAuthStore = create<AuthStore>()(
             set({ user: updatedUser });
           }
           set({ lastProfileFetchAt: Date.now() });
-          console.log('✅ User profile updated:', updatedUser);
+          if (changed) {
+            logger.info('AuthStore: User profile updated', { userId: updatedUser.id });
+          } else {
+            logger.debug('AuthStore: User profile unchanged', { userId: user.id });
+          }
           
         } catch (error) {
-          console.error('❌ Error fetching user profile:', error);
+          logger.error('AuthStore: Error fetching user profile', { error, userId: user.id });
         } finally {
           set({ isFetchingProfile: false });
         }

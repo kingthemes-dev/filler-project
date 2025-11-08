@@ -125,8 +125,13 @@ export default function MyAccountPage() {
       const resolvedBillingAddress = billing.address || billing.address_1 || '';
       const resolvedShippingAddress = shipping.address || shipping.address_1 || '';
       const resolvedNip = billing.nip || getMeta?.('_billing_nip') || '';
+      // Check invoiceRequest from multiple sources: billing.invoiceRequest, meta_data, or auto-set if NIP exists
       const resolvedInvoiceReqRaw = (billing.invoiceRequest !== undefined ? billing.invoiceRequest : getMeta?.('_invoice_request'));
-      const resolvedInvoiceReq = resolvedInvoiceReqRaw === true || resolvedInvoiceReqRaw === 'yes' || resolvedInvoiceReqRaw === '1';
+      let resolvedInvoiceReq = resolvedInvoiceReqRaw === true || resolvedInvoiceReqRaw === 'yes' || resolvedInvoiceReqRaw === '1';
+      // Auto-set invoice request if NIP is provided but invoiceRequest is not explicitly set to 'yes'
+      if (!resolvedInvoiceReq && resolvedNip) {
+        resolvedInvoiceReq = true;
+      }
 
       setFormData({
         firstName: user.firstName || '',
@@ -338,8 +343,13 @@ export default function MyAccountPage() {
       const resolvedBillingAddress = billing.address || billing.address_1 || '';
       const resolvedShippingAddress = shipping.address || shipping.address_1 || '';
       const resolvedNip = billing.nip || getMeta?.('_billing_nip') || '';
+      // Check invoiceRequest from multiple sources: billing.invoiceRequest, meta_data, or auto-set if NIP exists
       const resolvedInvoiceReqRaw = (billing.invoiceRequest !== undefined ? billing.invoiceRequest : getMeta?.('_invoice_request'));
-      const resolvedInvoiceReq = resolvedInvoiceReqRaw === true || resolvedInvoiceReqRaw === 'yes' || resolvedInvoiceReqRaw === '1';
+      let resolvedInvoiceReq = resolvedInvoiceReqRaw === true || resolvedInvoiceReqRaw === 'yes' || resolvedInvoiceReqRaw === '1';
+      // Auto-set invoice request if NIP is provided but invoiceRequest is not explicitly set to 'yes'
+      if (!resolvedInvoiceReq && resolvedNip) {
+        resolvedInvoiceReq = true;
+      }
 
       setFormData({
         firstName: user.firstName || '',

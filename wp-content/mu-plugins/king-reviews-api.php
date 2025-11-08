@@ -15,38 +15,7 @@ class KingReviewsAPI {
     
     public function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'));
-        add_action('rest_api_init', array($this, 'add_cors_support'));
-    }
-    
-    /**
-     * Add CORS support for REST API
-     */
-    public function add_cors_support() {
-        add_filter('rest_pre_serve_request', array($this, 'add_cors_headers'));
-    }
-    
-    /**
-     * Add custom CORS headers
-     */
-    public function add_cors_headers($value) {
-        $origin = get_http_origin();
-        $allowed_origins = array(
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'http://localhost:3002',
-            'https://www.filler.pl',
-            'https://filler.pl'
-        );
-        
-        if (in_array($origin, $allowed_origins)) {
-            header('Access-Control-Allow-Origin: ' . $origin);
-        }
-        
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-WP-Nonce');
-        header('Access-Control-Allow-Credentials: true');
-        
-        return $value;
+        // CORS is now handled centrally in headless-config.php
     }
     
     /**
@@ -97,8 +66,26 @@ class KingReviewsAPI {
                     'required' => true,
                     'type' => 'integer',
                     'description' => 'Rating (1-5)'
+                ),
+                'images' => array(
+                    'required' => false,
+                    'type' => 'array',
+                    'description' => 'Array of image attachment IDs or URLs'
+                ),
+                'videos' => array(
+                    'required' => false,
+                    'type' => 'array',
+                    'description' => 'Array of video URLs (YouTube, Vimeo, etc.)'
                 )
             )
+        ));
+        
+        // Register image upload endpoint
+        register_rest_route('king-reviews/v1', '/upload-image', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'upload_review_image'),
+            'permission_callback' => '__return_true',
+            'args' => array()
         ));
     }
     
@@ -136,6 +123,55 @@ class KingReviewsAPI {
         $formatted_reviews = array();
         foreach ($reviews as $review) {
             $rating = get_comment_meta($review->comment_ID, 'rating', true);
+            $review_images = get_comment_meta($review->comment_ID, 'review_images', false);
+            $review_videos = get_comment_meta($review->comment_ID, 'review_videos', false);
+            
+            // Format images - ensure array format
+            $images = array();
+            if (!empty($review_images)) {
+                // Handle both single and multiple images
+                $images_raw = is_array($review_images) && count($review_images) === 1 && is_array($review_images[0])
+                    ? $review_images[0]
+                    : $review_images;
+                    
+                foreach ((array)$images_raw as $image) {
+                    if (is_numeric($image)) {
+                        // If it's an attachment ID, get the URL
+                        $image_url = wp_get_attachment_image_url($image, 'full');
+                        if ($image_url) {
+                            $images[] = array(
+                                'id' => intval($image),
+                                'url' => $image_url,
+                                'thumbnail' => wp_get_attachment_image_url($image, 'thumbnail'),
+                                'medium' => wp_get_attachment_image_url($image, 'medium'),
+                                'large' => wp_get_attachment_image_url($image, 'large')
+                            );
+                        }
+                    } elseif (is_string($image) && filter_var($image, FILTER_VALIDATE_URL)) {
+                        // If it's already a URL
+                        $images[] = array(
+                            'url' => $image,
+                            'thumbnail' => $image,
+                            'medium' => $image,
+                            'large' => $image
+                        );
+                    }
+                }
+            }
+            
+            // Format videos - ensure array format
+            $videos = array();
+            if (!empty($review_videos)) {
+                $videos_raw = is_array($review_videos) && count($review_videos) === 1 && is_array($review_videos[0])
+                    ? $review_videos[0]
+                    : $review_videos;
+                    
+                foreach ((array)$videos_raw as $video) {
+                    if (is_string($video) && filter_var($video, FILTER_VALIDATE_URL)) {
+                        $videos[] = $video;
+                    }
+                }
+            }
             
             $formatted_reviews[] = array(
                 'id' => $review->comment_ID,
@@ -149,7 +185,9 @@ class KingReviewsAPI {
                 'status' => $review->comment_approved,
                 'reviewer_avatar_urls' => array(
                     '96' => get_avatar_url($review->comment_author_email, array('size' => 96))
-                )
+                ),
+                'images' => $images,
+                'videos' => $videos
             );
         }
         
@@ -226,6 +264,20 @@ class KingReviewsAPI {
         // Add rating meta
         add_comment_meta($comment_id, 'rating', intval($rating), true);
         
+        // Handle image attachments if provided
+        $image_urls = $request->get_param('images');
+        if (!empty($image_urls) && is_array($image_urls)) {
+            // Store image URLs as comment meta (array of URLs)
+            // Images are already uploaded via separate endpoint and converted to attachment IDs
+            add_comment_meta($comment_id, 'review_images', $image_urls, false);
+        }
+        
+        // Handle video URLs if provided (YouTube, Vimeo, etc.)
+        $video_urls = $request->get_param('videos');
+        if (!empty($video_urls) && is_array($video_urls)) {
+            add_comment_meta($comment_id, 'review_videos', $video_urls, false);
+        }
+        
         // Update product rating
         $this->update_product_rating($product_id);
         
@@ -246,8 +298,92 @@ class KingReviewsAPI {
             'date_created' => $created_review->comment_date,
             'date_created_gmt' => $created_review->comment_date_gmt,
             'status' => $created_review->comment_approved,
-            'message' => 'Review created successfully'
+            'message' => 'Review created successfully',
+            'images' => !empty($image_urls) ? $image_urls : array(),
+            'videos' => !empty($video_urls) ? $video_urls : array()
         ), 201);
+    }
+    
+    /**
+     * Upload image for review
+     * Handles file upload and returns attachment ID and URLs
+     */
+    public function upload_review_image($request) {
+        // Check if file was uploaded
+        if (empty($_FILES['image'])) {
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error' => 'No file uploaded'
+            ), 400);
+        }
+        
+        $file = $_FILES['image'];
+        
+        // Validate file type (only images)
+        $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp');
+        $file_type = wp_check_filetype($file['name']);
+        
+        if (!in_array($file['type'], $allowed_types) && !in_array($file_type['type'], $allowed_types)) {
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error' => 'Invalid file type. Only images (JPEG, PNG, GIF, WebP) are allowed.'
+            ), 400);
+        }
+        
+        // Validate file size (max 5MB)
+        $max_size = 5 * 1024 * 1024; // 5MB
+        if ($file['size'] > $max_size) {
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error' => 'File too large. Maximum size is 5MB.'
+            ), 400);
+        }
+        
+        // Include WordPress file handling functions
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        
+        // Handle file upload
+        $upload = wp_handle_upload($file, array('test_form' => false));
+        
+        if (isset($upload['error'])) {
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error' => $upload['error']
+            ), 400);
+        }
+        
+        // Create attachment
+        $attachment_data = array(
+            'post_mime_type' => $upload['type'],
+            'post_title' => sanitize_file_name(pathinfo($file['name'], PATHINFO_FILENAME)),
+            'post_content' => '',
+            'post_status' => 'inherit'
+        );
+        
+        $attachment_id = wp_insert_attachment($attachment_data, $upload['file']);
+        
+        if (is_wp_error($attachment_id)) {
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error' => 'Failed to create attachment'
+            ), 500);
+        }
+        
+        // Generate attachment metadata and thumbnails
+        $attach_data = wp_generate_attachment_metadata($attachment_id, $upload['file']);
+        wp_update_attachment_metadata($attachment_id, $attach_data);
+        
+        // Return attachment ID and URLs
+        return new WP_REST_Response(array(
+            'success' => true,
+            'attachment_id' => $attachment_id,
+            'url' => wp_get_attachment_image_url($attachment_id, 'full'),
+            'thumbnail' => wp_get_attachment_image_url($attachment_id, 'thumbnail'),
+            'medium' => wp_get_attachment_image_url($attachment_id, 'medium'),
+            'large' => wp_get_attachment_image_url($attachment_id, 'large')
+        ), 200);
     }
     
     /**

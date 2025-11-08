@@ -376,7 +376,7 @@ class SentryMetricsCollector {
   /**
    * Aggregate metrics for summary
    */
-  private aggregateMetrics(metrics: CustomMetric[]): Record<string, any> {
+  private aggregateMetrics(metrics: CustomMetric[]): Record<string, number | string> {
     if (metrics.length === 0) return {};
 
     const values = metrics.map(m => m.value);

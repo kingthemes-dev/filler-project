@@ -6,7 +6,9 @@
 import { logger } from './logger';
 
 // Web Worker types
-export interface WorkerTask<T = any, R = any> {
+export type WorkerPayload = Record<string, unknown>;
+
+export interface WorkerTask<T = unknown, R = unknown> {
   id: string;
   type: string;
   data: T;
@@ -14,7 +16,7 @@ export interface WorkerTask<T = any, R = any> {
   reject: (error: Error) => void;
 }
 
-export interface WorkerMessage<T = any, R = any> {
+export interface WorkerMessage<T = unknown, R = unknown> {
   id: string;
   type: string;
   data: T;
@@ -22,10 +24,53 @@ export interface WorkerMessage<T = any, R = any> {
   error?: string;
 }
 
+type ImageProcessingPayload = {
+  width: number;
+  height: number;
+  pixels: Uint8ClampedArray | number[];
+  operation?: string;
+};
+
+type ImageProcessingResult = {
+  width: number;
+  height: number;
+  pixels: Uint8Array;
+};
+
+type DataOperation =
+  | 'sort'
+  | 'filter'
+  | 'map'
+  | 'process-products'
+  | 'search-optimization';
+
+type DataProcessingPayload<T> = {
+  items: T[];
+  operation: DataOperation;
+  query?: string;
+};
+
+type DataProcessingResult<T> = {
+  result: T[];
+};
+
+type CalculationOperation = 'sum' | 'average' | 'max' | 'min';
+
+type CalculationPayload = {
+  operation: CalculationOperation;
+  values: number[];
+};
+
+type CalculationResult = {
+  result: number;
+};
+
+type UnknownRecord = Record<string, unknown>;
+
 // Web Worker Manager
 export class WebWorkerManager {
   private workers: Map<string, Worker> = new Map();
-  private tasks: Map<string, WorkerTask> = new Map();
+  private tasks: Map<string, WorkerTask<unknown, unknown>> = new Map();
   private workerCount: number;
   private isSupported: boolean;
 
@@ -45,7 +90,8 @@ export class WebWorkerManager {
       const workerId = `worker-${i}`;
       const worker = new Worker('/workers/compute-worker.js');
       
-      worker.onmessage = (event) => this.handleWorkerMessage(event.data);
+      worker.onmessage = (event: MessageEvent<WorkerMessage<unknown, unknown>>) =>
+        this.handleWorkerMessage(event.data);
       worker.onerror = (error) => this.handleWorkerError(workerId, error);
       
       this.workers.set(workerId, worker);
@@ -72,8 +118,7 @@ export class WebWorkerManager {
         resolve,
         reject
       };
-      
-      this.tasks.set(taskId, task);
+      this.tasks.set(taskId, task as WorkerTask<unknown, unknown>);
       
       const worker = this.workers.get(workerId);
       if (worker) {
@@ -88,7 +133,7 @@ export class WebWorkerManager {
     });
   }
 
-  private handleWorkerMessage(message: WorkerMessage) {
+  private handleWorkerMessage(message: WorkerMessage<unknown, unknown>): void {
     const task = this.tasks.get(message.id);
     if (!task) return;
 
@@ -97,7 +142,7 @@ export class WebWorkerManager {
     if (message.error) {
       task.reject(new Error(message.error));
     } else {
-      task.resolve(message.result);
+      task.resolve(message.result as unknown);
     }
   }
 
@@ -109,7 +154,8 @@ export class WebWorkerManager {
     if (worker) {
       worker.terminate();
       const newWorker = new Worker('/workers/compute-worker.js');
-      newWorker.onmessage = (event) => this.handleWorkerMessage(event.data);
+      newWorker.onmessage = (event: MessageEvent<WorkerMessage<unknown, unknown>>) =>
+        this.handleWorkerMessage(event.data);
       newWorker.onerror = (error) => this.handleWorkerError(workerId, error);
       this.workers.set(workerId, newWorker);
     }
@@ -132,58 +178,114 @@ export class WebWorkerManager {
     
     switch (type) {
       case 'image-processing':
-        return this.processImageOnMainThread(data as any) as R;
+        return this.processImageOnMainThread(data as ImageProcessingPayload) as unknown as R;
       case 'data-processing':
-        return this.processDataOnMainThread(data as any) as R;
+        return this.processDataOnMainThread(data as DataProcessingPayload<unknown>) as unknown as R;
       case 'calculation':
-        return this.performCalculationOnMainThread(data as any) as R;
+        return this.performCalculationOnMainThread(data as CalculationPayload) as unknown as R;
       default:
         throw new Error(`Unknown task type: ${type}`);
     }
   }
 
-  private async processImageOnMainThread(data: any): Promise<any> {
+  private async processImageOnMainThread(
+    data: ImageProcessingPayload
+  ): Promise<ImageProcessingResult> {
     // Simple image processing simulation
     const { width, height, pixels } = data;
-    const processedPixels = new Uint8Array(pixels.length);
+    const sourcePixels = pixels instanceof Uint8ClampedArray ? pixels : Uint8ClampedArray.from(pixels);
+    const processedPixels = new Uint8Array(sourcePixels.length);
     
-    for (let i = 0; i < pixels.length; i += 4) {
+    for (let i = 0; i < sourcePixels.length; i += 4) {
       // Simple grayscale conversion
-      const gray = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+      const gray = (sourcePixels[i] + sourcePixels[i + 1] + sourcePixels[i + 2]) / 3;
       processedPixels[i] = gray;
       processedPixels[i + 1] = gray;
       processedPixels[i + 2] = gray;
-      processedPixels[i + 3] = pixels[i + 3];
+      processedPixels[i + 3] = sourcePixels[i + 3];
     }
     
     return { width, height, pixels: processedPixels };
   }
 
-  private async processDataOnMainThread(data: any): Promise<any> {
+  private async processDataOnMainThread<T>(
+    data: DataProcessingPayload<T>
+  ): Promise<DataProcessingResult<T>> {
     // Simple data processing simulation
     const { items, operation } = data;
+    const clonedItems = [...items];
     
     switch (operation) {
       case 'sort':
-        return { result: [...items].sort() };
+        return {
+          result: clonedItems.sort((a, b) => {
+            if (typeof a === 'number' && typeof b === 'number') {
+              return a - b;
+            }
+            return String(a).localeCompare(String(b));
+          }),
+        };
       case 'filter':
-        return { result: items.filter((item: any) => item > 0) };
+        return {
+          result: clonedItems.filter((item): item is T => {
+            if (typeof item === 'number') {
+              return item > 0;
+            }
+            return Boolean(item);
+          }),
+        };
       case 'map':
-        return { result: items.map((item: any) => item * 2) };
+        return {
+          result: clonedItems.map((item) => {
+            if (typeof item === 'number') {
+              return (item * 2) as unknown as T;
+            }
+            return item;
+          }),
+        };
+      case 'process-products':
+        return {
+          result: clonedItems.map((item) =>
+            typeof item === 'object' && item !== null ? { ...(item as UnknownRecord) } as T : item
+          ),
+        };
+      case 'search-optimization': {
+        const query = (data.query || '').toString().toLowerCase();
+        if (!query) {
+          return { result: clonedItems };
+        }
+        return {
+          result: clonedItems.filter((item) => {
+            if (typeof item === 'string') {
+              return item.toLowerCase().includes(query);
+            }
+            if (typeof item === 'object' && item !== null) {
+              const values = Object.values(item as UnknownRecord)
+                .filter((val): val is string => typeof val === 'string')
+                .join(' ')
+                .toLowerCase();
+              return values.includes(query);
+            }
+            return false;
+          }),
+        };
+      }
       default:
-        return { result: items };
+        return { result: clonedItems };
     }
   }
 
-  private async performCalculationOnMainThread(data: any): Promise<any> {
+  private async performCalculationOnMainThread(
+    data: CalculationPayload
+  ): Promise<CalculationResult> {
     // Simple calculation simulation
     const { operation, values } = data;
     
     switch (operation) {
       case 'sum':
-        return { result: values.reduce((a: number, b: number) => a + b, 0) };
+        return { result: values.reduce((a, b) => a + b, 0) };
       case 'average':
-        return { result: values.reduce((a: number, b: number) => a + b, 0) / values.length };
+        return { result: values.reduce((a, b) => a + b, 0) / values.length };
       case 'max':
         return { result: Math.max(...values) };
       case 'min':
@@ -209,47 +311,60 @@ export const webWorkerManager = new WebWorkerManager();
 export class WorkerUtils {
   // Image processing
   static async processImage(imageData: ImageData, operation: string): Promise<ImageData> {
-    return webWorkerManager.executeTask('image-processing', {
+    const result = await webWorkerManager.executeTask<ImageProcessingPayload, ImageProcessingResult>('image-processing', {
       width: imageData.width,
       height: imageData.height,
       pixels: Array.from(imageData.data),
       operation
     });
+    return new ImageData(
+      new Uint8ClampedArray(result.pixels),
+      result.width,
+      result.height
+    );
   }
 
   // Data processing
-  static async processData<T>(data: T[], operation: string): Promise<T[]> {
-    const result = await webWorkerManager.executeTask('data-processing', {
+  static async processData<T>(data: T[], operation: DataOperation): Promise<T[]> {
+    const result = await webWorkerManager.executeTask<DataProcessingPayload<T>, DataProcessingResult<T>>('data-processing', {
       items: data,
       operation
     });
-    return (result as any).result;
+    return result.result;
   }
 
   // Mathematical calculations
-  static async calculate(values: number[], operation: string): Promise<number> {
-    const result = await webWorkerManager.executeTask('calculation', {
+  static async calculate(values: number[], operation: CalculationOperation): Promise<number> {
+    const result = await webWorkerManager.executeTask<CalculationPayload, CalculationResult>('calculation', {
       values,
       operation
     });
-    return (result as any).result;
+    return result.result;
   }
 
   // Product data processing
-  static async processProductData(products: any[]): Promise<any[]> {
-    return webWorkerManager.executeTask('data-processing', {
+  static async processProductData(products: UnknownRecord[]): Promise<UnknownRecord[]> {
+    const result = await webWorkerManager.executeTask<
+      DataProcessingPayload<UnknownRecord>,
+      DataProcessingResult<UnknownRecord>
+    >('data-processing', {
       items: products,
       operation: 'process-products'
     });
+    return result.result;
   }
 
   // Search optimization
-  static async optimizeSearch(query: string, products: any[]): Promise<any[]> {
-    return webWorkerManager.executeTask('data-processing', {
+  static async optimizeSearch(query: string, products: UnknownRecord[]): Promise<UnknownRecord[]> {
+    const result = await webWorkerManager.executeTask<
+      DataProcessingPayload<UnknownRecord>,
+      DataProcessingResult<UnknownRecord>
+    >('data-processing', {
       items: products,
       operation: 'search-optimization',
       query
     });
+    return result.result;
   }
 }
 

@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { 
+  woocommerceQuerySchema,
+  orderSchema,
+  passwordResetSchema,
+  resetPasswordSchema,
+  updateProfileSchema,
+  changePasswordSchema,
+} from '@/lib/schemas/woocommerce';
 export const runtime = 'nodejs';
 // Debug helper (no logs in prod unless explicitly enabled)
 const __DEBUG__ = process.env.NEXT_PUBLIC_DEBUG === 'true';
@@ -46,6 +54,10 @@ import { withCircuitBreaker } from '@/utils/circuit-breaker';
 import { hposApi } from '@/services/hpos-api';
 import { orderLimitHandler } from '@/services/order-limit-handler';
 import { hposPerformanceMonitor } from '@/services/hpos-performance-monitor';
+import { checkEndpointRateLimit } from '@/utils/rate-limiter';
+import { RateLimitError } from '@/lib/errors';
+import { getRequestId, setRequestIdHeader } from '@/utils/request-id';
+import * as Sentry from '@sentry/nextjs';
 
 // Redis client (optional)
 let redis: any = null;
@@ -83,8 +95,7 @@ if (!WC_URL || !CK || !CS) {
 
 // Handle password reset using WordPress REST API
 async function handlePasswordReset(body: { email: string }) {
-  const schema = z.object({ email: z.string().email('Nieprawidłowy email') });
-  const parsed = schema.safeParse(body);
+  const parsed = passwordResetSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { success: false, error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane' },
@@ -174,12 +185,7 @@ async function handlePasswordReset(body: { email: string }) {
 }
 
 async function handlePasswordResetConfirm(body: { key: string; login: string; password: string }) {
-  const schema = z.object({
-    key: z.string().min(10, 'Nieprawidłowy klucz'),
-    login: z.string().min(1, 'Login jest wymagany'),
-    password: z.string().min(8, 'Hasło musi mieć co najmniej 8 znaków')
-  });
-  const parsed = schema.safeParse(body);
+  const parsed = resetPasswordSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { success: false, error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane' },
@@ -334,64 +340,181 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
   }
 
   try {
-    debugLog('🔄 Checking order eligibility for invoice generation:', orderId);
+    debugLog('🔄 Fetching invoice PDF from WordPress:', orderId);
     
-    // First, get order details to check if it's eligible for invoice
-    const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
-    const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
+    // Use WordPress custom endpoint for invoice PDF
+    // Add timestamp to prevent caching
+    const timestamp = Date.now();
+    const invoicePdfUrl = `${WORDPRESS_URL}/wp-json/custom/v1/invoice/${orderId}/pdf?v=${timestamp}`;
     
-    const orderResponse = await fetch(orderUrl, {
+    const pdfResponse = await fetch(invoicePdfUrl, {
+      method: 'GET',
       headers: {
-        'Authorization': auth,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Accept': 'application/pdf, application/json',
+        'Cache-Control': 'no-cache',
       },
+      cache: 'no-store',
     });
     
-    if (!orderResponse.ok) {
-      throw new Error('Nie udało się pobrać danych zamówienia');
+    if (!pdfResponse.ok) {
+      const errorText = await pdfResponse.text();
+      let errorData: any = null;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        // Not JSON
+      }
+      
+      debugLog('⚠️ WordPress invoice PDF endpoint failed:', pdfResponse.status, errorData?.error || errorText);
+      
+      // If endpoint returns 403 or 404, don't try fallback - invoice is not available
+      if (pdfResponse.status === 403 || pdfResponse.status === 404) {
+        return NextResponse.json({
+          success: false,
+          error: errorData?.error || 'Faktura nie jest dostępna dla tego zamówienia'
+        }, { status: pdfResponse.status });
+      }
+      
+      // For other errors, try to generate PDF locally as fallback
+      debugLog('⚠️ Falling back to local PDF generation');
+      return await generateInvoicePdfLocally(orderId);
     }
     
-    const orderData = await orderResponse.json();
+    // Check content type - WordPress endpoint might return binary PDF or JSON with base64
+    const contentType = pdfResponse.headers.get('content-type') || '';
     
-    // Check if order is eligible for invoice generation
-    const eligibleStatuses = ['completed', 'processing', 'on-hold'];
-    if (!eligibleStatuses.includes(orderData.status)) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'Faktura może być wystawiona tylko dla opłaconych lub zrealizowanych zamówień',
-        eligible: false
-      }, { status: 403 });
+    if (contentType.includes('application/pdf')) {
+      // WordPress returns binary PDF directly (TCPDF)
+      debugLog('✅ Received binary PDF from WordPress');
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      
+      // Return PDF as binary response
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="faktura_${orderId}.pdf"`,
+          'Cache-Control': 'private, max-age=3600',
+        },
+      });
+    } else if (contentType.includes('application/json')) {
+      // WordPress returns JSON with base64 (fallback - TCPDF not available)
+      debugLog('⚠️ Received JSON response (TCPDF not available, using fallback)');
+      const jsonData = await pdfResponse.json();
+      
+      if (jsonData.success && jsonData.base64) {
+        // Convert base64 to buffer for binary response
+        const pdfBuffer = Buffer.from(jsonData.base64, 'base64');
+        
+        return new NextResponse(pdfBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': jsonData.mime || 'application/pdf',
+            'Content-Disposition': `attachment; filename="${jsonData.filename || `faktura_${orderId}.pdf`}"`,
+          },
+        });
+      } else if (jsonData.html) {
+        // HTML fallback - return JSON for client-side PDF generation
+        return NextResponse.json({
+          success: true,
+          html: jsonData.html,
+          base64: jsonData.base64,
+          filename: jsonData.filename || `faktura_${orderId}.html`,
+          pdf_available: false
+        });
+      } else {
+        throw new Error('Invalid JSON response from WordPress endpoint');
+      }
+    } else {
+      // Unknown content type - try to parse as PDF
+      debugLog('⚠️ Unknown content type, attempting to parse as PDF');
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="faktura_${orderId}.pdf"`,
+        },
+      });
     }
     
-    debugLog('✅ Order is eligible for invoice generation');
-    debugLog('🔄 Generating improved PDF for order:', orderId);
-    
-    // Generate improved PDF using InvoiceGenerator with timeout and sanitization
-    const improvedPdf = await generateImprovedInvoicePdf(orderId, {
-      base64: '',
-      filename: `faktura_${orderId}.pdf`,
-      mime: 'application/pdf'
-    });
-    
-    return NextResponse.json({
-      success: true,
-      base64: improvedPdf.base64,
-      filename: improvedPdf.filename,
-      mime: improvedPdf.mime
-    });
-
   } catch (error: any) {
-    debugLog('🚨 Error fetching customer invoice PDF:', error);
+    debugLog('🚨 Error fetching invoice PDF:', error);
     
-    // Return specific error message if available
-    const errorMessage = error?.message || 'Nie udało się pobrać PDF';
+    // Fallback: try to generate PDF locally only if it's a network/server error
+    if (error?.message?.includes('fetch') || error?.code === 'ECONNREFUSED') {
+      try {
+        debugLog('⚠️ Network error, trying local PDF generation');
+        return await generateInvoicePdfLocally(orderId);
+      } catch (localError: any) {
+        debugLog('🚨 Local PDF generation also failed:', localError);
+      }
+    }
     
     return NextResponse.json({
       success: false,
-      error: errorMessage
+      error: 'Nie udało się wygenerować faktury PDF',
+      details: error?.message || 'Unknown error'
     }, { status: 500 });
   }
+}
+
+async function generateInvoicePdfLocally(orderId: string) {
+  debugLog('🔄 Generating invoice PDF locally for order:', orderId);
+  
+  // First, get order details to check if it's eligible for invoice
+  const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
+  const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
+  
+  const orderResponse = await fetch(orderUrl, {
+    headers: {
+      'Authorization': auth,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+  });
+  
+  if (!orderResponse.ok) {
+    throw new Error('Nie udało się pobrać danych zamówienia');
+  }
+  
+  const orderData = await orderResponse.json();
+  
+  // Check if order is eligible for invoice generation
+  // Allow invoices for: completed, processing, on-hold, and pending (if invoice was requested)
+  const eligibleStatuses = ['completed', 'processing', 'on-hold'];
+  const invoiceRequested = orderData.meta_data?.some((meta: any) => 
+    meta.key === '_invoice_request' && meta.value === 'yes'
+  ) || false;
+  
+  if (!eligibleStatuses.includes(orderData.status) && !(orderData.status === 'pending' && invoiceRequested)) {
+    const errorResponse = NextResponse.json({ 
+      success: false,
+      error: 'Faktura może być wystawiona tylko dla opłaconych lub zrealizowanych zamówień',
+      eligible: false,
+      status: orderData.status,
+      invoiceRequested
+    }, { status: 403 });
+    return errorResponse;
+  }
+  
+  debugLog('✅ Order is eligible for invoice generation');
+  debugLog('🔄 Generating improved PDF for order:', orderId);
+  
+  // Generate improved PDF using InvoiceGenerator with timeout and sanitization
+  const improvedPdf = await generateImprovedInvoicePdf(orderId, {
+    base64: '',
+    filename: `faktura_${orderId}.pdf`,
+    mime: 'application/pdf'
+  });
+  
+  return NextResponse.json({
+    success: true,
+    base64: improvedPdf.base64,
+    filename: improvedPdf.filename,
+    mime: improvedPdf.mime
+  });
 }
 
 /**
@@ -845,34 +968,21 @@ async function handleOrderTracking(req: NextRequest) {
 }
 
 async function handleCustomerProfileUpdate(body: any) {
-  const schema = z.object({
-    customer_id: z.number().int().positive(),
-    profile_data: z.object({
-      firstName: z.string().trim().min(1),
-      lastName: z.string().trim().min(1),
-      billing: z.object({
-        company: z.string().trim().optional().default(''),
-        nip: z.string().trim().optional().default(''),
-        invoiceRequest: z.union([z.boolean(), z.string()]).optional(),
-        address: z.string().trim().min(1),
-        city: z.string().trim().min(1),
-        postcode: z.string().trim().min(2),
-        country: z.string().length(2),
-        phone: z.string().trim().min(5)
-      }),
-      shipping: z.object({
-        company: z.string().trim().optional().default(''),
-        address: z.string().trim().min(1),
-        city: z.string().trim().min(1),
-        postcode: z.string().trim().min(2),
-        country: z.string().length(2)
-      })
-    })
-  });
-  const parsed = schema.safeParse(body);
+  console.log('🔍 handleCustomerProfileUpdate received body:', JSON.stringify(body, null, 2));
+  
+  const parsed = updateProfileSchema.safeParse(body);
   if (!parsed.success) {
+    console.error('❌ Validation failed:', parsed.error.issues);
+    console.error('❌ Validation errors:', JSON.stringify(parsed.error.issues, null, 2));
     return NextResponse.json(
-      { success: false, error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane' },
+      { 
+        success: false, 
+        error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane',
+        details: parsed.error.issues.map((issue: any) => ({
+          path: issue.path.join('.'),
+          message: issue.message
+        }))
+      },
       { status: 400 }
     );
   }
@@ -935,15 +1045,18 @@ async function handleCustomerProfileUpdate(body: any) {
         country: profile_data.billing?.country || 'PL',
         email: undefined,
       },
-      shipping: {
-        first_name: profile_data.firstName,
-        last_name: profile_data.lastName,
-        company: profile_data.shipping?.company || '',
-        address_1: profile_data.shipping?.address || '',
-        city: profile_data.shipping?.city || '',
-        postcode: profile_data.shipping?.postcode || '',
-        country: profile_data.shipping?.country || 'PL',
-      },
+      // Only include shipping if it's provided (not null)
+      ...(profile_data.shipping ? {
+        shipping: {
+          first_name: profile_data.firstName,
+          last_name: profile_data.lastName,
+          company: profile_data.shipping.company || '',
+          address_1: profile_data.shipping.address || '',
+          city: profile_data.shipping.city || '',
+          postcode: profile_data.shipping.postcode || '',
+          country: profile_data.shipping.country || 'PL',
+        }
+      } : {}),
       meta_data: [] as Array<{ key: string; value: string }>,
     };
 
@@ -996,12 +1109,7 @@ async function handleCustomerProfileUpdate(body: any) {
 }
 
 async function handleCustomerPasswordChange(body: any) {
-  const schema = z.object({
-    customer_id: z.number().int().positive(),
-    current_password: z.string().min(8),
-    new_password: z.string().min(8)
-  });
-  const parsed = schema.safeParse(body);
+  const parsed = changePasswordSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { success: false, error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane' },
@@ -1180,31 +1288,39 @@ async function _handleOrderCreation(body: any) {
     console.log('✅ Successfully created order:', data.id);
     
     // Trigger WooCommerce emails after order creation
+    // IMPORTANT: WooCommerce does NOT automatically send emails for REST API orders
+    // We MUST manually trigger emails, especially for "pending" status (COD, bank transfer)
     try {
       console.log('📧 Triggering WooCommerce emails for order:', data.id);
       
       // Use our custom email API endpoint
-      const emailApiUrl = `${WC_URL}/wp-json/king-email/v1/trigger-order-email`;
-      const emailResponse = await fetch(emailApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          order_id: data.id
-        }),
-      });
-      
-      if (emailResponse.ok) {
-        const emailResult = await emailResponse.json();
-        console.log('✅ Email triggered via API:', emailResult);
+      const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || WC_URL?.replace('/wp-json/wc/v3', '') || '';
+      if (!wordpressUrl) {
+        console.warn('⚠️ WordPress URL not configured, cannot trigger emails');
       } else {
-        console.log('⚠️ Failed to trigger email via API');
+        const emailApiUrl = `${wordpressUrl}/wp-json/king-email/v1/trigger-order-email`;
+        const emailResponse = await fetch(emailApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            order_id: data.id
+          }),
+        });
+        
+        if (emailResponse.ok) {
+          const emailResult = await emailResponse.json();
+          console.log('✅ Email triggered via API:', emailResult);
+        } else {
+          const errorText = await emailResponse.text().catch(() => 'Unknown error');
+          console.warn('⚠️ Failed to trigger email via API:', emailResponse.status, errorText);
+        }
       }
-      
     } catch (emailError) {
       console.error('❌ Error triggering emails:', emailError);
+      // Don't fail order creation if email fails
     }
     
     return NextResponse.json({
@@ -1298,30 +1414,21 @@ async function handleAttributeTermsEndpoint(req: NextRequest, endpoint: string) 
 }
 
 // Handle attributes endpoint - PRO Architecture: Dynamic attributes based on filters
-async function handleAttributesEndpoint(req: NextRequest) {
+async function handleAttributesEndpoint(req: NextRequest, requestId?: string) {
   const { searchParams } = new URL(req.url);
   
-  // Check WordPress URL first
+  // Check WordPress URL first - if not set, return empty data instead of error
   if (!WORDPRESS_URL) {
-    console.error('❌ WORDPRESS_URL is not defined');
-    return NextResponse.json(
+    console.warn('⚠️ WORDPRESS_URL is not defined, returning empty attributes');
+    const response = NextResponse.json(
       { 
-        error: 'Błąd konfiguracji serwera', 
-        details: 'Brakuje NEXT_PUBLIC_WORDPRESS_URL',
-        debug: {
-          WORDPRESS_URL: WORDPRESS_URL,
-          NODE_ENV: process.env.NODE_ENV
-        }
+        attributes: {},
+        total_products: 0
       },
-      { status: 500 }
+      { status: 200 }
     );
-  }
-  
-  if (!WC_URL || !CK || !CS) {
-    return NextResponse.json(
-      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
-      { status: 500 }
-    );
+    if (requestId) setRequestIdHeader(response, requestId);
+    return response;
   }
 
   try {
@@ -1331,27 +1438,74 @@ async function handleAttributesEndpoint(req: NextRequest) {
     console.log('🏷️ Attributes endpoint - calling King Shop API:', attributesUrl);
     console.log('🔍 WordPress URL:', WORDPRESS_URL);
     
-    // Use circuit breaker for WordPress API calls
-    const response = await withCircuitBreaker('wordpress', async () => {
-      const response = await fetch(attributesUrl, {
+    // Try King Shop API first
+    let response;
+    try {
+      response = await fetch(attributesUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'User-Agent': 'Filler-Store/1.0'
         },
-        cache: 'force-cache', // 🚀 OPTIMIZATION: Force cache dla WordPress API (revalidate przez Next.js)
-        next: { revalidate: 30 }, // Revalidate co 30s
-        signal: AbortSignal.timeout(5000) // 🚀 OPTIMIZATION: Zredukowany z 10s do 5s
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000)
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (primaryError) {
+      console.log('⚠️ King Shop API failed, trying Store API fallback:', primaryError);
+      
+      // Try Store API as fallback
+      const storeAttributesUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products/attributes`;
+      const storeResponse = await fetch(storeAttributesUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Filler-Store/1.0'
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000)
+      });
+      
+      if (storeResponse.ok) {
+        const storeData = await storeResponse.json();
+        // Normalize Store API response to match expected format
+        const normalized = {
+          attributes: Array.isArray(storeData) ? storeData.reduce((acc: any, attr: any) => {
+            acc[attr.slug] = {
+              id: attr.id,
+              name: attr.name,
+              slug: attr.slug,
+              terms: []
+            };
+            return acc;
+          }, {}) : {},
+          total_products: 0
+        };
+        
+        console.log('✅ Attributes from Store API fallback:', {
+          attributes: Object.keys(normalized.attributes).length
+        });
+        
+        const fallbackResponse = NextResponse.json(normalized, {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=300",
+            "X-Cache": "MISS-FALLBACK",
+          },
+        });
+        if (requestId) setRequestIdHeader(fallbackResponse, requestId);
+        return fallbackResponse;
       }
       
-      return response;
-    });
+      // If both fail, throw the original error
+      throw primaryError;
+    }
 
     console.log('🔍 King Shop API response status:', response.status);
 
@@ -1363,7 +1517,7 @@ async function handleAttributesEndpoint(req: NextRequest) {
     });
 
     // WordPress zrobił całe filtrowanie - zwracamy dane jak są
-    return NextResponse.json(data, {
+    const successResponse = NextResponse.json(data, {
       status: 200,
       headers: {
         "content-type": "application/json",
@@ -1371,13 +1525,30 @@ async function handleAttributesEndpoint(req: NextRequest) {
         "X-Cache": "MISS",
       },
     });
+    if (requestId) setRequestIdHeader(successResponse, requestId);
+    return successResponse;
 
   } catch (error) {
     console.error('❌ Attributes endpoint error:', error);
-    return NextResponse.json(
-      { error: 'Nie udało się pobrać atrybutów', details: error instanceof Error ? error.message : 'Nieznany błąd' },
-      { status: 500 }
+    const errorMessage = error instanceof Error ? error.message : 'Nieznany błąd';
+    
+    // Log detailed error for debugging
+    console.error('❌ Attributes endpoint error details:', {
+      message: errorMessage,
+      WORDPRESS_URL: WORDPRESS_URL ? 'SET' : 'NOT SET',
+      errorType: error?.constructor?.name
+    });
+    
+    // Return empty attributes as fallback instead of error
+    const fallbackResponse = NextResponse.json(
+      { 
+        attributes: {},
+        total_products: 0
+      },
+      { status: 200 }
     );
+    if (requestId) setRequestIdHeader(fallbackResponse, requestId);
+    return fallbackResponse;
   }
 }
 
@@ -1401,7 +1572,12 @@ async function handleProductsCategoriesEndpoint(req: NextRequest) {
 
     console.log('📂 Products categories endpoint - calling WooCommerce API:', categoriesUrl);
     
-    const response = await fetch(categoriesUrl, {
+    // Retry logic (2 attempts) for Woo API
+    let wcResp: Response | null = null;
+    let lastErr: any = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        wcResp = await fetch(categoriesUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -1410,21 +1586,18 @@ async function handleProductsCategoriesEndpoint(req: NextRequest) {
       },
       cache: 'no-store'
     });
-
-    if (!response.ok) {
-      console.error('❌ WooCommerce API error for categories:', response.status, response.statusText);
-      return NextResponse.json(
-        { error: 'Błąd pobierania kategorii', details: response.statusText },
-        { status: response.status }
-      );
+        if (wcResp.ok) break;
+        console.log(`⚠️ Woo categories HTTP ${wcResp.status}, attempt ${attempt}`);
+        if (attempt < 2) await new Promise(r => setTimeout(r, attempt * 500));
+      } catch (e) {
+        lastErr = e;
+        if (attempt < 2) await new Promise(r => setTimeout(r, attempt * 500));
+      }
     }
 
-    const data = await response.json();
-    
-    console.log('✅ Categories received from WooCommerce:', {
-      categories_count: Array.isArray(data) ? data.length : 0
-    });
-
+    if (wcResp && wcResp.ok) {
+      const data = await wcResp.json();
+      console.log('✅ Categories received from WooCommerce:', { categories_count: Array.isArray(data) ? data.length : 0 });
     return NextResponse.json(data, {
       status: 200,
       headers: {
@@ -1433,6 +1606,45 @@ async function handleProductsCategoriesEndpoint(req: NextRequest) {
         "X-Cache": "MISS",
       },
     });
+    }
+
+    // Fallback to Store API (public)
+    const perPage = searchParams.get('per_page') || '100';
+    const storeUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products/categories?per_page=${encodeURIComponent(perPage)}`;
+    console.log('📂 Fallback to Store API for categories:', storeUrl);
+    const storeResp = await fetch(storeUrl, {
+      headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
+      cache: 'no-store'
+    });
+    if (storeResp.ok) {
+      const arr = await storeResp.json();
+      // Normalize to WC v3-like minimal fields
+      const mapped = Array.isArray(arr) ? arr.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        parent: c.parent || 0,
+        count: c.count || 0,
+        image: c.image || null,
+        display: c.display || 'default',
+        menu_order: c.menu_order || 0,
+      })) : [];
+      console.log('✅ Categories from Store API:', { categories_count: mapped.length });
+      return NextResponse.json(mapped, {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=900",
+          "X-Cache": "MISS-FALLBACK",
+        },
+      });
+    }
+
+    console.error('❌ Both WC and Store API failed for categories');
+    return NextResponse.json(
+      { error: 'Błąd pobierania kategorii', details: (wcResp && !wcResp.ok) ? wcResp.statusText : (lastErr?.message || 'Unknown') },
+      { status: (wcResp && !wcResp.ok) ? wcResp.status : 502 }
+    );
 
   } catch (error: any) {
     console.error('❌ Error in handleProductsCategoriesEndpoint:', error);
@@ -1506,30 +1718,23 @@ async function handleProductsAttributesEndpoint(req: NextRequest) {
 }
 
 // Handle shop endpoint - PRO Architecture: WordPress robi całe filtrowanie
-async function handleShopEndpoint(req: NextRequest) {
+async function handleShopEndpoint(req: NextRequest, requestId?: string) {
   const { searchParams } = new URL(req.url);
   
-  // Check WordPress URL first
+  // Check WordPress URL first - if not set, return empty data instead of error
   if (!WORDPRESS_URL) {
-    console.error('❌ WORDPRESS_URL is not defined');
-    return NextResponse.json(
+    console.warn('⚠️ WORDPRESS_URL is not defined, returning empty shop data');
+    const response = NextResponse.json(
       { 
-        error: 'Błąd konfiguracji serwera', 
-        details: 'Brakuje NEXT_PUBLIC_WORDPRESS_URL',
-        debug: {
-          WORDPRESS_URL: WORDPRESS_URL,
-          NODE_ENV: process.env.NODE_ENV
-        }
+        products: [],
+        total: 0,
+        categories: [],
+        attributes: {}
       },
-      { status: 500 }
+      { status: 200 }
     );
-  }
-  
-  if (!WC_URL || !CK || !CS) {
-    return NextResponse.json(
-      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
-      { status: 500 }
-    );
+    if (requestId) setRequestIdHeader(response, requestId);
+    return response;
   }
 
   try {
@@ -1546,46 +1751,108 @@ async function handleShopEndpoint(req: NextRequest) {
     
     const shopUrl = `${WORDPRESS_URL}/wp-json/king-shop/v1/data?endpoint=shop&${cleanParams.toString()}`;
     
-    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
       console.log('🛍️ Shop endpoint - calling King Shop API:', shopUrl);
       console.log('🔍 WordPress URL:', WORDPRESS_URL);
-    }
     
-    // Use circuit breaker for WordPress API calls
-    const wpResponse = await withCircuitBreaker('wordpress', async () => {
-      const fetchResponse = await fetch(shopUrl, {
+    // Try King Shop API first
+    let wpResponse;
+    try {
+      wpResponse = await fetch(shopUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'User-Agent': 'Filler-Store/1.0'
         },
-        next: { revalidate: 30 }, // 🚀 OPTIMIZATION: Cache przez Next.js z revalidate 30s
-        signal: AbortSignal.timeout(5000) // 🚀 OPTIMIZATION: Zredukowany z 10s do 5s
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000)
       });
       
-      if (!fetchResponse.ok) {
-        const errorText = await fetchResponse.text();
-        throw new Error(`HTTP ${fetchResponse.status}: ${errorText.substring(0, 200)}`);
+      if (!wpResponse.ok) {
+        throw new Error(`HTTP ${wpResponse.status}: ${wpResponse.statusText}`);
+      }
+    } catch (primaryError) {
+      console.log('⚠️ King Shop API failed, trying Store API fallback:', primaryError);
+      
+      // Try Store API as fallback - get products and basic data
+      const perPage = cleanParams.get('per_page') || '24';
+      const page = cleanParams.get('page') || '1';
+      const storeProductsUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products?per_page=${perPage}&page=${page}`;
+      
+      const storeResponse = await fetch(storeProductsUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Filler-Store/1.0'
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000)
+      });
+      
+      if (storeResponse.ok) {
+        const storeProducts = await storeResponse.json();
+        // Normalize Store API response to match expected format
+        const normalized = {
+          products: Array.isArray(storeProducts) ? storeProducts.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            price: p.prices?.price || p.price || '0',
+            regular_price: p.prices?.regular_price || p.regular_price || '0',
+            sale_price: p.prices?.sale_price || p.sale_price || '',
+            images: p.images || [],
+            stock_status: p.stock_status || 'instock',
+            categories: p.categories || [],
+            attributes: p.attributes || [],
+          })) : [],
+          total: Array.isArray(storeProducts) ? storeProducts.length : 0,
+          categories: [],
+          attributes: {}
+        };
+        
+        console.log('✅ Shop data from Store API fallback:', {
+          products: normalized.products.length,
+          total: normalized.total
+        });
+        
+        const fallbackResponse = NextResponse.json(normalized, {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "Cache-Control": "public, max-age=60, s-maxage=180, stale-while-revalidate=300",
+            "X-Cache": "MISS-FALLBACK",
+            "CDN-Cache-Control": "public, max-age=180",
+          },
+        });
+        if (requestId) setRequestIdHeader(fallbackResponse, requestId);
+        
+        // Cache response dla request deduplication
+        const shopCacheKey = getCacheKey(req);
+        cleanupOldCache();
+        requestCache.set(shopCacheKey, {
+          data: normalized,
+          timestamp: Date.now(),
+          headers: fallbackResponse.headers,
+        });
+        
+        return fallbackResponse;
       }
       
-      return fetchResponse;
-    });
-
-    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
-      console.log('🔍 King Shop API response status:', wpResponse.status);
+      // If both fail, throw the original error
+      throw primaryError;
     }
+
+    console.log('🔍 King Shop API response status:', wpResponse.status);
 
     const data = await wpResponse.json();
     
-    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
       console.log('✅ Shop data received from WordPress:', {
         products: data.products?.length || 0,
         total: data.total,
         categories: data.categories?.length || 0,
         attributes: data.attributes ? Object.keys(data.attributes).length : 0
       });
-    }
 
     // WordPress zrobił całe filtrowanie - zwracamy dane jak są
     // 🚀 OPTIMIZATION: Agresywniejsze cache headers dla lepszej wydajności
@@ -1598,6 +1865,7 @@ async function handleShopEndpoint(req: NextRequest) {
         "CDN-Cache-Control": "public, max-age=180",
       },
     });
+    if (requestId) setRequestIdHeader(nextResponse, requestId);
 
     // 🚀 PRIORITY 2: Cache response dla request deduplication (tylko dla shop endpoint)
     const shopCacheKey = getCacheKey(req);
@@ -1612,10 +1880,27 @@ async function handleShopEndpoint(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Shop endpoint error:', error);
-    return NextResponse.json(
-      { error: 'Nie udało się pobrać danych sklepu', details: error instanceof Error ? error.message : 'Nieznany błąd' },
-      { status: 500 }
+    const errorMessage = error instanceof Error ? error.message : 'Nieznany błąd';
+    
+    // Log detailed error for debugging
+    console.error('❌ Shop endpoint error details:', {
+      message: errorMessage,
+      WORDPRESS_URL: WORDPRESS_URL ? 'SET' : 'NOT SET',
+      errorType: error?.constructor?.name
+    });
+    
+    // Return empty shop data as fallback instead of error
+    const fallbackResponse = NextResponse.json(
+      { 
+        products: [],
+        total: 0,
+        categories: [],
+        attributes: {}
+      },
+      { status: 200 }
     );
+    if (requestId) setRequestIdHeader(fallbackResponse, requestId);
+    return fallbackResponse;
   }
 }
 
@@ -1841,6 +2126,87 @@ async function handleShippingMethods(req: NextRequest) {
   }
 }
 
+// Handle payment gateways endpoint
+async function handlePaymentGateways(req: NextRequest) {
+  if (!WC_URL || !CK || !CS) {
+    return NextResponse.json(
+      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const gatewaysUrl = `${WC_URL}/payment_gateways?consumer_key=${CK}&consumer_secret=${CS}`;
+    const response = await fetch(gatewaysUrl, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'Filler-Store/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Nie udało się pobrać metod płatności: ${response.status}`);
+    }
+
+    const gatewaysText = await response.text();
+    let gateways: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      enabled: boolean;
+    }> = [];
+
+    try {
+      const parsed = JSON.parse(gatewaysText);
+      gateways = Array.isArray(parsed)
+        ? parsed.map((gateway: Record<string, unknown>) => ({
+            id: String(gateway.id ?? ''),
+            title: typeof gateway.title === 'string' ? gateway.title : String(gateway.id ?? ''),
+            description: typeof gateway.description === 'string' ? gateway.description : undefined,
+            enabled: gateway.enabled === true || gateway.enabled === 'yes',
+          }))
+        : [];
+    } catch {
+      console.error('Nie udało się sparsować metod płatności');
+      gateways = [];
+    }
+
+    // Filter only enabled gateways and normalize
+    const enabledGateways = gateways
+      .filter(g => g.enabled)
+      .map(g => ({
+        id: g.id,
+        title: g.title || g.id,
+        description: g.description || '',
+        enabled: true
+      }));
+
+    // Fallback gateways if none found
+    const gatewaysOut = enabledGateways.length > 0
+      ? enabledGateways
+      : [
+          { id: 'bacs', title: 'Przelew bankowy', description: 'Bezpośredni przelew na nasze konto', enabled: true },
+          { id: 'cod', title: 'Płatność przy odbiorze', description: 'Płatność gotówką przy odbiorze', enabled: true }
+        ];
+
+    return NextResponse.json({
+      success: true,
+      gateways: gatewaysOut
+    });
+
+  } catch (error: unknown) {
+    console.error('Payment gateways API error:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Nie udało się pobrać metod płatności', 
+        details: error instanceof Error ? error.message : String(error) 
+      },
+      { status: 500 }
+    );
+  }
+}
+
 async function handleCoupons(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -1935,42 +2301,442 @@ async function handleCoupons(req: NextRequest) {
   }
 }
 
+// Helper to get client IP (using utility from middleware)
+function getClientIPFromRequest(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIp = request.headers.get('x-real-ip');
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  if (realIp) {
+    return realIp;
+  }
+  if (cfConnectingIp) {
+    return cfConnectingIp;
+  }
+  
+  return 'unknown';
+}
+
 export async function GET(req: NextRequest) {
-  // 🚀 PRIORITY 2: Request deduplication - sprawdź cache przed wykonaniem
-  const cacheKey = getCacheKey(req);
-  const cached = requestCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < DEDUP_WINDOW) {
-    // Return cached response with same headers
-    const cachedResponse = NextResponse.json(cached.data, {
-      status: 200,
-      headers: {
-        ...Object.fromEntries(cached.headers.entries()),
-        'X-Cache': 'DEDUP',
+  // Generate/retrieve request ID for correlation
+  const requestId = getRequestId(req);
+  
+  // Start Sentry span for performance monitoring (optional)
+  let span: any = null;
+  try {
+    span = Sentry.startSpan(
+      {
+        name: `API ${req.method} ${req.nextUrl.pathname}`,
+        op: 'http.server',
+        attributes: {
+          url: req.url,
+          method: req.method,
+          request_id: requestId,
+        },
       },
-    });
-    return cachedResponse;
+      (span) => {
+        Sentry.getCurrentScope().setTag('request_id', requestId);
+        Sentry.getCurrentScope().setContext('request', {
+          url: req.url,
+          method: req.method,
+          requestId,
+        });
+        return span;
+      }
+    );
+  } catch (sentryError) {
+    console.warn('Sentry initialization failed, continuing without it:', sentryError);
   }
 
-  debugLog('🔍 GET request received:', req.url);
-  
-  const { searchParams } = new URL(req.url);
-  const endpoint = searchParams.get("endpoint") || "products";
-  const bypassCache = searchParams.get("cache") === "off";
+  try {
+    // 🚀 PRIORITY 2: Request deduplication - sprawdź cache przed wykonaniem
+    const cacheKey = getCacheKey(req);
+    const cached = requestCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < DEDUP_WINDOW) {
+      // Return cached response with same headers
+      const cachedResponse = NextResponse.json(cached.data, {
+        status: 200,
+        headers: {
+          ...Object.fromEntries(cached.headers.entries()),
+          'X-Cache': 'DEDUP',
+        },
+      });
+      setRequestIdHeader(cachedResponse, requestId);
+      if (span) {
+        span.setAttribute('cache', 'dedup');
+        span.end();
+      }
+      return cachedResponse;
+    }
 
-  // Only enforce WC credentials for endpoints that truly need them
-  const requiresWooCreds = (
-    endpoint === 'payment_gateways' ||
-    endpoint === 'shipping_methods' ||
-    endpoint.startsWith('customers/') ||
-    (
-      // generic proxy to wc/v3 below requires creds
-      endpoint !== 'attributes' &&
-      endpoint !== 'shop' &&
-      endpoint === 'products' // generic products passthrough
-    )
-  );
-  if (requiresWooCreds && (!WC_URL || !CK || !CS)) {
-    return NextResponse.json(
+    debugLog('🔍 GET request received:', req.url);
+    
+    const { searchParams } = new URL(req.url);
+    const endpoint = searchParams.get("endpoint") || "products";
+    const bypassCache = searchParams.get("cache") === "off";
+
+      if (span) {
+        Sentry.getCurrentScope().setTag('endpoint', endpoint);
+        span.setAttribute('endpoint', endpoint);
+      }
+    
+    // Per-endpoint rate limiting
+    const clientIp = getClientIPFromRequest(req);
+    const path = req.nextUrl.pathname;
+    let rateLimitResult: Awaited<ReturnType<typeof checkEndpointRateLimit>> | null = null;
+    
+    try {
+      rateLimitResult = await checkEndpointRateLimit(path, clientIp, searchParams);
+      
+      if (!rateLimitResult.allowed) {
+        debugLog(`⛔ Rate limit exceeded for ${endpoint}`, { ip: clientIp, remaining: rateLimitResult.remaining });
+          if (span) {
+            span.setAttribute('rate_limited', 'true');
+            span.setStatus({ code: 8, message: 'resource_exhausted' }); // 8 = RESOURCE_EXHAUSTED
+            span.end();
+          }
+        
+        const { createErrorResponse } = await import('@/lib/errors');
+        const response = createErrorResponse(
+          new RateLimitError(
+            `Rate limit exceeded for endpoint: ${endpoint}`,
+            rateLimitResult.retryAfter
+          ),
+          { endpoint, method: 'GET', requestId }
+        );
+        setRequestIdHeader(response, requestId);
+        return response;
+      }
+    } catch (error) {
+      // If it's a RateLimitError, return it directly
+      if (error instanceof RateLimitError) {
+        if (span) {
+          span.setStatus({ code: 8, message: 'resource_exhausted' });
+          span.end();
+        }
+        const { createErrorResponse } = await import('@/lib/errors');
+        const response = createErrorResponse(error, { endpoint, method: 'GET', requestId });
+        setRequestIdHeader(response, requestId);
+        return response;
+      }
+      // Otherwise, continue (might be a different error)
+    }
+    
+    // Special endpoints routing (aliases and helpers)
+    if (endpoint === 'attributes') {
+      try {
+        return await handleAttributesEndpoint(req, requestId);
+      } catch (error) {
+        console.error('❌ Error in handleAttributesEndpoint:', error);
+          if (span) {
+            span.setStatus({ code: 2, message: 'internal_error' }); // 2 = ERROR
+            span.end();
+          }
+        const fallbackResponse = NextResponse.json(
+          { attributes: {}, total_products: 0 },
+          { status: 200 }
+        );
+        setRequestIdHeader(fallbackResponse, requestId);
+        return fallbackResponse;
+      }
+    }
+    if (endpoint === 'products/attributes') {
+      return handleProductsAttributesEndpoint(req);
+    }
+    if (endpoint === 'products/categories' || endpoint.startsWith('products/categories')) {
+      return handleProductsCategoriesEndpoint(req);
+    }
+    if (endpoint.startsWith('attributes/') && endpoint.endsWith('/terms')) {
+      return handleAttributeTermsEndpoint(req, endpoint);
+    }
+    if (endpoint === 'shop') {
+      try {
+        return await handleShopEndpoint(req, requestId);
+      } catch (error) {
+        console.error('❌ Error in handleShopEndpoint:', error);
+          if (span) {
+            span.setStatus({ code: 2, message: 'internal_error' }); // 2 = ERROR
+            span.end();
+          }
+        const fallbackResponse = NextResponse.json(
+          { products: [], total: 0, categories: [], attributes: {} },
+          { status: 200 }
+        );
+        setRequestIdHeader(fallbackResponse, requestId);
+        return fallbackResponse;
+      }
+    }
+    if (endpoint === 'shipping_methods') {
+      try {
+        return await handleShippingMethods(req);
+      } catch (error) {
+        console.error('❌ Error in handleShippingMethods:', error);
+        if (span) {
+          span.setStatus({ code: 2, message: 'internal_error' });
+          span.end();
+        }
+        // Return fallback methods
+        const fallbackResponse = NextResponse.json({
+          success: true,
+          shipping_methods: [
+            {
+              id: 'free_shipping_default',
+              method_id: 'free_shipping',
+              method_title: 'Darmowa dostawa',
+              method_description: '',
+              cost: 0,
+              free_shipping_threshold: 0,
+              zone_id: 0,
+              zone_name: 'Domyślna',
+              settings: {}
+            }
+          ]
+        }, { status: 200 });
+        setRequestIdHeader(fallbackResponse, requestId);
+        return fallbackResponse;
+      }
+    }
+    if (endpoint === 'payment_gateways') {
+      try {
+        return await handlePaymentGateways(req);
+      } catch (error) {
+        console.error('❌ Error in handlePaymentGateways:', error);
+        if (span) {
+          span.setStatus({ code: 2, message: 'internal_error' });
+          span.end();
+        }
+        // Return fallback gateways
+        const fallbackResponse = NextResponse.json({
+          success: true,
+          gateways: [
+            { id: 'bacs', title: 'Przelew bankowy', description: 'Bezpośredni przelew na nasze konto', enabled: true },
+            { id: 'cod', title: 'Płatność przy odbiorze', description: 'Płatność gotówką przy odbiorze', enabled: true }
+          ]
+        }, { status: 200 });
+        setRequestIdHeader(fallbackResponse, requestId);
+        return fallbackResponse;
+      }
+    }
+    if (endpoint === 'customers/invoice-pdf') {
+      try {
+        return await handleCustomerInvoicePdf(req);
+      } catch (error) {
+        console.error('❌ Error in handleCustomerInvoicePdf:', error);
+        if (span) {
+          span.setStatus({ code: 2, message: 'internal_error' });
+          span.end();
+        }
+        const errorResponse = NextResponse.json({
+          success: false,
+          error: 'Nie udało się wygenerować faktury PDF'
+        }, { status: 500 });
+        setRequestIdHeader(errorResponse, requestId);
+        return errorResponse;
+      }
+    }
+
+    // Cap per_page to avoid huge payloads
+    if (endpoint === 'products') {
+      const per = parseInt(searchParams.get('per_page') || '24');
+      if (per > 24) searchParams.set('per_page', '24');
+      // If searching by term, increase per_page to improve hit rate (cap at 100)
+      if (searchParams.has('search')) {
+        const current = parseInt(searchParams.get('per_page') || '0');
+        const desired = Math.min(100, current || 100);
+        searchParams.set('per_page', String(desired));
+      }
+    }
+    if (endpoint === 'orders' || endpoint.startsWith('orders/')) {
+      const per = parseInt(searchParams.get('per_page') || '20');
+      if (per > 20) searchParams.set('per_page', '20');
+    }
+
+    // Handle conditional requests (If-None-Match)
+    const ifNoneMatch = req.headers.get('if-none-match');
+
+    // Fast slug mapping endpoint: endpoint=slug/{slug}
+    if (endpoint.startsWith('slug/')) {
+      const slug = endpoint.replace('slug/', '').trim();
+      const key = `slug:${slug}`;
+      try {
+        const hit = await cache.get(key);
+        if (hit) {
+          if (span) {
+            span.setStatus({ code: 1, message: 'ok' });
+            span.setAttribute('cache_status', 'hit');
+            span.end();
+          }
+          const response = new NextResponse(hit.body, {
+            status: 200,
+            headers: { 'content-type': 'application/json', ETag: hit.etag, 'Cache-Control': 'public, max-age=600' },
+          });
+          setRequestIdHeader(response, requestId);
+          return response;
+        }
+        // If not in cache, try to resolve via products search
+        const searchTerm = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const slugUrl = new URL(`${WC_URL.replace(/\/$/, '')}/products`);
+        slugUrl.searchParams.set('search', searchTerm);
+        slugUrl.searchParams.set('per_page', '100');
+        slugUrl.searchParams.set('_fields', 'id,slug');
+        slugUrl.searchParams.set('consumer_key', CK || '');
+        slugUrl.searchParams.set('consumer_secret', CS || '');
+        const r = await fetch(slugUrl.toString(), { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (!r.ok) {
+          if (span) {
+            span.setStatus({ code: 5, message: 'not_found' }); // 5 = NOT_FOUND
+            span.end();
+          }
+          const response = NextResponse.json({ error: 'Lookup failed' }, { status: r.status });
+          setRequestIdHeader(response, requestId);
+          return response;
+        }
+        const arr = await r.json();
+        const found = Array.isArray(arr) ? arr.find((p: any) => p.slug === slug) : null;
+        const body = JSON.stringify(found ? { id: found.id, slug: found.slug } : { id: null, slug, error: 'not_found' });
+        await cache.set(key, body, 600_000, {});
+        if (span) {
+          span.setStatus({ code: found ? 1 : 5, message: found ? 'ok' : 'not_found' });
+          span.end();
+        }
+        const response = new NextResponse(body, {
+          status: found ? 200 : 404,
+          headers: { 'content-type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+        });
+        setRequestIdHeader(response, requestId);
+        return response;
+      } catch (e) {
+          if (span) {
+            span.setStatus({ code: 2, message: 'internal_error' }); // 2 = ERROR
+            span.end();
+          }
+        const response = NextResponse.json({ error: 'Lookup error', message: (e as Error).message }, { status: 500 });
+        setRequestIdHeader(response, requestId);
+        return response;
+      }
+    }
+
+    // HPOS-optimized orders endpoints
+    if (endpoint === 'orders' || (endpoint.startsWith('orders/') && !endpoint.includes('/notes') && !endpoint.includes('/refunds'))) {
+      try {
+        if (endpoint === 'orders') {
+          // GET orders list - use hposApi.getOrders()
+          const query: any = {};
+          const customer = searchParams.get('customer');
+          if (customer) query.customer = parseInt(customer);
+          const status = searchParams.get('status');
+          if (status) query.status = status;
+          const page = searchParams.get('page');
+          if (page) query.page = parseInt(page);
+          const perPage = searchParams.get('per_page');
+          if (perPage) {
+            const per = parseInt(perPage);
+            query.per_page = per > 20 ? 20 : per; // Cap at 20
+          } else {
+            query.per_page = 20;
+          }
+          const orderby = searchParams.get('orderby');
+          if (orderby) query.orderby = orderby;
+          const order = searchParams.get('order');
+          if (order) query.order = order as 'asc' | 'desc';
+          const after = searchParams.get('after');
+          if (after) query.after = after;
+          const before = searchParams.get('before');
+          if (before) query.before = before;
+          const search = searchParams.get('search');
+          if (search) query.search = search;
+
+          const orders = await hposApi.getOrders(query);
+          
+          // Build rate limit headers
+          const rateLimitHeaders: Record<string, string> = {};
+          if (rateLimitResult) {
+            const limit = rateLimitResult.remaining + (rateLimitResult.allowed ? 1 : 0);
+            rateLimitHeaders["X-RateLimit-Limit"] = String(limit);
+            rateLimitHeaders["X-RateLimit-Remaining"] = String(rateLimitResult.remaining);
+            rateLimitHeaders["X-RateLimit-Reset"] = String(Math.ceil(rateLimitResult.resetAt / 1000));
+          }
+
+          if (span) {
+            span.setStatus({ code: 1, message: 'ok' });
+            span.setAttribute('cache_status', 'hpos-api');
+            span.end();
+          }
+
+          const response = NextResponse.json(orders, {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+              'Cache-Control': 'private, max-age=120',
+              'X-HPOS-Enabled': 'true',
+              ...rateLimitHeaders,
+            },
+          });
+          setRequestIdHeader(response, requestId);
+          return response;
+        } else if (endpoint.startsWith('orders/')) {
+          // GET single order - use hposApi.getOrder(id)
+          const orderIdMatch = endpoint.match(/^orders\/(\d+)$/);
+          if (orderIdMatch) {
+            const orderId = parseInt(orderIdMatch[1]);
+            const order = await hposApi.getOrder(orderId);
+            
+            // Build rate limit headers
+            const rateLimitHeaders: Record<string, string> = {};
+            if (rateLimitResult) {
+              const limit = rateLimitResult.remaining + (rateLimitResult.allowed ? 1 : 0);
+              rateLimitHeaders["X-RateLimit-Limit"] = String(limit);
+              rateLimitHeaders["X-RateLimit-Remaining"] = String(rateLimitResult.remaining);
+              rateLimitHeaders["X-RateLimit-Reset"] = String(Math.ceil(rateLimitResult.resetAt / 1000));
+            }
+
+            if (span) {
+              span.setStatus({ code: 1, message: 'ok' });
+              span.setAttribute('cache_status', 'hpos-api');
+              span.end();
+            }
+
+            const response = NextResponse.json(order, {
+              status: 200,
+              headers: {
+                'content-type': 'application/json',
+                'Cache-Control': 'private, max-age=120',
+                'X-HPOS-Enabled': 'true',
+                ...rateLimitHeaders,
+              },
+            });
+            setRequestIdHeader(response, requestId);
+            return response;
+          }
+        }
+      } catch (error: any) {
+        // If hposApi fails, fall back to generic passthrough
+        debugLog('hposApi failed, falling back to generic passthrough', { error: error.message, endpoint });
+        // Continue to generic passthrough below
+      }
+    }
+
+    // Only enforce WC credentials for endpoints that truly need them
+    const requiresWooCreds = (
+      endpoint === 'payment_gateways' ||
+      endpoint === 'shipping_methods' ||
+      endpoint.startsWith('customers/') ||
+      (
+        // generic proxy to wc/v3 below requires creds
+        endpoint !== 'attributes' &&
+        endpoint !== 'shop' &&
+        endpoint === 'products' // generic products passthrough
+      )
+    );
+    if (requiresWooCreds && (!WC_URL || !CK || !CS)) {
+          if (span) {
+            span.setStatus({ code: 2, message: 'internal_error' }); // 2 = ERROR
+            span.end();
+          }
+      const response = NextResponse.json(
       { 
         error: "Błąd konfiguracji serwera", 
         details: "Brakuje zmiennych środowiskowych WooCommerce",
@@ -1983,432 +2749,173 @@ export async function GET(req: NextRequest) {
           WC_CONSUMER_SECRET: CS,
         }
       },
-      { status: 500 }
-    );
-  }
-  
-  // Optimized product endpoint
-  if (endpoint.startsWith('king-optimized/product/')) {
-    const slug = endpoint.replace('king-optimized/product/', '');
-    const url = `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-json/king-optimized/v1/product/${slug}`;
-    
-    try {
-      const response = await fetch(url, {
-        headers: { 'Accept': 'application/json' },
-        cache: bypassCache ? 'no-store' : 'default'
-      });
-      
-      if (!response.ok) {
-        return NextResponse.json({ success: false, error: 'Product not found' }, { status: response.status });
-      }
-      
-      const data = await response.json();
-      return NextResponse.json(data);
-    } catch (error: any) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-  }
-
-  // HPOS-optimized orders endpoint with fallback
-  if (endpoint === 'orders' || endpoint.startsWith('orders/')) {
-  debugLog('🔄 Orders endpoint:', endpoint);
-    
-    try {
-      // Handle single order request
-      if (endpoint.startsWith('orders/') && endpoint !== 'orders') {
-        const orderId = parseInt(endpoint.replace('orders/', ''));
-        if (isNaN(orderId)) {
-          return NextResponse.json({ error: 'Invalid order ID' }, { status: 400 });
-        }
-        
-        try {
-          const order = await hposApi.getOrder(orderId);
-          return NextResponse.json(order);
-        } catch (hposError) {
-          console.warn('⚠️ HPOS failed, trying standard WooCommerce API:', hposError);
-          // Fallback to standard WooCommerce API
-          const url = `${WC_URL}/orders/${orderId}?consumer_key=${CK}&consumer_secret=${CS}`;
-          const response = await fetch(url, {
-            headers: { 'Accept': 'application/json' }
-          });
-          
-          if (!response.ok) {
-            throw new Error(`WooCommerce API error: ${response.status}`);
-          }
-          
-          const order = await response.json();
-          return NextResponse.json(order);
-        }
-      }
-      
-      // Handle orders list request - OPTIMIZED FOR CUSTOMER ORDERS
-      const customerId = searchParams.get('customer');
-      const status = searchParams.get('status');
-      const page = parseInt(searchParams.get('page') || '1');
-      const perPage = parseInt(searchParams.get('per_page') || '20');
-      
-      // Cache key for customer orders
-      const cacheKey = `orders_customer_${customerId}_${page}_${perPage}_${status || 'all'}`;
-      
-      // Check cache first (only for customer orders, cache for 2 minutes)
-      if (customerId && !bypassCache) {
-        const cached = requestCache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < 120000) { // 2 minutes cache
-          debugLog('✅ Orders cache HIT:', cacheKey);
-          return NextResponse.json(cached.data, {
-            headers: {
-              'X-Cache': 'HIT',
-              'Cache-Control': 'private, max-age=120'
-            }
-          });
-        }
-      }
-      
-      try {
-        const orders = await hposApi.getOrders({
-          customer: customerId ? parseInt(customerId) : undefined,
-          status: status || undefined,
-          page,
-          per_page: perPage,
-          orderby: 'date',
-          order: 'desc',
-        });
-        
-        // Cache the result if customer orders
-        if (customerId && orders && Array.isArray(orders)) {
-          requestCache.set(cacheKey, { data: orders, timestamp: Date.now(), headers: new Headers() });
-          cleanupOldCache();
-        }
-        
-        return NextResponse.json(orders, {
-          headers: {
-            'X-Cache': 'MISS',
-            'Cache-Control': 'private, max-age=120'
-          }
-        });
-      } catch (hposError) {
-        debugLog('⚠️ HPOS failed, trying standard WooCommerce API:', hposError);
-        debugLog('⚠️ HPOS failed, trying standard WooCommerce API:', hposError);
-        
-        // Fallback to standard WooCommerce API - OPTIMIZED WITH _fields
-        const params = new URLSearchParams();
-        if (customerId) params.append('customer', customerId);
-        if (status) params.append('status', status);
-        params.append('page', page.toString());
-        params.append('per_page', perPage.toString());
-        params.append('orderby', 'date');
-        params.append('order', 'desc');
-        // OPTIMIZATION: Only fetch needed fields to reduce payload size
-        params.append('_fields', 'id,number,status,currency,total,date_created,date_modified,payment_method,payment_method_title,billing,shipping,line_items,meta_data');
-        
-        const url = `${WC_URL}/orders?consumer_key=${CK}&consumer_secret=${CS}&${params.toString()}`;
-        const response = await fetch(url, {
-          headers: { 'Accept': 'application/json' },
-          cache: bypassCache ? 'no-store' : 'default'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`WooCommerce API error: ${response.status} - ${await response.text()}`);
-        }
-        
-        const orders = await response.json();
-        
-        // Cache the result if customer orders
-        if (customerId && orders && Array.isArray(orders)) {
-          requestCache.set(cacheKey, { data: orders, timestamp: Date.now(), headers: new Headers() });
-          cleanupOldCache();
-        }
-        
-        return NextResponse.json(orders, {
-          headers: {
-            'X-Cache': 'MISS',
-            'Cache-Control': 'private, max-age=120'
-          }
-        });
-      }
-    } catch (error: any) {
-      console.error('❌ Orders endpoint error:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch orders', details: error.message },
         { status: 500 }
       );
+      setRequestIdHeader(response, requestId);
+      return response;
     }
-  }
-  
-  // Special handling for customer invoices - GET requests (must be before general customers/ endpoint)
-  if (endpoint === "customers/invoices") {
-    console.log('🔄 Handling customer invoices GET request');
-    return await handleCustomerInvoices(req);
-  }
 
-  // Special handling for customer invoice PDF download
-  if (endpoint === "customers/invoice-pdf") {
-    console.log('🔄 Handling customer invoice PDF download');
-    return await handleCustomerInvoicePdf(req);
-  }
-
-  // Customer profile endpoint
-  if (endpoint.startsWith('customers/')) {
-    const customerId = endpoint.replace('customers/', '');
-    const authHeader = req.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    try {
-      console.log('🔄 Fetching customer data for ID:', customerId);
-      const response = await fetch(`${WC_URL}/customers/${customerId}?consumer_key=${CK}&consumer_secret=${CS}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
-      
-      console.log('🔍 Customer API response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Customer API error:', errorText);
-        return NextResponse.json({ error: 'Customer not found' }, { status: response.status });
-      }
-      
-      const customerData = await response.json();
-      console.log('✅ Customer data fetched:', customerData);
-      return NextResponse.json(customerData);
-    } catch (error: any) {
-      console.error('❌ Customer fetch error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-  }
-  
-  // Payment gateways
-  if (endpoint === 'payment_gateways') {
-    if (!WC_URL || !CK || !CS) {
-      return NextResponse.json({ success: false, error: 'Brak konfiguracji WooCommerce API' }, { status: 500 });
-    }
-    try {
-      const url = `${WC_URL}/payment_gateways?consumer_key=${CK}&consumer_secret=${CS}`;
-      const r = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' }, cache: 'no-store' });
-      const text = await r.text();
-      let data: any = null; try { data = text ? JSON.parse(text) : null; } catch {}
-      if (!r.ok) {
-        const msg = (data && (data.message || data.error)) || text || 'Błąd pobierania metod płatności';
-        return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: r.status || 502 });
-      }
-      return NextResponse.json({ success: true, gateways: Array.isArray(data) ? data : [] });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return NextResponse.json({ success: false, error: message }, { status: 502 });
-    }
-  }
-
-  // Special handling for shipping methods
-  if (endpoint === "shipping_methods") {
-    return handleShippingMethods(req);
-  }
-  
-  // Special handling for coupons
-  if (endpoint === "coupons") {
-    return handleCoupons(req);
-  }
-  
-  // Special handling for attributes endpoint - PRO Architecture
-  if (endpoint === "attributes") {
-    return handleAttributesEndpoint(req);
-  }
-  
-  // Special handling for attribute terms endpoint
-  if (endpoint.includes("attributes/") && endpoint.includes("/terms")) {
-    console.log('🏷️ Detected attribute terms endpoint:', endpoint);
-    return handleAttributeTermsEndpoint(req, endpoint);
-  }
-  
-  // Special handling for shop endpoint - use new King Shop API
-  if (endpoint === "shop") {
-    return handleShopEndpoint(req);
-  }
-  
-  // Special handling for products/categories endpoint
-  if (endpoint === "products/categories") {
-    return handleProductsCategoriesEndpoint(req);
-  }
-  
-  // Special handling for products/attributes endpoint
-  if (endpoint === "products/attributes") {
-    return handleProductsAttributesEndpoint(req);
-  }
-
-  // Special handling for reviews endpoint
-  if (endpoint === "reviews") {
-    const productId = searchParams.get('product_id');
-    if (!productId) {
-      return NextResponse.json(
-        { success: false, error: 'Product ID jest wymagany' },
-        { status: 400 }
-      );
-    }
-    
-    // WooCommerce reviews endpoint: products/{id}/reviews
-    const reviewsEndpoint = `products/${productId}/reviews`;
-    const url = new URL(`${WC_URL.replace(/\/$/, "")}/${reviewsEndpoint}`);
+    const url = new URL(`${WC_URL.replace(/\/$/, "")}/${endpoint}`);
     searchParams.forEach((v, k) => {
-      if (k !== "endpoint" && k !== "cache" && k !== "product_id") url.searchParams.set(k, v);
+      if (k !== "endpoint" && k !== "cache") url.searchParams.set(k, v);
     });
     url.searchParams.set("consumer_key", CK || '');
     url.searchParams.set("consumer_secret", CS || '');
-    
-    try {
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; HeadlessWoo/1.0)',
-        },
-      });
-      
-      if (!response.ok) {
-        // Jeśli brak recenzji, zwróć pustą tablicę zamiast błędu
-        if (response.status === 404) {
-          return NextResponse.json({ success: true, reviews: [] });
-        }
-        const errorText = await response.text();
-        return NextResponse.json(
-          { success: false, error: `HTTP error! status: ${response.status}` },
-          { status: response.status }
-        );
-      }
-      
-      const reviews = await response.json();
-      // Transform reviews to match expected format
-      const transformedReviews = Array.isArray(reviews) ? reviews.map((review: any) => ({
-        id: review.id,
-        review: review.review || review.content?.rendered || '',
-        rating: review.rating || 0,
-        reviewer: review.reviewer_name || review.reviewer || '',
-        date_created: review.date_created || review.date || ''
-      })) : [];
-      
-      return NextResponse.json({ success: true, reviews: transformedReviews });
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-      return NextResponse.json(
-        { success: false, error: 'Wystąpił błąd podczas pobierania recenzji' },
-        { status: 500 }
-      );
-    }
-  }
 
-  
-  if (!WC_URL || !CK || !CS) {
-    return NextResponse.json(
-      { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
-      { status: 500 }
-    );
-  }
-
-  // Rate limiting
-  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-  const rateLimit = cache.checkRateLimit(ip);
-  
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: 'Przekroczono limit zapytań', retryAfter: Math.ceil((rateLimit.resetAt - Date.now()) / 1000) },
-      { 
-        status: 429,
-        headers: {
-          'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
-          'X-RateLimit-Limit': '100',
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': rateLimit.resetAt.toString()
-        }
-      }
-    );
-  }
-
-  const url = new URL(`${WC_URL.replace(/\/$/, "")}/${endpoint}`);
-  searchParams.forEach((v, k) => {
-    if (k !== "endpoint" && k !== "cache") url.searchParams.set(k, v);
-  });
-  url.searchParams.set("consumer_key", CK || '');
-  url.searchParams.set("consumer_secret", CS || '');
-
-  // Reduce payload for common list endpoints when caller did not request fields explicitly
-  // BUT: if search is used, include more fields as it's likely for product detail page
-  if (endpoint === 'products' && !url.searchParams.has('_fields')) {
-    if (url.searchParams.has('search')) {
-      // For search (product detail page), include all necessary fields
-      url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status,description,short_description,attributes,categories,featured,average_rating,rating_count,cross_sell_ids,related_ids,sku,on_sale');
-    } else {
-      // For list endpoints, keep minimal fields for performance
-      url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status');
-    }
-  }
-
-  // Decide cache policy for pass-through responses
-  const isUserFeatures = endpoint.startsWith('orders') || endpoint.startsWith('customers');
-  const passThroughCacheHeader = isUserFeatures
-    ? 'private, max-age=120'
-    : 'public, max-age=60, s-maxage=180, stale-while-revalidate=300';
-
-  if (__DEBUG__) {
-    console.log('🔍 API Route Debug:');
-    console.log('WC_URL:', WC_URL ? 'SET' : 'NOT SET');
-    console.log('CK:', CK ? 'SET' : 'NOT SET');
-    console.log('CS:', CS ? 'SET' : 'NOT SET');
-    console.log('Final URL:', maskUrlSecrets(url.toString()));
-    console.log('Bypass cache:', bypassCache);
-    console.log('Search params:', Object.fromEntries(searchParams.entries()));
-  }
-
-  try {
-    // Cache lookup (skip if bypass)
-    const cacheKey = cache.generateKey(url.toString());
-    let cached = null;
-    
-    if (!bypassCache) {
-      const cacheStart = Date.now();
-      cached = await cache.get(cacheKey);
-      const cacheTime = Date.now() - cacheStart;
-      
-      if (cached) {
-        // Record cache hit
-        sentryMetrics.recordCacheOperation('hit', cacheKey, cacheTime, { endpoint });
-        
-        return new NextResponse(cached.body, {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-            "Cache-Control": `${passThroughCacheHeader}`,
-            "ETag": cached.etag,
-            "X-Cache": "HIT",
-            "X-RateLimit-Limit": "100",
-            "X-RateLimit-Remaining": rateLimit.remaining.toString(),
-            "X-RateLimit-Reset": rateLimit.resetAt.toString(),
-            ...cached.headers
-          },
-        });
+    // Reduce payload for common list endpoints when caller did not request fields explicitly
+    // BUT: if search is used, include more fields as it's likely for product detail page
+    if (endpoint === 'products' && !url.searchParams.has('_fields')) {
+      if (url.searchParams.has('search')) {
+        // For search (product detail page), include all necessary fields
+        url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status,description,short_description,attributes,categories,featured,average_rating,rating_count,cross_sell_ids,related_ids,sku,on_sale');
+      } else if (url.searchParams.has('include')) {
+        // For batch fetch (include parameter), include all necessary fields for product cards
+        url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes');
       } else {
-        // Record cache miss
-        sentryMetrics.recordCacheOperation('miss', cacheKey, cacheTime, { endpoint });
+        // For list endpoints, keep minimal fields for performance
+        url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status');
       }
     }
+    // Reduce payload for single product by default (omit long HTML fields)
+    if (endpoint.startsWith('products/') && !url.searchParams.has('_fields')) {
+      url.searchParams.set('_fields', 'id,name,slug,price,regular_price,sale_price,images,stock_status,attributes,categories,featured,average_rating,rating_count,sku,on_sale,related_ids,cross_sell_ids');
+    }
 
-    // Retry logic for better reliability
-    let lastError: Error | null = null;
-    let responseTime = 0;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        debugLog(`🔄 Attempt ${attempt} for ${maskUrlSecrets(url.toString())}`);
+    // Reduce payload for orders endpoint (HPOS-optimized fields)
+    if ((endpoint === 'orders' || endpoint.startsWith('orders/')) && !url.searchParams.has('_fields')) {
+      if (endpoint === 'orders') {
+        // List of orders - minimal fields for list view
+        url.searchParams.set('_fields', 'id,number,status,date_created,date_modified,total,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id');
+      } else if (endpoint.startsWith('orders/') && !endpoint.includes('/notes') && !endpoint.includes('/refunds')) {
+        // Single order - include all necessary fields but exclude long HTML fields
+        url.searchParams.set('_fields', 'id,number,status,date_created,date_modified,total,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id,currency,date_paid,date_completed,shipping_lines,coupon_lines,fee_lines,tax_lines');
+      }
+      // For orders/{id}/notes, orders/{id}/refunds - don't add _fields (let WooCommerce handle it)
+    }
+
+    // Reduce payload for customers endpoint
+    if ((endpoint === 'customers' || endpoint.startsWith('customers/')) && !url.searchParams.has('_fields')) {
+      if (endpoint === 'customers') {
+        // List of customers - minimal fields for list view
+        url.searchParams.set('_fields', 'id,email,username,first_name,last_name,date_created,date_modified,orders_count,total_spent,avatar_url');
+      } else if (endpoint.startsWith('customers/') && !endpoint.includes('/password-reset') && !endpoint.includes('/reset-password') && !endpoint.includes('/invoices')) {
+        // Single customer - include all necessary fields but exclude sensitive data
+        url.searchParams.set('_fields', 'id,email,username,first_name,last_name,date_created,date_modified,orders_count,total_spent,avatar_url,billing,shipping,meta_data');
+      }
+      // For customers/password-reset, customers/reset-password, customers/invoices - don't add _fields
+    }
+
+    // Decide cache policy for pass-through responses
+    const isUserFeatures = endpoint.startsWith('orders') || endpoint.startsWith('customers');
+    const passThroughCacheHeader = isUserFeatures
+      ? 'private, max-age=120'
+      : 'public, max-age=60, s-maxage=180, stale-while-revalidate=300';
+
+    if (__DEBUG__) {
+      console.log('🔍 API Route Debug:');
+      console.log('WC_URL:', WC_URL ? 'SET' : 'NOT SET');
+      console.log('CK:', CK ? 'SET' : 'NOT SET');
+      console.log('CS:', CS ? 'SET' : 'NOT SET');
+      console.log('Final URL:', maskUrlSecrets(url.toString()));
+      console.log('Bypass cache:', bypassCache);
+      console.log('Search params:', Object.fromEntries(searchParams.entries()));
+    }
+
+    // Cache lookup and fetch logic
+    try {
+      // Cache lookup (skip if bypass)
+      const cacheKey = cache.generateKey(url.toString());
+      let cached = null;
+      
+      if (!bypassCache) {
+        const cacheStart = Date.now();
+        cached = await cache.get(cacheKey);
+        const cacheTime = Date.now() - cacheStart;
         
-        const startTime = Date.now();
+        if (cached) {
+          // Conditional 304 if ETag matches
+          if (ifNoneMatch && ifNoneMatch === cached.etag) {
+            if (span) {
+              span.setStatus({ code: 1, message: 'ok' });
+              span.setAttribute('cache_status', 'hit');
+              span.end();
+            }
+            const response = new NextResponse(null, { status: 304, headers: { ETag: cached.etag } });
+            setRequestIdHeader(response, requestId);
+            return response;
+          }
+          // Record cache hit
+          sentryMetrics.recordCacheOperation('hit', cacheKey, cacheTime, { endpoint });
+          
+          // Build rate limit headers
+          const rateLimitHeaders: Record<string, string> = {};
+          if (rateLimitResult) {
+            const limit = rateLimitResult.remaining + (rateLimitResult.allowed ? 1 : 0);
+            rateLimitHeaders["X-RateLimit-Limit"] = String(limit);
+            rateLimitHeaders["X-RateLimit-Remaining"] = String(rateLimitResult.remaining);
+            rateLimitHeaders["X-RateLimit-Reset"] = String(Math.ceil(rateLimitResult.resetAt / 1000));
+          }
+          
+          // Finish transaction with cache hit
+          if (span) {
+            span.setStatus({ code: 1, message: 'ok' });
+            span.setAttribute('cache_status', 'hit');
+            span.end();
+          }
+          
+          const response = new NextResponse(cached.body, {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+              "Cache-Control": `${passThroughCacheHeader}`,
+              "ETag": cached.etag,
+              "X-Cache": "HIT",
+              ...rateLimitHeaders,
+              ...cached.headers
+            },
+          });
+          setRequestIdHeader(response, requestId);
+          return response;
+        } else {
+          // Record cache miss
+          sentryMetrics.recordCacheOperation('miss', cacheKey, cacheTime, { endpoint });
+        }
+      }
+
+      // Retry logic for better reliability
+      let lastError: Error | null = null;
+      let responseTime = 0;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          debugLog(`🔄 Attempt ${attempt} for ${maskUrlSecrets(url.toString())}`);
+          
+          const startTime = Date.now();
+          // Determine ISR tags based on endpoint
+          const isrTags: string[] = [];
+          if (endpoint === 'products' || endpoint.startsWith('products/')) {
+            isrTags.push('products');
+            if (searchParams.has('category')) {
+              isrTags.push(`category-${searchParams.get('category')}`);
+            }
+          } else if (endpoint === 'products/categories' || endpoint.startsWith('products/categories')) {
+            isrTags.push('categories');
+          } else if (endpoint === 'products/attributes' || endpoint.startsWith('products/attributes')) {
+            isrTags.push('attributes');
+          }
+          
         const r = await fetch(url.toString(), {
           headers: { 
             Accept: "application/json",
             'User-Agent': 'Filler-Store/1.0'
           },
           cache: "no-store",
+            // Add ISR for static data endpoints
+            ...(isrTags.length > 0 && {
+              next: { 
+                revalidate: endpoint.includes('categories') || endpoint.includes('attributes') ? 1800 : 300, // 30min for categories/attributes, 5min for products
+                tags: isrTags 
+              }
+            })
         });
         responseTime = Date.now() - startTime;
         
@@ -2424,10 +2931,109 @@ export async function GET(req: NextRequest) {
         const text = await r.text();
         if (!r.ok) {
           debugLog(`❌ HTTP ${r.status}: ${text.slice(0, 300)}`);
-          return new NextResponse(text || r.statusText, {
+            
+            // Special handling for products endpoint with 502/503/504 - try fallback
+            if ((r.status === 502 || r.status === 503 || r.status === 504) && endpoint === 'products' && attempt === 3) {
+              debugLog('🔄 Products endpoint failed, trying Store API fallback...');
+              try {
+                const perPage = searchParams.get('per_page') || '24';
+                const storeUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products?per_page=${encodeURIComponent(perPage)}`;
+                const storeResp = await fetch(storeUrl, {
+                  headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
+                  cache: 'no-store',
+                  signal: AbortSignal.timeout(5000)
+                });
+                if (storeResp.ok) {
+                  const storeData = await storeResp.json();
+                  debugLog('✅ Products from Store API fallback:', { count: Array.isArray(storeData) ? storeData.length : 0 });
+                  span.setStatus({ code: 1, message: 'ok' });
+                  span.setAttribute('cache_status', 'fallback');
+                  span.end();
+                  const response = new NextResponse(JSON.stringify(Array.isArray(storeData) ? storeData : []), {
+                    status: 200,
+                    headers: {
+                      "content-type": "application/json",
+                      "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=300",
+                      "X-Cache": "MISS-FALLBACK",
+                    },
+                  });
+                  setRequestIdHeader(response, requestId);
+                  return response;
+                }
+              } catch (fallbackError) {
+                debugLog('❌ Store API fallback also failed:', fallbackError);
+              }
+            }
+
+            // Special handling for single product endpoint with 502/503/504 - try Store API by ID (earlier fallback)
+            if ((r.status === 502 || r.status === 503 || r.status === 504) && endpoint.startsWith('products/') && attempt >= 2) {
+              try {
+                const id = endpoint.replace('products/', '').trim();
+                const storeSingleUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products/${encodeURIComponent(id)}`;
+                debugLog(`🔄 Single product failed (attempt ${attempt}), trying Store API by id:`, storeSingleUrl);
+                const storeSingleResp = await fetch(storeSingleUrl, {
+                  headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
+                  cache: 'no-store',
+                  signal: AbortSignal.timeout(6000) // Increased timeout for Store API
+                });
+                if (storeSingleResp.ok) {
+                  const json = await storeSingleResp.json();
+                  // Normalize a few fields to be closer to WC v3
+                  const normalized = json && json.id ? {
+                    id: json.id,
+                    name: json.name,
+                    slug: json.slug,
+                    price: json.prices?.price || json.price || null,
+                    regular_price: json.prices?.regular_price || null,
+                    sale_price: json.prices?.sale_price || null,
+                    images: json.images || [],
+                    stock_status: json.stock_status || 'instock',
+                    attributes: json.attributes || [],
+                    categories: json.categories || [],
+                    average_rating: json.average_rating || 0,
+                    rating_count: json.rating_count || 0,
+                    related_ids: json.related_ids || [],
+                    cross_sell_ids: json.cross_sell_ids || [],
+                    sku: json.sku || null,
+                    on_sale: Boolean(json.on_sale),
+                    description: json.description || null,
+                    short_description: json.short_description || null,
+                  } : null;
+                  if (normalized) {
+                    debugLog('✅ Store API fallback successful for product:', id);
+                    if (span) {
+                      span.setStatus({ code: 1, message: 'ok' });
+                      span.setAttribute('cache_status', 'fallback');
+                      span.end();
+                    }
+                    const response = new NextResponse(JSON.stringify(normalized), {
+                      status: 200,
+                      headers: { "content-type": "application/json", "X-Cache": "MISS-FALLBACK" },
+                    });
+                    setRequestIdHeader(response, requestId);
+                    return response;
+                  }
+                }
+              } catch (e) {
+                debugLog('❌ Store API single product fallback failed:', e);
+              }
+            }
+            
+            // If not last attempt, continue retry loop
+            if (attempt < 3) {
+              lastError = new Error(`HTTP ${r.status}: ${text.slice(0, 200)}`);
+              await new Promise(resolve => setTimeout(resolve, attempt * 500));
+              continue;
+            }
+            
+            span.setStatus({ code: 2, message: 'internal_error' });
+            span.end();
+            const response = new NextResponse(text || r.statusText, {
             status: r.status,
             headers: { "content-type": r.headers.get("content-type") || "text/plain" },
           });
+            setRequestIdHeader(response, requestId);
+            return response;
         }
 
         // Check if response is HTML instead of JSON (WordPress error page)
@@ -2440,10 +3046,15 @@ export async function GET(req: NextRequest) {
               const cachedData = await (redis as any).get(cacheKey) as string;
               if (cachedData) {
                 debugLog('✅ Using cached data as fallback');
-                return new NextResponse(cachedData, {
+                  span.setStatus({ code: 1, message: 'ok' });
+                  span.setAttribute('cache_status', 'fallback');
+                  span.end();
+                  const response = new NextResponse(cachedData, {
                   status: 200,
                   headers: { 'content-type': 'application/json' }
                 });
+                  setRequestIdHeader(response, requestId);
+                  return response;
               }
             } catch {
               console.log('⚠️ Redis not available, skipping cache fallback');
@@ -2466,10 +3077,15 @@ export async function GET(req: NextRequest) {
             const retryText = await retryResponse.text();
             if (!retryText.trim().startsWith('<!DOCTYPE html>') && !retryText.trim().startsWith('<html')) {
               debugLog('✅ Retry successful, returning data');
-              return new NextResponse(retryText, {
+                span.setStatus({ code: 1, message: 'ok' });
+                span.setAttribute('cache_status', 'retry');
+                span.end();
+                const response = new NextResponse(retryText, {
                 status: 200,
                 headers: { 'content-type': 'application/json' }
               });
+                setRequestIdHeader(response, requestId);
+                return response;
             }
           }
           
@@ -2484,10 +3100,15 @@ export async function GET(req: NextRequest) {
             error: 'API tymczasowo niedostępne'
           };
           
-          return new NextResponse(JSON.stringify(emptyResponse), {
+            span.setStatus({ code: 1, message: 'ok' });
+            span.setAttribute('cache_status', 'fallback-empty');
+            span.end();
+            const response = new NextResponse(JSON.stringify(emptyResponse), {
             status: 200,
             headers: { 'content-type': 'application/json' }
           });
+            setRequestIdHeader(response, requestId);
+            return response;
         }
         
         debugLog(`✅ Success on attempt ${attempt}`);
@@ -2503,29 +3124,57 @@ export async function GET(req: NextRequest) {
         // Populate cache (skip if bypass)
         if (!bypassCache) {
           const cacheSetStart = Date.now();
-          await cache.set(cacheKey, text, 60000, {
+            // Determine TTL based on endpoint type
+            let ttlMs = 60000; // Default 60s
+            if (endpoint === 'products/categories' || endpoint.startsWith('products/categories')) {
+              ttlMs = 1800000; // 30 minutes for categories
+            } else if (endpoint === 'products/attributes' || endpoint.startsWith('products/attributes')) {
+              ttlMs = 1800000; // 30 minutes for attributes
+            } else if (endpoint === 'products' || endpoint.startsWith('products/')) {
+              ttlMs = 300000; // 5 minutes for products
+            } else if (endpoint.startsWith('orders') || endpoint.startsWith('customers')) {
+              ttlMs = 120000; // 2 minutes for user-specific data
+            }
+            
+            await cache.set(cacheKey, text, ttlMs, {
             'X-Response-Time': `${Date.now() - Date.now()}ms`,
-            'X-Attempt': attempt.toString()
+              'X-Attempt': attempt.toString(),
+              ...(isrTags.length > 0 && { 'X-Cache-Tags': isrTags.join(',') })
           });
           const cacheSetTime = Date.now() - cacheSetStart;
           
           // Record cache set
           sentryMetrics.recordCacheOperation('set', cacheKey, cacheSetTime, { endpoint });
         }
+          
+          // Build rate limit headers
+          const rateLimitHeaders: Record<string, string> = {};
+          if (rateLimitResult) {
+            const limit = rateLimitResult.remaining + (rateLimitResult.allowed ? 1 : 0);
+            rateLimitHeaders["X-RateLimit-Limit"] = String(limit);
+            rateLimitHeaders["X-RateLimit-Remaining"] = String(rateLimitResult.remaining);
+            rateLimitHeaders["X-RateLimit-Reset"] = String(Math.ceil(rateLimitResult.resetAt / 1000));
+          }
         
         const etag = cache.generateETag(text);
-        return new NextResponse(text, {
+          
+          // Finish transaction with success
+          span.setStatus({ code: 1, message: 'ok' });
+          span.setAttribute('cache_status', bypassCache ? 'bypass' : 'miss');
+          span.end();
+          
+          const response = new NextResponse(text, {
           status: 200,
           headers: {
             "content-type": "application/json",
             "Cache-Control": `${passThroughCacheHeader}`,
             "ETag": etag,
             "X-Cache": bypassCache ? "BYPASS" : "MISS",
-            "X-RateLimit-Limit": "100",
-            "X-RateLimit-Remaining": rateLimit.remaining.toString(),
-            "X-RateLimit-Reset": rateLimit.resetAt.toString(),
+              ...rateLimitHeaders,
           },
         });
+          setRequestIdHeader(response, requestId);
+          return response;
       } catch (error) {
         lastError = error as Error;
           debugLog(`❌ Attempt ${attempt} failed:`, error);
@@ -2545,21 +3194,50 @@ export async function GET(req: NextRequest) {
           // Wait before retry (exponential backoff)
           await new Promise(resolve => setTimeout(resolve, attempt * 1000));
         }
+        }
+      }
+      
+      // All attempts failed
+      throw lastError || new Error('Unknown error');
+    } catch (e: unknown) {
+      // Use unified error handling
+      if (span) {
+        span.setStatus({ code: 2, message: 'internal_error' });
+      }
+      
+      const { createErrorResponse, ExternalApiError } = await import('@/lib/errors');
+      const error = e instanceof Error 
+        ? new ExternalApiError(
+            `WooCommerce API error: ${e.message}`,
+            502,
+            { endpoint, attempts: 3 },
+            true
+          )
+        : new ExternalApiError('WooCommerce API error', 502, { endpoint }, true);
+      const response = createErrorResponse(error, { endpoint, method: 'GET', requestId });
+      setRequestIdHeader(response, requestId);
+      if (span) {
+        span.end();
+      }
+      return response;
+    } finally {
+      // Ensure span is ended if not already
+      if (span) {
+        span.end();
       }
     }
-    
-    // All attempts failed
-    throw lastError;
-  } catch (e: unknown) {
-    console.error('🚨 All attempts failed:', e);
-    return NextResponse.json(
-      { error: "Błąd serwera proxy", message: e instanceof Error ? e.message : String(e) },
-      { status: 502 }
-    );
+  } finally {
+    // Ensure Sentry span is ended if not already
+    if (span) {
+      span.end();
+    }
   }
 }
 
 export async function POST(req: NextRequest) {
+  // Generate/retrieve request ID for correlation
+  const requestId = getRequestId(req);
+  
   const { searchParams } = new URL(req.url);
   const endpoint = searchParams.get("endpoint") || "products";
 
@@ -2593,8 +3271,80 @@ export async function POST(req: NextRequest) {
       const orderStartTime = Date.now();
       
       try {
+        // Transform body to match schema format (firstName -> first_name)
+        const transformedBody: any = {
+          ...body,
+          billing: body.billing ? {
+            first_name: body.billing.firstName || body.billing.first_name,
+            last_name: body.billing.lastName || body.billing.last_name,
+            company: body.billing.company || '',
+            address_1: body.billing.address || body.billing.address_1,
+            address_2: body.billing.address_2 || '',
+            city: body.billing.city,
+            state: body.billing.state || '',
+            postcode: body.billing.postcode,
+            country: body.billing.country || 'PL',
+            email: body.billing.email,
+            phone: body.billing.phone,
+          } : undefined,
+          shipping: (body.shipping && body.shipping !== null) ? {
+            first_name: body.shipping.firstName || body.shipping.first_name,
+            last_name: body.shipping.lastName || body.shipping.last_name,
+            company: body.shipping.company || '',
+            address_1: body.shipping.address || body.shipping.address_1,
+            address_2: body.shipping.address_2 || '',
+            city: body.shipping.city,
+            state: body.shipping.state || '',
+            postcode: body.shipping.postcode,
+            country: body.shipping.country || 'PL',
+          } : null,
+          line_items: body.line_items?.map((item: any) => {
+            const variationId = item.variation_id || item.variant?.id;
+            // Only include variation_id if it's a valid positive number, otherwise omit it
+            const lineItem: any = {
+              product_id: item.product_id || item.id,
+              quantity: item.quantity,
+              meta_data: item.meta_data || [],
+            };
+            // Only add variation_id if it's > 0 (0 means no variation, so we omit it)
+            if (variationId && variationId > 0) {
+              lineItem.variation_id = variationId;
+            }
+            return lineItem;
+          }),
+        };
+
+        // Validate order data with Zod
+        console.log('🔍 Validating order data:', JSON.stringify(transformedBody, null, 2));
+        const validationResult = orderSchema.safeParse(transformedBody);
+        
+        if (!validationResult.success) {
+          console.error('❌ Order validation failed:', {
+            errors: validationResult.error.errors,
+            issues: validationResult.error.issues,
+            formattedErrors: validationResult.error.format(),
+            body: transformedBody
+          });
+          const { createErrorResponse, ValidationError } = await import('@/lib/errors');
+          const validationError = new ValidationError('Invalid order data', validationResult.error.errors);
+          const response = createErrorResponse(
+            validationError,
+            { endpoint: 'orders', method: 'POST', requestId }
+          );
+          
+          // Log the actual response body for debugging
+          const responseClone = response.clone();
+          const responseText = await responseClone.text();
+          console.log('📤 Validation error response status:', response.status);
+          console.log('📤 Validation error response body:', responseText);
+          
+          return response;
+        }
+        
+        const validatedBody = validationResult.data;
+        
         // Extract customer ID and session ID for limit checking
-        const customerId = body.customer_id || body.billing?.customer_id;
+        const customerId = validatedBody.customer_id || validatedBody.billing?.customer_id;
         const sessionId = req.headers.get('x-session-id') || 'anonymous';
         
         // Check order limits
@@ -2618,9 +3368,9 @@ export async function POST(req: NextRequest) {
         
         // Add HPOS-specific metadata
         const hposOrderData = {
-          ...body,
+          ...validatedBody,
           meta_data: [
-            ...(body.meta_data || []),
+            ...(validatedBody.meta_data || []),
             {
               key: '_hpos_enabled',
               value: 'true'
@@ -2657,12 +3407,69 @@ export async function POST(req: NextRequest) {
           { order_id: order.id.toString(), hpos_enabled: 'true' }
         );
         
-        return NextResponse.json(order);
+        // Trigger WooCommerce emails after order creation
+        // Use custom king-email endpoint to trigger emails
+        try {
+          console.log('📧 Triggering WooCommerce emails for order:', order.id);
+          
+          const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || WC_URL?.replace('/wp-json/wc/v3', '') || '';
+          
+          if (wordpressUrl) {
+            // Use king-email endpoint to trigger WooCommerce emails
+            const emailTriggerUrl = `${wordpressUrl}/wp-json/king-email/v1/trigger-order-email`;
+            const emailResponse = await fetch(emailTriggerUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({
+                order_id: order.id
+              }),
+            }).catch((err) => {
+              console.error('❌ Email trigger fetch error:', err);
+              return null;
+            });
+            
+            if (emailResponse?.ok) {
+              const emailResult = await emailResponse.json().catch(() => ({}));
+              console.log('✅ WooCommerce email triggered via king-email API:', emailResult);
+            } else {
+              const errorText = await emailResponse?.text().catch(() => 'Unknown error');
+              console.warn('⚠️ Failed to trigger email via king-email API:', emailResponse?.status, errorText);
+              // WooCommerce should still send emails automatically, but log the warning
+            }
+          } else {
+            console.warn('⚠️ WordPress URL not configured, cannot trigger emails');
+          }
+        } catch (emailError) {
+          console.error('❌ Error triggering emails:', emailError);
+          // Don't fail the order creation if email fails
+        }
+        
+        // Return in expected format for frontend
+        return NextResponse.json({
+          success: true,
+          order: {
+            id: order.id,
+            number: order.number || order.id.toString(),
+            status: order.status,
+            total: order.total,
+            currency: order.currency,
+            payment_url: order.payment_url,
+            checkout_payment_url: order.checkout_payment_url,
+            date_created: order.date_created,
+            billing: order.billing,
+            shipping: order.shipping,
+            line_items: order.line_items
+          }
+        });
       } catch (error: any) {
         console.error('❌ HPOS Order creation error:', error);
         
         // Record failed order creation
-        const customerId = body.customer_id || body.billing?.customer_id;
+        // Try to get customer ID from body if validation failed
+        const customerId = (body as any)?.customer_id || (body as any)?.billing?.customer_id;
         const sessionId = req.headers.get('x-session-id') || 'anonymous';
         
         if (customerId) {
@@ -2680,8 +3487,13 @@ export async function POST(req: NextRequest) {
           { error: error.message, hpos_enabled: 'true' }
         );
         
+        // Return in expected format for frontend
         return NextResponse.json(
-          { error: 'Failed to create order', details: error.message },
+          { 
+            success: false,
+            error: error.message || 'Failed to create order',
+            details: error.message 
+          },
           { status: 500 }
         );
       }

@@ -129,8 +129,17 @@ class KingJWTAuthentication {
                 );
             }
             
+            // Get customer data for response
+            $customer_data = $this->get_customer_data($user->ID);
+            
             return array(
+                'success' => true,
                 'valid' => true,
+                'user' => array(
+                    'id' => $user->ID,
+                    'email' => $user->user_email,
+                    'name' => trim($user->first_name . ' ' . $user->last_name) ?: $user->user_email
+                ),
                 'user_id' => $user->ID,
                 'expires_at' => $payload->exp
             );
@@ -145,10 +154,11 @@ class KingJWTAuthentication {
     }
     
     /**
-     * Refresh JWT token
+     * Refresh JWT token with rotation (P0 security fix)
      */
     public function refresh_token($request) {
         $token = $request->get_param('token');
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         
         if (empty($token)) {
             return new WP_Error(
@@ -157,6 +167,20 @@ class KingJWTAuthentication {
                 array('status' => 400)
             );
         }
+        
+        // Rate limiting: max 5 refresh per minute per IP
+        $rate_limit_key = "jwt_refresh_rate_limit_{$ip}";
+        $refresh_count = get_transient($rate_limit_key) ?: 0;
+        
+        if ($refresh_count >= 5) {
+            return new WP_Error(
+                'rate_limit_exceeded',
+                'Zbyt wiele żądań odświeżania tokenu. Spróbuj ponownie za chwilę.',
+                array('status' => 429)
+            );
+        }
+        
+        set_transient($rate_limit_key, $refresh_count + 1, 60); // 1 minute TTL
         
         try {
             $payload = $this->verify_jwt_token($token);
@@ -170,8 +194,31 @@ class KingJWTAuthentication {
                 );
             }
             
-            // Generate new token
-            $new_token = $this->generate_jwt_token($user);
+            // Check if token is in refresh whitelist (prevent reuse)
+            $whitelist_key = "jwt_refresh_whitelist_{$payload->user_id}";
+            $whitelist = get_transient($whitelist_key) ?: array();
+            
+            // If token is not in whitelist, it was already used or invalid
+            if (!in_array($token, $whitelist)) {
+                return new WP_Error(
+                    'token_already_used',
+                    'Token został już użyty do odświeżania',
+                    array('status' => 401)
+                );
+            }
+            
+            // Remove old token from whitelist (token rotation)
+            $whitelist = array_diff($whitelist, array($token));
+            delete_transient($whitelist_key);
+            
+            // Generate new token with same scopes
+            $scopes = isset($payload->scopes) ? $payload->scopes : array('read:profile');
+            $new_token = $this->generate_jwt_token($user, $scopes);
+            
+            // Add new token to whitelist (store only last 5 tokens per user)
+            $whitelist[] = $new_token;
+            $whitelist = array_slice($whitelist, -5); // Keep only last 5
+            set_transient($whitelist_key, $whitelist, 7 * 24 * 60 * 60); // 7 days
             
             return array(
                 'success' => true,
@@ -181,20 +228,26 @@ class KingJWTAuthentication {
         } catch (Exception $e) {
             return new WP_Error(
                 'invalid_token',
-                'Nieprawidłowy token',
+                'Nieprawidłowy token: ' . $e->getMessage(),
                 array('status' => 401)
             );
         }
     }
     
     /**
-     * Generate JWT token
+     * Generate JWT token with scopes (P0 security fix)
      */
-    private function generate_jwt_token($user) {
+    private function generate_jwt_token($user, $scopes = array('read:profile')) {
+        // Default scopes for customer role
+        if (in_array('customer', $user->roles)) {
+            $scopes = array_merge($scopes, array('read:orders', 'read:profile', 'write:profile'));
+        }
+        
         $header = json_encode(array('typ' => 'JWT', 'alg' => 'HS256'));
         $payload = json_encode(array(
             'user_id' => $user->ID,
             'email' => $user->user_email,
+            'scopes' => $scopes, // Add scopes for verification
             'iat' => time(),
             'exp' => time() + (7 * 24 * 60 * 60), // 7 days
             'iss' => get_site_url()
@@ -207,7 +260,29 @@ class KingJWTAuthentication {
         $signature = hash_hmac('sha256', $base64_header . "." . $base64_payload, $secret, true);
         $base64_signature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
         
-        return $base64_header . "." . $base64_payload . "." . $base64_signature;
+        $token = $base64_header . "." . $base64_payload . "." . $base64_signature;
+        
+        // Add token to refresh whitelist (store only last 5 tokens per user)
+        $whitelist_key = "jwt_refresh_whitelist_{$user->ID}";
+        $whitelist = get_transient($whitelist_key) ?: array();
+        $whitelist[] = $token;
+        $whitelist = array_slice($whitelist, -5); // Keep only last 5
+        set_transient($whitelist_key, $whitelist, 7 * 24 * 60 * 60); // 7 days
+        
+        return $token;
+    }
+    
+    /**
+     * Verify token has required scope
+     */
+    public function verify_token_scope($token, $required_scope) {
+        try {
+            $payload = $this->verify_jwt_token($token);
+            $scopes = isset($payload->scopes) ? $payload->scopes : array();
+            return in_array($required_scope, $scopes);
+        } catch (Exception $e) {
+            return false;
+        }
     }
     
     /**

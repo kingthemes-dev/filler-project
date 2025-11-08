@@ -9,7 +9,7 @@ const ReactQueryDevtools =
   process.env.NODE_ENV === 'development'
     ? React.lazy(() => 
         import('@tanstack/react-query-devtools').then((mod) => ({
-          default: mod.ReactQueryDevtools,
+          default: mod.ReactQueryDevtools as React.ComponentType<any>,
         }))
       )
     : () => null;

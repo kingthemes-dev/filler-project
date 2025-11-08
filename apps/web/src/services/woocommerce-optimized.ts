@@ -1,10 +1,120 @@
 import { WooProduct, WooProductQuery, WooApiResponse } from '@/types/woocommerce';
 import { CartItem } from '@/stores/cart-store';
 import { env } from '@/config/env';
+import { logger } from '@/utils/logger';
+
+type StoreApiPrices = {
+  price?: string;
+  regular_price?: string;
+  sale_price?: string;
+};
+
+type StoreApiProduct = Partial<WooProduct> & {
+  prices?: StoreApiPrices;
+};
+
+interface RawPaymentGateway {
+  id: string;
+  title?: string;
+  method_title?: string;
+  description?: string;
+  enabled?: boolean | 'yes' | 'no';
+}
+
+type ShippingMethodSettings = Record<string, { value?: unknown }>;
+
+interface ValidationDetail {
+  path?: Array<string | number>;
+  message?: string;
+}
 
 // =========================================
 // Optimized WooCommerce Service
 // =========================================
+
+/**
+ * Normalize Store API product response to WooProduct format
+ * Store API doesn't return all fields, so we fill in defaults
+ */
+function normalizeStoreApiProduct(product: StoreApiProduct): WooProduct {
+  const now = new Date().toISOString();
+  const priceFromStoreApi = product.prices ?? {};
+
+  return {
+    id: Number(product.id ?? 0),
+    name: String(product.name ?? ''),
+    slug: String(product.slug ?? ''),
+    permalink: typeof product.permalink === 'string' ? product.permalink : `/${String(product.slug ?? '')}`,
+    date_created: product.date_created ?? now,
+    date_created_gmt: product.date_created_gmt ?? now,
+    date_modified: product.date_modified ?? now,
+    date_modified_gmt: product.date_modified_gmt ?? now,
+    type: (product.type as WooProduct['type']) ?? 'simple',
+    status: (product.status as WooProduct['status']) ?? 'publish',
+    featured: Boolean(product.featured),
+    catalog_visibility: (product.catalog_visibility as WooProduct['catalog_visibility']) ?? 'visible',
+    description: String(product.description ?? ''),
+    short_description: String(product.short_description ?? ''),
+    sku: String(product.sku ?? ''),
+    price: priceFromStoreApi.price ?? (typeof product.price === 'string' ? product.price : '0'),
+    regular_price:
+      priceFromStoreApi.regular_price ?? (typeof product.regular_price === 'string' ? product.regular_price : '0'),
+    sale_price:
+      priceFromStoreApi.sale_price ?? (typeof product.sale_price === 'string' ? product.sale_price : ''),
+    date_on_sale_from: product.date_on_sale_from ?? null,
+    date_on_sale_from_gmt: product.date_on_sale_from_gmt ?? null,
+    date_on_sale_to: product.date_on_sale_to ?? null,
+    date_on_sale_to_gmt: product.date_on_sale_to_gmt ?? null,
+    price_html: String(product.price_html ?? ''),
+    on_sale: Boolean(product.on_sale),
+    purchasable: product.purchasable !== false,
+    total_sales: typeof product.total_sales === 'number' ? product.total_sales : Number(product.total_sales ?? 0),
+    virtual: Boolean(product.virtual),
+    downloadable: Boolean(product.downloadable),
+    downloads: Array.isArray(product.downloads) ? product.downloads : [],
+    download_limit: typeof product.download_limit === 'number' ? product.download_limit : -1,
+    download_expiry: typeof product.download_expiry === 'number' ? product.download_expiry : -1,
+    tax_status: (product.tax_status as WooProduct['tax_status']) ?? 'taxable',
+    tax_class: String(product.tax_class ?? ''),
+    manage_stock: Boolean(product.manage_stock),
+    stock_quantity:
+      typeof product.stock_quantity === 'number' || product.stock_quantity === null
+        ? product.stock_quantity
+        : null,
+    stock_status: (product.stock_status as WooProduct['stock_status']) ?? 'instock',
+    backorders: (product.backorders as WooProduct['backorders']) ?? 'no',
+    backorders_allowed: Boolean(product.backorders_allowed),
+    backordered: Boolean(product.backordered),
+    sold_individually: Boolean(product.sold_individually),
+    weight: String(product.weight ?? ''),
+    dimensions:
+      typeof product.dimensions === 'object' && product.dimensions !== null
+        ? product.dimensions
+        : { length: '', width: '', height: '' },
+    shipping_required: product.shipping_required !== false,
+    shipping_taxable: product.shipping_taxable !== false,
+    shipping_class: String(product.shipping_class ?? ''),
+    shipping_class_id: typeof product.shipping_class_id === 'number' ? product.shipping_class_id : 0,
+    categories: Array.isArray(product.categories) ? product.categories : [],
+    reviews_allowed: product.reviews_allowed !== false,
+    average_rating: String(product.average_rating ?? 0),
+    rating_count: typeof product.rating_count === 'number' ? product.rating_count : Number(product.rating_count ?? 0),
+    related_ids: Array.isArray(product.related_ids) ? product.related_ids : [],
+    upsell_ids: Array.isArray(product.upsell_ids) ? product.upsell_ids : [],
+    cross_sell_ids: Array.isArray(product.cross_sell_ids) ? product.cross_sell_ids : [],
+    parent_id: typeof product.parent_id === 'number' ? product.parent_id : 0,
+    purchase_note: String(product.purchase_note ?? ''),
+    tags: Array.isArray(product.tags) ? product.tags : [],
+    images: Array.isArray(product.images) ? product.images : [],
+    attributes: Array.isArray(product.attributes) ? product.attributes : [],
+    default_attributes: Array.isArray(product.default_attributes) ? product.default_attributes : [],
+    variations: Array.isArray(product.variations) ? product.variations : [],
+    grouped_products: Array.isArray(product.grouped_products) ? product.grouped_products : [],
+    menu_order: typeof product.menu_order === 'number' ? product.menu_order : 0,
+    meta_data: Array.isArray(product.meta_data) ? product.meta_data : [],
+    _links: product._links ?? { self: [], collection: [] },
+  };
+}
 
 class WooCommerceService {
   private baseUrl: string;
@@ -15,8 +125,8 @@ class WooCommerceService {
     this.baseUrl = typeof window !== 'undefined'
       ? '/api/woocommerce'
       : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/woocommerce`;
-    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
-      console.log('🚀 WooCommerce Optimized Service initialized with baseUrl:', this.baseUrl);
+    if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+      logger.debug('WooCommerce Optimized Service initialized', { baseUrl: this.baseUrl });
     }
   }
 
@@ -32,15 +142,15 @@ class WooCommerceService {
         throw new Error(e.error || 'Nie udało się pobrać metod płatności');
       }
       const data = await r.json();
-      const gateways = (data.gateways || []).map((g: any) => ({
-        id: g.id,
-        title: g.title || g.method_title || g.id,
-        description: g.description || '',
-        enabled: g.enabled === true || g.enabled === 'yes'
+      const gateways = (data.gateways || []).map((gateway: RawPaymentGateway) => ({
+        id: gateway.id,
+        title: gateway.title || gateway.method_title || gateway.id,
+        description: gateway.description || '',
+        enabled: gateway.enabled === true || gateway.enabled === 'yes'
       }));
       return { success: true, gateways };
     } catch (error) {
-      console.error('Error fetching payment gateways:', error);
+      logger.error('Error fetching payment gateways', { error });
       return { success: false, error: 'Nie udało się pobrać metod płatności' };
     }
   }
@@ -62,7 +172,7 @@ class WooCommerceService {
       
       return await response.json();
     } catch (error) {
-      console.error('Error fetching homepage data:', error);
+      logger.error('Error fetching homepage data', { error });
       throw error;
     }
   }
@@ -135,7 +245,7 @@ class WooCommerceService {
         },
       };
     } catch (error) {
-      console.error('Error fetching shop data:', error);
+      logger.error('Error fetching shop data', { error });
       throw error;
     }
   }
@@ -143,33 +253,39 @@ class WooCommerceService {
   // =========================================
   // Product Data - Single product
   // =========================================
-  async getProductData(productId: number): Promise<WooProduct> {
+  async getProductData(productId: number): Promise<WooProduct | null> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=product/${productId}`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}`);
       
+      if (response.status === 404) {
+        return null;
+      }
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        return null;
       }
       
       return await response.json();
     } catch (error) {
-      console.error('Error fetching product data:', error);
-      throw error;
+      logger.error('Error fetching product data', { error });
+      return null;
     }
   }
 
-  async getProductById(productId: number): Promise<WooProduct> {
+  async getProductById(productId: number): Promise<WooProduct | null> {
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=product/${productId}`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}`);
       
+      if (response.status === 404) {
+        return null;
+      }
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        return null;
       }
       
       return await response.json();
     } catch (error) {
-      console.error('Error fetching product by ID:', error);
-      throw error;
+      logger.error('Error fetching product by ID', { error });
+      return null;
     }
   }
 
@@ -177,48 +293,266 @@ class WooCommerceService {
   // Product by Slug
   // =========================================
   async getProductBySlug(slug: string): Promise<WooProduct | null> {
+    const startTime = Date.now();
     try {
-      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
-        console.log(`🔍 Fetching product by slug: ${slug}`);
-        console.log(`🔗 Using baseUrl: ${this.baseUrl}`);
+      if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        logger.debug('[getProductBySlug] Starting fetch', { slug, baseUrl: this.baseUrl });
       }
-      
-      // Try multiple approaches to find product by slug
-      let product: WooProduct | null = null;
-      
-      // Approach 1: Search by slug (convert slug to readable name)
-      const searchTerm = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
-        console.log(`🔍 Trying search term: ${searchTerm}`);
-      }
-      
-      const searchUrl = `${this.baseUrl}?endpoint=products&search=${encodeURIComponent(searchTerm)}&cache=off`;
-      if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
-        console.log(`🌐 Search URL: ${searchUrl}`);
-      }
-      
-      const searchResponse = await fetch(searchUrl);
-      
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
-          console.log(`📦 Search data received:`, Array.isArray(searchData) ? `Array with ${searchData.length} items` : typeof searchData);
-        }
-        
-        // Find product with exact slug match
-        product = Array.isArray(searchData) ? searchData.find((p: any) => p.slug === slug) : null;
-        if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEBUG === 'true') {
-          console.log(`✅ Product found via search:`, product ? `${product.name} (ID: ${product.id})` : 'null');
+
+      // Client-side short cache to avoid repeated lookups during navigation
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        const cached = window.sessionStorage.getItem(`slug:${slug}`);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.id) {
+              if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+                logger.debug('[getProductBySlug] Found in sessionStorage', { slug });
+              }
+              return parsed as WooProduct;
+            }
+          } catch {}
         }
       }
+
+      // Helper to add timeout to fetch
+      const withTimeout = async (url: string, ms: number, init: RequestInit = {}, label: string) => {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), ms);
+        try {
+          const res = await fetch(url, { ...init, signal: controller.signal });
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+            logger.debug(`[${label}] Fetch result`, { status: res.status, ok: res.ok, url: url.substring(0, 80) });
+          }
+          return res;
+        } catch (err) {
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+            logger.debug(`[${label}] Timeout/Error`, { timeout: ms, error: err instanceof Error ? err.message : 'unknown' });
+          }
+          throw err;
+        } finally {
+          clearTimeout(id);
+        }
+      };
+
+      const attempts: Array<Promise<WooProduct | null>> = [];
+
+      // E) Direct WordPress Store API (FASTEST - try first, bypass proxy)
+      attempts.push((async () => {
+        try {
+          const wpUrl = env.NEXT_PUBLIC_WORDPRESS_URL;
+          if (!wpUrl) return null;
+          
+          // Try Store API directly (fastest, no proxy overhead)
+          const storeUrl = `${wpUrl}/wp-json/wc/store/v1/products?slug=${encodeURIComponent(slug)}`;
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+            logger.debug('[E] Trying direct WordPress Store API', { url: storeUrl });
+          }
+          
+          const res = await withTimeout(storeUrl, 3000, { 
+            headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' } 
+          }, 'E:store-api');
+          
+          if (!res.ok) return null;
+          const data = await res.json();
+          
+          // Store API returns array or single object
+          let product: StoreApiProduct | null = null;
+          if (Array.isArray(data) && data.length > 0) {
+            product = (data as StoreApiProduct[]).find((p) => p.slug === slug) || (data[0] as StoreApiProduct);
+          } else if (data && typeof data === 'object' && (data as StoreApiProduct).id) {
+            product = data as StoreApiProduct;
+          }
+          
+          if (product && product.id) {
+            // Normalize Store API response to WooProduct format
+            const normalized = normalizeStoreApiProduct(product);
+            
+            if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+              logger.debug('[E] Found product via Store API', { productId: normalized.id });
+            }
+            return normalized;
+          }
+          return null;
+        } catch (e) {
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+            logger.debug('[E] Store API failed', { error: e instanceof Error ? e.message : 'unknown' });
+          }
+          return null;
+        }
+      })());
+
+      // A) Fast slug→ID map + product (with retry for slow API)
+      attempts.push((async () => {
+        try {
+          const slugRes = await withTimeout(`${this.baseUrl}?endpoint=slug/${encodeURIComponent(slug)}`, 2000, { headers: { Accept: 'application/json' }, cache: 'no-store' }, 'A:slug→id');
+          if (!slugRes.ok) return null;
+          const map = await slugRes.json();
+          if (!map || !map.id) return null;
+          
+          // Retry logic for product fetch (WooCommerce API can be slow)
+          let product: WooProduct | null = null;
+          for (let retry = 0; retry < 2; retry++) {
+            try {
+              const timeout = retry === 0 ? 5000 : 8000; // First try 5s, retry 8s
+              const pr = await withTimeout(`${this.baseUrl}?endpoint=products/${map.id}`, timeout, { headers: { Accept: 'application/json' } }, `A:product${retry > 0 ? `-retry${retry}` : ''}`);
+              if (pr.ok) {
+                const pd = await pr.json();
+                if (pd && pd.id) {
+                  product = pd as WooProduct;
+                  if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+                    logger.debug('[A] Found product via slug→id', { productId: pd.id, attempt: retry + 1 });
+                  }
+                  break;
+                }
+              } else if (pr.status === 404) {
+                // Product doesn't exist, don't retry
+                break;
+              }
+            } catch (e) {
+              if (process.env.NEXT_PUBLIC_DEBUG === 'true' && retry === 1) {
+                logger.debug('[A] Product fetch failed after retries', { error: e instanceof Error ? e.message : 'unknown' });
+              }
+              if (retry < 1) {
+                // Wait a bit before retry
+                await new Promise(resolve => setTimeout(resolve, 500));
+              }
+            }
+          }
+          return product;
+        } catch (e) {
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+            logger.debug('[A] Slug→ID failed', { error: e instanceof Error ? e.message : 'unknown' });
+          }
+          return null;
+        }
+      })());
+
+      // B) Optimized endpoint (mu-plugin) - increased timeout
+      attempts.push((async () => {
+        try {
+          const res = await withTimeout(`${this.baseUrl}?endpoint=king-optimized/product/${encodeURIComponent(slug)}`, 3000, { headers: { Accept: 'application/json' } }, 'B:optimized');
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true' && data && data.id) {
+            logger.debug('[B] Found product via optimized', { productId: data.id });
+          }
+          return (data && data.id) ? (data as WooProduct) : null;
+        } catch (e) {
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+            logger.debug('[B] Failed', { error: e instanceof Error ? e.message : 'unknown' });
+          }
+          return null;
+        }
+      })());
+
+      // C) Direct slug param (exact match) - increased timeout
+      attempts.push((async () => {
+        try {
+          const res = await withTimeout(`${this.baseUrl}?endpoint=products&slug=${encodeURIComponent(slug)}&per_page=1`, 5000, { headers: { Accept: 'application/json' } }, 'C:direct');
+          if (!res.ok) return null;
+          const arr = await res.json();
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true' && Array.isArray(arr) && arr.length > 0) {
+            logger.debug('[C] Found product via direct slug', { productId: arr[0].id });
+          }
+          return (Array.isArray(arr) && arr.length > 0) ? (arr[0] as WooProduct) : null;
+        } catch (e) {
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+            logger.debug('[C] Failed', { error: e instanceof Error ? e.message : 'unknown' });
+          }
+          return null;
+        }
+      })());
+
+      // D) Search by prettified name (broader) - increased timeout
+      attempts.push((async () => {
+        try {
+          const searchTerm = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          const res = await withTimeout(`${this.baseUrl}?endpoint=products&search=${encodeURIComponent(searchTerm)}&per_page=100&cache=off`, 6000, { headers: { Accept: 'application/json' } }, 'D:search');
+          if (!res.ok) return null;
+          const arr = await res.json();
+          if (Array.isArray(arr)) {
+            const found = (arr as StoreApiProduct[]).find((p) => p.slug === slug);
+            if (found?.id) {
+              if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+                logger.debug('[D] Found product via search', { productId: found.id });
+              }
+              return normalizeStoreApiProduct(found);
+            }
+          }
+          return null;
+        } catch (e) {
+          if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+            logger.debug('[D] Failed', { error: e instanceof Error ? e.message : 'unknown' });
+          }
+          return null;
+        }
+      })());
+
+
+      // Resolve first successful - use Promise.race to get fastest result
+      if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        logger.debug('[getProductBySlug] Waiting for attempts', { attemptsCount: attempts.length });
+      }
       
-      // Approach 2: If not found, try direct product endpoint (if we had ID)
-      // This would require a different approach - maybe store slug-to-ID mapping
+      // Use Promise.race with timeout to get first successful result quickly
+      // Store API (E) is first and fastest, so it should win most of the time
+      const attemptNames = ['E:store-api', 'A:slug→id', 'B:optimized', 'C:direct', 'D:search'];
       
-      return product;
+      // Create a race with timeout - first successful result wins
+      const raceWithTimeout = Promise.race([
+        // Race all attempts - first one that returns a product wins
+        Promise.any(
+          attempts.map(async (attempt, idx) => {
+            const result = await attempt;
+            if (result) {
+              if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+                logger.debug(`[${attemptNames[idx]}] First success`, { productId: result.id });
+              }
+              return result;
+            }
+            // If null, reject so Promise.any can try next attempt
+            throw new Error('No product');
+          })
+        ),
+        // Timeout after 4 seconds (Store API should respond in ~1-2s if working)
+        new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 4000)
+        )
+      ]);
+      
+      let found: WooProduct | null = null;
+      try {
+        found = await raceWithTimeout;
+      } catch (error) {
+        // If timeout or all attempts failed, check allSettled as fallback
+        const reason = error instanceof Error ? error.message : 'unknown';
+        if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+          logger.debug('Race timeout or all failed, checking allSettled fallback', { reason });
+        }
+        const candidates = await Promise.allSettled(attempts);
+        found = candidates
+          .map((r) => r.status === 'fulfilled' && r.value ? r.value : null)
+          .find(Boolean) as WooProduct | null;
+      }
+
+      const duration = Date.now() - startTime;
+      if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        if (found) {
+          logger.debug('[getProductBySlug] Found product', { productId: found.id, duration });
+        } else {
+          logger.debug('[getProductBySlug] No product found', { duration });
+        }
+      }
+
+      if (found && typeof window !== 'undefined' && window.sessionStorage) {
+        try { window.sessionStorage.setItem(`slug:${slug}`, JSON.stringify(found)); } catch {}
+      }
+
+      return found || null;
     } catch (error) {
-      console.error('❌ Error fetching product by slug:', error);
-      throw error;
+      logger.error('[getProductBySlug] Error', { error, slug });
+      return null; // Return null instead of throwing to prevent UI crashes
     }
   }
 
@@ -226,7 +560,7 @@ class WooCommerceService {
   // Categories
   // =========================================
   async getCategories(): Promise<{
-    data: Array<{ id: string; name: string; slug: string; count: number }>;
+    data: Array<{ id: number; name: string; slug: string; count: number }>;
     total: number;
     totalPages: number;
     currentPage: number;
@@ -248,9 +582,9 @@ class WooCommerceService {
         perPage: 100,
       };
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('Error fetching categories', { error });
       // Return mock data when API is not available
-      return this.getMockCategories() as any;
+      return this.getMockCategories();
     }
   }
 
@@ -280,7 +614,7 @@ class WooCommerceService {
   }
 
   private getMockProducts(query: WooProductQuery = {}): WooApiResponse<WooProduct> {
-    const mockProducts: any[] = [
+    const mockProductsData: StoreApiProduct[] = [
       {
         id: 1,
         name: 'Krem nawilżający z kwasem hialuronowym',
@@ -333,6 +667,7 @@ class WooCommerceService {
         sku: 'TONER-001'
       }
     ];
+    const mockProducts = mockProductsData.map((product) => normalizeStoreApiProduct(product));
 
     return {
       data: mockProducts,
@@ -399,90 +734,29 @@ class WooCommerceService {
         perPage: query.per_page || 10,
       };
     } catch (error) {
-      console.error('Error fetching products:', error);
+      logger.error('Error fetching products', { error });
       // Return mock data when API is not available
       return this.getMockProducts(query);
     }
   }
 
-  async getProduct(productId: number): Promise<WooProduct> {
+  async getProduct(productId: number): Promise<WooProduct | null> {
     try {
-          const response = await fetch(`${this.baseUrl}?endpoint=product/${productId}`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}`, {
+        headers: { Accept: 'application/json' },
+      });
       
+      if (response.status === 404) {
+        return null; // Return null for missing products
+      }
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        return null;
       }
       
       return await response.json();
     } catch (error) {
-      console.error('Error fetching product:', error);
-      // Return empty product instead of throwing error
-      return {
-        id: 0,
-        name: 'Produkt niedostępny',
-        slug: 'produkt-niedostepny',
-        permalink: '',
-        date_created: '',
-        date_created_gmt: '',
-        date_modified: '',
-        date_modified_gmt: '',
-        type: 'simple',
-        status: 'private',
-        featured: false,
-        catalog_visibility: 'visible',
-        description: '',
-        short_description: '',
-        sku: '',
-        price: '0',
-        regular_price: '0',
-        sale_price: '',
-        date_on_sale_from: null,
-        date_on_sale_from_gmt: null,
-        date_on_sale_to: null,
-        date_on_sale_to_gmt: null,
-        price_html: '',
-        on_sale: false,
-        purchasable: false,
-        total_sales: 0,
-        virtual: false,
-        downloadable: false,
-        downloads: [],
-        download_limit: -1,
-        download_expiry: -1,
-        tax_status: 'taxable',
-        tax_class: '',
-        manage_stock: false,
-        stock_quantity: 0,
-        stock_status: 'outofstock',
-        backorders: 'no',
-        backorders_allowed: false,
-        backordered: false,
-        sold_individually: false,
-        weight: '',
-        dimensions: { length: '', width: '', height: '' },
-        shipping_required: false,
-        shipping_taxable: false,
-        shipping_class: '',
-        shipping_class_id: 0,
-        categories: [],
-        reviews_allowed: false,
-        average_rating: '0',
-        rating_count: 0,
-        related_ids: [],
-        upsell_ids: [],
-        cross_sell_ids: [],
-        parent_id: 0,
-        purchase_note: '',
-        tags: [],
-        images: [],
-        attributes: [],
-        default_attributes: [],
-        variations: [],
-        grouped_products: [],
-        menu_order: 0,
-        meta_data: [],
-        _links: { self: [], collection: [] }
-      } as WooProduct;
+      logger.error('Error fetching product', { error });
+      return null; // Return null on error
     }
   }
 
@@ -508,7 +782,7 @@ class WooCommerceService {
       
       return JSON.parse(jsonText);
     } catch (error) {
-      console.error('Error getting nonce:', error);
+      logger.error('Error getting nonce', { error });
       throw error;
     }
   }
@@ -530,14 +804,18 @@ class WooCommerceService {
 
       if (!response.ok) {
         // In headless mode, don't throw errors for cart operations
-        console.log(`ℹ️ WooCommerce cart API unavailable (${response.status}), using local cart only`);
+        if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+          logger.debug('WooCommerce cart API unavailable', { status: response.status });
+        }
         return { success: false, message: `HTTP ${response.status}` };
       }
 
       return await response.json();
     } catch (error: unknown) {
       // In headless mode, don't throw errors for cart operations
-      console.log('ℹ️ WooCommerce cart API unavailable, using local cart only');
+      if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        logger.debug('WooCommerce cart API unavailable', { error });
+      }
       const errMsg = error instanceof Error ? error.message : 'unknown error';
       return { success: false, message: errMsg };
     }
@@ -559,7 +837,7 @@ class WooCommerceService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error removing from cart:', error);
+      logger.error('Error removing from cart', { error });
       throw error;
     }
   }
@@ -580,7 +858,7 @@ class WooCommerceService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error updating cart item:', error);
+      logger.error('Error updating cart item', { error });
       throw error;
     }
   }
@@ -599,7 +877,7 @@ class WooCommerceService {
       
       return await response.json();
     } catch (error) {
-      console.error('Error getting cart:', error);
+      logger.error('Error getting cart', { error });
       throw error;
     }
   }
@@ -609,16 +887,27 @@ class WooCommerceService {
   // =========================================
   async getProductReviews(productId: number): Promise<{ success: boolean; reviews?: Array<{ id: number; review: string; rating: number; reviewer: string; date_created: string }>; error?: string }> {
     try {
-          const response = await fetch(`${this.baseUrl}?endpoint=reviews&product_id=${productId}&cache=off`);
+      // Use dedicated /api/reviews endpoint instead of /api/woocommerce
+      // This endpoint uses king-reviews/v1/reviews which is more reliable
+      const response = await fetch(`/api/reviews?product_id=${productId}`, {
+        headers: { Accept: 'application/json' },
+      });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 404) {
+        return { success: true, reviews: [] };
       }
-      
-      return await response.json();
+      if (!response.ok) {
+        const err = await response.text().catch(() => '');
+        return { success: false, error: err || `HTTP error ${response.status}` };
+      }
+      const arr = await response.json();
+      return { success: true, reviews: Array.isArray(arr) ? arr : [] };
     } catch (error) {
-      console.error('Error fetching product reviews:', error);
-      throw error;
+      // Only log in debug mode - 404 is expected for products without reviews
+      if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        logger.debug('Error fetching product reviews', { productId, error });
+      }
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch reviews' };
     }
   }
 
@@ -628,7 +917,9 @@ class WooCommerceService {
     reviewer: string;
     reviewer_email: string;
     rating: number;
-  }): Promise<{ success: boolean; review?: { id: number; review: string; rating: number; reviewer: string; date_created: string }; error?: string }> {
+    images?: (number | string)[];
+    videos?: string[];
+  }): Promise<{ success: boolean; review?: { id: number; review: string; rating: number; reviewer: string; date_created: string; images?: unknown[]; videos?: string[] }; error?: string }> {
     try {
       // PRO: Use dedicated reviews endpoint
       const response = await fetch('/api/reviews', {
@@ -641,10 +932,65 @@ class WooCommerceService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        
+        // Handle ValidationError format from createErrorResponse (AppError structure)
+        // Format: { error: { message: string, type: string, details: [...] } }
+        let errorMessage: string;
+        
+        if (errorData.error) {
+          const errorObj = errorData.error;
+          
+          // If error is a string, use it directly
+          if (typeof errorObj === 'string') {
+            errorMessage = errorObj;
+          }
+          // If error is an object with message
+          else if (errorObj.message) {
+            errorMessage = errorObj.message;
+            
+            // Append details if available (Zod validation errors)
+            if (Array.isArray(errorObj.details) && errorObj.details.length > 0) {
+              const details = (errorObj.details as ValidationDetail[])
+                .map((detail) => {
+                  const path = Array.isArray(detail.path) ? detail.path.join('.') : 'field';
+                  return `${path}: ${detail.message ?? 'Invalid value'}`;
+                })
+                .join(', ');
+              errorMessage += ` (${details})`;
+            }
+          }
+          // Fallback: stringify the error object
+          else {
+            errorMessage = JSON.stringify(errorObj);
+          }
+        } 
+        // Legacy format: direct message
+        else if (errorData.message) {
+          errorMessage = errorData.message;
+        } 
+        // Fallback
+        else {
+          errorMessage = `HTTP error! status: ${response.status}`;
+        }
+        
+        logger.error('Error creating product review', { 
+          error: errorMessage, 
+          status: response.status, 
+          errorData,
+          rawErrorData: JSON.stringify(errorData)
+        });
+        throw new Error(errorMessage);
       }
 
       const review = await response.json();
+      
+      // Check if response has success field (from king-reviews API)
+      if (review.success === false) {
+        throw new Error(review.error || review.message || 'Failed to create review');
+      }
+
+      logger.debug('Review created successfully', { reviewId: review.id, productId: reviewData.product_id });
+      
       return {
         success: true,
         review: {
@@ -652,11 +998,13 @@ class WooCommerceService {
           review: review.review,
           rating: review.rating,
           reviewer: review.reviewer,
-          date_created: review.date_created
+          date_created: review.date_created || review.date_created_gmt || new Date().toISOString(),
+          images: review.images || [],
+          videos: review.videos || []
         }
       };
     } catch (error) {
-      console.error('Error creating product review:', error);
+      logger.error('Error creating product review', { error, reviewData });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to create review'
@@ -667,43 +1015,48 @@ class WooCommerceService {
   // =========================================
   // Authentication Methods
   // =========================================
-  async loginUser(email: string, _password: string): Promise<{ success: boolean; user?: { id: number; email: string; name: string; token: string }; error?: string }> {
+  async loginUser(email: string, password: string): Promise<{ success: boolean; user?: { id: number; email: string; name: string; token: string }; error?: string }> {
     try {
-      // Use local API proxy
-      const customerResponse = await fetch(`/api/woocommerce?endpoint=customers&email=${encodeURIComponent(email)}`, {
-        method: 'GET',
+      const wordpressUrl = env.NEXT_PUBLIC_WORDPRESS_URL || env.NEXT_PUBLIC_WC_URL?.replace('/wp-json/wc/v3', '') || '';
+      if (!wordpressUrl) {
+        throw new Error('WordPress URL not configured');
+      }
+      
+      // Use JWT authentication endpoint
+      const url = `${wordpressUrl}/wp-json/king-jwt/v1/login`;
+      const response = await fetch(url, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ email, password })
       });
 
-      if (!customerResponse.ok) {
-        throw new Error(`HTTP error! status: ${customerResponse.status}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      const customers = await customerResponse.json();
-      const user = Array.isArray(customers) ? customers.find((c: any) => c.email === email) : null;
+      const data = await response.json();
       
-      if (!user) {
+      if (!data.success || !data.token || !data.user) {
         return {
           success: false,
-          error: 'Użytkownik nie znaleziony. Sprawdź email lub zarejestruj się.'
+          error: data.message || 'Błąd logowania. Sprawdź email i hasło.'
         };
       }
 
-      // In headless mode, we assume the user is authenticated if they exist
-      // Real authentication should be handled by your authentication system
       return {
         success: true,
         user: {
-          id: user.id,
-          email: user.email,
-          name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email,
-          token: 'mock-token'
+          id: data.user.id,
+          email: data.user.email,
+          name: `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || data.user.email,
+          token: data.token
         }
       };
     } catch (error) {
-      console.error('Error logging in user:', error);
+      logger.error('Error logging in user', { error });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Błąd logowania. Sprawdź email i hasło.'
@@ -728,7 +1081,9 @@ class WooCommerceService {
         }
       };
       
-      console.log('🔍 Register user payload:', payload);
+      if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        logger.debug('Register user payload', { payload: { ...payload, password: '[REDACTED]' } });
+      }
       
       const response = await fetch(`/api/woocommerce?endpoint=customers`, {
         method: 'POST',
@@ -740,7 +1095,7 @@ class WooCommerceService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('❌ Registration error response:', errorText);
+        logger.error('Registration error response', { status: response.status, error: errorText });
         
         // Try to parse error response for better error message
         try {
@@ -766,7 +1121,7 @@ class WooCommerceService {
         }
       };
     } catch (error) {
-      console.error('Error registering user:', error);
+      logger.error('Error registering user', { error });
       throw error;
     }
   }
@@ -854,39 +1209,42 @@ class WooCommerceService {
       const methods = data.shipping_methods || [];
       
       // Process and normalize shipping methods
-      return methods.map((method: {
+      const processedMethods = methods.map((method: {
         id: string;
         method_id: string;
         title: string;
-        settings?: Record<string, { value: string }>;
+        settings?: ShippingMethodSettings;
         cost?: string;
+        zone_id?: string;
+        zone_name?: string;
       }) => {
         let cost = 0;
         let freeShippingThreshold = 0;
         
         // Handle Flexible Shipping methods
         if (method.method_id === 'flexible_shipping_single') {
-          const settings = method.settings;
+          const settings = method.settings ?? {};
           
           // Get free shipping threshold
-          if (settings && (settings as any).method_free_shipping && (settings as any).method_free_shipping.value) {
-            freeShippingThreshold = parseFloat((settings as any).method_free_shipping.value); // Keep as PLN, not cents
+          const freeShippingValue = settings['method_free_shipping']?.value;
+          if (typeof freeShippingValue === 'string' || typeof freeShippingValue === 'number') {
+            freeShippingThreshold = parseFloat(String(freeShippingValue)); // Keep as PLN, not cents
           }
           
           // Get cost from rules
-          if (settings && (settings as any).method_rules && (settings as any).method_rules.value && (settings as any).method_rules.value.length > 0) {
-            const rules = (settings as any).method_rules.value;
-            // Find the rule that applies (usually the first one)
-            if (rules[0] && rules[0].cost_per_order) {
-              cost = parseFloat(rules[0].cost_per_order); // Keep as PLN, not cents
+          const rules = settings['method_rules']?.value;
+          if (Array.isArray(rules) && rules.length > 0) {
+            const [firstRule] = rules as Array<{ cost_per_order?: unknown }>;
+            if (firstRule && (typeof firstRule.cost_per_order === 'string' || typeof firstRule.cost_per_order === 'number')) {
+              cost = parseFloat(String(firstRule.cost_per_order)); // Keep as PLN, not cents
             }
           }
         }
         // Handle Flat Rate methods
         else if (method.method_id === 'flat_rate') {
-          const settings = method.settings;
-          if (settings && (settings as any).cost && (settings as any).cost.value) {
-            cost = parseFloat((settings as any).cost.value); // Keep as PLN, not cents
+          const costValue = method.settings?.['cost']?.value;
+          if (typeof costValue === 'string' || typeof costValue === 'number') {
+            cost = parseFloat(String(costValue)); // Keep as PLN, not cents
           }
         }
         
@@ -908,18 +1266,30 @@ class WooCommerceService {
         return {
           id: method.id,
           method_id: method.method_id,
-          method_title: (method.settings as any)?.method_title?.value || (method as any).method_title || method.title || 'Dostawa',
-          method_description: cleanDescription((method.settings as any)?.method_description?.value || ''),
-          cost: cost,
+          method_title:
+            typeof method.settings?.['method_title']?.value === 'string'
+              ? (method.settings['method_title']?.value as string)
+              : method.title || 'Dostawa',
+          method_description: cleanDescription(
+            typeof method.settings?.['method_description']?.value === 'string'
+              ? (method.settings['method_description']?.value as string)
+              : ''
+          ),
+          cost,
           free_shipping_threshold: freeShippingThreshold,
-          zone_id: (method as any).zone_id || 0,
-          zone_name: (method as any).zone_name || '',
+          zone_id: method.zone_id ?? '0',
+          zone_name: method.zone_name ?? '',
           settings: method.settings
         };
       });
+
+      return {
+        success: true,
+        methods: processedMethods
+      };
       
     } catch (error: unknown) {
-      console.error('Error fetching shipping methods:', error);
+      logger.error('Error fetching shipping methods', { error });
       // Return fallback shipping methods if API fails
       return {
         success: true,
@@ -963,14 +1333,30 @@ class WooCommerceService {
   async getProductVariations(productId: number): Promise<{ success: boolean; variations?: Array<{ id: number; attributes?: Array<{ slug: string; option: string }>; price: string; regular_price: string; sale_price: string; name: string; menu_order: number }>; error?: string }> {
     try {
       // PERFORMANCE FIX: Add _fields to reduce payload size
-          const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}/variations&_fields=id,attributes,price,regular_price,sale_price,name,menu_order`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const response = await fetch(`${this.baseUrl}?endpoint=products/${productId}/variations&_fields=id,attributes,price,regular_price,sale_price,name,menu_order`);
+      
+      if (response.status === 404) {
+        // Product has no variations - this is normal, don't log
+        return { success: true, variations: [] };
       }
-      return await response.json();
+      
+      if (!response.ok) {
+        // Return empty array instead of throwing error - only log in debug mode
+        if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+          logger.debug(`Variations API error: ${response.status} for product ${productId}`);
+        }
+        return { success: true, variations: [] };
+      }
+      
+      const data = await response.json();
+      return { success: true, variations: Array.isArray(data) ? data : [] };
     } catch (error) {
-      console.error('Error fetching product variations:', error);
-      return { success: false, error: 'Nie udało się pobrać wariantów produktu' };
+      // Only log errors in debug mode - graceful fallback is expected
+      if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        logger.debug('Error fetching product variations', { productId, error });
+      }
+      // Return empty array instead of error to prevent UI crashes
+      return { success: true, variations: [] };
     }
   }
 
@@ -984,8 +1370,95 @@ class WooCommerceService {
       }
       return await response.json();
     } catch (error) {
-      console.error('Error fetching product attributes:', error);
+      logger.error('Error fetching product attributes', { error });
       return { success: false, error: 'Nie udało się pobrać atrybutów produktu' };
+    }
+  }
+
+  // =========================================
+  // JWT Token Methods
+  // =========================================
+  async validateJWTToken(token: string): Promise<{ success: boolean; valid?: boolean; user?: { id: number; email: string; name: string }; error?: string }> {
+    try {
+      const wordpressUrl = env.NEXT_PUBLIC_WORDPRESS_URL || env.NEXT_PUBLIC_WC_URL?.replace('/wp-json/wc/v3', '') || '';
+      if (!wordpressUrl) {
+        throw new Error('WordPress URL not configured');
+      }
+      
+      const url = `${wordpressUrl}/wp-json/king-jwt/v1/validate`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
+        return {
+          success: false,
+          valid: false,
+          error: errorData.message || `HTTP error! status: ${response.status}`
+        };
+      }
+
+      const data = await response.json();
+      // Ensure response has success field
+      return {
+        success: data.success !== false,
+        valid: data.valid !== false,
+        user: data.user,
+        error: data.error
+      };
+    } catch (error) {
+      logger.error('Error validating JWT token', { error });
+      return {
+        success: false,
+        valid: false,
+        error: error instanceof Error ? error.message : 'Error validating token'
+      };
+    }
+  }
+
+  async refreshJWTToken(token: string): Promise<{ success: boolean; token?: string; user?: { id: number; email: string; name: string }; error?: string }> {
+    try {
+      const wordpressUrl = env.NEXT_PUBLIC_WORDPRESS_URL || env.NEXT_PUBLIC_WC_URL?.replace('/wp-json/wc/v3', '') || '';
+      if (!wordpressUrl) {
+        throw new Error('WordPress URL not configured');
+      }
+      
+      const url = `${wordpressUrl}/wp-json/king-jwt/v1/refresh`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
+        return {
+          success: false,
+          error: errorData.message || errorData.code || `HTTP error! status: ${response.status}`
+        };
+      }
+
+      const data = await response.json();
+      // Ensure response has success field and token
+      return {
+        success: data.success !== false,
+        token: data.token,
+        user: data.user,
+        error: data.error
+      };
+    } catch (error) {
+      logger.error('Error refreshing JWT token', { error });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error refreshing token'
+      };
     }
   }
 }

@@ -30,7 +30,12 @@
     "performance:test": "node scripts/performance-test.js",
     "performance:monitor": "npm run dev & sleep 5 && npm run performance:test",
     "cls:test": "npm run performance:test | grep CLS",
-    "lcp:test": "npm run performance:test | grep LCP"
+    "lcp:test": "npm run performance:test | grep LCP",
+    "perf:autocannon": "node scripts/perf-autocannon.mjs",
+    "perf:autocannon:warm": "node scripts/perf-autocannon.mjs --warm",
+    "perf:autocannon:cold": "node scripts/perf-autocannon.mjs --cold",
+    "perf:k6": "k6 run scripts/perf-k6.js",
+    "perf:wp-profile": "bash scripts/wp-profile.sh"
   },
   "dependencies": {
     "@headless-woo/shared": "workspace:*",
@@ -76,8 +81,8 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "@types/react-window": "^1.8.8",
     "@typescript-eslint/eslint-plugin": "^8.41.0",
     "@typescript-eslint/parser": "^8.41.0",
@@ -89,6 +94,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "jest": "^30.1.2",
     "jest-environment-jsdom": "^30.2.0",
+    "autocannon": "^7.12.0",
     "lighthouse": "^12.8.2",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2",

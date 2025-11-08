@@ -17,7 +17,7 @@ import PageContainer from '@/components/ui/page-container';
 import PageHeader from '@/components/ui/page-header';
 import { useCartStore } from '@/stores/cart-store';
 import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
-import { SHIPPING_CONFIG } from '@/config/constants';
+import { SHIPPING_CONFIG, ENV } from '@/config/constants';
 import Link from 'next/link';
 import { PaymentMethod } from '@/services/mock-payment';
 import wooCommerceService from '@/services/woocommerce-optimized';
@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import RegisterModal from '@/components/ui/auth/register-modal';
 import { validateEmail, validatePhone, validatePostalCode, validateName, validateAddress } from '@/utils/validation';
 import { Button } from '@/components/ui/button';
+import { executeRecaptcha, verifyRecaptchaToken } from '@/utils/recaptcha';
 
 interface CheckoutForm {
   // Billing Information
@@ -173,11 +174,17 @@ function CheckoutPageInner() {
         form.shippingCity,
         form.shippingPostcode
       );
+      console.log('🚚 Shipping methods response:', methods);
       // Shipping methods loaded debug removed
-      if (methods && methods.methods) {
+      if (methods && methods.success && methods.methods) {
+        console.log('✅ Shipping methods loaded:', methods.methods);
         setShippingMethods(methods.methods);
       } else if (Array.isArray(methods)) {
+        console.log('✅ Shipping methods loaded (array):', methods);
         setShippingMethods(methods);
+      } else {
+        console.warn('⚠️ No shipping methods found');
+        setShippingMethods([]);
       }
       
       // Auto-select first shipping method for quick payment
@@ -303,7 +310,9 @@ function CheckoutPageInner() {
       phone: prev.phone || u.phone || billing.phone || '',
       company: prev.company || billing.company || '',
       nip: prev.nip || u.nip || u._billing_nip || billing.nip || '',
-      invoiceRequest: prev.invoiceRequest || Boolean(u.nip || u._billing_nip || billing.nip),
+      // Auto-check invoice request if user has _invoice_request = 'yes' OR has NIP
+      // Priority: preserve existing value if set > billing.invoiceRequest > has NIP
+      invoiceRequest: prev.invoiceRequest || billing.invoiceRequest === true || billing.invoiceRequest === 'yes' || Boolean(u.nip || u._billing_nip || billing.nip || prev.nip),
       billingAddress: prev.billingAddress || billing.address || billing.address_1 || '',
       billingCity: prev.billingCity || billing.city || '',
       billingPostcode: prev.billingPostcode || billing.postcode || '',
@@ -518,6 +527,23 @@ function CheckoutPageInner() {
     
     if (!validateForm()) return;
 
+    // FIX: reCAPTCHA verification
+    if (ENV.RECAPTCHA_ENABLED) {
+      try {
+        const recaptchaToken = await executeRecaptcha('checkout');
+        if (recaptchaToken) {
+          const isValid = await verifyRecaptchaToken(recaptchaToken);
+          if (!isValid) {
+            alert('❌ Weryfikacja bezpieczeństwa nie powiodła się. Spróbuj ponownie.');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('reCAPTCHA error:', error);
+        // Continue if reCAPTCHA fails (graceful degradation)
+      }
+    }
+
     // Validate card details if card payment
     if (form.paymentMethod === 'card') {
       if (!cardDetails.cardNumber || !cardDetails.expiryMonth || !cardDetails.expiryYear || !cardDetails.cvv || !cardDetails.cardholderName) {
@@ -559,14 +585,20 @@ function CheckoutPageInner() {
           postcode: form.shippingPostcode,
           country: form.shippingCountry
         },
-        line_items: items.map(item => ({
-          product_id: item.id,
-          variation_id: item.variant?.id || 0,
-          quantity: item.quantity,
-          meta_data: item.variant ? [
-            { key: 'Wybrany wariant', value: item.variant.name || `Wariant ${item.variant.id}` }
-          ] : []
-        })),
+        line_items: items.map(item => {
+          const lineItem: any = {
+            product_id: item.id,
+            quantity: item.quantity,
+            meta_data: item.variant ? [
+              { key: 'Wybrany wariant', value: item.variant.name || `Wariant ${item.variant.id}` }
+            ] : []
+          };
+          // Only include variation_id if variant exists and has an ID
+          if (item.variant?.id) {
+            lineItem.variation_id = item.variant.id;
+          }
+          return lineItem;
+        }),
         payment_method: form.paymentMethod,
         payment_method_title: getPaymentMethodTitle(form.paymentMethod),
         shipping_lines: [{
@@ -592,10 +624,109 @@ function CheckoutPageInner() {
         body: JSON.stringify(orderData),
       });
 
+      // Check if response is ok
+      if (!orderResponse.ok) {
+        let errorText = '';
+        let errorData: any = {};
+        
+        try {
+          // Try to get response as text first
+          errorText = await orderResponse.clone().text();
+          console.log('🔍 Raw error response:', errorText);
+          
+          // Try to parse as JSON
+          if (errorText) {
+            try {
+              errorData = JSON.parse(errorText);
+            } catch {
+              // If not JSON, use text as error message
+              errorData = { error: errorText };
+            }
+          }
+        } catch (e) {
+          console.error('❌ Failed to read error response:', e);
+          errorData = { error: `HTTP ${orderResponse.status}: Nie udało się odczytać odpowiedzi serwera` };
+        }
+        
+        // Extract error message from different possible formats
+        // Handle AppError format: { error: { message: "...", details: [...] } }
+        let errorMessage = null;
+        
+        if (errorData.error) {
+          // AppError format
+          if (typeof errorData.error === 'string') {
+            errorMessage = errorData.error;
+          } else if (typeof errorData.error === 'object') {
+            errorMessage = errorData.error.message;
+            
+            // If there are validation details, format them
+            if (errorData.error.details && Array.isArray(errorData.error.details)) {
+              const validationMessages = errorData.error.details
+                .map((d: any) => {
+                  if (typeof d === 'string') return d;
+                  if (d.message) return d.message;
+                  if (d.path) return `${d.path.join('.')}: ${d.message || 'Invalid'}`;
+                  return JSON.stringify(d);
+                })
+                .filter(Boolean)
+                .join(', ');
+              if (validationMessages) {
+                errorMessage = `${errorMessage}: ${validationMessages}`;
+              }
+            }
+          }
+        }
+        
+        // Fallback to other formats
+        if (!errorMessage) {
+          errorMessage = 
+            errorData.message || 
+            errorData.details ||
+            (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.map((e: any) => e.message || e).join(', ') : null) ||
+            (typeof errorText === 'string' && errorText.trim() ? errorText : null) ||
+            `HTTP ${orderResponse.status}: Nie udało się utworzyć zamówienia`;
+        }
+        
+        console.error('❌ Order creation HTTP error:', {
+          status: orderResponse.status,
+          statusText: orderResponse.statusText,
+          errorData,
+          errorText,
+          errorMessage
+        });
+        
+        throw new Error(errorMessage);
+      }
+
       const orderResult = await orderResponse.json();
+      console.log('📦 Order creation response:', orderResult);
       
+      // Handle different response formats
+      if (!orderResult || (typeof orderResult === 'object' && Object.keys(orderResult).length === 0)) {
+        console.error('❌ Empty order result');
+        throw new Error('Nie udało się utworzyć zamówienia - pusta odpowiedź z serwera');
+      }
+
       if (!orderResult.success) {
-        throw new Error(orderResult.error || 'Nie udało się utworzyć zamówienia');
+        // Format error message - handle both string and object errors
+        let errorMessage = 'Nie udało się utworzyć zamówienia';
+        if (orderResult.error) {
+          if (typeof orderResult.error === 'string') {
+            errorMessage = orderResult.error;
+          } else if (typeof orderResult.error === 'object') {
+            errorMessage = orderResult.error.message || orderResult.error.error || JSON.stringify(orderResult.error);
+          }
+        } else if (orderResult.message) {
+          errorMessage = orderResult.message;
+        }
+        console.error('❌ Order creation failed:', orderResult);
+        throw new Error(errorMessage);
+      }
+
+      // Ensure order object exists
+      if (!orderResult.order) {
+        console.error('❌ Order object missing in response:', orderResult);
+        throw new Error('Nie udało się utworzyć zamówienia - brak danych zamówienia');
       }
 
       const newOrderNumber = orderResult.order.number;
@@ -604,7 +735,7 @@ function CheckoutPageInner() {
       // Automatically save billing data to user profile if logged in
       if (isAuthenticated && user?.id) {
         try {
-          await fetch('/api/woocommerce?endpoint=customer/update-profile', {
+          const profileResponse = await fetch('/api/woocommerce?endpoint=customer/update-profile', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -633,9 +764,16 @@ function CheckoutPageInner() {
               }
             }),
           });
-          // User profile updated debug removed
+          
+          if (!profileResponse.ok) {
+            const errorData = await profileResponse.json().catch(() => ({}));
+            console.warn('⚠️ Failed to update user profile:', errorData);
+          } else {
+            console.log('✅ User profile updated successfully');
+          }
         } catch (error) {
           console.error('⚠️ Failed to update user profile:', error);
+          // Don't fail the checkout if profile update fails
         }
       }
       
@@ -717,6 +855,18 @@ function CheckoutPageInner() {
       setDiscountCode('');
       setOrderComplete(true);
       setCurrentStep(4);
+      
+      // Refresh user profile to sync invoice fields (NIP, invoiceRequest) after order creation
+      // This ensures that if user checked "Chcę fakturę" in checkout, it's saved to user meta
+      if (isAuthenticated && user && fetchUserProfile) {
+        try {
+          await fetchUserProfile();
+          console.log('✅ User profile refreshed after order creation');
+        } catch (profileError) {
+          console.warn('⚠️ Failed to refresh user profile after order creation:', profileError);
+          // Don't fail order completion if profile refresh fails
+        }
+      }
       
     } catch (error) {
       console.error('Error processing order:', error);
@@ -1295,7 +1445,12 @@ function CheckoutPageInner() {
                       </h3>
                       
                       <div className="space-y-3">
-                          {shippingMethods.map((method) => (
+                          {shippingMethods.length === 0 ? (
+                            <div className="text-sm text-gray-500 p-4 border border-gray-300 rounded-lg">
+                              Ładowanie metod dostawy...
+                            </div>
+                          ) : (
+                            shippingMethods.map((method) => (
                             <label key={method.id} className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                               <input
                                 type="radio"
@@ -1331,7 +1486,8 @@ function CheckoutPageInner() {
                                 </div>
                               </div>
                             </label>
-                          ))}
+                          ))
+                          )}
                         </div>
                     </div>
 
@@ -1351,15 +1507,20 @@ function CheckoutPageInner() {
                       </div>
 
                       <div className="space-y-4">
-                        {paymentMethods
-                          .filter(method => {
-                            // Hide Google Pay and Apple Pay for unauthenticated users
-                            if (!isAuthenticated && (method.id === 'google_pay' || method.id === 'apple_pay')) {
-                              return false;
-                            }
-                            return true;
-                          })
-                          .map((method) => (
+                        {paymentMethods.length === 0 ? (
+                          <div className="text-sm text-gray-500 p-4 border border-gray-300 rounded-lg">
+                            Ładowanie metod płatności...
+                          </div>
+                        ) : (
+                          paymentMethods
+                            .filter(method => {
+                              // Hide Google Pay and Apple Pay for unauthenticated users
+                              if (!isAuthenticated && (method.id === 'google_pay' || method.id === 'apple_pay')) {
+                                return false;
+                              }
+                              return true;
+                            })
+                            .map((method) => (
                           <label key={method.id} className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                             <input
                               type="radio"
@@ -1373,13 +1534,14 @@ function CheckoutPageInner() {
                               <div className="flex items-center">
                                 <div>
                                   <div className="text-sm text-gray-900">
-                                    {method.id === 'cod' ? 'Płatność przy odbiorze' : (method as any).title || method.id}
+                                    {method.id === 'cod' ? 'Płatność przy odbiorze' : method.name || (method as any).title || method.id}
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </label>
-                        ))}
+                        ))
+                        )}
                       </div>
                     </div>
 
@@ -1673,7 +1835,7 @@ function CheckoutPageInner() {
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div>Ładowanie...</div>}>
       <CheckoutPageInner />
     </Suspense>
   );

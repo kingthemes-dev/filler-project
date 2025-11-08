@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
+import { logger } from '@/utils/logger';
 
 export async function POST(_request: NextRequest): Promise<NextResponse> {
   try {
@@ -21,7 +22,7 @@ export async function POST(_request: NextRequest): Promise<NextResponse> {
     const successful = results.filter(result => result.status === 'fulfilled').length;
     const failed = results.filter(result => result.status === 'rejected').length;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Cache warmed successfully',
       results: {
@@ -31,8 +32,9 @@ export async function POST(_request: NextRequest): Promise<NextResponse> {
       },
       timestamp: new Date().toISOString()
     });
+    return response;
   } catch (error) {
-    console.error('Error warming cache:', error);
+    logger.error('Cache warm error', { error });
     return NextResponse.json(
       { 
         success: false, 

@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { cache } from '@/lib/cache';
+import { z } from 'zod';
+import { validateApiInput } from '@/utils/request-validation';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
+
+const cachePurgeSchema = z
+  .object({
+    pattern: z.string().min(1, 'Wymagany pattern do czyszczenia cache').optional(),
+    all: z.boolean().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.pattern && !value.all) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Należy podać pattern lub ustawić all=true',
+        path: ['pattern'],
+      });
+    }
+    if (value.pattern && value.all) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Nie można jednocześnie użyć pattern i all=true',
+        path: ['all'],
+      });
+    }
+  });
 
 const ADMIN_TOKEN = process.env.ADMIN_CACHE_TOKEN || 'dev-token-123';
 
@@ -16,8 +42,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json().catch(() => ({}));
-    const { pattern, all } = body;
+    const rawBody = await request.json().catch(() => ({}));
+    const sanitizedBody = validateApiInput(rawBody);
+    const validationResult = cachePurgeSchema.safeParse(sanitizedBody);
+
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Nieprawidłowe dane do czyszczenia cache', validationResult.error.errors),
+        { endpoint: 'cache/purge', method: 'POST' }
+      );
+    }
+
+    const { pattern, all } = validationResult.data;
 
     let deleted = 0;
     let message = '';
@@ -46,7 +82,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Cache purge error:', error);
+    logger.error('Cache purge error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

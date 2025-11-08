@@ -3,32 +3,203 @@
  * Handles WooCommerce webhooks with HPOS support
  */
 
+import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { hposCache } from '@/lib/hpos-cache';
 import { orderLimitHandler } from '@/services/order-limit-handler';
 import { logger } from '@/utils/logger';
+import { z } from 'zod';
+import { validateApiInput } from '@/utils/request-validation';
+
+type RedisClient = import('ioredis').Redis;
+type WebhookData = Record<string, unknown>;
 
 interface WebhookPayload {
   id: number;
   type: string;
   action: string;
-  data: any;
+  data: WebhookData;
   timestamp: string;
   hpos_enabled?: boolean;
 }
 
-interface WebhookHeaders {
-  'x-wc-webhook-signature': string;
-  'x-wc-webhook-topic': string;
-  'x-wc-webhook-delivery-id': string;
-  'x-wc-webhook-source': string;
+// Redis client for idempotency (optional, lazy-loaded)
+let redisClient: RedisClient | null = null;
+let redisInitialized = false;
+
+/**
+ * Initialize Redis for idempotency (lazy)
+ */
+async function initializeRedis(): Promise<void> {
+  if (redisInitialized) return;
+  redisInitialized = true;
+
+  if (typeof window !== 'undefined') return;
+
+  try {
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      logger.debug('WebhookHandler: Redis not configured for idempotency, using in-memory store');
+      return;
+    }
+
+    const Redis = (await import('ioredis')).default;
+    redisClient = new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      lazyConnect: true,
+      connectTimeout: 5000,
+      commandTimeout: 3000,
+      enableReadyCheck: false,
+    });
+
+    redisClient.on('connect', () => {
+      logger.info('WebhookHandler: Redis connected for idempotency');
+    });
+
+    redisClient.on('error', (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn('WebhookHandler: Redis connection failed, using in-memory idempotency', { error: message });
+      redisClient = null;
+    });
+
+    await redisClient.connect().catch(() => {
+      redisClient = null;
+    });
+  } catch (error) {
+    logger.warn('WebhookHandler: Failed to initialize Redis for idempotency', { error });
+    redisClient = null;
+  }
 }
+
+// In-memory idempotency store (fallback)
+const processedWebhooks = new Map<string, number>(); // deliveryId -> timestamp
+const IDEMPOTENCY_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Check if webhook was already processed (idempotency)
+ */
+async function isWebhookProcessed(deliveryId: string): Promise<boolean> {
+  await initializeRedis();
+
+  if (redisClient) {
+    try {
+      const key = `webhook:idempotency:${deliveryId}`;
+      const exists = await redisClient.exists(key);
+      return exists === 1;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn('WebhookHandler: Redis idempotency check failed, falling back to memory', { error: message });
+    }
+  }
+
+  // Fallback to in-memory
+  const processed = processedWebhooks.get(deliveryId);
+  if (!processed) return false;
+
+  // Clean expired entries
+  const now = Date.now();
+  if (processed + IDEMPOTENCY_TTL < now) {
+    processedWebhooks.delete(deliveryId);
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Mark webhook as processed (idempotency)
+ */
+async function markWebhookProcessed(deliveryId: string): Promise<void> {
+  await initializeRedis();
+
+  if (redisClient) {
+    try {
+      const key = `webhook:idempotency:${deliveryId}`;
+      const ttlSeconds = Math.ceil(IDEMPOTENCY_TTL / 1000);
+      await redisClient.setex(key, ttlSeconds, '1');
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn('WebhookHandler: Redis idempotency mark failed, falling back to memory', { error: message });
+    }
+  }
+
+  // Fallback to in-memory
+  processedWebhooks.set(deliveryId, Date.now());
+
+  // Clean old entries periodically (every 1000 webhooks)
+  if (processedWebhooks.size > 1000 && Math.random() < 0.001) {
+    const now = Date.now();
+    for (const [id, timestamp] of processedWebhooks.entries()) {
+      if (timestamp + IDEMPOTENCY_TTL < now) {
+        processedWebhooks.delete(id);
+      }
+    }
+  }
+}
+
+function extractNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
+function extractString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getNumericField(data: WebhookData, key: string): number | undefined {
+  return extractNumber(data[key]);
+}
+
+function getStringField(data: WebhookData, key: string): string | undefined {
+  return extractString(data[key]);
+}
+
+function normalizeWebhookPayload(raw: z.infer<typeof webhookPayloadSchema>): WebhookPayload | null {
+  const id = extractNumber(raw.id);
+  if (id === undefined) {
+    return null;
+  }
+  const data = raw.data && typeof raw.data === 'object' && raw.data !== null ? (raw.data as WebhookData) : {};
+  const timestamp = extractString(raw.timestamp) ?? new Date().toISOString();
+  return {
+    id,
+    type: raw.type,
+    action: raw.action,
+    data,
+    timestamp,
+    hpos_enabled: raw.hpos_enabled,
+  };
+}
+
+const webhookHeadersSchema = z.object({
+  signature: z.string().min(1, 'Missing signature'),
+  topic: z.string().min(1, 'Missing topic'),
+  deliveryId: z.string().optional(),
+  source: z.string().optional(),
+});
+
+const webhookPayloadSchema = z.object({
+  id: z.union([z.number(), z.string()]),
+  type: z.string().min(1),
+  action: z.string().min(1),
+  data: z.record(z.unknown()).optional(),
+  timestamp: z.string().optional(),
+  hpos_enabled: z.boolean().optional(),
+});
 
 class WebhookHandler {
   private webhookSecret: string;
 
   constructor() {
-    this.webhookSecret = process.env.WEBHOOK_SECRET || '';
+    // FIX: Użyj WOOCOMMERCE_WEBHOOK_SECRET zamiast WEBHOOK_SECRET (zgodnie z env.ts)
+    this.webhookSecret = process.env.WOOCOMMERCE_WEBHOOK_SECRET || '';
   }
 
   /**
@@ -39,20 +210,28 @@ class WebhookHandler {
       logger.warn('WebhookHandler: No webhook secret configured');
       return false;
     }
+    if (!signature) {
+      logger.warn('WebhookHandler: Missing webhook signature header');
+      return false;
+    }
 
     try {
-      const crypto = require('crypto');
       const expectedSignature = crypto
         .createHmac('sha256', this.webhookSecret)
         .update(payload, 'utf8')
         .digest('base64');
 
-      return crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature)
-      );
+      const providedBuffer = Buffer.from(signature, 'base64');
+      const expectedBuffer = Buffer.from(expectedSignature, 'base64');
+
+      if (providedBuffer.length !== expectedBuffer.length) {
+        return false;
+      }
+
+      return crypto.timingSafeEqual(providedBuffer, expectedBuffer);
     } catch (error) {
-      logger.error('WebhookHandler: Signature verification failed', { error });
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('WebhookHandler: Signature verification failed', { error: message });
       return false;
     }
   }
@@ -61,12 +240,12 @@ class WebhookHandler {
    * Handle order webhooks
    */
   private async handleOrderWebhook(payload: WebhookPayload): Promise<void> {
-    const { id, action, data } = payload;
+    const { id, action, data, hpos_enabled: hposEnabled } = payload;
 
     logger.info('WebhookHandler: Processing order webhook', {
       orderId: id,
       action,
-      hposEnabled: payload.hpos_enabled,
+      hposEnabled,
     });
 
     switch (action) {
@@ -152,80 +331,94 @@ class WebhookHandler {
   }
 
   // Order webhook handlers
-  private async handleOrderCreated(order: any): Promise<void> {
-    logger.info('WebhookHandler: Order created', { orderId: order.id });
+  private async handleOrderCreated(order: WebhookData): Promise<void> {
+    const orderId = getNumericField(order, 'id');
+    logger.info('WebhookHandler: Order created', { orderId });
     
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
     
     // Reset order attempts for customer
-    if (order.customer_id) {
-      await orderLimitHandler.resetCustomerAttempts(order.customer_id);
+    const customerId = getNumericField(order, 'customer_id');
+    if (typeof customerId === 'number') {
+      await orderLimitHandler.resetCustomerAttempts(customerId);
     }
   }
 
-  private async handleOrderUpdated(order: any): Promise<void> {
-    logger.info('WebhookHandler: Order updated', { orderId: order.id });
+  private async handleOrderUpdated(order: WebhookData): Promise<void> {
+    const orderId = getNumericField(order, 'id');
+    logger.info('WebhookHandler: Order updated', { orderId });
     
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
 
-  private async handleOrderDeleted(order: any): Promise<void> {
-    logger.info('WebhookHandler: Order deleted', { orderId: order.id });
+  private async handleOrderDeleted(order: WebhookData): Promise<void> {
+    const orderId = getNumericField(order, 'id');
+    logger.info('WebhookHandler: Order deleted', { orderId });
     
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
 
-  private async handleOrderStatusChanged(order: any): Promise<void> {
+  private async handleOrderStatusChanged(order: WebhookData): Promise<void> {
+    const orderId = getNumericField(order, 'id');
+    const status = getStringField(order, 'status');
     logger.info('WebhookHandler: Order status changed', { 
-      orderId: order.id, 
-      status: order.status 
+      orderId, 
+      status 
     });
     
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
 
-  private async handleOrderPaymentComplete(order: any): Promise<void> {
-    logger.info('WebhookHandler: Order payment complete', { orderId: order.id });
+  private async handleOrderPaymentComplete(order: WebhookData): Promise<void> {
+    const orderId = getNumericField(order, 'id');
+    logger.info('WebhookHandler: Order payment complete', { orderId });
     
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
 
-  private async handleOrderRefunded(order: any): Promise<void> {
-    logger.info('WebhookHandler: Order refunded', { orderId: order.id });
+  private async handleOrderRefunded(order: WebhookData): Promise<void> {
+    const orderId = getNumericField(order, 'id');
+    logger.info('WebhookHandler: Order refunded', { orderId });
     
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
 
   // Product webhook handlers
-  private async handleProductCreated(product: any): Promise<void> {
-    logger.info('WebhookHandler: Product created', { productId: product.id });
+  private async handleProductCreated(product: WebhookData): Promise<void> {
+    const productId = getNumericField(product, 'id');
+    logger.info('WebhookHandler: Product created', { productId });
   }
 
-  private async handleProductUpdated(product: any): Promise<void> {
-    logger.info('WebhookHandler: Product updated', { productId: product.id });
+  private async handleProductUpdated(product: WebhookData): Promise<void> {
+    const productId = getNumericField(product, 'id');
+    logger.info('WebhookHandler: Product updated', { productId });
   }
 
-  private async handleProductDeleted(product: any): Promise<void> {
-    logger.info('WebhookHandler: Product deleted', { productId: product.id });
+  private async handleProductDeleted(product: WebhookData): Promise<void> {
+    const productId = getNumericField(product, 'id');
+    logger.info('WebhookHandler: Product deleted', { productId });
   }
 
   // Customer webhook handlers
-  private async handleCustomerCreated(customer: any): Promise<void> {
-    logger.info('WebhookHandler: Customer created', { customerId: customer.id });
+  private async handleCustomerCreated(customer: WebhookData): Promise<void> {
+    const customerId = getNumericField(customer, 'id');
+    logger.info('WebhookHandler: Customer created', { customerId });
   }
 
-  private async handleCustomerUpdated(customer: any): Promise<void> {
-    logger.info('WebhookHandler: Customer updated', { customerId: customer.id });
+  private async handleCustomerUpdated(customer: WebhookData): Promise<void> {
+    const customerId = getNumericField(customer, 'id');
+    logger.info('WebhookHandler: Customer updated', { customerId });
   }
 
-  private async handleCustomerDeleted(customer: any): Promise<void> {
-    logger.info('WebhookHandler: Customer deleted', { customerId: customer.id });
+  private async handleCustomerDeleted(customer: WebhookData): Promise<void> {
+    const customerId = getNumericField(customer, 'id');
+    logger.info('WebhookHandler: Customer deleted', { customerId });
   }
 
   /**
@@ -233,25 +426,68 @@ class WebhookHandler {
    */
   async processWebhook(req: NextRequest): Promise<NextResponse> {
     try {
-      const body = await req.text();
-      const headers = Object.fromEntries(req.headers.entries()) as any as WebhookHeaders;
-      
-      // Verify signature
-      if (!this.verifySignature(body, headers['x-wc-webhook-signature'])) {
-        logger.warn('WebhookHandler: Invalid signature');
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      const rawHeaders = {
+        signature: req.headers.get('x-wc-webhook-signature') ?? '',
+        topic: req.headers.get('x-wc-webhook-topic') ?? '',
+        deliveryId: req.headers.get('x-wc-webhook-delivery-id') ?? undefined,
+        source: req.headers.get('x-wc-webhook-source') ?? undefined,
+      };
+      const headersResult = webhookHeadersSchema.safeParse(rawHeaders);
+      if (!headersResult.success) {
+        logger.warn('WebhookHandler: Invalid headers', { errors: headersResult.error.flatten() });
+        return NextResponse.json({ error: 'Invalid webhook headers' }, { status: 400 });
+      }
+      const headers = headersResult.data;
+
+      const payloadBody = await req.text();
+
+      if (!this.verifySignature(payloadBody, headers.signature)) {
+        return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
       }
 
-      const payload: WebhookPayload = JSON.parse(body);
-      const topic = headers['x-wc-webhook-topic'];
+      const { deliveryId } = headers;
+
+      if (deliveryId) {
+        const alreadyProcessed = await isWebhookProcessed(deliveryId);
+        if (alreadyProcessed) {
+          logger.info('WebhookHandler: Webhook already processed (idempotency)', {
+            deliveryId,
+            topic: headers.topic,
+          });
+          return NextResponse.json({ success: true, message: 'Webhook already processed', idempotent: true });
+        }
+      }
+
+      let parsedPayload: unknown;
+      try {
+        parsedPayload = JSON.parse(payloadBody);
+      } catch (parseError) {
+        const message = parseError instanceof Error ? parseError.message : String(parseError);
+        logger.warn('WebhookHandler: Failed to parse webhook payload', { error: message });
+        return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+      }
+
+      const sanitizedPayload = validateApiInput(parsedPayload);
+      const payloadResult = webhookPayloadSchema.safeParse(sanitizedPayload);
+      if (!payloadResult.success) {
+        logger.warn('WebhookHandler: Payload validation failed', { errors: payloadResult.error.flatten() });
+        return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+      }
+
+      const payload = normalizeWebhookPayload(payloadResult.data);
+      if (!payload) {
+        logger.warn('WebhookHandler: Invalid webhook payload structure');
+        return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+      }
+
+      const topic = headers.topic;
 
       logger.info('WebhookHandler: Processing webhook', {
         topic,
-        deliveryId: headers['x-wc-webhook-delivery-id'],
-        source: headers['x-wc-webhook-source'],
+        deliveryId,
+        source: headers.source,
       });
 
-      // Route to appropriate handler
       if (topic.startsWith('order.')) {
         await this.handleOrderWebhook(payload);
       } else if (topic.startsWith('product.')) {
@@ -262,13 +498,15 @@ class WebhookHandler {
         logger.warn('WebhookHandler: Unknown webhook topic', { topic });
       }
 
+      if (deliveryId) {
+        await markWebhookProcessed(deliveryId);
+      }
+
       return NextResponse.json({ success: true });
     } catch (error) {
-      logger.error('WebhookHandler: Error processing webhook', { error });
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('WebhookHandler: Error processing webhook', { error: message });
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   }
 }

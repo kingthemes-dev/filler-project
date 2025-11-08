@@ -3,12 +3,16 @@
  * Comprehensive performance tracking and optimization
  */
 
+import { logger } from './logger';
+
+type MetricMetadata = Record<string, unknown>;
+
 interface PerformanceMetric {
   name: string;
   value: number;
   timestamp: string;
   url: string;
-  metadata?: Record<string, any>;
+  metadata?: MetricMetadata;
 }
 
 interface PerformanceBudget {
@@ -34,6 +38,29 @@ interface PerformanceReport {
     warning_budgets: number;
   };
 }
+
+type LayoutShiftEntry = PerformanceEntry & {
+  value?: number;
+  hadRecentInput?: boolean;
+  sources?: Array<Record<string, unknown>>;
+};
+
+type NavigatorConnection = Navigator & {
+  connection?: {
+    effectiveType?: string;
+    downlink?: number;
+    rtt?: number;
+    saveData?: boolean;
+  };
+};
+
+type PerformanceWithMemory = Performance & {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+};
 
 class PerformanceMonitor {
   private metrics: PerformanceMetric[] = [];
@@ -139,7 +166,7 @@ class PerformanceMonitor {
       });
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
     } catch (error) {
-      console.warn('LCP monitoring not supported:', error);
+      logger.warn('LCP monitoring not supported', { error });
     }
 
     // First Input Delay
@@ -162,7 +189,7 @@ class PerformanceMonitor {
       });
       observer.observe({ entryTypes: ['first-input'] });
     } catch (error) {
-      console.warn('FID monitoring not supported:', error);
+      logger.warn('FID monitoring not supported', { error });
     }
 
     // Cumulative Layout Shift
@@ -170,23 +197,24 @@ class PerformanceMonitor {
       let clsValue = 0;
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
-            this.recordMetric({
-              name: 'CLS',
-              value: clsValue,
-              timestamp: Date.now().toString(),
-              url: window.location.href,
-              metadata: {
-                sources: (entry as any).sources,
-              },
-            });
-          }
+          const layoutShift = entry as LayoutShiftEntry;
+          if (layoutShift.hadRecentInput) continue;
+          const shiftValue = layoutShift.value ?? 0;
+          clsValue += shiftValue;
+          this.recordMetric({
+            name: 'CLS',
+            value: clsValue,
+            timestamp: Date.now().toString(),
+            url: window.location.href,
+            metadata: {
+              sources: layoutShift.sources,
+            },
+          });
         }
       });
       observer.observe({ entryTypes: ['layout-shift'] });
     } catch (error) {
-      console.warn('CLS monitoring not supported:', error);
+      logger.warn('CLS monitoring not supported', { error });
     }
   }
 
@@ -234,9 +262,20 @@ class PerformanceMonitor {
   private setupApiMonitoring(): void {
     if (typeof window === 'undefined') return;
     
-    const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (...args: Parameters<typeof originalFetch>) => {
       const startTime = performance.now();
+      const [requestInfo, init] = args;
+      const requestUrl =
+        requestInfo instanceof Request
+          ? requestInfo.url
+          : requestInfo instanceof URL
+          ? requestInfo.toString()
+          : requestInfo;
+      const method =
+        init?.method ||
+        (requestInfo instanceof Request ? requestInfo.method : 'GET');
+
       try {
         const response = await originalFetch(...args);
         const endTime = performance.now();
@@ -247,9 +286,9 @@ class PerformanceMonitor {
           timestamp: Date.now().toString(),
           url: window.location.href,
           metadata: {
-            url: args[0],
+            url: requestUrl,
             status: response.status,
-            method: args[1]?.method || 'GET',
+            method,
             size: response.headers.get('content-length'),
           },
         });
@@ -263,7 +302,7 @@ class PerformanceMonitor {
           timestamp: Date.now().toString(),
           url: window.location.href,
           metadata: {
-            url: args[0],
+            url: requestUrl,
             error: error instanceof Error ? error.message : String(error),
           },
         });
@@ -282,13 +321,14 @@ class PerformanceMonitor {
       );
       
       scripts.forEach(script => {
+        const resource = script as PerformanceResourceTiming;
         this.recordMetric({
           name: 'BundleSize',
-          value: (script as any).transferSize || 0,
+          value: resource.transferSize || 0,
           timestamp: Date.now().toString(),
           url: window.location.href,
           metadata: {
-            url: script.name,
+            url: resource.name,
             type: 'javascript',
           },
         });
@@ -300,18 +340,17 @@ class PerformanceMonitor {
     if (typeof window === 'undefined') return;
     
     // Memory usage monitoring (if available)
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
-      
+    const perf = performance as PerformanceWithMemory;
+    if (perf.memory) {
       setInterval(() => {
         this.recordMetric({
           name: 'MemoryUsage',
-          value: memory.usedJSHeapSize,
+          value: perf.memory?.usedJSHeapSize ?? 0,
           timestamp: Date.now().toString(),
           url: window.location.href,
           metadata: {
-            totalJSHeapSize: memory.totalJSHeapSize,
-            jsHeapSizeLimit: memory.jsHeapSizeLimit,
+            totalJSHeapSize: perf.memory?.totalJSHeapSize,
+            jsHeapSizeLimit: perf.memory?.jsHeapSizeLimit,
           },
         });
       }, 10000); // Every 10 seconds
@@ -322,8 +361,9 @@ class PerformanceMonitor {
     if (typeof window === 'undefined') return;
     
     // Network connection monitoring
-    if ('connection' in navigator) {
-      const connection = (navigator as any).connection;
+    const navigatorConnection = navigator as NavigatorConnection;
+    if (navigatorConnection.connection) {
+      const connection = navigatorConnection.connection;
       
       this.recordMetric({
         name: 'NetworkConnection',
@@ -345,15 +385,16 @@ class PerformanceMonitor {
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
             if (entry.entryType === 'resource') {
+              const resource = entry as PerformanceResourceTiming;
               this.recordMetric({
                 name: 'ResourceLoad',
-                value: entry.duration,
+                value: resource.duration,
                 timestamp: Date.now().toString(),
                 url: window.location.href,
                 metadata: {
-                  name: entry.name,
-                  type: (entry as any).initiatorType,
-                  size: (entry as any).transferSize,
+                  name: resource.name,
+                  type: resource.initiatorType,
+                  size: resource.transferSize,
                 },
               });
             }
@@ -361,7 +402,7 @@ class PerformanceMonitor {
         });
         observer.observe({ entryTypes: ['resource'] });
       } catch (error) {
-        console.warn('Resource monitoring not supported:', error);
+        logger.warn('Resource monitoring not supported', { error });
       }
     }
   }
@@ -381,7 +422,9 @@ class PerformanceMonitor {
     if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_PERF_LOGS === 'true') {
       const status = this.getBudgetStatus(metric.name, metric.value);
       const statusEmoji = status === 'pass' ? '✅' : status === 'warning' ? '⚠️' : '❌';
-      console.log(`${statusEmoji} [Performance] ${metric.name}: ${metric.value}ms`, metric.metadata);
+      logger.debug(`[Performance] ${statusEmoji} ${metric.name}: ${metric.value}ms`, {
+        metadata: metric.metadata,
+      });
     }
 
     // Remove old metrics if we have too many
@@ -397,14 +440,16 @@ class PerformanceMonitor {
     const status = this.getBudgetStatus(metric.name, metric.value);
     
     if (status === 'fail') {
-      console.error(`🚨 Performance Budget Failed: ${budget.description}`, {
+      logger.error('Performance budget failed', {
+        message: budget.description,
         metric: metric.name,
         threshold: budget.threshold,
         actual: metric.value,
         severity: budget.severity,
       });
     } else if (status === 'warning') {
-      console.warn(`⚠️ Performance Budget Warning: ${budget.description}`, {
+      logger.warn('Performance budget warning', {
+        message: budget.description,
         metric: metric.name,
         threshold: budget.threshold,
         actual: metric.value,
@@ -443,7 +488,7 @@ class PerformanceMonitor {
         }),
       });
     } catch (error) {
-      console.warn('Failed to flush performance metrics:', error);
+      logger.warn('Failed to flush performance metrics', { error });
       // Re-add metrics to array for retry
       this.metrics.unshift(...metrics);
     }

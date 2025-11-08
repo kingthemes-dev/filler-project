@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
+import { sendDiscountEmailSchema } from '@/lib/schemas/internal';
+import { validateApiInput } from '@/utils/request-validation';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, firstName, lastName, discountCode, source } = body;
+    const sanitizedBody = validateApiInput(body);
+    const validationResult = sendDiscountEmailSchema.safeParse(sanitizedBody);
 
-    if (!email || !discountCode) {
-      return NextResponse.json(
-        { success: false, error: 'Email i kod rabatowy są wymagane' },
-        { status: 400 }
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Nieprawidłowe dane do wysyłki kodu rabatowego', validationResult.error.errors),
+        { endpoint: 'send-discount-email', method: 'POST' }
       );
     }
+
+    const { email, firstName, lastName, discountCode, source } = validationResult.data;
 
     // Prepare email content
     const subject = source === 'registration' 
@@ -99,11 +106,15 @@ W razie pytań: kontakt@cosmeticcream.pl
     `;
 
     // Send email using our email service
-    console.log(`📧 Attempting to send discount email to ${email} with code ${discountCode}`);
+    logger.info('Attempting to send discount email', {
+      email,
+      discountCode,
+      source
+    });
     
     // Use our existing send-email API endpoint
     const emailUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/api/send-email`;
-    console.log(`📧 Email URL: ${emailUrl}`);
+    logger.debug('Discount email API endpoint', { emailUrl });
     
     const emailResponse = await fetch(emailUrl, {
       method: 'POST',
@@ -111,39 +122,52 @@ W razie pytań: kontakt@cosmeticcream.pl
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        to: email,
-        subject: subject,
+        customer_email: email,
+        subject,
         message: htmlContent,
-        customerName: firstName && lastName ? `${firstName} ${lastName}` : 'Użytkownik',
-        orderId: 'newsletter',
-        orderNumber: 'NEWSLETTER',
+        customer_name: firstName && lastName ? `${firstName} ${lastName}` : 'Użytkownik',
+        order_id: 'newsletter',
+        order_number: 'NEWSLETTER',
         total: '0',
-        items: []
+        items: [],
+        type: source === 'registration' ? 'registration_discount' : 'newsletter_discount',
       }),
     });
 
-    console.log(`📧 Email response status: ${emailResponse.status}`);
+    logger.debug('Discount email API response', { status: emailResponse.status });
     
     if (emailResponse.ok) {
       const emailResult = await emailResponse.json();
-      console.log(`✅ Discount email sent to ${email} with code ${discountCode}`, emailResult);
+      logger.info('Discount email sent', {
+        email,
+        discountCode,
+        result: emailResult?.success ?? undefined
+      });
       return NextResponse.json({
         success: true,
         message: 'Email z kodem rabatowym został wysłany'
       });
     } else {
       const errorText = await emailResponse.text();
-      console.error(`❌ Failed to send discount email to ${email}:`, errorText);
+      logger.error('Discount email API failed', {
+        email,
+        status: emailResponse.status,
+        error: errorText?.slice(0, 500) ?? 'unknown'
+      });
       return NextResponse.json(
         { success: false, error: `Nie udało się wysłać emaila: ${errorText}` },
         { status: 500 }
       );
     }
 
-  } catch (error: any) {
-    console.error('Error sending discount email:', error);
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error('Error sending discount email');
+    logger.error('Error sending discount email', {
+      message: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
     return NextResponse.json(
-      { success: false, error: 'Wystąpił błąd podczas wysyłania emaila' },
+      { success: false, error: err.message || 'Wystąpił błąd podczas wysyłania emaila' },
       { status: 500 }
     );
   }

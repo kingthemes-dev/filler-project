@@ -1,0 +1,18 @@
+# robots.txt for Filler.pl
+# Generated: 2025-01-XX
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /moje-konto/
+Disallow: /checkout/
+Disallow: /koszyk/
+
+# Sitemap
+Sitemap: https://filler.pl/sitemap.xml
+
+# Crawl-delay (optional, if needed)
+# Crawl-delay: 1
+

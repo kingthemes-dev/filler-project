@@ -1,0 +1,64 @@
+[
+    {
+      "name": "Docs – API routes changed",
+      "trigger": "commit",
+      "match": ["app/api/**/*.{ts,tsx,js,jsx}", "src/api/**/*.{ts,tsx,js,jsx}"],
+      "action": {
+        "type": "prompt",
+        "text": "Update API.md ONLY for endpoints affected by the latest commit. Detect changed Next.js API routes and refresh the endpoints table + examples. Keep unrelated sections intact. If markers <!-- AUTO:API-START/END --> exist, rewrite only the block."
+      },
+      "autoRun": true
+    },
+    {
+      "name": "Docs – MU-plugins changed",
+      "trigger": "commit",
+      "match": ["wp-content/mu-plugins/**/*.php"],
+      "action": {
+        "type": "prompt",
+        "text": "Scan changed MU-plugins and update API.md (MU endpoints table) and ARCHITECTURE.md (MU-plugins section). Respect <!-- AUTO:API-START/END --> and <!-- AUTO:FOLDERS-START/END --> markers."
+      },
+      "autoRun": true
+    },
+    {
+      "name": "Docs – Components changed",
+      "trigger": "commit",
+      "match": ["src/components/**/*.{ts,tsx}", "src/hooks/**/*.{ts,tsx}", "src/store/**/*.{ts,tsx}"],
+      "action": {
+        "type": "prompt",
+        "text": "Update COMPONENTS_BRIEF.md to reflect added/removed/renamed components, hooks and stores. If markers <!-- AUTO:COMP-START/END --> exist, refresh only that list."
+      },
+      "autoRun": true
+    },
+    {
+      "name": "Docs – Architecture changed",
+      "trigger": "commit",
+      "match": ["next.config.{js,ts}", "middleware.{js,ts}", "tsconfig.json", "apps/**", "packages/**", "config/**", "vercel.json"],
+      "exclude": ["src/components/**", "src/hooks/**", "src/store/**", "src/api/**"],
+      "action": {
+        "type": "prompt",
+        "text": "Update ARCHITECTURE.md for folders/runtime/revalidate changes. If markers <!-- AUTO:FOLDERS-START/END --> exist, replace only that block."
+      },
+      "autoRun": true
+    },
+    {
+      "name": "Docs – README env & scripts",
+      "trigger": "commit",
+      "match": ["package.json", "vercel.env.example", ".env.example", "next-env.d.ts"],
+      "action": {
+        "type": "prompt",
+        "text": "Sync README.md (scripts table + ENV). Mark server-only vs NEXT_PUBLIC. Keep other README content unchanged."
+      },
+      "autoRun": true
+    },
+    {
+      "name": "Docs – Changelog",
+      "trigger": "commit",
+      "match": ["**/*"],
+      "action": {
+        "type": "prompt",
+        "text": "Append an entry to CHANGELOG.md using Conventional Commits from latest commit(s). Group under Added/Changed/Fixed/Perf/Docs."
+      },
+      "autoRun": true
+    }
+  ]
+  

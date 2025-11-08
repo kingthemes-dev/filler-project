@@ -1,0 +1,13 @@
+model: gpt-5-pro
+language: TypeScript
+framework: Next.js 14 (App Router)
+style: enterprise
+prefer_tailwind: true
+prefer_shadcn: true
+prefer_zustand: true
+auto_lint: true
+respect_architecture: true
+respect_project_rules: true
+include_aliases: true
+enforce_env_security: true
+framework_strict: true

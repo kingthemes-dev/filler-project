@@ -3,12 +3,14 @@
  * Comprehensive security checks and monitoring
  */
 
+type SecurityCheckDetails = Record<string, unknown>;
+
 interface SecurityCheck {
   name: string;
   status: 'pass' | 'fail' | 'warning';
   message: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  details?: any;
+  details?: SecurityCheckDetails;
 }
 
 interface SecurityAuditResult {

@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+      
+      - name: Run ESLint
+        working-directory: apps/web
+        run: npm run lint
+      
+      - name: Run TypeScript check
+        working-directory: apps/web
+        run: npm run type-check
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+      
+      - name: Run tests
+        working-directory: apps/web
+        run: npm run test
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          directory: apps/web/coverage
+          flags: unittests
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+      
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
+        env:
+          NEXT_PUBLIC_WORDPRESS_URL: ${{ secrets.NEXT_PUBLIC_WORDPRESS_URL || 'https://example.com' }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL || 'https://example.com' }}
+          NEXT_PUBLIC_WC_URL: ${{ secrets.NEXT_PUBLIC_WC_URL || 'https://example.com/wp-json/wc/v3' }}
+          WC_CONSUMER_KEY: ${{ secrets.WC_CONSUMER_KEY || 'test' }}
+          WC_CONSUMER_SECRET: ${{ secrets.WC_CONSUMER_SECRET || 'test' }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET || 'test' }}
+          ADMIN_CACHE_TOKEN: ${{ secrets.ADMIN_CACHE_TOKEN || 'test' }}
+          CSRF_SECRET: ${{ secrets.CSRF_SECRET || 'test' }}
+          WOOCOMMERCE_WEBHOOK_SECRET: ${{ secrets.WOOCOMMERCE_WEBHOOK_SECRET || 'test' }}
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+      
+      - name: Run npm audit
+        working-directory: apps/web
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+

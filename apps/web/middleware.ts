@@ -23,8 +23,8 @@ export async function middleware(request: NextRequest) {
       return csrfResponse;
     }
     
-    // Apply security middleware
-    const securityResponse = securityMiddleware(request);
+    // Apply security middleware (now async due to rate limiting)
+    const securityResponse = await securityMiddleware(request);
     
     // If security middleware returned a response (error), return it
     if (securityResponse && securityResponse.status !== 200) {

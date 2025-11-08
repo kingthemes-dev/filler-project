@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
+import { logger } from '@/utils/logger';
 
 export async function POST(_request: NextRequest): Promise<NextResponse> {
   try {
@@ -13,7 +14,7 @@ export async function POST(_request: NextRequest): Promise<NextResponse> {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    logger.error('Cache clear error', { error });
     return NextResponse.json(
       { 
         success: false, 

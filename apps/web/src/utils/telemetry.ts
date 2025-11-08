@@ -5,6 +5,20 @@
 
 import { logger } from './logger';
 
+type MetricTags = Record<string, string>;
+type BusinessMetadata = Record<string, string | number | boolean | undefined>;
+type ErrorContext = Record<string, string | number | boolean | undefined>;
+
+interface MetricSummary {
+  count: number;
+  min: number;
+  max: number;
+  avg: number;
+  p50: number;
+  p95: number;
+  p99: number;
+}
+
 // OpenTelemetry configuration
 export const TELEMETRY_CONFIG = {
   enabled: process.env.NODE_ENV === 'production',
@@ -16,7 +30,6 @@ export const TELEMETRY_CONFIG = {
 // Performance metrics tracking
 export class TelemetryTracker {
   private metrics: Map<string, number[]> = new Map();
-  private traces: Map<string, any[]> = new Map();
   private isEnabled: boolean;
 
   constructor() {
@@ -34,7 +47,7 @@ export class TelemetryTracker {
   }
 
   // Track custom metrics
-  trackMetric(name: string, value: number, tags?: Record<string, string>) {
+  trackMetric(name: string, value: number, tags?: MetricTags) {
     if (!this.isEnabled) return;
 
     const metricKey = `${name}_${JSON.stringify(tags || {})}`;
@@ -110,7 +123,7 @@ export class TelemetryTracker {
   }
 
   // Track business metrics
-  trackBusinessMetric(event: string, value: number, metadata?: Record<string, any>) {
+  trackBusinessMetric(event: string, value: number, metadata?: BusinessMetadata) {
     this.trackMetric(`business.${event}`, value, {
       ...metadata,
       timestamp: new Date().toISOString()
@@ -118,7 +131,7 @@ export class TelemetryTracker {
   }
 
   // Track errors
-  trackError(error: Error, context?: Record<string, any>) {
+  trackError(error: Error, context?: ErrorContext) {
     this.trackMetric('errors.count', 1, {
       error_type: error.constructor.name,
       error_message: error.message.substring(0, 100),
@@ -133,7 +146,7 @@ export class TelemetryTracker {
   }
 
   // Track user actions
-  trackUserAction(action: string, userId?: string, metadata?: Record<string, any>) {
+  trackUserAction(action: string, userId?: string, metadata?: BusinessMetadata) {
     this.trackMetric('user.actions', 1, {
       action,
       user_id: userId || 'anonymous',
@@ -142,8 +155,8 @@ export class TelemetryTracker {
   }
 
   // Get metrics summary
-  getMetricsSummary(): Record<string, any> {
-    const summary: Record<string, any> = {};
+  getMetricsSummary(): Record<string, MetricSummary> {
+    const summary: Record<string, MetricSummary> = {};
     
     for (const [key, values] of this.metrics.entries()) {
       if (values.length === 0) continue;
@@ -200,10 +213,15 @@ export const telemetry = new TelemetryTracker();
 
 // Performance decorator
 export function trackPerformance(name: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function <T extends (...args: unknown[]) => unknown>(
+    _target: object,
+    _propertyName: string,
+    descriptor: TypedPropertyDescriptor<T>
+  ) {
     const method = descriptor.value;
+    if (!method) return descriptor;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = (async function (this: unknown, ...args: unknown[]) {
       const startTime = Date.now();
       try {
         const result = await method.apply(this, args);
@@ -214,53 +232,63 @@ export function trackPerformance(name: string) {
         telemetry.trackError(error as Error, { method: name });
         throw error;
       }
-    };
-
+    }) as T;
     return descriptor;
   };
 }
 
 // API call tracker
 export function trackApiCall(method: string, endpoint: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
+  return function <T extends (...args: unknown[]) => unknown>(
+    _target: object,
+    _propertyName: string,
+    descriptor: TypedPropertyDescriptor<T>
+  ) {
+    const originalMethod = descriptor.value;
+    if (!originalMethod) return descriptor;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = (async function (this: unknown, ...args: unknown[]) {
       const startTime = Date.now();
       try {
-        const result = await method.apply(this, args);
+        const result = await originalMethod.apply(this, args);
         const duration = Date.now() - startTime;
         telemetry.trackApiCall(method, endpoint, 200, duration);
         return result;
-      } catch (error: any) {
+      } catch (error) {
         const duration = Date.now() - startTime;
-        const statusCode = error.status || error.statusCode || 500;
+        const statusCode =
+          (error as { status?: number; statusCode?: number })?.status ||
+          (error as { status?: number; statusCode?: number })?.statusCode ||
+          500;
         telemetry.trackApiCall(method, endpoint, statusCode, duration);
-        telemetry.trackError(error, { method, endpoint });
+        telemetry.trackError(error as Error, { method, endpoint });
         throw error;
       }
-    };
-
+    }) as T;
     return descriptor;
   };
 }
 
 // Business metrics tracker
 export function trackBusinessMetric(event: string) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
+  return function <T extends (...args: unknown[]) => unknown>(
+    _target: object,
+    _propertyName: string,
+    descriptor: TypedPropertyDescriptor<T>
+  ) {
+    const originalMethod = descriptor.value;
+    if (!originalMethod) return descriptor;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = (async function (this: unknown, ...args: unknown[]) {
       try {
-        const result = await method.apply(this, args);
+        const result = await originalMethod.apply(this, args);
         telemetry.trackBusinessMetric(event, 1, { success: true });
         return result;
       } catch (error) {
         telemetry.trackBusinessMetric(event, 1, { success: false, error: (error as Error).message });
         throw error;
       }
-    };
-
+    }) as T;
     return descriptor;
   };
 }

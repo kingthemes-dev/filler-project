@@ -5,11 +5,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { hposPerformanceMonitor } from '@/services/hpos-performance-monitor';
+import { z } from 'zod';
+import { logger } from '@/utils/logger';
+
+const monitoringQuerySchema = z
+  .object({
+    action: z
+      .enum(['summary', 'metrics', 'timeseries', 'reset'])
+      .optional()
+      .default('summary'),
+    key: z.string().min(1).optional(),
+    start: z.string().regex(/^\d+$/).optional(),
+    end: z.string().regex(/^\d+$/).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.action === 'timeseries' && !value.key) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Parametr key jest wymagany dla timeseries',
+        path: ['key'],
+      });
+    }
+  });
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const action = searchParams.get('action') || 'summary';
+    const rawQuery = Object.fromEntries(searchParams.entries());
+    const validationResult = monitoringQuerySchema.safeParse(rawQuery);
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Nieprawidłowe parametry zapytania', details: validationResult.error.format() },
+        { status: 400 }
+      );
+    }
+
+    const { action, key, start, end } = validationResult.data;
 
     switch (action) {
       case 'summary':
@@ -24,27 +56,13 @@ export async function GET(req: NextRequest) {
           data: hposPerformanceMonitor.getMetrics(),
         });
 
-      case 'timeseries':
-        const key = searchParams.get('key');
-        const start = searchParams.get('start');
-        const end = searchParams.get('end');
-
-        if (!key) {
-          return NextResponse.json(
-            { error: 'Key parameter is required for timeseries' },
-            { status: 400 }
-          );
-        }
-
-        const timeRange = start && end ? {
-          start: parseInt(start),
-          end: parseInt(end),
-        } : undefined;
-
+      case 'timeseries': {
+        const timeRange = start && end ? { start: parseInt(start, 10), end: parseInt(end, 10) } : undefined;
         return NextResponse.json({
           success: true,
-          data: hposPerformanceMonitor.getTimeSeriesData(key, timeRange),
+          data: hposPerformanceMonitor.getTimeSeriesData(key!, timeRange),
         });
+      }
 
       case 'reset':
         hposPerformanceMonitor.resetMetrics();
@@ -60,7 +78,7 @@ export async function GET(req: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('Performance monitoring API error:', error);
+    logger.error('Performance monitoring API error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { WooProduct } from '@/types/woocommerce';
+import { logger } from '@/utils/logger';
 
 // Safe storage for SSR
 const safeStorage = {
@@ -59,6 +60,43 @@ interface WishlistStore {
   syncWithServer: () => Promise<void>;
   loadFromServer: () => Promise<void>;
 }
+
+interface ServerWishlistItem {
+  product_id: number;
+  added_at: string;
+  product_name?: string;
+  product_price?: string;
+  product_regular_price?: string;
+  product_sale_price?: string;
+  product_images?: Array<{ src: string; alt?: string }>;
+  product_slug?: string;
+  product_stock_status?: string;
+}
+
+interface WishlistApiResponse {
+  success: boolean;
+  favorites?: ServerWishlistItem[];
+  error?: string;
+}
+
+const mapServerItemToWishlist = (fav: ServerWishlistItem): WishlistItem => ({
+  id: fav.product_id,
+  name: fav.product_name || `Produkt ${fav.product_id}`,
+  price: fav.product_price || '0',
+  regular_price: fav.product_regular_price || '0',
+  sale_price: fav.product_sale_price || '',
+  images: Array.isArray(fav.product_images)
+    ? fav.product_images.map((image) => ({
+        src: image.src,
+        alt: image.alt || '',
+      }))
+    : [],
+  slug: fav.product_slug || '',
+  stock_status: fav.product_stock_status || 'instock',
+  addedAt: Number.isFinite(new Date(fav.added_at).getTime())
+    ? new Date(fav.added_at).getTime()
+    : Date.now(),
+});
 
 export const useWishlistStore = create<WishlistStore>()(
   persist(
@@ -156,11 +194,13 @@ export const useWishlistStore = create<WishlistStore>()(
           }
 
           set({ isLoading: false });
-        } catch (error: any) {
-          console.error('Wishlist sync error:', error);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Błąd synchronizacji listy życzeń';
+          logger.error('WishlistStore: Sync error', { error: message });
           set({ 
             isLoading: false, 
-            error: error.message || 'Błąd synchronizacji listy życzeń' 
+            error: message, 
           });
         }
       },
@@ -175,31 +215,23 @@ export const useWishlistStore = create<WishlistStore>()(
             throw new Error('Nie udało się pobrać listy życzeń');
           }
 
-          const data = await response.json();
+          const data = (await response.json()) as WishlistApiResponse;
           
           if (data.success && data.favorites) {
             set({ 
-              items: data.favorites.map((fav: any) => ({
-                id: fav.product_id,
-                name: fav.product_name || `Produkt ${fav.product_id}`,
-                price: fav.product_price || '0',
-                regular_price: fav.product_regular_price || '0',
-                sale_price: fav.product_sale_price || '',
-                images: fav.product_images || [],
-                slug: fav.product_slug || '',
-                stock_status: fav.product_stock_status || 'instock',
-                addedAt: new Date(fav.added_at).getTime() || Date.now()
-              })),
+              items: data.favorites.map(mapServerItemToWishlist),
               isLoading: false 
             });
           } else {
             set({ items: [], isLoading: false });
           }
-        } catch (error: any) {
-          console.error('Wishlist load error:', error);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Błąd ładowania listy życzeń';
+          logger.error('WishlistStore: Load error', { error: message });
           set({ 
             isLoading: false, 
-            error: error.message || 'Błąd ładowania listy życzeń' 
+            error: message, 
           });
         }
       }

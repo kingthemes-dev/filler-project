@@ -13,6 +13,8 @@ import {
 } from '@/utils/validation';
 import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
 import { useViewportHeightVar } from '@/hooks/use-viewport-height-var';
+import { executeRecaptcha, verifyRecaptchaToken } from '@/utils/recaptcha';
+import { ENV } from '@/config/constants';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -138,6 +140,27 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin, onRegi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+
+    // FIX: reCAPTCHA verification
+    if (ENV.RECAPTCHA_ENABLED) {
+      try {
+        const recaptchaToken = await executeRecaptcha('registration');
+        if (recaptchaToken) {
+          const isValid = await verifyRecaptchaToken(recaptchaToken);
+          if (!isValid) {
+            setValidationErrors({ 
+              ...validationErrors, 
+              email: 'Weryfikacja bezpieczeństwa nie powiodła się. Spróbuj ponownie.' 
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('reCAPTCHA error:', error);
+        // Continue if reCAPTCHA fails (graceful degradation)
+      }
+    }
+
     try {
       const result = await register({
         email: formData.email,

@@ -1,13 +1,14 @@
 /**
  * Shop Data Prefetch Service
- * 
+ *
  * Ten serwis odpowiada za prefetchowanie wszystkich danych sklepu
  * potrzebnych do natychmiastowego otwarcia modala menu sklep.
- * 
+ *
  * Dane są pobierane raz przy inicjalizacji aplikacji i cachowane
  * w sessionStorage z możliwością odświeżania.
  */
 
+import { logger } from '@/utils/logger';
 
 // Types
 export interface ShopCategory {
@@ -43,6 +44,32 @@ export interface PrefetchOptions {
   cacheTimeout?: number; // w milisekundach, domyślnie 5 minut
 }
 
+type RawCategory = Partial<ShopCategory> & {
+  display?: string;
+  image?: unknown;
+  menu_order?: number;
+};
+
+interface AttributeTerm {
+  id: number | string;
+  name: string;
+  slug: string;
+  count?: number;
+}
+
+interface AttributeGroup {
+  terms?: AttributeTerm[];
+}
+
+interface AttributesApiResponse {
+  attributes?: {
+    marka?: AttributeGroup;
+    pojemnosc?: AttributeGroup;
+    zastosowanie?: AttributeGroup;
+    [key: string]: AttributeGroup | undefined;
+  };
+}
+
 class ShopDataPrefetchService {
   private static instance: ShopDataPrefetchService;
   private cacheKey = 'shop-data-prefetch';
@@ -69,14 +96,14 @@ class ShopDataPrefetchService {
     if (!forceRefresh) {
       const cachedData = this.getCachedData();
       if (cachedData && this.isCacheValid(cachedData, cacheTimeout)) {
-        console.log('🚀 Shop data loaded from cache');
+        logger.debug('Shop data loaded from cache', { cacheKey: this.cacheKey });
         return cachedData;
       }
     }
 
     // Jeśli już trwa prefetchowanie, zwróć istniejące promise
     if (this.isPrefetching && this.prefetchPromise) {
-      console.log('🚀 Shop data prefetch already in progress, waiting...');
+      logger.debug('Shop data prefetch in progress, awaiting existing promise');
       return this.prefetchPromise;
     }
 
@@ -87,7 +114,11 @@ class ShopDataPrefetchService {
     try {
       const data = await this.prefetchPromise;
       this.cacheData(data);
-      console.log('🚀 Shop data prefetched and cached');
+      logger.info('Shop data prefetched and cached', {
+        categories: data.categories.length,
+        brands: data.attributes.brands.length,
+        totalProducts: data.totalProducts,
+      });
       return data;
     } finally {
       this.isPrefetching = false;
@@ -99,7 +130,7 @@ class ShopDataPrefetchService {
    * Pobiera dane z API
    */
   private async fetchShopData(): Promise<ShopData> {
-    console.log('🚀 Fetching shop data from API...');
+    logger.debug('Fetching shop data from API');
     
     try {
       const isBrowser = typeof window !== 'undefined';
@@ -114,49 +145,128 @@ class ShopDataPrefetchService {
       ]);
 
       // Parsowanie z bezpiecznymi fallbackami (bez przerywania całego prefetchu)
-      let categoriesData: any = [];
+      let categoriesData: ShopCategory[] = [];
       try {
         if (categoriesResult.status === 'fulfilled') {
           const r = categoriesResult.value;
-          categoriesData = r.ok ? await r.json() : [];
-          if (!r.ok) console.warn('⚠️ Categories API error:', r.status);
+          if (r.ok) {
+            const rawCategories = (await r.json()) as RawCategory[];
+            categoriesData = Array.isArray(rawCategories)
+              ? rawCategories
+                  .filter((cat): cat is ShopCategory => Boolean(cat?.id && cat?.name && cat?.slug))
+                  .map((cat) => ({
+                    id: Number(cat.id),
+                    name: String(cat.name),
+                    slug: String(cat.slug),
+                    count: typeof cat.count === 'number' ? cat.count : 0,
+                    parent: typeof cat.parent === 'number' ? cat.parent : 0,
+                  }))
+              : [];
+          } else if (r.status === 502 || r.status === 503 || r.status === 504) {
+            // Fallback do Store API jeśli WooCommerce API zwraca 502/503/504
+            logger.warn('Categories API error, attempting Store API fallback', { status: r.status });
+            try {
+              const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL;
+              if (wpUrl) {
+                const storeUrl = `${wpUrl}/wp-json/wc/store/v1/products/categories?per_page=100`;
+                const storeResp = await fetch(storeUrl, {
+                  headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
+                  cache: 'no-store',
+                  signal: AbortSignal.timeout(5000)
+                });
+                if (storeResp.ok) {
+                  const storeData = (await storeResp.json()) as RawCategory[];
+                  // Normalize Store API response to match WooCommerce API format
+                  categoriesData = Array.isArray(storeData)
+                    ? storeData
+                        .filter((cat): cat is ShopCategory => Boolean(cat?.id && cat?.name && cat?.slug))
+                        .map((cat) => ({
+                          id: Number(cat.id),
+                          name: String(cat.name),
+                          slug: String(cat.slug),
+                          count: typeof cat.count === 'number' ? cat.count : 0,
+                          parent: typeof cat.parent === 'number' ? cat.parent : 0,
+                        }))
+                    : [];
+                  logger.info('Categories loaded from Store API fallback', {
+                    count: categoriesData.length,
+                  });
+                } else {
+                  logger.warn('Store API fallback failed', { status: storeResp.status });
+                  categoriesData = [];
+                }
+              } else {
+                categoriesData = [];
+              }
+            } catch (fallbackError) {
+              logger.error('Store API fallback error', { error: fallbackError });
+              categoriesData = [];
+            }
+          } else {
+            logger.warn('Categories API returned non-success status', { status: r.status });
+            categoriesData = [];
+          }
         }
-      } catch { categoriesData = []; }
+      } catch (parseError) {
+        logger.error('Categories parsing error', { error: parseError });
+        categoriesData = [];
+      }
 
-      let attributesData: any = {};
+      let attributesData: AttributesApiResponse = {};
       try {
         if (attributesResult.status === 'fulfilled') {
           const r = attributesResult.value;
-          attributesData = r.ok ? await r.json() : {};
-          if (!r.ok) console.warn('⚠️ Attributes API error:', r.status);
+          if (r.ok) {
+            const rawData = await r.json();
+            // API zwraca {success: true, attributes: {...}} lub bezpośrednio attributes
+            attributesData = rawData?.attributes ? { attributes: rawData.attributes } : rawData;
+            logger.debug('Attributes loaded', {
+              hasAttributes: Boolean(attributesData.attributes),
+              brands: attributesData.attributes?.marka?.terms?.length ?? 0,
+              zastosowanie: attributesData.attributes?.zastosowanie?.terms?.length ?? 0,
+            });
+          } else {
+            logger.warn('Attributes API error', { status: r.status });
+            attributesData = {};
+          }
+        } else {
+          logger.warn('Attributes fetch failed', { reason: attributesResult.reason });
         }
-      } catch { attributesData = {}; }
+      } catch (error) {
+        logger.error('Attributes parsing error', { error });
+        attributesData = {};
+      }
 
       let totalProducts = 0;
       try {
         if (productsResult.status === 'fulfilled') {
           const r = productsResult.value;
           totalProducts = r.ok ? parseInt(r.headers.get('X-WP-Total') || '0') : 0;
-          if (!r.ok) console.warn('⚠️ Products API error:', r.status);
+          if (!r.ok) logger.warn('Products API error', { status: r.status });
         }
-      } catch { totalProducts = 0; }
+      } catch (productError) {
+        logger.warn('Products parsing error', { error: productError });
+        totalProducts = 0;
+      }
 
       // Przetwórz kategorie
-      const categories: ShopCategory[] = Array.isArray(categoriesData)
-        ? categoriesData.map((cat: any) => ({
-            id: cat.id,
-            name: cat.name,
-            slug: cat.slug,
-            count: cat.count || 0,
-            parent: cat.parent || 0
-          }))
-        : [];
+      const categories: ShopCategory[] = categoriesData;
+      
+      // Log jeśli brak kategorii
+      if (categories.length === 0) {
+        logger.warn('No categories loaded, check API endpoint');
+      } else {
+        logger.info('Categories loaded', {
+          total: categories.length,
+          main: categories.filter((c) => (c.parent || 0) === 0).length,
+        });
+      }
 
       // Przetwórz atrybuty
       const attributes: ShopAttributes = {
-        brands: attributesData.attributes?.marka?.terms || [],
-        capacities: attributesData.attributes?.pojemnosc?.terms || [],
-        zastosowanie: attributesData.attributes?.zastosowanie?.terms || []
+        brands: attributesData.attributes?.marka?.terms ?? [],
+        capacities: attributesData.attributes?.pojemnosc?.terms ?? [],
+        zastosowanie: attributesData.attributes?.zastosowanie?.terms ?? []
       };
 
       const shopData: ShopData = {
@@ -166,18 +276,18 @@ class ShopDataPrefetchService {
         lastUpdated: Date.now()
       };
 
-      console.log('🚀 Shop data fetched successfully:', {
+      logger.info('Shop data fetched successfully', {
         categories: categories.length,
         brands: attributes.brands.length,
         capacities: attributes.capacities.length,
         zastosowanie: attributes.zastosowanie.length,
-        totalProducts
+        totalProducts,
       });
 
       return shopData;
 
     } catch (error) {
-      console.error('❌ Error fetching shop data:', error);
+      logger.error('Error fetching shop data', { error });
       
       // Zwróć fallback data jeśli API nie działa
       return this.getFallbackData();
@@ -194,10 +304,10 @@ class ShopDataPrefetchService {
       const cached = sessionStorage.getItem(this.cacheKey);
       if (!cached) return null;
 
-      const data = JSON.parse(cached);
-      return data as ShopData;
+      const data = JSON.parse(cached) as ShopData;
+      return data;
     } catch (error) {
-      console.warn('⚠️ Error reading cached shop data:', error);
+      logger.warn('Error reading cached shop data', { error });
       return null;
     }
   }
@@ -210,9 +320,9 @@ class ShopDataPrefetchService {
       if (typeof window === 'undefined') return;
       
       sessionStorage.setItem(this.cacheKey, JSON.stringify(data));
-      console.log('💾 Shop data cached successfully');
+      logger.debug('Shop data cached successfully', { cacheKey: this.cacheKey });
     } catch (error) {
-      console.warn('⚠️ Error caching shop data:', error);
+      logger.warn('Error caching shop data', { error });
     }
   }
 
@@ -224,7 +334,7 @@ class ShopDataPrefetchService {
     const isValid = (now - data.lastUpdated) < timeout;
     
     if (!isValid) {
-      console.log('⏰ Shop data cache expired');
+      logger.debug('Shop data cache expired', { cacheKey: this.cacheKey });
     }
     
     return isValid;
@@ -234,7 +344,7 @@ class ShopDataPrefetchService {
    * Zwraca fallback data gdy API nie działa
    */
   private getFallbackData(): ShopData {
-    console.log('🔄 Using fallback shop data');
+    logger.warn('Using fallback shop data');
     
     return {
       categories: [
@@ -285,9 +395,9 @@ class ShopDataPrefetchService {
       if (typeof window === 'undefined') return;
       
       sessionStorage.removeItem(this.cacheKey);
-      console.log('🗑️ Shop data cache cleared');
+      logger.info('Shop data cache cleared');
     } catch (error) {
-      console.warn('⚠️ Error clearing shop data cache:', error);
+      logger.warn('Error clearing shop data cache', { error });
     }
   }
 

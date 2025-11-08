@@ -13,46 +13,18 @@ if (!defined('ABSPATH')) {
 
 class KingCartAPI {
     
+    /**
+     * Shared secret used to authenticate requests from the headless proxy.
+     *
+     * @var string|null
+     */
+    private $shared_secret;
+    
     public function __construct() {
+        $this->shared_secret = $this->resolve_shared_secret();
         add_action('rest_api_init', array($this, 'register_routes'));
         add_action('wp_enqueue_scripts', array($this, 'localize_script'));
-        add_action('rest_api_init', array($this, 'add_cors_support'));
-    }
-    
-    /**
-     * Add CORS support for REST API
-     */
-    public function add_cors_support() {
-        remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
-        add_filter('rest_pre_serve_request', array($this, 'add_cors_headers'));
-    }
-    
-    /**
-     * Add custom CORS headers
-     */
-    public function add_cors_headers($value) {
-        $origin = get_http_origin();
-        $allowed_origins = array(
-            'https://www.filler.pl',
-            'https://filler.pl',
-            'https://filler-project-3pn426bdx-king-themes.vercel.app',
-            'https://filler-project-ft2wd4pxs-king-themes.vercel.app',
-            'https://filler-project-hjv37nadi-king-themes.vercel.app',
-            'https://filler-project-qibwg3yf5-king-themes.vercel.app',
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'http://localhost:3002'
-        );
-        
-        if (in_array($origin, $allowed_origins)) {
-            header('Access-Control-Allow-Origin: ' . $origin);
-        }
-        
-        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-WP-Nonce, x-wp-nonce');
-        header('Access-Control-Allow-Credentials: true');
-        
-        return $value;
+        // CORS is now handled centrally in headless-config.php
     }
     
     /**
@@ -153,12 +125,13 @@ class KingCartAPI {
             return true;
         }
         
-        // TEMPORARILY DISABLE NONCE VERIFICATION FOR CART OPERATIONS
-        // This allows cart to work without nonce issues
-        return true;
+        // Prefer shared secret when configured
+        if ($this->shared_secret && $this->verify_shared_secret($request)) {
+            return true;
+        }
         
-        // Original nonce verification (commented out)
-        // return $this->verify_nonce($request);
+        // Fallback to legacy nonce verification
+        return $this->verify_nonce($request);
     }
     
     /**
@@ -175,6 +148,55 @@ class KingCartAPI {
         }
         
         return true;
+    }
+    
+    /**
+     * Resolve shared secret (env or constant)
+     *
+     * @return string|null
+     */
+    private function resolve_shared_secret() {
+        if (defined('KING_CART_API_SECRET')) {
+            $secret = constant('KING_CART_API_SECRET');
+            if (is_string($secret) && $secret !== '') {
+                return $secret;
+            }
+        }
+        
+        $envSecret = getenv('KING_CART_API_SECRET');
+        if (is_string($envSecret) && $envSecret !== '') {
+            return $envSecret;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Verify shared secret header
+     *
+     * @param WP_REST_Request $request
+     * @return bool
+     */
+    private function verify_shared_secret($request) {
+        if (!$this->shared_secret) {
+            return false;
+        }
+        
+        if (!($request instanceof WP_REST_Request)) {
+            return false;
+        }
+        
+        $provided = $request->get_header('x-king-secret');
+        
+        if (!$provided && isset($_SERVER['HTTP_X_KING_SECRET'])) {
+            $provided = sanitize_text_field(wp_unslash($_SERVER['HTTP_X_KING_SECRET']));
+        }
+        
+        if (!is_string($provided) || $provided === '') {
+            return false;
+        }
+        
+        return hash_equals($this->shared_secret, $provided);
     }
     
     /**

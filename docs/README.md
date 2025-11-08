@@ -1,15 +1,18 @@
 # Headless Woo – README
 
 ## 1. Przegląd projektu
-- Headless storefront oparty na **Next.js 14 (App Router)** i **WooCommerce REST API** (brak GraphQL).
+- Headless storefront oparty na **Next.js 15.5 (App Router + RSC)** i **WooCommerce REST API** (brak GraphQL).
 - Backend WordPress rozszerzony MU‑pluginami (`king-shop`, `king-cart`, `king-reviews`, `king-optimized`, `king-email`, `king-webhooks`) z Redisem, rate‑limitem i webhookami HPOS.
-- Frontend hostowany na Vercel, wyrenderowany w ISR/SSR z dedykowanymi trasami API (`/api/woocommerce`, `/api/cart-proxy`, `/api/home-feed`, itd.).
+- Frontend hostowany na Vercel, wyrenderowany w ISR/SSR z dedykowanymi trasami API (`/api/woocommerce`, `/api/cart-proxy`, `/api/home-feed`, `/api/analytics`, `/api/performance/*`).
+- Aplikacja mobilna (Expo/React Native) korzysta z pakietu `@headless-woo/shared` i tych samych endpointów WooCommerce.
 - Dokumentacja uzupełniająca: [`ARCHITECTURE.md`](./ARCHITECTURE.md), [`API.md`](./API.md), [`COMPONENTS_BRIEF.md`](./COMPONENTS_BRIEF.md), [`KING_Headless_Enterprise.md`](./KING_Headless_Enterprise.md), [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 2. Stos technologiczny
-- **Frontend**: Next.js 14, React 19, Tailwind CSS + shadcn/ui, Zustand, TanStack Query.
+- **Frontend (web)**: Next.js 15.5 (App Router, Edge/Node runtime), React 18.3, Tailwind CSS + shadcn/ui, Zustand 5, TanStack Query 5.
+- **Frontend (mobile)**: Expo SDK 50 / React Native 0.73, współdzielone store’y i typy (`packages/shared`).
 - **Backend**: WordPress 6.x + WooCommerce 8.x, MU‑pluginy, Redis (opcjonalnie).
-- **Języki/biblioteki**: TypeScript, Zod, Sentry, Nodemailer, Sendinblue (Brevo), ioredis.
+- **Języki/biblioteki**: TypeScript, Zod, Sentry (web/server/edge), Nodemailer, Sendinblue (Brevo), ioredis.
+- **Monitoring**: własne endpointy telemetry (`/api/analytics`, `/api/errors`, `/api/performance/*`), Sentry, reCAPTCHA v3.
 - **Testy**: Jest/Testing Library, Playwright (E2E), Lighthouse (CI/perf).
 
 ## 3. Wymagania wstępne
@@ -27,23 +30,56 @@
 6. Aplikacja będzie dostępna pod `http://localhost:3000`.
 
 ### Zmienne środowiskowe
-| Nazwa | Zakres | Opis |
-| --- | --- | --- |
-| `NEXT_PUBLIC_BASE_URL` | Client | Publiczny URL frontendu (np. `http://localhost:3000`). |
-| `NEXT_PUBLIC_WORDPRESS_URL` | Client | Bazowy URL WordPressa (bez `/wp-json`). |
-| `NEXT_PUBLIC_WC_URL` | Client | Pełny URL REST WooCommerce (`https://wp/wp-json/wc/v3`). |
-| `WC_CONSUMER_KEY` | Server | Klucz REST WooCommerce (Read/Write). |
-| `WC_CONSUMER_SECRET` | Server | Sekret REST WooCommerce. |
-| `REVALIDATE_SECRET` | Server | Token `/api/revalidate`. |
-| `ADMIN_CACHE_TOKEN` | Server | Token tras `/api/cache/*` i paneli admin. |
-| `CSRF_SECRET` | Server | Klucz HMAC do tokenów CSRF. |
-| `WOOCOMMERCE_WEBHOOK_SECRET` | Server | Sekret do podpisywania webhooków. |
-| `KING_CART_API_SECRET` | Server | Tajny nagłówek `X-King-Secret` dla MU koszyka. |
-| `SENDINBLUE_API_KEY` | Server | API key Brevo (newsletter). |
-| `SENDINBLUE_LIST_ID` | Server | ID listy mailingowej. |
-| `NEXT_PUBLIC_GA4_ID` / `NEXT_PUBLIC_GTM_ID` | Client | Opcjonalne ID Google Analytics / Tag Manager. |
-| `REDIS_URL` | Server | Opcjonalny URL Redisa (np. `redis://user:pass@host:6379`). |
-| `DISABLE_SENTRY` | Server | `true` aby wyłączyć Sentry lokalnie. |
+
+#### Serwerowe – wymagane
+| Nazwa | Opis |
+| --- | --- |
+| `WC_CONSUMER_KEY` | Klucz REST WooCommerce (uprawnienia *Read/Write*). |
+| `WC_CONSUMER_SECRET` | Sekret REST WooCommerce. |
+| `REVALIDATE_SECRET` | Token do `/api/revalidate` (ISR + czyszczenie cache). |
+| `ADMIN_CACHE_TOKEN` | Token tras administracyjnych (`/api/cache/*`, `/api/admin/auth`). |
+| `CSRF_SECRET` | HMAC wykorzystywany przez middleware CSRF. |
+| `WOOCOMMERCE_WEBHOOK_SECRET` | Sekret podpisu webhooków WooCommerce (HMAC SHA256). |
+| `KING_CART_API_SECRET` | Shared secret dla `king-cart/v1/*` (`X-King-Secret`). |
+
+#### Serwerowe – opcjonalne / integracje
+| Nazwa | Opis |
+| --- | --- |
+| `REDIS_URL` | Redis dla cache, rate limiting oraz telemetry (fallback do pamięci). |
+| `SENDINBLUE_API_KEY` / `SENDINBLUE_LIST_ID` | Integracja Brevo (newsletter + kupon rabatowy). |
+| `SENTRY_DSN` | DSN Sentry (backend + edge). |
+| `DISABLE_SENTRY` | `true` aby wyłączyć Sentry lokalnie (dev). |
+| `RECAPTCHA_SECRET_KEY` | Serwerowa weryfikacja tokenów reCAPTCHA v3. |
+| `API_KEY` | Opcjonalny klucz dla `validateApiKey` (nagłówek `x-api-key`). |
+| `ADMIN_TOKEN` | Alternatywny token dla `/api/admin/auth` (fallback). |
+| `API_TOKEN` | Używany w przykładowych zapytaniach universal-filter. |
+| `BASE_URL` | Bazowy adres w testach Playwright/perf (`perf-autocannon`). |
+| `WP_BASE_URL` | Publiczny URL frontendu do prefetchu w `cache-warming.ts`. |
+| `GOOGLE_SITE_VERIFICATION` | Wartość meta dla Search Console. |
+| `E2E_EMAIL` / `E2E_PASSWORD` | Dane logowania wykorzystywane w testach E2E. |
+
+#### Publiczne (klient) – wymagane
+| Nazwa | Opis |
+| --- | --- |
+| `NEXT_PUBLIC_BASE_URL` | Publiczny URL frontendu (np. `http://localhost:3000`). |
+| `NEXT_PUBLIC_WORDPRESS_URL` | Bazowy URL WordPress (bez `/wp-json`). |
+| `NEXT_PUBLIC_WC_URL` | Publiczny URL WooCommerce REST (`.../wp-json/wc/v3`). |
+
+#### Publiczne (klient) – opcjonalne
+| Nazwa | Opis |
+| --- | --- |
+| `NEXT_PUBLIC_GA4_ID` / `NEXT_PUBLIC_GTM_ID` / `NEXT_PUBLIC_GA_ID` | Integracje analityczne Google. |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | Klucz publiczny reCAPTCHA v3. |
+| `NEXT_PUBLIC_SENTRY_DSN` | DSN klienta Sentry. |
+| `NEXT_PUBLIC_FRONTEND_URL` | Bazowy URL używany w szablonach maili i CTA. |
+| `NEXT_PUBLIC_DEBUG` | `true` – logi debugowe i verbose mode. |
+| `NEXT_PUBLIC_PERF_LOGS` | `true` – dodatkowe logi metryk w konsoli. |
+| `NEXT_PUBLIC_AUTH_TOKEN_SS_KEY` / `NEXT_PUBLIC_REFRESH_TOKEN_LS_KEY` / `NEXT_PUBLIC_SESSION_TOKEN_LS_KEY` | Klucze storage (session/local) dla modułu auth. |
+| `NEXT_PUBLIC_AUTH_KEY_TIMEOUT` | Timeout tokenu auth (ms), domyślnie `300000`. |
+| `NEXT_PUBLIC_APP_VERSION` | Wersja aplikacji w telemetry/logach. |
+| `NEXT_PUBLIC_EXPERT_MONITORING` | `true` – odsłania widoki diagnostyczne. |
+| `NEXT_PUBLIC_API_URL` | Fallback URL w przykładach universal-filter. |
+| `NEXT_PUBLIC_WC_API_URL` / `NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY` / `NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET` | Zmienne do testów jednostkowych / środowisk mock. |
 
 > Pełna walidacja i domyślne wartości znajdują się w `apps/web/src/config/env.ts`.
 

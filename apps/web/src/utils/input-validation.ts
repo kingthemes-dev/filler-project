@@ -1,15 +1,18 @@
+import { sanitizeInput as sanitizePrimitive } from './api-helpers';
+import { CustomError, ERROR_CODES } from './error-handler';
+
 /**
  * Comprehensive input validation utilities
  */
 
-import { CustomError, ERROR_CODES } from './error-handler';
+type CustomValidator = (value: unknown) => boolean | string;
 
 export interface ValidationRule {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
   pattern?: RegExp;
-  custom?: (value: any) => boolean | string;
+  custom?: CustomValidator;
   sanitize?: boolean;
 }
 
@@ -20,10 +23,9 @@ export interface ValidationSchema {
 export interface ValidationResult {
   isValid: boolean;
   errors: Record<string, string>;
-  sanitizedData: any;
+  sanitizedData: Record<string, unknown>;
 }
 
-// Common validation patterns
 export const PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PHONE_PL: /^(\+48|48|0)?\d{9}$/,
@@ -31,10 +33,9 @@ export const PATTERNS = {
   POSTAL_CODE_PL: /^\d{2}-\d{3}$/,
   PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/,
   ALPHANUMERIC: /^[a-zA-Z0-9\s]+$/,
-  NO_HTML: /^[^<>]*$/
+  NO_HTML: /^[^<>]*$/,
 } as const;
 
-// Sanitization functions
 export function sanitizeString(input: string): string {
   if (typeof input !== 'string') return '';
   return input.trim().replace(/[<>]/g, '');
@@ -52,7 +53,6 @@ export function sanitizeNIP(input: string): string {
   return sanitizeString(input).replace(/[\s-]/g, '');
 }
 
-// Validation functions
 export function validateEmail(email: string): boolean {
   return PATTERNS.EMAIL.test(email);
 }
@@ -65,18 +65,12 @@ export function validatePhone(phone: string): boolean {
 export function validateNIP(nip: string): boolean {
   const clean = sanitizeNIP(nip);
   if (!PATTERNS.NIP.test(clean)) return false;
-  
-  // NIP checksum validation
+
   const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];
-  let sum = 0;
-  
-  for (let i = 0; i < 9; i++) {
-    sum += parseInt(clean[i]) * weights[i];
-  }
-  
+  const sum = weights.reduce((acc, weight, index) => acc + weight * parseInt(clean[index], 10), 0);
   const checksum = sum % 11;
-  const lastDigit = parseInt(clean[9]);
-  
+  const lastDigit = parseInt(clean[9], 10);
+
   return checksum === lastDigit;
 }
 
@@ -92,61 +86,60 @@ export function validateNoHTML(input: string): boolean {
   return PATTERNS.NO_HTML.test(input);
 }
 
-// Main validation function
-export function validateInput(data: any, schema: ValidationSchema): ValidationResult {
+export function validateInput(
+  data: Record<string, unknown>,
+  schema: ValidationSchema
+): ValidationResult {
   const errors: Record<string, string> = {};
-  const sanitizedData: any = {};
+  const sanitizedData: Record<string, unknown> = {};
 
   for (const [field, rules] of Object.entries(schema)) {
     const value = data[field];
-    
-    // Required validation
+
     if (rules.required && (!value || (typeof value === 'string' && !value.trim()))) {
       errors[field] = `Pole ${field} jest wymagane`;
       continue;
     }
 
-    // Skip validation if value is empty and not required
-    if (!value && !rules.required) {
+    if ((value === undefined || value === null || value === '') && !rules.required) {
       sanitizedData[field] = value;
       continue;
     }
 
-    let sanitizedValue = value;
+    let sanitizedValue: unknown = value;
 
-    // Sanitization
     if (rules.sanitize !== false) {
       if (typeof value === 'string') {
         sanitizedValue = sanitizeString(value);
+      } else {
+        sanitizedValue = sanitizePrimitive(value as string | number | boolean | null | undefined);
       }
     }
 
-    // Length validation
     if (typeof sanitizedValue === 'string') {
       if (rules.minLength && sanitizedValue.length < rules.minLength) {
         errors[field] = `Pole ${field} musi mieć co najmniej ${rules.minLength} znaków`;
         continue;
       }
-      
+
       if (rules.maxLength && sanitizedValue.length > rules.maxLength) {
         errors[field] = `Pole ${field} może mieć maksymalnie ${rules.maxLength} znaków`;
         continue;
       }
-    }
 
-    // Pattern validation
-    if (rules.pattern && typeof sanitizedValue === 'string') {
-      if (!rules.pattern.test(sanitizedValue)) {
+      if (rules.pattern && !rules.pattern.test(sanitizedValue)) {
         errors[field] = `Pole ${field} ma nieprawidłowy format`;
         continue;
       }
     }
 
-    // Custom validation
     if (rules.custom) {
       const customResult = rules.custom(sanitizedValue);
       if (customResult !== true) {
-        errors[field] = typeof customResult === 'string' ? customResult : `Pole ${field} jest nieprawidłowe`;
+        errors[field] =
+          typeof customResult === 'string'
+            ? customResult
+            : `Pole ${field} nie przeszło walidacji`;
         continue;
       }
     }
@@ -157,11 +150,10 @@ export function validateInput(data: any, schema: ValidationSchema): ValidationRe
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
-    sanitizedData
+    sanitizedData,
   };
 }
 
-// Predefined validation schemas
 export const VALIDATION_SCHEMAS = {
   REGISTRATION: {
     firstName: {
@@ -169,30 +161,33 @@ export const VALIDATION_SCHEMAS = {
       minLength: 2,
       maxLength: 50,
       pattern: /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$/,
-      sanitize: true
+      sanitize: true,
     },
     lastName: {
       required: true,
       minLength: 2,
       maxLength: 50,
       pattern: /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$/,
-      sanitize: true
+      sanitize: true,
     },
     email: {
       required: true,
-      custom: (value: string) => validateEmail(value) || 'Nieprawidłowy format email',
-      sanitize: true
+      custom: (value: unknown) =>
+        typeof value === 'string' && validateEmail(value) || 'Nieprawidłowy format email',
+      sanitize: true,
     },
     phone: {
       required: false,
-      custom: (value: string) => !value || validatePhone(value) || 'Nieprawidłowy format telefonu',
-      sanitize: true
+      custom: (value: unknown) =>
+        typeof value !== 'string' || value.length === 0 || validatePhone(value) || 'Nieprawidłowy format telefonu',
+      sanitize: true,
     },
     password: {
       required: true,
       minLength: 8,
-      custom: (value: string) => validatePassword(value) || 'Hasło musi zawierać co najmniej 8 znaków, w tym wielką literę, małą literę i cyfrę'
-    }
+      custom: (value: unknown) =>
+        typeof value === 'string' && validatePassword(value) || 'Hasło musi zawierać co najmniej 8 znaków, w tym wielką literę, małą literę i cyfrę',
+    },
   },
 
   PROFILE_UPDATE: {
@@ -201,68 +196,71 @@ export const VALIDATION_SCHEMAS = {
       minLength: 2,
       maxLength: 50,
       pattern: /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$/,
-      sanitize: true
+      sanitize: true,
     },
     lastName: {
       required: true,
       minLength: 2,
       maxLength: 50,
       pattern: /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+$/,
-      sanitize: true
+      sanitize: true,
     },
     company: {
       required: false,
       minLength: 2,
       maxLength: 100,
-      sanitize: true
+      sanitize: true,
     },
     nip: {
       required: false,
-      custom: (value: string) => !value || validateNIP(value) || 'Nieprawidłowy NIP',
-      sanitize: true
+      custom: (value: unknown) =>
+        typeof value !== 'string' || value.length === 0 || validateNIP(value) || 'Nieprawidłowy NIP',
+      sanitize: true,
     },
     phone: {
       required: false,
-      custom: (value: string) => !value || validatePhone(value) || 'Nieprawidłowy format telefonu',
-      sanitize: true
+      custom: (value: unknown) =>
+        typeof value !== 'string' || value.length === 0 || validatePhone(value) || 'Nieprawidłowy format telefonu',
+      sanitize: true,
     },
     billingAddress: {
       required: false,
       minLength: 5,
       maxLength: 200,
-      sanitize: true
+      sanitize: true,
     },
     billingCity: {
       required: false,
       minLength: 2,
       maxLength: 50,
-      sanitize: true
+      sanitize: true,
     },
     billingPostcode: {
       required: false,
-      custom: (value: string) => !value || validatePostalCode(value) || 'Nieprawidłowy kod pocztowy (format: 12-345)',
-      sanitize: true
-    }
+      custom: (value: unknown) =>
+        typeof value !== 'string' || value.length === 0 || validatePostalCode(value) || 'Nieprawidłowy kod pocztowy (format: 12-345)',
+      sanitize: true,
+    },
   },
 
   NEWSLETTER: {
     email: {
       required: true,
-      custom: (value: string) => validateEmail(value) || 'Nieprawidłowy format email',
-      sanitize: true
+      custom: (value: unknown) =>
+        typeof value === 'string' && validateEmail(value) || 'Nieprawidłowy format email',
+      sanitize: true,
     },
     consent: {
       required: true,
-      custom: (value: boolean) => value === true || 'Wymagana zgoda na przetwarzanie danych'
-    }
-  }
+      custom: (value: unknown) => value === true || 'Wymagana zgoda na przetwarzanie danych',
+    },
+  },
 } as const;
 
-// API validation middleware
 export function createValidationMiddleware(schema: ValidationSchema) {
-  return (data: any) => {
+  return (data: Record<string, unknown>) => {
     const result = validateInput(data, schema);
-    
+
     if (!result.isValid) {
       throw new CustomError(
         'Błędy walidacji',
@@ -271,7 +269,9 @@ export function createValidationMiddleware(schema: ValidationSchema) {
         result.errors
       );
     }
-    
+
     return result.sanitizedData;
   };
 }
+
+export default validateInput;

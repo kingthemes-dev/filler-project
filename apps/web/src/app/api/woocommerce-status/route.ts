@@ -84,7 +84,8 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     // Get products count
     let products = { total: 0, published: 0, featured: 0 };
     try {
-      const productsResponse = await fetch(`${wcUrl}/products?per_page=1`, {
+      // OPTIMIZATION: Use _fields to reduce payload (we only need headers, not data)
+      const productsResponse = await fetch(`${wcUrl}/products?per_page=1&_fields=id`, {
         headers: {
           'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
           'Accept': 'application/json',
@@ -109,7 +110,8 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     // Get orders count
     let orders = { total: 0, pending: 0, completed: 0 };
     try {
-      const ordersResponse = await fetch(`${wcUrl}/orders?per_page=1`, {
+      // OPTIMIZATION: Use _fields to reduce payload (we only need headers, not data)
+      const ordersResponse = await fetch(`${wcUrl}/orders?per_page=1&_fields=id`, {
         headers: {
           'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
           'Accept': 'application/json',
@@ -131,7 +133,8 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     // Get customers count
     let customers = { total: 0, active: 0 };
     try {
-      const customersResponse = await fetch(`${wcUrl}/customers?per_page=1`, {
+      // OPTIMIZATION: Use _fields to reduce payload (we only need headers, not data)
+      const customersResponse = await fetch(`${wcUrl}/customers?per_page=1&_fields=id`, {
         headers: {
           'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
           'Accept': 'application/json',
@@ -152,7 +155,8 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     // Get webhooks count
     let webhooks = { status: 'unknown', count: 0 };
     try {
-      const webhooksResponse = await fetch(`${wcUrl}/webhooks?per_page=1`, {
+      // OPTIMIZATION: Use _fields to reduce payload (we only need headers, not data)
+      const webhooksResponse = await fetch(`${wcUrl}/webhooks?per_page=1&_fields=id`, {
         headers: {
           'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
           'Accept': 'application/json',

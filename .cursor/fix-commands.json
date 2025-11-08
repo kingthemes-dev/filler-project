@@ -1,0 +1,23 @@
+[
+    {
+      "name": "🛠 Fix: API Errors & Responses",
+      "prompt": "Scan Next.js API routes and MU endpoints for inconsistent status codes, missing try/catch and error shapes. Normalize to { ok:boolean, data?, error? }. Add input validation and timeouts. Show diff."
+    },
+    {
+      "name": "⚡ Fix: Lighthouse Quick Wins",
+      "prompt": "Apply quick performance wins: preload critical fonts, optimize next/image sizes, defer non-critical scripts, verify revalidate values, remove unused CSS. Show diff and expected Lighthouse delta."
+    },
+    {
+      "name": "🧩 Fix: Zustand Re-renders",
+      "prompt": "Review Zustand stores/selectors. Add shallow selectors, memo, and split heavy global state. Convert eligible UI parts to RSC. Show diff."
+    },
+    {
+      "name": "🔒 Fix: Env & Secrets",
+      "prompt": "Audit env usage. Ensure no server-only secrets are in NEXT_PUBLIC_*. Add runtime checks, mask logs, and verify webhook secrets. Update README env table."
+    },
+    {
+      "name": "🧪 Fix: Tests Coverage",
+      "prompt": "Generate Playwright flows for PDP → cart → checkout and Jest tests for API utils. Add CI script and basic thresholds."
+    }
+  ]
+  

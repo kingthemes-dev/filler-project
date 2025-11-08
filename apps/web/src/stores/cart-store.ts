@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import { calculatePriceWithVAT } from '@/utils/format-price';
+import { logger } from '@/utils/logger';
 
 // Types
 export interface CartItem {
@@ -102,7 +103,11 @@ export const useCartStore = create<CartStore>()(
             // WooCommerce API sync skipped debug removed
           }
         } catch (error) {
-          console.error('❌ Error adding item to cart:', error);
+          logger.error('CartStore: Error adding item', {
+            error: error instanceof Error ? error.message : error,
+            itemId: item.id,
+            variantId: item.variant?.id,
+          });
           throw error;
         }
       },
@@ -131,7 +136,11 @@ export const useCartStore = create<CartStore>()(
             get().calculateTotal();
           }
         } catch (error) {
-          console.error('Error removing item from cart:', error);
+          logger.warn('CartStore: Error removing item, falling back to local removal', {
+            error: error instanceof Error ? error.message : error,
+            itemId,
+            variantId,
+          });
           // Fallback to local state only
           const { items } = get();
           const filteredItems = items.filter(
@@ -167,7 +176,11 @@ export const useCartStore = create<CartStore>()(
           set({ items: updatedItems });
           get().calculateTotal();
         } catch (error) {
-          console.error('Error updating item quantity:', error);
+          logger.warn('CartStore: Error updating quantity, falling back to local update', {
+            error: error instanceof Error ? error.message : error,
+            itemId,
+            variantId,
+          });
           // Fallback to local state only
           const { items } = get();
           const updatedItems = items.map((item) => {
@@ -229,8 +242,10 @@ export const useCartStore = create<CartStore>()(
       onRehydrateStorage: () => (state) => {
         // Recalculate total when loading from localStorage
         if (state?.items && state.items.length > 0) {
-          // Recalculating total from localStorage debug removed
           state.calculateTotal();
+          logger.debug('CartStore: Recalculated totals after hydration', {
+            itemCount: state.items.length,
+          });
         }
       },
     }

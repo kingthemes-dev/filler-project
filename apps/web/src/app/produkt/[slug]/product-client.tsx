@@ -12,9 +12,15 @@ import ReviewsList from '@/components/ui/reviews-list';
 // removed unused Image import
 import ReviewForm from '@/components/ui/review-form';
 import Link from 'next/link';
-import SimilarProducts from '@/components/ui/similar-products';
+import dynamic from 'next/dynamic';
+
+// Lazy load SimilarProducts to avoid blocking initial render
+const SimilarProducts = dynamic(() => import('@/components/ui/similar-products'), {
+  ssr: false,
+  loading: () => <div className="h-64 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div></div>
+});
 import { WooProduct } from '@/types/woocommerce';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Script from 'next/script';
 import { CLSOptimizer, ImageCLSOptimizer } from '@/components/ui/cls-optimizer';
 import { usePerformanceMonitoring } from '@/hooks/use-performance-optimization';
@@ -24,6 +30,7 @@ type ProductClientProps = { slug: string };
 export default function ProductClient({ slug }: ProductClientProps) {
   const { addItem, openCart } = useCartStore();
   const { toggleFavorite, isFavorite } = useFavoritesStore();
+  const queryClient = useQueryClient();
   
   // Performance monitoring
   usePerformanceMonitoring();
@@ -69,8 +76,8 @@ export default function ProductClient({ slug }: ProductClientProps) {
     return {
       "@context": "https://schema.org",
       "@type": "Product",
-      "name": product.name,
-      "description": product.short_description || product.description?.replace(/<[^>]*>/g, ''),
+      "name": product.name || 'Produkt',
+      "description": product.short_description || product.description?.replace(/<[^>]*>/g, '') || '',
       "image": product.images?.map(img => img.src) || [],
       "brand": {
         "@type": "Brand",
@@ -78,10 +85,10 @@ export default function ProductClient({ slug }: ProductClientProps) {
       },
       "offers": {
         "@type": "Offer",
-        "price": product.price,
+        "price": product.price || '0',
         "priceCurrency": "PLN",
         "availability": product.stock_status === 'instock' ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-        "url": `${process.env.NEXT_PUBLIC_BASE_URL}/produkt/${product.slug}`
+        "url": `${process.env.NEXT_PUBLIC_BASE_URL}/produkt/${product.slug || slug}`
       },
       "aggregateRating": reviews.length > 0 ? {
         "@type": "AggregateRating",
@@ -106,9 +113,8 @@ export default function ProductClient({ slug }: ProductClientProps) {
 
   // Breadcrumb JSON-LD
   const breadcrumbJsonLd = useMemo(() => {
-    if (!productQuery.data) return null;
-
     const product = productQuery.data;
+    if (!product) return null;
     const categories = product.categories || [];
     
     return {
@@ -136,8 +142,8 @@ export default function ProductClient({ slug }: ProductClientProps) {
         {
           "@type": "ListItem",
           "position": 3 + categories.length,
-          "name": product.name,
-          "item": `${process.env.NEXT_PUBLIC_BASE_URL}/produkt/${product.slug}`
+          "name": product.name || 'Produkt',
+          "item": `${process.env.NEXT_PUBLIC_BASE_URL}/produkt/${product.slug || slug}`
         }
       ]
     };
@@ -148,17 +154,20 @@ export default function ProductClient({ slug }: ProductClientProps) {
   const product = productQuery.data;
   const variations = variationsQuery.data?.variations || [];
 
-  const isLoading = productQuery.isLoading;
+  const isLoading = productQuery.isLoading || productQuery.isFetching;
+  const isError = productQuery.isError;
+  const hasTriedFetching = productQuery.isFetched || productQuery.isFetching;
 
   const isOnSale = useMemo(() => {
     if (!product) return false;
-    const sale = product.on_sale && parseFloat(product.sale_price) < parseFloat(product.regular_price);
+    const sale = product?.on_sale && product?.sale_price && product?.regular_price && parseFloat(product.sale_price) < parseFloat(product.regular_price);
     return Boolean(sale);
   }, [product]);
 
   const discount = useMemo(() => {
     if (!product) return 0;
     if (!isOnSale) return 0;
+    if (!product?.regular_price || !product?.sale_price) return 0;
     return Math.round(((parseFloat(product.regular_price) - parseFloat(product.sale_price)) / parseFloat(product.regular_price)) * 100);
   }, [product, isOnSale]);
 
@@ -166,9 +175,9 @@ export default function ProductClient({ slug }: ProductClientProps) {
 
   const handleAddToCart = () => {
     if (!product) return;
-    let finalPrice = product.price;
-    let variationId = product.id;
-    let variationName = product.name;
+    let finalPrice = product?.price || '0';
+    let variationId = product?.id || 0;
+    let variationName = product?.name || 'Produkt';
 
     if (selectedCapacity && variations.length > 0) {
       const variation = variations.find(v => (v.attributes || []).some(a => (a.slug?.includes('pojemnosc') || a.slug?.includes('pojemność')) && a.option === selectedCapacity));
@@ -183,9 +192,9 @@ export default function ProductClient({ slug }: ProductClientProps) {
       id: variationId,
       name: variationName,
       price: parseFloat(finalPrice),
-      regular_price: parseFloat(product.regular_price),
-      sale_price: product.sale_price ? parseFloat(product.sale_price) : undefined,
-      image: product.images?.[0]?.src,
+      regular_price: parseFloat(product?.regular_price || '0'),
+      sale_price: product?.sale_price ? parseFloat(product.sale_price) : undefined,
+      image: product?.images?.[0]?.src,
       permalink: `/produkt/${slug}`,
       variant: selectedCapacity ? { id: 0, name: 'Pojemność', value: selectedCapacity } : undefined,
     };
@@ -194,14 +203,18 @@ export default function ProductClient({ slug }: ProductClientProps) {
     openCart();
   };
 
-  if (isLoading) {
+  // Show loading state while fetching (give it at least 3 seconds before showing error)
+  if (isLoading || (!hasTriedFetching && !product)) {
     return (
-      <div className="min-h-screen bg-white py-8 pb-16" data-testid="product-page">
+      <div className="bg-white py-8 pb-16" data-testid="product-page">
         <PageContainer>
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
               <p className="text-gray-600">Ładowanie produktu...</p>
+              {process.env.NODE_ENV === 'development' && (
+                <p className="text-xs text-gray-400 mt-2">Slug: {slug}</p>
+              )}
             </div>
           </div>
         </PageContainer>
@@ -209,14 +222,18 @@ export default function ProductClient({ slug }: ProductClientProps) {
     );
   }
 
-  if (!product) {
+  // Only show "not found" if we've tried fetching and got no product
+  if (!product && hasTriedFetching && !isLoading) {
     return (
-      <div className="min-h-screen bg-white py-8 pb-16" data-testid="product-page">
+      <div className="bg-white py-8 pb-16" data-testid="product-page">
         <PageContainer>
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-4">Produkt nie znaleziony</h1>
               <p className="text-gray-600 mb-4">Szukany produkt nie został znaleziony w naszej hurtowni.</p>
+              {process.env.NODE_ENV === 'development' && (
+                <p className="text-xs text-gray-400 mb-2">Slug: {slug}</p>
+              )}
               <Link href="/sklep" className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors">
                 Wróć do sklepu
               </Link>
@@ -228,7 +245,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-white py-8 pb-16" data-testid="product-page">
+    <div className="bg-white py-8 pb-16" data-testid="product-page">
       <PageContainer>
         <Script id="jsonld-product" type="application/ld+json" strategy="afterInteractive">
           {JSON.stringify(jsonLd)}
@@ -244,7 +261,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
             <span>/</span>
             <Link href="/sklep" className="hover:text-gray-900 transition-colors">Sklep</Link>
             <span>/</span>
-            <span className="text-gray-900 font-medium">{product.name}</span>
+            <span className="text-gray-900 font-medium">{product?.name || 'Produkt'}</span>
           </nav>
         </div>
 
@@ -254,10 +271,10 @@ export default function ProductClient({ slug }: ProductClientProps) {
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="space-y-4">
               {/* Main Image */}
               <CLSOptimizer minHeight={500} minWidth={500} className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm relative">
-                {product.images?.[activeImageIndex]?.src ? (
+                {product?.images?.[activeImageIndex]?.src ? (
                   <ImageCLSOptimizer
-                    src={product.images[activeImageIndex].src}
-                    alt={product.name}
+                    src={product?.images?.[activeImageIndex]?.src || ''}
+                    alt={product?.name || 'Produkt'}
                     width={500}
                     height={500}
                     className="w-full h-full object-cover"
@@ -272,9 +289,9 @@ export default function ProductClient({ slug }: ProductClientProps) {
               </CLSOptimizer>
 
               {/* Thumbnails - only show if more than 1 image, positioned under main image */}
-              {(product.images || []).length > 1 && (
+              {(product?.images || []).length > 1 && (
                 <div className="flex gap-2 justify-center">
-                  {(product.images || []).map((image: { src: string }, index: number) => (
+                  {(product?.images || []).map((image: { src: string }, index: number) => (
                     <button 
                       key={index} 
                       onClick={() => setActiveImageIndex(index)} 
@@ -283,7 +300,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
                       {image?.src ? (
                         <ImageCLSOptimizer
                           src={image.src}
-                          alt={`${product.name} ${index + 1}`}
+                          alt={`${product?.name || 'Produkt'} ${index + 1}`}
                           width={64}
                           height={64}
                           className="w-full h-full object-cover"
@@ -303,18 +320,18 @@ export default function ProductClient({ slug }: ProductClientProps) {
             {/* Info */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="space-y-6">
               <div className="space-y-4">
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">{product.name}</h1>
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">{product?.name || 'Produkt'}</h1>
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-1">
                     {Array.from({ length: 5 }, (_, i) => (
-                      <Star key={i} className={`w-5 h-5 ${product.average_rating && parseFloat(product.average_rating) > 0 && i < Math.floor(parseFloat(product.average_rating)) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                      <Star key={i} className={`w-5 h-5 ${product?.average_rating && parseFloat(product.average_rating) > 0 && i < Math.floor(parseFloat(product.average_rating)) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
                     ))}
                   </div>
                   <div className="flex items-center space-x-2">
-                    {product.average_rating && parseFloat(product.average_rating) > 0 ? (
+                    {product?.average_rating && parseFloat(product.average_rating) > 0 ? (
                       <>
                         <span className="text-lg font-semibold text-gray-900">{parseFloat(product.average_rating).toFixed(1)}</span>
-                        <span className="text-sm text-gray-600">({product.rating_count} {product.rating_count === 1 ? 'opinia' : 'opinii'})</span>
+                        <span className="text-sm text-gray-600">({product?.rating_count || 0} {product?.rating_count === 1 ? 'opinia' : 'opinii'})</span>
                       </>
                     ) : (
                       <span className="text-sm text-gray-500">Brak opinii</span>
@@ -324,20 +341,20 @@ export default function ProductClient({ slug }: ProductClientProps) {
 
                 <div className="flex items-start space-x-2 flex-wrap gap-y-1">
                   {isOnSale && (<span className="bg-red-100 text-red-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">-{discount}%</span>)}
-                  {product.featured && (<span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Polecany</span>)}
-                  {product.stock_status === 'instock' ? (
+                  {product?.featured && (<span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Polecany</span>)}
+                  {product?.stock_status === 'instock' ? (
                     <>
                       <span className="bg-green-100 text-green-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">W magazynie</span>
                       <span className="bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Wysyłka w 24h</span>
                     </>
-                  ) : product.stock_status === 'onbackorder' ? (
+                  ) : product?.stock_status === 'onbackorder' ? (
                     <span className="bg-yellow-100 text-yellow-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Na zamówienie</span>
                   ) : (
                     <span className="bg-gray-100 text-gray-800 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">Brak w magazynie</span>
                   )}
                 </div>
 
-                {product.attributes && product.attributes.length > 0 && (
+                {product?.attributes && product.attributes.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
                     {product.attributes.map((attr: { name: string; options: string[] }, attrIndex: number) => (
                       Array.isArray(attr.options) ? attr.options.map((option: string, optionIndex: number) => (
@@ -352,17 +369,17 @@ export default function ProductClient({ slug }: ProductClientProps) {
                 <div className="space-y-2">
                   {isOnSale ? (
                     <div className="flex items-center space-x-3">
-                      <span className="text-3xl font-bold text-red-600">{formatPrice(parseFloat(product.sale_price))}</span>
-                      <span className="text-xl text-gray-500 line-through">{formatPrice(parseFloat(product.regular_price))}</span>
+                      <span className="text-3xl font-bold text-red-600">{formatPrice(parseFloat(product?.sale_price || '0'))}</span>
+                      <span className="text-xl text-gray-500 line-through">{formatPrice(parseFloat(product?.regular_price || '0'))}</span>
                     </div>
                   ) : (
-                    <span className="text-3xl font-bold text-gray-900">{formatPrice(parseFloat(product.price))}</span>
+                    <span className="text-3xl font-bold text-gray-900">{formatPrice(parseFloat(product?.price || '0'))}</span>
                   )}
                 </div>
               )}
 
               {/* Short Description */}
-              {product.short_description && (
+              {product?.short_description && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="text-gray-700 text-sm leading-relaxed">
                     {product.short_description.replace(/<[^>]*>/g, '')}
@@ -379,15 +396,15 @@ export default function ProductClient({ slug }: ProductClientProps) {
                 </div>
 
                 <div className="flex space-x-3 flex-1">
-                  <button onClick={handleAddToCart} disabled={product.stock_status === 'outofstock' || product.stock_status === 'onbackorder' || (variations.length > 0 && !selectedCapacity)} className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white h-[48px] px-4 rounded-lg text-sm font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2">
+                  <button onClick={handleAddToCart} disabled={!product || product.stock_status === 'outofstock' || product.stock_status === 'onbackorder' || (variations.length > 0 && !selectedCapacity)} className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white h-[48px] px-4 rounded-lg text-sm font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2">
                     <ShoppingCart className="w-4 h-4" />
                     <span className="whitespace-nowrap">
-                      {product.stock_status === 'outofstock' ? 'Brak w magazynie' : product.stock_status === 'onbackorder' ? 'Na zamówienie' : (variations.length > 0 && !selectedCapacity) ? 'Wybierz pojemność' : 'Dodaj do koszyka'}
+                      {!product ? 'Ładowanie...' : product.stock_status === 'outofstock' ? 'Brak w magazynie' : product.stock_status === 'onbackorder' ? 'Na zamówienie' : (variations.length > 0 && !selectedCapacity) ? 'Wybierz pojemność' : 'Dodaj do koszyka'}
                     </span>
                   </button>
 
-                  <button onClick={() => toggleFavorite(product)} className={`h-[48px] w-[48px] border border-gray-300 transition-colors rounded-lg flex items-center justify-center ${isFavorite(product.id) ? 'text-red-500 border-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}>
-                    <Heart className={`w-5 h-5 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
+                  <button onClick={() => product && toggleFavorite(product)} disabled={!product} className={`h-[48px] w-[48px] border border-gray-300 transition-colors rounded-lg flex items-center justify-center ${product && isFavorite(product.id) ? 'text-red-500 border-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}>
+                    <Heart className={`w-5 h-5 ${product && isFavorite(product.id) ? 'fill-current' : ''}`} />
                   </button>
                 </div>
               </div>
@@ -406,48 +423,66 @@ export default function ProductClient({ slug }: ProductClientProps) {
               <div className="p-4">
                 <nav className="flex space-x-2" role="tablist" aria-label="Zakładki produktu">
                   <button onClick={() => setActiveTab('description')} role="tab" aria-selected={activeTab === 'description'} aria-controls="tab-description" id="tab-description-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'description' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 ' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Opis produktu</button>
-                  <button onClick={() => setActiveTab('reviews')} role="tab" aria-selected={activeTab === 'reviews'} aria-controls="tab-reviews" id="tab-reviews-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'reviews' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 ' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Opinie ({product.rating_count || 0})</button>
+                  <button onClick={() => setActiveTab('reviews')} role="tab" aria-selected={activeTab === 'reviews'} aria-controls="tab-reviews" id="tab-reviews-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'reviews' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 ' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Opinie ({reviewsQuery.data?.reviews?.length || 0})</button>
                   <button onClick={() => setActiveTab('shipping')} role="tab" aria-selected={activeTab === 'shipping'} aria-controls="tab-shipping" id="tab-shipping-trigger" className={`px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg ${activeTab === 'shipping' ? 'bg-gradient-to-r from-gray-800 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 ' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}>Dostawa i zwroty</button>
                 </nav>
               </div>
 
               <div className="p-8">
                 {activeTab === 'description' && (
-                  <div role="tabpanel" id="tab-description" aria-labelledby="tab-description-trigger">
-                    <div className="text-gray-700 content-text leading-relaxed" dangerouslySetInnerHTML={{ __html: product.description }} />
+                    <div role="tabpanel" id="tab-description" aria-labelledby="tab-description-trigger">
+                    <div className="text-gray-700 content-text leading-relaxed" dangerouslySetInnerHTML={{ __html: product?.description || '' }} />
                   </div>
                 )}
 
                 {activeTab === 'reviews' && (
                   <div className="space-y-6" role="tabpanel" id="tab-reviews" aria-labelledby="tab-reviews-trigger">
-                    {product.average_rating && parseFloat(product.average_rating) > 0 ? (
-                      <div className="flex items-center space-x-6">
-                        <div className="text-center">
-                          <div className="text-4xl font-bold text-gray-900">{parseFloat(product.average_rating).toFixed(1)}</div>
-                          <div className="flex items-center justify-center space-x-1 mt-1">
-                            {Array.from({ length: 5 }, (_, i) => (<Star key={i} className={`w-5 h-5 ${i < Math.floor(parseFloat(product.average_rating)) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />))}
+                    {(() => {
+                      const reviews = reviewsQuery.data?.reviews ?? [];
+                      const reviewsCount = reviews.length;
+                      const avgRating = reviewsCount > 0
+                        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount
+                        : 0;
+                      
+                      return avgRating > 0 ? (
+                        <div className="flex items-center space-x-6">
+                          <div className="text-center">
+                            <div className="text-4xl font-bold text-gray-900">{avgRating.toFixed(1)}</div>
+                            <div className="flex items-center justify-center space-x-1 mt-1">
+                              {Array.from({ length: 5 }, (_, i) => (<Star key={i} className={`w-5 h-5 ${i < Math.floor(avgRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />))}
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">{reviewsCount} {reviewsCount === 1 ? 'opinia' : 'opinii'}</div>
                           </div>
-                          <div className="text-sm text-gray-600 mt-1">{product.rating_count} {product.rating_count === 1 ? 'opinia' : 'opinii'}</div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Star className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">Brak opinii</h3>
-                        <p className="text-gray-600">Ten produkt nie ma jeszcze żadnych opinii.</p>
-                      </div>
-                    )}
+                      ) : reviewsCount === 0 ? (
+                        <div className="text-center py-8">
+                          <Star className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">Brak opinii</h3>
+                          <p className="text-gray-600">Ten produkt nie ma jeszcze żadnych opinii.</p>
+                        </div>
+                      ) : null;
+                    })()}
 
-                    {product.rating_count > 0 && (
+                    {product?.id && (
                       <div className="space-y-4">
                         <h4 className="text-lg font-semibold text-gray-900">Opinie klientów</h4>
                         <ReviewsList productId={product.id} />
                       </div>
                     )}
 
-                    <div className="border-t border-gray-200 pt-6">
-                      <ReviewForm productId={product.id} onReviewSubmitted={() => window.location.reload()} />
-                    </div>
+                    {product?.id && (
+                      <div className="border-t border-gray-200 pt-6">
+                        <ReviewForm 
+                          productId={product.id} 
+                          onReviewSubmitted={() => {
+                            // Invalidate and refetch reviews query
+                            queryClient.invalidateQueries({ queryKey: ['product', slug, 'reviews'] });
+                            // Also invalidate product query to refresh rating_count
+                            queryClient.invalidateQueries({ queryKey: ['product', slug] });
+                          }} 
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -476,8 +511,8 @@ export default function ProductClient({ slug }: ProductClientProps) {
             </div>
           </motion.div>
 
-          {product && (
-            <SimilarProducts productId={product.id} crossSellIds={product.cross_sell_ids || []} relatedIds={product.related_ids || []} categoryId={product.categories?.[0]?.id || 0} limit={4} />
+          {product?.id && (
+            <SimilarProducts productId={product.id} crossSellIds={product?.cross_sell_ids || []} relatedIds={product?.related_ids || []} categoryId={product?.categories?.[0]?.id || 0} limit={4} />
           )}
         </div>
       </PageContainer>

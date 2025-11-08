@@ -27,8 +27,8 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
         let products: WooProduct[] = [];
         // PRO: Don't require images - products can have placeholder images
         const isValid = (p: any) => (
-          p && p.price && String(p.price).trim() !== '' &&
-          p.name && p.name !== 'Produkt'
+          p && p.id && p.price && String(p.price).trim() !== '' &&
+          p.name && p.name !== 'Produkt' && p.name.trim() !== ''
         );
 
         // PERFORMANCE FIX: Batch fetch multiple products in single API call
@@ -38,82 +38,276 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
           ...(relatedIds || []).slice(0, limit)
         ])).slice(0, limit);
 
+        console.log('🔍 [SimilarProducts] Starting fetch:', {
+          productId,
+          crossSellIds: crossSellIds?.length || 0,
+          relatedIds: relatedIds?.length || 0,
+          categoryId,
+          allIds: allIds.length
+        });
+
         if (allIds.length > 0) {
-          console.log('🚀 Batch fetching similar products:', allIds);
+          console.log('🚀 [SimilarProducts] Batch fetching similar products:', allIds);
           try {
-            // Use batch endpoint if available, otherwise fall back to individual calls
-            const batchResponse = await fetch(`/api/woocommerce?endpoint=products&include=${allIds.join(',')}&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes`);
+            // Try batch endpoint with include parameter
+            const batchResponse = await fetch(`/api/woocommerce?endpoint=products&include=${allIds.join(',')}&per_page=${allIds.length}&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes`, {
+              headers: { Accept: 'application/json' },
+              cache: 'no-store'
+            });
             
             if (batchResponse.ok) {
               const batchData = await batchResponse.json();
-              if (Array.isArray(batchData)) {
+              if (Array.isArray(batchData) && batchData.length > 0) {
                 products = batchData.filter(isValid);
-                console.log('✅ Batch fetch successful:', products.length, 'products');
+                console.log('✅ [SimilarProducts] Batch fetch successful:', products.length, 'products');
+              } else {
+                console.log('⚠️ [SimilarProducts] Batch fetch returned empty array, trying individual calls');
+                throw new Error('Batch fetch returned empty array');
               }
             } else {
-              throw new Error('Batch fetch failed, falling back to individual calls');
+              console.log('⚠️ [SimilarProducts] Batch fetch failed with status:', batchResponse.status);
+              throw new Error(`Batch fetch failed: ${batchResponse.status}`);
             }
           } catch (error) {
-            console.log('⚠️ Batch fetch failed, using individual calls:', error);
-            // Fallback to individual calls
-            const individualProducts = await Promise.all(
-              allIds.map(async (id) => {
-                try {
-                  const product = await wooCommerceService.getProduct(id);
-                  return product && isValid(product) ? product : null;
-                } catch (error) {
-                  console.error(`Error fetching product ${id}:`, error);
-                  return null;
+            console.log('⚠️ [SimilarProducts] Batch fetch failed, trying Store API fallback:', error);
+            // Try Store API batch fetch
+            try {
+              const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL;
+              if (wpUrl) {
+                const storeBatchUrl = `${wpUrl}/wp-json/wc/store/v1/products?include=${allIds.join(',')}`;
+                const storeBatchResponse = await fetch(storeBatchUrl, {
+                  headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
+                  cache: 'no-store',
+                  signal: AbortSignal.timeout(5000)
+                });
+                
+                if (storeBatchResponse.ok) {
+                  const storeData = await storeBatchResponse.json();
+                  if (Array.isArray(storeData) && storeData.length > 0) {
+                    // Normalize Store API response to WooProduct format
+                    const normalized = storeData.map((p: any) => ({
+                      id: p.id,
+                      name: p.name,
+                      slug: p.slug,
+                      price: p.prices?.price || p.price || '0',
+                      regular_price: p.prices?.regular_price || p.regular_price || '0',
+                      sale_price: p.prices?.sale_price || p.sale_price || '',
+                      images: p.images || [],
+                      stock_status: p.stock_status || 'instock',
+                      attributes: p.attributes || [],
+                      categories: p.categories || [],
+                      average_rating: p.average_rating || 0,
+                      rating_count: p.rating_count || 0,
+                      related_ids: p.related_ids || [],
+                      cross_sell_ids: p.cross_sell_ids || [],
+                      sku: p.sku || null,
+                      on_sale: Boolean(p.on_sale),
+                      description: p.description || null,
+                      short_description: p.short_description || null,
+                      featured: p.featured || false,
+                    }));
+                    products = normalized.filter(isValid) as WooProduct[];
+                    console.log('✅ [SimilarProducts] Store API batch fetch successful:', products.length, 'products');
+                  }
                 }
-              })
-            );
-            products = individualProducts.filter(Boolean) as WooProduct[];
+              }
+            } catch (storeError) {
+              console.log('⚠️ [SimilarProducts] Store API batch failed, using individual calls:', storeError);
+            }
+            
+            // Final fallback to individual calls
+            if (products.length === 0) {
+              console.log('🔄 [SimilarProducts] Using individual calls as final fallback');
+              const individualProducts = await Promise.allSettled(
+                allIds.map(async (id) => {
+                  try {
+                    const product = await wooCommerceService.getProduct(id);
+                    return product && isValid(product) ? product : null;
+                  } catch (error) {
+                    console.error(`❌ [SimilarProducts] Error fetching product ${id}:`, error);
+                    return null;
+                  }
+                })
+              );
+              products = individualProducts
+                .filter((result): result is PromiseFulfilledResult<WooProduct> => 
+                  result.status === 'fulfilled' && result.value !== null
+                )
+                .map(result => result.value);
+              console.log('✅ [SimilarProducts] Individual calls completed:', products.length, 'products');
+            }
           }
         }
 
         // Priority 3: Fallback to category products - PRO Architecture
         if (products.length < limit && categoryId) {
-          console.log('📂 Fetching category products as fallback from PRO API');
+          console.log('📂 [SimilarProducts] Fetching category products as fallback, categoryId:', categoryId);
           try {
+            // Try direct WooCommerce API for category products
             const categoryResponse = await fetch(
-              `/api/woocommerce?endpoint=shop&category=${categoryId}&per_page=${limit - products.length + 1}&orderby=date&order=desc&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes`
+              `/api/woocommerce?endpoint=products&category=${categoryId}&per_page=${limit - products.length + 1}&orderby=date&order=desc&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes`,
+              { headers: { Accept: 'application/json' }, cache: 'no-store' }
             );
             
             if (categoryResponse.ok) {
               const categoryData = await categoryResponse.json();
-              if (categoryData.success && categoryData.products) {
-                const filtered = categoryData.products
+              // WooCommerce API returns array directly or wrapped in success object
+              const productsArray = Array.isArray(categoryData) 
+                ? categoryData 
+                : (categoryData.products || categoryData.data || []);
+              
+              if (Array.isArray(productsArray) && productsArray.length > 0) {
+                const filtered = productsArray
                   .filter((product: WooProduct) => product.id !== productId && isValid(product))
                   .slice(0, limit - products.length);
                 products = [...products, ...filtered];
-                console.log('✅ Category fallback successful:', filtered.length, 'products');
+                console.log('✅ [SimilarProducts] Category fallback successful:', filtered.length, 'products');
+              }
+            }
+            
+            // If WooCommerce API failed (502/503/504), try Store API directly
+            if (!categoryResponse.ok && (categoryResponse.status === 502 || categoryResponse.status === 503 || categoryResponse.status === 504)) {
+              console.log('🔄 [SimilarProducts] WooCommerce API failed, trying Store API for category:', categoryId);
+              try {
+                const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL;
+                if (wpUrl) {
+                  // Store API doesn't support category filter directly, so we fetch all and filter client-side
+                  const storeUrl = `${wpUrl}/wp-json/wc/store/v1/products?per_page=${(limit - products.length + 1) * 2}`;
+                  const storeResp = await fetch(storeUrl, {
+                    headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
+                    cache: 'no-store',
+                    signal: AbortSignal.timeout(5000)
+                  });
+                  
+                  if (storeResp.ok) {
+                    const storeData = await storeResp.json();
+                    if (Array.isArray(storeData) && storeData.length > 0) {
+                      // Filter by category and normalize
+                      const categoryProducts = storeData
+                        .filter((p: any) => 
+                          p.categories && 
+                          Array.isArray(p.categories) && 
+                          p.categories.some((cat: any) => cat.id === categoryId) &&
+                          p.id !== productId
+                        )
+                        .slice(0, limit - products.length)
+                        .map((p: any) => ({
+                          id: p.id,
+                          name: p.name,
+                          slug: p.slug,
+                          price: p.prices?.price || p.price || '0',
+                          regular_price: p.prices?.regular_price || p.regular_price || '0',
+                          sale_price: p.prices?.sale_price || p.sale_price || '',
+                          images: p.images || [],
+                          stock_status: p.stock_status || 'instock',
+                          attributes: p.attributes || [],
+                          categories: p.categories || [],
+                          average_rating: p.average_rating || 0,
+                          rating_count: p.rating_count || 0,
+                          related_ids: p.related_ids || [],
+                          cross_sell_ids: p.cross_sell_ids || [],
+                          sku: p.sku || null,
+                          on_sale: Boolean(p.on_sale),
+                          description: p.description || null,
+                          short_description: p.short_description || null,
+                          featured: p.featured || false,
+                        }));
+                      
+                      const validProducts = categoryProducts.filter(isValid) as WooProduct[];
+                      products = [...products, ...validProducts];
+                      console.log('✅ [SimilarProducts] Store API category fallback successful:', validProducts.length, 'products');
+                    }
+                  }
+                }
+              } catch (storeError) {
+                console.log('⚠️ [SimilarProducts] Store API category fallback failed:', storeError);
               }
             }
           } catch (error) {
-            console.error('❌ Category fallback error:', error);
+            console.error('❌ [SimilarProducts] Category fallback error:', error);
           }
         }
 
         // Priority 4: Final fallback to latest store products - PRO Architecture
         if (products.length < limit) {
-          console.log('🧯 Fetching latest products as final fallback from PRO API');
+          console.log('🧯 [SimilarProducts] Fetching latest products as final fallback');
           try {
+            // Try direct WooCommerce API for latest products
             const latestResponse = await fetch(
-              `/api/woocommerce?endpoint=shop&per_page=${limit - products.length + 2}&orderby=date&order=desc&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes`
+              `/api/woocommerce?endpoint=products&per_page=${limit - products.length + 2}&orderby=date&order=desc&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,images,stock_status,average_rating,rating_count,categories,attributes`,
+              { headers: { Accept: 'application/json' }, cache: 'no-store' }
             );
             
             if (latestResponse.ok) {
               const latestData = await latestResponse.json();
-              if (latestData.success && latestData.products) {
-                const filtered = latestData.products
+              // WooCommerce API returns array directly or wrapped in success object
+              const productsArray = Array.isArray(latestData) 
+                ? latestData 
+                : (latestData.products || latestData.data || []);
+              
+              if (Array.isArray(productsArray) && productsArray.length > 0) {
+                const filtered = productsArray
                   .filter((p: WooProduct) => p.id !== productId && isValid(p))
                   .slice(0, limit - products.length);
                 products = [...products, ...filtered];
-                console.log('✅ Latest fallback successful:', filtered.length, 'products');
+                console.log('✅ [SimilarProducts] Latest fallback successful:', filtered.length, 'products');
+              }
+            }
+            
+            // If WooCommerce API failed (502/503/504), try Store API directly
+            if (!latestResponse.ok && (latestResponse.status === 502 || latestResponse.status === 503 || latestResponse.status === 504)) {
+              console.log('🔄 [SimilarProducts] WooCommerce API failed, trying Store API for latest products');
+              try {
+                const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL;
+                if (wpUrl) {
+                  const storeUrl = `${wpUrl}/wp-json/wc/store/v1/products?per_page=${limit - products.length + 2}`;
+                  const storeResp = await fetch(storeUrl, {
+                    headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
+                    cache: 'no-store',
+                    signal: AbortSignal.timeout(5000)
+                  });
+                  
+                  if (storeResp.ok) {
+                    const storeData = await storeResp.json();
+                    if (Array.isArray(storeData) && storeData.length > 0) {
+                      // Normalize Store API response to WooProduct format
+                      const normalized = storeData
+                        .filter((p: any) => p.id !== productId)
+                        .slice(0, limit - products.length)
+                        .map((p: any) => ({
+                          id: p.id,
+                          name: p.name,
+                          slug: p.slug,
+                          price: p.prices?.price || p.price || '0',
+                          regular_price: p.prices?.regular_price || p.regular_price || '0',
+                          sale_price: p.prices?.sale_price || p.sale_price || '',
+                          images: p.images || [],
+                          stock_status: p.stock_status || 'instock',
+                          attributes: p.attributes || [],
+                          categories: p.categories || [],
+                          average_rating: p.average_rating || 0,
+                          rating_count: p.rating_count || 0,
+                          related_ids: p.related_ids || [],
+                          cross_sell_ids: p.cross_sell_ids || [],
+                          sku: p.sku || null,
+                          on_sale: Boolean(p.on_sale),
+                          description: p.description || null,
+                          short_description: p.short_description || null,
+                          featured: p.featured || false,
+                        }));
+                      
+                      const validProducts = normalized.filter(isValid) as WooProduct[];
+                      products = [...products, ...validProducts];
+                      console.log('✅ [SimilarProducts] Store API latest fallback successful:', validProducts.length, 'products');
+                    }
+                  }
+                }
+              } catch (storeError) {
+                console.log('⚠️ [SimilarProducts] Store API latest fallback failed:', storeError);
               }
             }
           } catch (error) {
-            console.error('❌ Latest fallback error:', error);
+            console.error('❌ [SimilarProducts] Latest fallback error:', error);
           }
         }
 
@@ -121,9 +315,11 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
         const uniqueProducts = products.filter((product, index, self) => 
           index === self.findIndex(p => p.id === product.id)
         );
-        setSimilarProducts(uniqueProducts.slice(0, limit));
+        const finalProducts = uniqueProducts.slice(0, limit);
+        console.log('🎯 [SimilarProducts] Final products count:', finalProducts.length, 'out of', limit, 'requested');
+        setSimilarProducts(finalProducts);
       } catch (error) {
-        console.error('Error fetching similar products:', error);
+        console.error('❌ [SimilarProducts] Error fetching similar products:', error);
         setSimilarProducts([]);
       } finally {
         setLoading(false);
@@ -132,6 +328,9 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
 
     if (productId) {
       fetchSimilarProducts();
+    } else {
+      console.log('⚠️ [SimilarProducts] No productId provided, skipping fetch');
+      setLoading(false);
     }
   }, [productId, crossSellIds, relatedIds, categoryId, limit]);
 
@@ -147,11 +346,25 @@ export default function SimilarProducts({ productId, crossSellIds = [], relatedI
     );
   };
 
+  // Show loading state instead of returning null
   if (loading) {
-    return null;
+    return (
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-400 mx-auto mb-4"></div>
+            <p className="text-gray-600">Ładowanie podobnych produktów...</p>
+          </div>
+        </div>
+      </section>
+    );
   }
 
+  // Only hide if we've finished loading and have no products
   if (similarProducts.length === 0) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('⚠️ [SimilarProducts] No products to display after loading');
+    }
     return null;
   }
 

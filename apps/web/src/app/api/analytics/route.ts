@@ -7,45 +7,39 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { logger } from '@/utils/logger';
 import { redisCache } from '@/lib/redis';
-
-// Analytics data interface
-interface AnalyticsEvent {
-  event_type: string;
-  properties: Record<string, any>;
-  session_id: string;
-  user_id?: string;
-  timestamp: string;
-}
-
-interface AnalyticsRequest {
-  events: AnalyticsEvent[];
-  session_id: string;
-  user_id?: string;
-  timestamp: string;
-}
+import {
+  analyticsRequestSchema,
+  type AnalyticsRequest,
+  type AnalyticsEvent,
+} from '@/lib/schemas/analytics';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
 
 // Analytics processing
 export async function POST(request: NextRequest) {
   try {
-    const body: AnalyticsRequest = await request.json();
+    const body = await request.json();
     
-    // Validate request
-    if (!body.events || !Array.isArray(body.events)) {
-      return NextResponse.json(
-        { error: 'Invalid events data' },
-        { status: 400 }
+    // Validate request body with Zod
+    const validationResult = analyticsRequestSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Invalid analytics data', validationResult.error.errors),
+        { endpoint: 'analytics', method: 'POST' }
       );
     }
+    
+    const validatedBody = validationResult.data;
 
     // Process events
-    await processAnalyticsEvents(body);
+    await processAnalyticsEvents(validatedBody);
 
     // Log analytics collection
     logger.info('Analytics events collected', {
-      sessionId: body.session_id,
-      userId: body.user_id,
-      eventsCount: body.events.length,
-      eventTypes: body.events.map(e => e.event_type)
+      sessionId: validatedBody.session_id,
+      userId: validatedBody.user_id,
+      eventsCount: validatedBody.events.length,
+      eventTypes: validatedBody.events.map(e => e.event_type)
     });
 
     return NextResponse.json({ success: true });
@@ -105,19 +99,43 @@ async function storeEventsInRedis(
   }
 }
 
+interface SessionMetricsState {
+  page_views: number;
+  events_count: number;
+  unique_events: string[];
+  start_time: string;
+  last_activity: string;
+}
+
+interface RealTimeMetrics {
+  total_events: number;
+  event_types: Record<string, number>;
+  timestamp: string;
+}
+
+interface GlobalMetricsState {
+  total_sessions: number;
+  total_events: number;
+  event_types: Record<string, number>;
+  last_updated: string;
+}
+
 // Update session metrics
 async function updateSessionMetrics(sessionId: string, events: AnalyticsEvent[]) {
   try {
     const metricsKey = `analytics:metrics:${sessionId}`;
     
     // Get existing metrics
-    const existingMetrics = await redisCache.get(metricsKey) as any || {
+    const existingMetrics =
+      (await redisCache.get<SessionMetricsState>(metricsKey)) ?? {
       page_views: 0,
       events_count: 0,
-      unique_events: new Set(),
+        unique_events: [],
       start_time: new Date().toISOString(),
-      last_activity: new Date().toISOString()
-    };
+        last_activity: new Date().toISOString(),
+      };
+
+    const uniqueEvents = new Set(existingMetrics.unique_events);
 
     // Update metrics
     existingMetrics.events_count += events.length;
@@ -127,8 +145,10 @@ async function updateSessionMetrics(sessionId: string, events: AnalyticsEvent[])
       if (event.event_type === 'page_view') {
         existingMetrics.page_views++;
       }
-      existingMetrics.unique_events.add(event.event_type);
+      uniqueEvents.add(event.event_type);
     });
+
+    existingMetrics.unique_events = Array.from(uniqueEvents);
 
     // Store updated metrics
     await redisCache.set(metricsKey, existingMetrics, 3600);
@@ -141,18 +161,22 @@ async function updateSessionMetrics(sessionId: string, events: AnalyticsEvent[])
 // Process real-time metrics
 async function processRealTimeMetrics(events: AnalyticsEvent[], _sessionId: string) {
   try {
-    const metrics = {
+    const metrics: RealTimeMetrics = {
       total_events: events.length,
       event_types: events.reduce((acc, event) => {
         acc[event.event_type] = (acc[event.event_type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Store real-time metrics
     const realTimeKey = `analytics:realtime:${Date.now()}`;
     await redisCache.set(realTimeKey, metrics, 300); // 5 minutes TTL
+    const keyRegistryKey = 'analytics:realtime:keys';
+    const existingKeys = (await redisCache.get<string[]>(keyRegistryKey)) ?? [];
+    const updatedKeys = [...existingKeys.filter((key) => key !== realTimeKey), realTimeKey].slice(-200);
+    await redisCache.set(keyRegistryKey, updatedKeys, 300);
 
     // Update global metrics
     await updateGlobalMetrics(metrics);
@@ -163,15 +187,16 @@ async function processRealTimeMetrics(events: AnalyticsEvent[], _sessionId: stri
 }
 
 // Update global metrics
-async function updateGlobalMetrics(metrics: any) {
+async function updateGlobalMetrics(metrics: RealTimeMetrics) {
   try {
     const globalKey = 'analytics:global:metrics';
-    const globalMetrics = await redisCache.get(globalKey) as any || {
+    const globalMetrics =
+      (await redisCache.get<GlobalMetricsState>(globalKey)) ?? {
       total_sessions: 0,
       total_events: 0,
       event_types: {},
-      last_updated: new Date().toISOString()
-    };
+        last_updated: new Date().toISOString(),
+      };
 
     globalMetrics.total_events += metrics.total_events;
     globalMetrics.last_updated = new Date().toISOString();
@@ -249,12 +274,13 @@ export async function GET(request: NextRequest) {
 async function getAnalyticsSummary() {
   try {
     const globalKey = 'analytics:global:metrics';
-    const globalMetrics = await redisCache.get(globalKey) as any || {
+    const globalMetrics =
+      (await redisCache.get<GlobalMetricsState>(globalKey)) ?? {
       total_sessions: 0,
       total_events: 0,
       event_types: {},
-      last_updated: new Date().toISOString()
-    };
+        last_updated: new Date().toISOString(),
+      };
 
     return NextResponse.json({
       success: true,
@@ -274,11 +300,12 @@ async function getAnalyticsSummary() {
 async function getRealTimeMetrics() {
   try {
     // Get recent real-time metrics
-    const realTimeKeys = await redisCache.get('analytics:realtime:*') as string[] || [];
-    const metrics = [];
+    const realTimeKeys =
+      (await redisCache.get<string[]>('analytics:realtime:keys')) ?? [];
+    const metrics: RealTimeMetrics[] = [];
 
     for (const key of realTimeKeys) {
-      const data = await redisCache.get(key);
+      const data = await redisCache.get<RealTimeMetrics>(key);
       if (data) {
         metrics.push(data);
       }

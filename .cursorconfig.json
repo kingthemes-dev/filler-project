@@ -1,0 +1,88 @@
+{
+  "name": "King™ Headless Woo Enterprise Config",
+  "description": "Full Cursor configuration for King™ Headless Woo AI Autoinstaller (Next.js 14 + WooCommerce + Builder + Brevo + Stripe + Sentry + Lighthouse + Playwright)",
+  "models": {
+    "default": "gpt-5-pro",
+    "fallback": "gpt-5-high",
+    "fast": "gpt-5-codex-fast",
+    "analyze": "sonnet-4.5",
+    "content": "composer-1",
+    "refactor": "grok-code"
+  },
+  "autoModel": true,
+  "rules": {
+    "language": "typescript",
+    "framework": "nextjs-14",
+    "ui": "shadcn-ui",
+    "style": "tailwind",
+    "useAppRouter": true,
+    "preferStrict": true,
+    "autoLint": true,
+    "respectArchitecture": true,
+    "enforceEnvSecurity": true
+  },
+  "aliases": {
+    "@/*": "./src/*",
+    "@apps": "./apps",
+    "@web": "./apps/web",
+    "@mobile": "./apps/mobile",
+    "@packages": "./packages",
+    "@config": "./config",
+    "@public": "./public",
+    "@lib": "./src/lib",
+    "@components": "./src/components",
+    "@hooks": "./src/hooks",
+    "@store": "./src/store",
+    "@api": "./src/api"
+  },
+  "preferences": {
+    "autoFixLints": true,
+    "autoAcceptCommits": true,
+    "jumpToNextDiff": true,
+    "themeDiffBackgrounds": true,
+    "maxTabCount": 6,
+    "autoRunMode": "unsandboxed"
+  },
+  "lint": {
+    "eslint": true,
+    "prettier": true,
+    "respectEditorConfig": true,
+    "respectProjectRules": true,
+    "autoFixOnSave": true
+  },
+  "modes": {
+    "dev": {
+      "model": "gpt-5-pro",
+      "description": "Development mode for coding new features, API routes, Zustand stores, and Builder logic with Shadcn UI and Tailwind."
+    },
+    "audit": {
+      "model": "sonnet-4.5",
+      "description": "Audit mode for security, performance, SEO, and Lighthouse optimization. Uses ESLint, Prettier, and EditorConfig rules."
+    },
+    "fast": {
+      "model": "gpt-5-codex-fast",
+      "description": "Fast generation for UI components, layout tweaks, and smaller code blocks."
+    },
+    "refactor": {
+      "model": "grok-code",
+      "description": "Refactor and dependency restructuring mode for large multi-file updates, respecting TypeScript strict rules."
+    },
+    "content": {
+      "model": "composer-1",
+      "description": "Marketing content generation: SEO meta tags, Brevo emails, CTA copy, and landing page text."
+    },
+    "test": {
+      "model": "gpt-5-pro",
+      "description": "Testing and QA mode for Playwright, Jest, Lighthouse CI, and Sentry coverage validation.",
+      "tools": ["playwright", "jest", "lighthouse", "sentry"]
+    }
+  },
+  "securityChecks": {
+    "checkCSP": true,
+    "checkXFrameOptions": true,
+    "checkRateLimits": true,
+    "checkJwtRotation": true,
+    "checkWebhookSecrets": true,
+    "checkEnvExposure": true
+  }
+}

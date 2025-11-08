@@ -2,13 +2,13 @@
  * Request deduplication utility to prevent duplicate API calls
  */
 
-interface PendingRequest {
-  promise: Promise<any>;
+interface PendingRequest<T> {
+  promise: Promise<T>;
   timestamp: number;
 }
 
 class RequestDeduplicator {
-  private pendingRequests = new Map<string, PendingRequest>();
+  private pendingRequests = new Map<string, PendingRequest<unknown>>();
   private readonly CACHE_DURATION = 1000; // 1 second
   private readonly MAX_CACHE_SIZE = 100;
 
@@ -30,7 +30,7 @@ class RequestDeduplicator {
     this.cleanExpiredRequests();
 
     // Check if request is already pending
-    const existing = this.pendingRequests.get(key);
+    const existing = this.pendingRequests.get(key) as PendingRequest<T> | undefined;
     if (existing && Date.now() - existing.timestamp < cacheDuration) {
       return existing.promise;
     }
@@ -45,7 +45,7 @@ class RequestDeduplicator {
 
     // Clean up after completion
     promise.finally(() => {
-      this.pendingRequests.delete(key);
+    this.pendingRequests.delete(key);
     });
 
     return promise;
@@ -142,10 +142,10 @@ export async function deduplicateRequest<T>(
 }
 
 // Generate cache key from URL and params
-export function generateCacheKey(url: string, params?: Record<string, any>): string {
+export function generateCacheKey(url: string, params?: Record<string, string | number | boolean>): string {
   const sortedParams = params ? Object.keys(params)
     .sort()
-    .map(key => `${key}=${params[key]}`)
+    .map(key => `${key}=${encodeURIComponent(String(params[key]))}`)
     .join('&') : '';
   
   return `${url}${sortedParams ? `?${sortedParams}` : ''}`;

@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star } from 'lucide-react';
+import { Star, X, ZoomIn } from 'lucide-react';
+
+interface ReviewImage {
+  id?: number;
+  url: string;
+  thumbnail?: string;
+  medium?: string;
+  large?: string;
+}
 
 interface Review {
   id: number;
@@ -15,6 +23,8 @@ interface Review {
   reviewer_avatar_urls: {
     [key: string]: string;
   };
+  images?: ReviewImage[];
+  videos?: string[];
 }
 
 interface ReviewsListProps {
@@ -25,11 +35,18 @@ export default function ReviewsList({ productId }: ReviewsListProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!productId) {
+      setLoading(false);
+      return;
+    }
+
     const fetchReviews = async () => {
       try {
         setLoading(true);
+        setError(null);
         const response = await fetch(`/api/reviews?product_id=${productId}`);
         
         if (!response.ok) {
@@ -37,10 +54,18 @@ export default function ReviewsList({ productId }: ReviewsListProps) {
         }
         
         const data = await response.json();
-        setReviews(data);
+        
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setReviews(data);
+        } else {
+          console.warn('Reviews API returned non-array data:', data);
+          setReviews([]);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Błąd ładowania opinii');
         console.error('Error fetching reviews:', err);
+        setReviews([]); // Set empty array on error
       } finally {
         setLoading(false);
       }
@@ -116,6 +141,29 @@ export default function ReviewsList({ productId }: ReviewsListProps) {
   }
 
   return (
+    <>
+    {/* Lightbox Modal */}
+    {lightboxImage && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+        onClick={() => setLightboxImage(null)}
+      >
+        <button
+          onClick={() => setLightboxImage(null)}
+          className="absolute top-4 right-4 text-white hover:text-gray-300"
+          aria-label="Zamknij"
+        >
+          <X className="w-8 h-8" />
+        </button>
+        <img
+          src={lightboxImage}
+          alt="Powiększone zdjęcie"
+          className="max-w-full max-h-full object-contain"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    )}
+    
     <div className="space-y-6">
       {reviews.map((review) => (
         <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
@@ -142,11 +190,95 @@ export default function ReviewsList({ productId }: ReviewsListProps) {
               <p className="text-gray-700 leading-relaxed">
                 {review.review}
               </p>
+              
+              {/* Review Images */}
+              {review.images && review.images.length > 0 && (
+                <div className="mt-4">
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                    {review.images.map((image, imgIndex) => (
+                      <button
+                        key={imgIndex}
+                        type="button"
+                        onClick={() => setLightboxImage(image.url)}
+                        className="relative group aspect-square overflow-hidden rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
+                      >
+                        <img
+                          src={image.thumbnail || image.medium || image.url}
+                          alt={`Zdjęcie ${imgIndex + 1} od ${review.reviewer}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
+                          <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Review Videos (future support) */}
+              {review.videos && review.videos.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {review.videos.map((videoUrl, vidIndex) => {
+                    // Simple YouTube/Vimeo embed detection
+                    const isYouTube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
+                    const isVimeo = videoUrl.includes('vimeo.com');
+                    
+                    if (isYouTube) {
+                      const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+                      if (videoId) {
+                        return (
+                          <div key={vidIndex} className="aspect-video rounded-lg overflow-hidden">
+                            <iframe
+                              src={`https://www.youtube.com/embed/${videoId}`}
+                              title={`Film ${vidIndex + 1} od ${review.reviewer}`}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                        );
+                      }
+                    }
+                    
+                    if (isVimeo) {
+                      const videoId = videoUrl.match(/vimeo\.com\/(\d+)/)?.[1];
+                      if (videoId) {
+                        return (
+                          <div key={vidIndex} className="aspect-video rounded-lg overflow-hidden">
+                            <iframe
+                              src={`https://player.vimeo.com/video/${videoId}`}
+                              title={`Film ${vidIndex + 1} od ${review.reviewer}`}
+                              className="w-full h-full"
+                              allow="autoplay; fullscreen; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                        );
+                      }
+                    }
+                    
+                    return (
+                      <a
+                        key={vidIndex}
+                        href={videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-blue-600 hover:underline"
+                      >
+                        Zobacz film {vidIndex + 1}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
       ))}
     </div>
+    </>
   );
 }
 

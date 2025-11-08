@@ -18,25 +18,36 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// HPOS Compatibility Check
-if (!function_exists('wc_get_container')) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-error"><p><strong>Customer Invoices:</strong> WooCommerce HPOS is required for this plugin to work properly.</p></div>';
-    });
-    return;
-}
-
-// Check if HPOS is enabled
-$hpos_enabled = wc_get_container()->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
-if (!$hpos_enabled) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-warning"><p><strong>Customer Invoices:</strong> HPOS is not enabled. Please enable High-Performance Order Storage in WooCommerce settings.</p></div>';
-    });
-}
+// HPOS Compatibility Check - sprawdź później, gdy WooCommerce jest załadowany
+// Mu-plugins ładują się przed WooCommerce, więc sprawdzamy w hooku 'plugins_loaded'
+add_action('plugins_loaded', function() {
+    $hpos_enabled = false;
+    if (function_exists('wc_get_container')) {
+        try {
+            $container = wc_get_container();
+            if ($container && $container->has(\Automattic\WooCommerce\Utilities\OrderUtil::class)) {
+                $hpos_enabled = $container->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
+            }
+        } catch (Exception $e) {
+            // HPOS not available, continue without it
+            error_log("Customer Invoices: HPOS check failed: " . $e->getMessage());
+        }
+    }
+    
+    // Only show warning if HPOS is explicitly disabled (not if check failed)
+    if (!$hpos_enabled && function_exists('wc_get_container')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-warning"><p><strong>Customer Invoices:</strong> HPOS is not enabled. Some features may use fallback methods.</p></div>';
+        });
+    }
+}, 20); // Priority 20 to ensure WooCommerce is loaded
 
 // Hook into WooCommerce order completion to auto-generate invoices
-// FIXED: Faktura tylko przy completed status - Senior Level
+// Generate invoice when order is completed OR when order is processing and invoice was requested
 add_action('woocommerce_order_status_completed', 'auto_generate_invoice_for_order');
+add_action('woocommerce_order_status_processing', 'auto_generate_invoice_for_order');
+// Also trigger on new order if invoice was requested (for immediate invoice generation)
+add_action('woocommerce_new_order', 'maybe_generate_invoice_for_new_order', 20);
 
 // REMOVED: PDF Invoices & Packing Slips control - we don't need that plugin
 // We have our own invoice system that works independently
@@ -57,12 +68,29 @@ function auto_generate_invoice_for_order($order_id) {
             return;
         }
         
+        // Check if invoice already generated
+        $invoice_generated = $order->get_meta('_invoice_generated');
+        if ($invoice_generated === 'yes') {
+            error_log("HPOS Customer Invoices: Invoice already generated for order {$order_id}");
+            return;
+        }
+        
         // HPOS-compatible meta data access
         $billing_nip = $order->get_meta('_billing_nip');
         $invoice_request = $order->get_meta('_invoice_request');
+        $order_status = $order->get_status();
         
-        // Auto-generate invoice if NIP is provided or invoice is requested
-        if (!empty($billing_nip) || $invoice_request === 'yes') {
+        // Auto-generate invoice if:
+        // 1. Order is completed (always generate)
+        // 2. Order is processing AND (NIP provided OR invoice requested)
+        $should_generate = false;
+        if ($order_status === 'completed') {
+            $should_generate = true;
+        } elseif ($order_status === 'processing' && (!empty($billing_nip) || $invoice_request === 'yes')) {
+            $should_generate = true;
+        }
+        
+        if ($should_generate) {
             // Generate invoice data with HPOS compatibility
             $invoice_data = generate_invoice_data_hpos($order);
             
@@ -74,7 +102,7 @@ function auto_generate_invoice_for_order($order_id) {
             $order->save();
             
             // Log successful invoice generation
-            error_log("HPOS Customer Invoices: Auto-generated invoice for order {$order_id} - Invoice #{$invoice_data['invoice_number']}");
+            error_log("HPOS Customer Invoices: Auto-generated invoice for order {$order_id} - Invoice #{$invoice_data['invoice_number']} (status: {$order_status})");
         }
         
     } catch (Exception $e) {
@@ -83,58 +111,47 @@ function auto_generate_invoice_for_order($order_id) {
 }
 
 /**
- * Add custom billing fields (NIP, invoice request) to checkout
+ * Maybe generate invoice for new order if invoice was requested
+ * This allows invoices to be generated immediately when order is created (for processing/pending orders with invoice request)
  */
-add_filter('woocommerce_checkout_fields', function($fields) {
-    // Ensure company field is visible (WooCommerce has it built-in)
-    if (isset($fields['billing']['billing_company'])) {
-        $fields['billing']['billing_company']['required'] = false;
-        $fields['billing']['billing_company']['label'] = __('Nazwa firmy', 'woocommerce');
-        $fields['billing']['billing_company']['priority'] = 120;
+function maybe_generate_invoice_for_new_order($order_id) {
+    try {
+        $order = wc_get_order($order_id);
+        
+        if (!$order || !$order->get_id()) {
+            return;
+        }
+        
+        $billing_nip = $order->get_meta('_billing_nip');
+        $invoice_request = $order->get_meta('_invoice_request');
+        $order_status = $order->get_status();
+        
+        // Generate invoice immediately if:
+        // - Invoice was requested OR NIP provided
+        // - AND order status is processing or pending
+        if (($invoice_request === 'yes' || !empty($billing_nip)) && 
+            ($order_status === 'processing' || $order_status === 'pending')) {
+            // Call invoice generation directly (no need for scheduling)
+            auto_generate_invoice_for_order($order_id);
+        }
+    } catch (Exception $e) {
+        error_log("HPOS Customer Invoices: Error in maybe_generate_invoice_for_new_order: " . $e->getMessage());
     }
-
-    // Add NIP
-    $fields['billing']['billing_nip'] = [
-        'type' => 'text',
-        'label' => __('NIP', 'woocommerce'),
-        'required' => false,
-        'class' => ['form-row-wide'],
-        'priority' => 121,
-    ];
-
-    // Add invoice request checkbox
-    $fields['billing']['invoice_request'] = [
-        'type' => 'checkbox',
-        'label' => __('Chcę fakturę (na firmę)', 'woocommerce'),
-        'required' => false,
-        'class' => ['form-row-wide'],
-        'priority' => 122,
-    ];
-
-    return $fields;
-});
+}
 
 /**
- * Persist custom fields to order and user meta
+ * NOTE: Custom billing fields (NIP, invoice request) are now handled by king-invoice-fields.php
+ * This plugin focuses on invoice generation only.
+ * 
+ * The following hooks are moved to king-invoice-fields.php:
+ * - woocommerce_checkout_fields (adding fields)
+ * - woocommerce_checkout_create_order (saving fields to order/user meta)
+ * 
+ * This plugin now only handles:
+ * - Invoice generation (auto_generate_invoice_for_order)
+ * - Invoice REST API endpoints
+ * - Invoice PDF generation
  */
-add_action('woocommerce_checkout_create_order', function($order, $data) {
-    $billing_nip = isset($_POST['billing_nip']) ? sanitize_text_field($_POST['billing_nip']) : '';
-    $invoice_request = isset($_POST['invoice_request']) && $_POST['invoice_request'] ? 'yes' : 'no';
-
-    if (!empty($billing_nip)) {
-        $order->update_meta_data('_billing_nip', $billing_nip);
-    }
-    $order->update_meta_data('_invoice_request', $invoice_request);
-
-    // Persist to user meta for logged-in customers
-    $user_id = $order->get_user_id();
-    if ($user_id) {
-        if (!empty($billing_nip)) {
-            update_user_meta($user_id, '_billing_nip', $billing_nip);
-        }
-        update_user_meta($user_id, '_invoice_request', $invoice_request);
-    }
-}, 10, 2);
 
 /**
  * Helper: build PDF Invoices & Packing Slips download URL if plugin is active
@@ -625,6 +642,9 @@ function get_tracking_history_hpos($order) {
 
 // Register customer profile update endpoints
 add_action('rest_api_init', function() {
+    // Debug: Log endpoint registration
+    error_log("🔍 Customer Invoices: Registering customer profile endpoints");
+    
     register_rest_route('custom/v1', '/customer/update-profile', [
         'methods' => 'POST',
         'callback' => 'update_customer_profile',
@@ -641,6 +661,9 @@ add_action('rest_api_init', function() {
             ]
         ]
     ]);
+    
+    // Debug: Log password change endpoint registration
+    error_log("🔍 Customer Invoices: Registering /customer/change-password endpoint");
     
     register_rest_route('custom/v1', '/customer/change-password', [
         'methods' => 'POST',
@@ -717,8 +740,11 @@ function update_customer_profile($request) {
                 $customer->set_billing_company($billing['company']);
                 update_user_meta($customer_id, 'billing_company', sanitize_text_field($billing['company']));
             }
+            // NIP and invoiceRequest are now handled by king-invoice-fields.php
+            // But we keep this for backward compatibility with REST API
             if (isset($billing['nip'])) {
                 update_user_meta($customer_id, '_billing_nip', sanitize_text_field($billing['nip']));
+                update_user_meta($customer_id, 'billing_nip', sanitize_text_field($billing['nip']));
             }
             if (isset($billing['invoiceRequest'])) {
                 update_user_meta($customer_id, '_invoice_request', $billing['invoiceRequest'] ? 'yes' : 'no');
@@ -784,9 +810,13 @@ function update_customer_profile($request) {
  * Change customer password
  */
 function change_customer_password($request) {
+    error_log("🔍 change_customer_password called");
+    
     $customer_id = $request->get_param('customer_id');
     $current_password = $request->get_param('current_password');
     $new_password = $request->get_param('new_password');
+    
+    error_log("🔍 Password change request - customer_id: {$customer_id}, password_length: " . strlen($new_password));
     
     // Get customer
     $customer = new WC_Customer($customer_id);
@@ -887,7 +917,9 @@ function get_invoice_pdf_binary($request) {
         $pdf_content = generate_pdf_from_html($html);
         $base64 = base64_encode($pdf_content);
 
-        return new WP_REST_Response([
+        // Return JSON with base64 PDF data
+        // Frontend will decode and display the PDF
+        $response = new WP_REST_Response([
             'success' => true,
             'mime' => 'application/pdf',
             'filename' => 'faktura_' . $order_id . '.pdf',
@@ -895,6 +927,11 @@ function get_invoice_pdf_binary($request) {
             'hpos_enabled' => true,
             'hpos_version' => '2.0'
         ], 200);
+        
+        // Set JSON content type
+        $response->header('Content-Type', 'application/json');
+        
+        return $response;
         
     } catch (Exception $e) {
         error_log("HPOS Customer Invoices: Error generating PDF binary for order {$order_id}: " . $e->getMessage());

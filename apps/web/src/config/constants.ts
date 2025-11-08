@@ -16,7 +16,8 @@ export const ENV = {
   ENABLE_ANALYTICS: !!(env.NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID || env.NEXT_PUBLIC_GTM_ID),
   GA_ID: env.NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID || '',
   GTM_ID: env.NEXT_PUBLIC_GTM_ID || '',
-  RECAPTCHA_SITE_KEY: '',
+  RECAPTCHA_SITE_KEY: env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
+  RECAPTCHA_ENABLED: !!env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY,
 } as const;
 
 // =========================================

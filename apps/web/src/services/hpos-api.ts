@@ -24,6 +24,7 @@ interface HPOSOrder {
   date_created: string;
   date_modified: string;
   total: string;
+  currency?: string;
   customer_id: number;
   billing: any;
   shipping: any;
@@ -32,6 +33,8 @@ interface HPOSOrder {
   payment_method: string;
   payment_method_title: string;
   transaction_id?: string;
+  payment_url?: string;
+  checkout_payment_url?: string;
 }
 
 interface HPOSOrderQuery {
@@ -103,6 +106,8 @@ class HPOSApiService {
       try {
         logger.info('HPOS API request', { 
           endpoint, 
+          url,
+          baseUrl: this.config.baseUrl,
           attempt, 
           method: options.method || 'GET' 
         });
@@ -179,7 +184,7 @@ class HPOSApiService {
     if (query.search) params.append('search', query.search);
 
     // HPOS-specific optimizations
-    params.append('_fields', 'id,number,status,date_created,date_modified,total,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id');
+    params.append('_fields', 'id,number,status,date_created,date_modified,total,currency,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id,payment_url,checkout_payment_url');
     
     const orders = await this.makeRequest<HPOSOrder[]>(`/wp-json/wc/v3/orders?${params}`);
     
@@ -194,7 +199,7 @@ class HPOSApiService {
    */
   async getOrder(orderId: number): Promise<HPOSOrder> {
     const params = new URLSearchParams();
-    params.append('_fields', 'id,number,status,date_created,date_modified,total,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id');
+    params.append('_fields', 'id,number,status,date_created,date_modified,total,currency,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id,payment_url,checkout_payment_url');
     
     return this.makeRequest<HPOSOrder>(`/wp-json/wc/v3/orders/${orderId}?${params}`);
   }
@@ -203,9 +208,23 @@ class HPOSApiService {
    * Create order with HPOS compatibility
    */
   async createOrder(orderData: any): Promise<HPOSOrder> {
-    return this.makeRequest<HPOSOrder>('/wp-json/wc/v3/orders', {
+    // Check if baseUrl already contains /wp-json/wc/v3
+    // If it does, use just /orders, otherwise use full path
+    const baseUrlEndsWithApi = this.config.baseUrl.endsWith('/wp-json/wc/v3');
+    const endpoint = baseUrlEndsWithApi ? '/orders' : '/wp-json/wc/v3/orders';
+    
+    logger.info('Creating order', { 
+      baseUrl: this.config.baseUrl, 
+      endpoint,
+      willCall: `${this.config.baseUrl}${endpoint}`
+    });
+    
+    return this.makeRequest<HPOSOrder>(endpoint, {
       method: 'POST',
       body: JSON.stringify(orderData),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     }, false); // Don't cache POST requests
   }
 

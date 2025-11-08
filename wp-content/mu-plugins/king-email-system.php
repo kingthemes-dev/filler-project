@@ -18,21 +18,36 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// HPOS Compatibility Check
-if (!function_exists('wc_get_container')) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-error"><p><strong>King Email System:</strong> WooCommerce HPOS is required for this plugin to work properly.</p></div>';
-    });
-    return;
-}
-
-// Check if HPOS is enabled
-$hpos_enabled = wc_get_container()->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
-if (!$hpos_enabled) {
-    add_action('admin_notices', function() {
-        echo '<div class="notice notice-warning"><p><strong>King Email System:</strong> HPOS is not enabled. Please enable High-Performance Order Storage in WooCommerce settings.</p></div>';
-    });
-}
+// HPOS Compatibility Check - sprawdź później, gdy WooCommerce jest załadowany
+// Mu-plugins ładują się przed WooCommerce, więc sprawdzamy w hooku 'plugins_loaded'
+add_action('plugins_loaded', function() {
+    // Check if WooCommerce is loaded
+    if (!function_exists('wc_get_container')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-warning"><p><strong>King Email System:</strong> WooCommerce may not be fully loaded. Some features may not work.</p></div>';
+        });
+        return; // Don't check HPOS if WooCommerce isn't loaded
+    }
+    
+    // Check if HPOS is enabled (but don't block plugin - it should work either way)
+    $hpos_enabled = false;
+    try {
+        $container = wc_get_container();
+        if ($container && $container->has(\Automattic\WooCommerce\Utilities\OrderUtil::class)) {
+            $hpos_enabled = $container->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
+        }
+    } catch (Exception $e) {
+        // HPOS check failed, continue anyway
+        error_log("King Email System: HPOS check failed, continuing anyway: " . $e->getMessage());
+    }
+    
+    // Only show warning if HPOS is explicitly not enabled (not if check failed)
+    if (!$hpos_enabled) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-warning"><p><strong>King Email System:</strong> HPOS is not enabled. Plugin will work but some features may use fallback methods.</p></div>';
+        });
+    }
+}, 20); // Priority 20 to ensure WooCommerce is loaded
 
 class KingEmailSystem {
     
@@ -42,7 +57,8 @@ class KingEmailSystem {
     private $hpos_version = '2.0';
     
     public function __construct() {
-        $this->hpos_enabled = wc_get_container()->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
+        // Don't call WooCommerce functions in constructor - mu-plugins load too early
+        // Check HPOS status later when WooCommerce is loaded
         $this->init();
     }
     
@@ -50,6 +66,19 @@ class KingEmailSystem {
      * Initialize the email system
      */
     public function init() {
+        // Check HPOS status if WooCommerce is loaded
+        if (function_exists('wc_get_container')) {
+            try {
+                $this->hpos_enabled = wc_get_container()->get(\Automattic\WooCommerce\Utilities\OrderUtil::class)->custom_orders_table_usage_is_enabled();
+            } catch (Exception $e) {
+                // HPOS check failed, continue anyway
+                error_log("King Email System: HPOS check failed in init: " . $e->getMessage());
+                $this->hpos_enabled = false;
+            }
+        } else {
+            // WooCommerce not loaded yet - will check later
+            $this->hpos_enabled = false;
+        }
         // Adapter mode: do not send custom emails. Rely on WooCommerce defaults.
         // Keep only adapters/filters that enrich/brand default emails.
         add_action('woocommerce_order_status_changed', [$this, 'handle_order_status_change'], 10, 4);
@@ -107,17 +136,12 @@ class KingEmailSystem {
      * Configure email settings
      */
     private function configure_email_settings() {
-        // Set from name and email
-        add_filter('wp_mail_from_name', function($name) {
-            return 'FILLER - Profesjonalne produkty do pielęgnacji';
-        });
+        // REMOVED: Don't override SMTP settings - let wp-mail-smtp plugin handle it
+        // The wp-mail-smtp plugin is already configured and should handle all SMTP settings
+        // Overriding wp_mail_from and wp_mail_from_name can conflict with SMTP authentication
         
-        add_filter('wp_mail_from', function($email) {
-            return 'noreply@' . parse_url(get_site_url(), PHP_URL_HOST);
-        });
-        
-        // Configure SMTP if needed
-        if (defined('KING_EMAIL_SMTP_HOST')) {
+        // Only configure custom SMTP if wp-mail-smtp is NOT active and custom constants are defined
+        if (!class_exists('WPMailSMTP') && defined('KING_EMAIL_SMTP_HOST')) {
             add_action('phpmailer_init', [$this, 'configure_smtp']);
         }
     }
@@ -172,6 +196,11 @@ class KingEmailSystem {
             // ADAPTER MODE: Only log and enrich WooCommerce default emails
             // Do not send custom emails - let WooCommerce handle it
             switch ($new_status) {
+                case 'pending':
+                    // Order is pending payment - WooCommerce should send email automatically
+                    $this->log_email_sent($order_id, 'order_pending_adapter', $order->get_billing_email());
+                    $this->log_hpos_event($order_id, 'status_change', 'pending', $old_status);
+                    break;
                 case 'processing':
                     // Order is being processed - log only
                     $this->log_email_sent($order_id, 'order_processing_adapter', $order->get_billing_email());
@@ -235,7 +264,7 @@ class KingEmailSystem {
         
         if (!$order) {
             error_log("King Email System ERROR: Could not get order {$order_id}");
-            return;
+            return false;
         }
         
         error_log("King Email System DEBUG: Order {$order_id} found, attempting to send emails");
@@ -247,19 +276,192 @@ class KingEmailSystem {
             
             error_log("King Email System DEBUG: Available emails: " . implode(', ', array_keys($emails)));
             
-            // REMOVED: customer_processing_order email - WooCommerce will send it automatically when order status changes to 'processing'
+            // Debug: Log all available email classes and their status
+            foreach ($emails as $key => $email_obj) {
+                $enabled_status = 'unknown';
+                if (method_exists($email_obj, 'is_enabled')) {
+                    $enabled_status = $email_obj->is_enabled() ? 'enabled' : 'disabled';
+                }
+                error_log("King Email System DEBUG: Email class '{$key}' is {$enabled_status}");
+                
+                // Also check if it's one of the emails we need
+                if (in_array($key, ['WC_Email_Customer_Processing_Order', 'WC_Email_New_Order', 'WC_Email_Customer_On_Hold_Order'])) {
+                    error_log("King Email System DEBUG: ⭐ Found required email '{$key}' with status: {$enabled_status}");
+                }
+            }
+            
+            $emails_sent = 0;
+            
+            // Check order status and send appropriate email
+            $order_status = $order->get_status();
+            error_log("King Email System DEBUG: Order {$order_id} status is: {$order_status}");
+            
+            // Send customer email based on order status
+            // IMPORTANT: WooCommerce does NOT automatically send emails for "pending" status orders created via REST API
+            // We need to manually trigger emails for pending/processing/on-hold orders
+            if ($order_status === 'pending') {
+                // For pending orders (COD, bank transfer), WooCommerce does NOT send emails automatically
+                // We need to manually send email - WooCommerce email classes check order status and may refuse to send
+                // Solution: Temporarily change order status to 'processing', send email, then revert
+                $email_triggered = false;
+                
+                // Save original status
+                $original_status = $order->get_status();
+                
+                try {
+                    // Temporarily change status to 'processing' to allow WooCommerce email to send
+                    $order->set_status('processing', 'Temporary status change for email sending', false);
+                    $order->save();
+                    error_log("King Email System DEBUG: Temporarily changed order {$order_id} status from {$original_status} to processing");
+                    
+                    // Now try to send the email
+                    // WooCommerce stores emails with class name as key (WC_Email_Customer_Processing_Order)
+                    $email_found = false;
+                    
+                    // Try WC_Email_Customer_Processing_Order first (correct key)
+                    if (isset($emails['WC_Email_Customer_Processing_Order'])) {
+                        $email = $emails['WC_Email_Customer_Processing_Order'];
+                        if (method_exists($email, 'is_enabled')) {
+                            if ($email->is_enabled()) {
+                                $email->trigger($order_id);
+                                error_log("King Email System: ✅ Sent WC_Email_Customer_Processing_Order email for pending order {$order_id}");
+                                $emails_sent++;
+                                $email_triggered = true;
+                                $email_found = true;
+                            } else {
+                                error_log("King Email System WARNING: WC_Email_Customer_Processing_Order is disabled");
+                            }
+                        } else {
+                            // If is_enabled doesn't exist, try to trigger anyway
+                            $email->trigger($order_id);
+                            error_log("King Email System: ✅ Sent WC_Email_Customer_Processing_Order email (no is_enabled check) for pending order {$order_id}");
+                            $emails_sent++;
+                            $email_triggered = true;
+                            $email_found = true;
+                        }
+                    }
+                    
+                    // Fallback: try lowercase key (some WooCommerce versions use this)
+                    if (!$email_found && isset($emails['customer_processing_order'])) {
+                        $email = $emails['customer_processing_order'];
+                        $email->trigger($order_id);
+                        error_log("King Email System: ✅ Sent customer_processing_order email (fallback) for pending order {$order_id}");
+                        $emails_sent++;
+                        $email_triggered = true;
+                        $email_found = true;
+                    }
+                    
+                    // Restore original status
+                    $order->set_status($original_status, 'Restored original status after email sending', false);
+                    $order->save();
+                    error_log("King Email System DEBUG: Restored order {$order_id} status to {$original_status}");
+                    
+                } catch (Exception $e) {
+                    error_log("King Email System ERROR: Failed to send email for pending order {$order_id}: " . $e->getMessage());
+                    // Try to restore status even if email failed
+                    try {
+                        $order->set_status($original_status, 'Restored original status after email error', false);
+                        $order->save();
+                    } catch (Exception $e2) {
+                        error_log("King Email System CRITICAL: Failed to restore order status: " . $e2->getMessage());
+                    }
+                }
+                
+                if (!$email_triggered) {
+                    error_log("King Email System ERROR: No suitable email class found for pending order {$order_id}");
+                }
+            } elseif ($order_status === 'on-hold') {
+                // For on-hold orders, try on-hold email first, then fallback to processing
+                $onhold_email_found = false;
+                if (isset($emails['WC_Email_Customer_On_Hold_Order'])) {
+                    $email = $emails['WC_Email_Customer_On_Hold_Order'];
+                    if (method_exists($email, 'is_enabled') && $email->is_enabled()) {
+                        $email->trigger($order_id);
+                        error_log("King Email System: ✅ Sent WC_Email_Customer_On_Hold_Order email for order {$order_id}");
+                        $emails_sent++;
+                        $onhold_email_found = true;
+                    }
+                } elseif (isset($emails['customer_on_hold_order'])) {
+                    $email = $emails['customer_on_hold_order'];
+                    $email->trigger($order_id);
+                    error_log("King Email System: ✅ Sent customer_on_hold_order email (fallback) for order {$order_id}");
+                    $emails_sent++;
+                    $onhold_email_found = true;
+                }
+                
+                // Fallback to processing email if on-hold not found
+                if (!$onhold_email_found) {
+                    if (isset($emails['WC_Email_Customer_Processing_Order'])) {
+                        $email = $emails['WC_Email_Customer_Processing_Order'];
+                        if (method_exists($email, 'is_enabled') && $email->is_enabled()) {
+                            $email->trigger($order_id);
+                            error_log("King Email System: ✅ Sent WC_Email_Customer_Processing_Order email (fallback) for on-hold order {$order_id}");
+                            $emails_sent++;
+                        }
+                    } elseif (isset($emails['customer_processing_order'])) {
+                        $email = $emails['customer_processing_order'];
+                        $email->trigger($order_id);
+                        error_log("King Email System: ✅ Sent customer_processing_order email (fallback) for on-hold order {$order_id}");
+                        $emails_sent++;
+                    }
+                }
+            } else {
+                // For processing/completed orders, send processing email
+                if (isset($emails['WC_Email_Customer_Processing_Order'])) {
+                    $email = $emails['WC_Email_Customer_Processing_Order'];
+                    if (method_exists($email, 'is_enabled') && $email->is_enabled()) {
+                        $email->trigger($order_id);
+                        error_log("King Email System: ✅ Sent WC_Email_Customer_Processing_Order email for order {$order_id}");
+                        $emails_sent++;
+                    } else {
+                        error_log("King Email System WARNING: WC_Email_Customer_Processing_Order is disabled");
+                    }
+                } elseif (isset($emails['customer_processing_order'])) {
+                    $email = $emails['customer_processing_order'];
+                    $email->trigger($order_id);
+                    error_log("King Email System: ✅ Sent customer_processing_order email (fallback) for order {$order_id}");
+                    $emails_sent++;
+                } else {
+                    error_log("King Email System WARNING: customer_processing_order email not found. Available keys: " . implode(', ', array_keys($emails)));
+                }
+            }
             
             // Send new order notification to admin
-            if (isset($emails['new_order'])) {
+            $admin_email_found = false;
+            if (isset($emails['WC_Email_New_Order'])) {
+                $email = $emails['WC_Email_New_Order'];
+                if (method_exists($email, 'is_enabled')) {
+                    if ($email->is_enabled()) {
+                        $email->trigger($order_id);
+                        error_log("King Email System: ✅ Sent WC_Email_New_Order email for order {$order_id}");
+                        $emails_sent++;
+                        $admin_email_found = true;
+                    } else {
+                        error_log("King Email System WARNING: WC_Email_New_Order is disabled");
+                    }
+                } else {
+                    $email->trigger($order_id);
+                    error_log("King Email System: ✅ Sent WC_Email_New_Order email (no is_enabled check) for order {$order_id}");
+                    $emails_sent++;
+                    $admin_email_found = true;
+                }
+            } elseif (isset($emails['new_order'])) {
                 $email = $emails['new_order'];
                 $email->trigger($order_id);
-                error_log("King Email System: ✅ Sent new_order email for order {$order_id}");
-            } else {
-                error_log("King Email System ERROR: new_order email not found");
+                error_log("King Email System: ✅ Sent new_order email (fallback) for order {$order_id}");
+                $emails_sent++;
+                $admin_email_found = true;
             }
+            
+            if (!$admin_email_found) {
+                error_log("King Email System ERROR: new_order email not found. Available keys: " . implode(', ', array_keys($emails)));
+            }
+            
+            return $emails_sent > 0;
             
         } catch (Exception $e) {
             error_log("King Email System: ❌ Error triggering emails for order {$order_id}: " . $e->getMessage());
+            return false;
         }
     }
     
@@ -605,21 +807,22 @@ class KingEmailSystem {
             'permission_callback' => [$this, 'check_admin_permissions']
         ]);
         
-        // DISABLED: REST API endpoint for triggering emails - let WooCommerce handle emails automatically
-        // register_rest_route('king-email/v1', '/trigger-order-email', [
-        //     'methods' => 'POST',
-        //     'callback' => [$this, 'trigger_order_email_api'],
-        //     'permission_callback' => '__return_true',
-        //     'args' => [
-        //         'order_id' => [
-        //             'required' => true,
-        //             'type' => 'integer',
-        //             'validate_callback' => function($param, $request, $key) {
-        //                 return is_numeric($param);
-        //             }
-        //         ]
-        //     ]
-        // ]);
+        // ENABLED: REST API endpoint for triggering emails when HPOS is not enabled
+        // This allows headless frontend to trigger WooCommerce emails manually
+        register_rest_route('king-email/v1', '/trigger-order-email', [
+            'methods' => 'POST',
+            'callback' => [$this, 'trigger_order_email_api'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'order_id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'validate_callback' => function($param, $request, $key) {
+                        return is_numeric($param);
+                    }
+                ]
+            ]
+        ]);
         
         // DISABLED: REST API endpoint for sending direct emails - let WooCommerce handle emails automatically
         // register_rest_route('king-email/v1', '/send-direct-email', [
@@ -689,7 +892,10 @@ class KingEmailSystem {
     public function trigger_order_email_api($request) {
         $order_id = $request->get_param('order_id');
         
+        error_log("King Email System API: trigger_order_email_api called with order_id: {$order_id}");
+        
         if (!$order_id) {
+            error_log("King Email System API ERROR: Missing order_id parameter");
             return new WP_Error('missing_order_id', 'Brak ID zamówienia', array('status' => 400));
         }
         
@@ -698,18 +904,24 @@ class KingEmailSystem {
         try {
             $result = $this->trigger_rest_api_emails($order_id);
             
+            error_log("King Email System API: trigger_rest_api_emails returned: " . ($result ? 'true' : 'false'));
+            
             if ($result) {
-                return array(
+                $response = array(
                     'success' => true,
                     'message' => "Email wysłany dla zamówienia {$order_id}",
                     'order_id' => $order_id
                 );
+                error_log("King Email System API: Returning success response: " . json_encode($response));
+                return $response;
             } else {
+                error_log("King Email System API ERROR: trigger_rest_api_emails returned false");
                 return new WP_Error('email_failed', 'Nie udało się wysłać emaila', array('status' => 500));
             }
             
         } catch (Exception $e) {
             error_log("King Email System API Error: " . $e->getMessage());
+            error_log("King Email System API Error Stack: " . $e->getTraceAsString());
             return new WP_Error('email_error', $e->getMessage(), array('status' => 500));
         }
     }

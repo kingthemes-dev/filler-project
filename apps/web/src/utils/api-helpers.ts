@@ -5,6 +5,24 @@
 import { env } from '@/config/env';
 import { CustomError, ERROR_CODES, handleNetworkRequest } from './error-handler';
 import { RequestConfig } from '@/types/api';
+import { logger } from './logger';
+import type {
+  WooCustomer,
+  WooOrder,
+  WooProduct,
+} from '@/types/woocommerce';
+
+type BufferLike = {
+  from: (input: string) => { toString: (encoding: string) => string };
+};
+
+type WooPayload = Record<string, unknown>;
+
+type WooQueryParams = Record<string, string | number | boolean | undefined>;
+
+type SendinBlueAttributes = Record<string, string | number | boolean | null | undefined>;
+
+type Sanitizable = string | number | boolean | null | undefined;
 
 // Base API configuration
 const API_CONFIG = {
@@ -29,9 +47,9 @@ export class WooCommerceAPI {
     const raw = `${this.consumerKey}:${this.consumerSecret}`;
     try {
       // Node.js (global Buffer)
-      const B = (globalThis as any).Buffer;
-      if (B && typeof B.from === 'function') {
-        return `Basic ${B.from(raw).toString('base64')}`;
+      const globalBuffer = (globalThis as { Buffer?: BufferLike }).Buffer;
+      if (globalBuffer && typeof globalBuffer.from === 'function') {
+        return `Basic ${globalBuffer.from(raw).toString('base64')}`;
       }
     } catch {}
     // Browser fallback
@@ -72,53 +90,64 @@ export class WooCommerceAPI {
             errorText
           );
         }
-        return response.json();
+        const payload = (await response.json()) as T;
+        return payload;
       }),
       'Błąd komunikacji z WooCommerce'
     );
   }
 
   // Customer methods
-  async getCustomer(customerId: number) {
-    return this.makeRequest(`/wp-json/wc/v3/customers/${customerId}`);
+  async getCustomer(customerId: number): Promise<WooCustomer> {
+    return this.makeRequest<WooCustomer>(`/wp-json/wc/v3/customers/${customerId}`);
   }
 
-  async updateCustomer(customerId: number, data: any) {
-    return this.makeRequest(`/wp-json/wc/v3/customers/${customerId}`, {
+  async updateCustomer(customerId: number, data: Partial<WooCustomer> | WooPayload): Promise<WooCustomer> {
+    return this.makeRequest<WooCustomer>(`/wp-json/wc/v3/customers/${customerId}`, {
       method: 'PUT',
       body: data
     });
   }
 
-  async createCustomer(data: any) {
-    return this.makeRequest('/wp-json/wc/v3/customers', {
+  async createCustomer(data: Partial<WooCustomer> | WooPayload): Promise<WooCustomer> {
+    return this.makeRequest<WooCustomer>('/wp-json/wc/v3/customers', {
       method: 'POST',
       body: data
     });
   }
 
   // Product methods
-  async getProducts(params: Record<string, any> = {}) {
-    const searchParams = new URLSearchParams(params);
-    return this.makeRequest(`/wp-json/wc/v3/products?${searchParams}`);
+  async getProducts<T = WooProduct[]>(params: WooQueryParams = {}): Promise<T> {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.set(key, String(value));
+      }
+    });
+    return this.makeRequest<T>(`/wp-json/wc/v3/products?${searchParams}`);
   }
 
-  async getProduct(productId: number) {
-    return this.makeRequest(`/wp-json/wc/v3/products/${productId}`);
+  async getProduct(productId: number): Promise<WooProduct> {
+    return this.makeRequest<WooProduct>(`/wp-json/wc/v3/products/${productId}`);
   }
 
   // Order methods
-  async getOrders(params: Record<string, any> = {}) {
-    const searchParams = new URLSearchParams(params);
-    return this.makeRequest(`/wp-json/wc/v3/orders?${searchParams}`);
+  async getOrders<T = WooOrder[]>(params: WooQueryParams = {}): Promise<T> {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.set(key, String(value));
+      }
+    });
+    return this.makeRequest<T>(`/wp-json/wc/v3/orders?${searchParams}`);
   }
 
-  async getOrder(orderId: number) {
-    return this.makeRequest(`/wp-json/wc/v3/orders/${orderId}`);
+  async getOrder(orderId: number): Promise<WooOrder> {
+    return this.makeRequest<WooOrder>(`/wp-json/wc/v3/orders/${orderId}`);
   }
 
-  async createOrder(data: any) {
-    return this.makeRequest('/wp-json/wc/v3/orders', {
+  async createOrder(data: Partial<WooOrder> | WooPayload): Promise<WooOrder> {
+    return this.makeRequest<WooOrder>('/wp-json/wc/v3/orders', {
       method: 'POST',
       body: data
     });
@@ -163,21 +192,22 @@ export class WordPressAPI {
             errorText
           );
         }
-        return response.json();
+        const payload = (await response.json()) as T;
+        return payload;
       }),
       'Błąd komunikacji z WordPress'
     );
   }
 
-  async triggerOrderEmail(data: any) {
-    return this.makeRequest('/wp-json/king-email/v1/trigger-order-email', {
+  async triggerOrderEmail<T = unknown>(data: WooPayload): Promise<T> {
+    return this.makeRequest<T>('/wp-json/king-email/v1/trigger-order-email', {
       method: 'POST',
       body: data
     });
   }
 
-  async sendDirectEmail(data: any) {
-    return this.makeRequest('/wp-json/king-email/v1/send-direct-email', {
+  async sendDirectEmail<T = unknown>(data: WooPayload): Promise<T> {
+    return this.makeRequest<T>('/wp-json/king-email/v1/send-direct-email', {
       method: 'POST',
       body: data
     });
@@ -202,10 +232,10 @@ export class SendinBlueAPI {
     email: string;
     firstName?: string;
     lastName?: string;
-    attributes?: Record<string, any>;
+    attributes?: SendinBlueAttributes;
   }) {
     if (!this.apiKey || !this.listId) {
-      console.warn('SendinBlue API not configured');
+      logger.warn('SendinBlue API not configured');
       return { success: false, message: 'Newsletter service not configured' };
     }
 
@@ -277,7 +307,7 @@ export function buildApiUrl(baseUrl: string, endpoint: string, params?: Record<s
   return url.toString();
 }
 
-export function sanitizeInput(value: any): string {
+export function sanitizeInput(value: Sanitizable): string {
   if (typeof value !== 'string') return value ? String(value).trim() : '';
   return value
     .replace(/<[^>]*>/g, '')
@@ -287,7 +317,7 @@ export function sanitizeInput(value: any): string {
     .trim();
 }
 
-export function validateEmail(email: any): boolean {
+export function validateEmail(email: unknown): email is string {
   if (typeof email !== 'string') return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }

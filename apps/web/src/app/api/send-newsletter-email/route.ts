@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
+import { sendNewsletterEmailSchema } from '@/lib/schemas/internal';
+import { validateApiInput } from '@/utils/request-validation';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, firstName, lastName, discountCode, source } = body;
+    const sanitizedBody = validateApiInput(body);
+    const validationResult = sendNewsletterEmailSchema.safeParse(sanitizedBody);
 
-    if (!email || !discountCode) {
-      return NextResponse.json(
-        { success: false, error: 'Email i kod rabatowy są wymagane' },
-        { status: 400 }
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Nieprawidłowe dane do wysyłki newslettera', validationResult.error.errors),
+        { endpoint: 'send-newsletter-email', method: 'POST' }
       );
     }
+
+    const { email, firstName, lastName, discountCode, source } = validationResult.data;
 
     // Prepare email content
     const subject = source === 'registration' 
@@ -77,7 +84,11 @@ export async function POST(request: NextRequest) {
     `;
 
     // Send email using WordPress wp_mail directly
-    console.log(`📧 Sending newsletter email to ${email} with code ${discountCode}`);
+    logger.info('Sending newsletter email', {
+      email,
+      discountCode,
+      source
+    });
     
     try {
       // Use WordPress wp_mail via REST API
@@ -95,45 +106,72 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          to: email,
-          subject: subject,
+          customer_email: email,
+          subject,
           message: htmlContent,
-          customerName: firstName && lastName ? `${firstName} ${lastName}` : 'Użytkownik',
+          customer_name: firstName && lastName ? `${firstName} ${lastName}` : 'Użytkownik',
+          type: source === 'registration' ? 'registration_discount' : 'newsletter_discount',
+          order_id: 'newsletter',
+          order_number: 'NEWSLETTER',
+          total: '0',
+          items: [],
         }),
       });
 
       if (emailResponse.ok) {
-        console.log(`✅ Newsletter email sent to ${email} with code ${discountCode}`);
+        logger.info('Newsletter email sent', {
+          email,
+          discountCode,
+          source
+        });
         return NextResponse.json({
           success: true,
           message: 'Email z kodem rabatowym został wysłany'
         });
       } else {
         const errorText = await emailResponse.text();
-        console.error(`❌ Failed to send newsletter email:`, errorText);
+        logger.error('Failed to send newsletter email', {
+          email,
+          status: emailResponse.status,
+          error: errorText?.slice(0, 500) ?? 'unknown'
+        });
         
-        // Fallback: Just log success (email might still work)
-        console.log(`✅ Newsletter email logged for ${email} with code ${discountCode}`);
+        logger.warn('Newsletter email fallback success', {
+          email,
+          discountCode,
+          reason: 'api-failure'
+        });
         return NextResponse.json({
           success: true,
           message: 'Email z kodem rabatowym został wysłany (fallback)'
         });
       }
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
+      const err = emailError instanceof Error ? emailError : new Error('Newsletter email send error');
+      logger.error('Email sending error', {
+        message: err.message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      });
       
-      // Fallback: Just log success
-      console.log(`✅ Newsletter email logged for ${email} with code ${discountCode} (fallback)`);
+      logger.warn('Newsletter email fallback success', {
+        email,
+        discountCode,
+        reason: 'exception'
+      });
       return NextResponse.json({
         success: true,
         message: 'Email z kodem rabatowym został wysłany (fallback)'
       });
     }
 
-  } catch (error: any) {
-    console.error('Error sending newsletter email:', error);
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error('Error sending newsletter email');
+    logger.error('Error sending newsletter email', {
+      message: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
     return NextResponse.json(
-      { success: false, error: 'Wystąpił błąd podczas wysyłania emaila' },
+      { success: false, error: err.message || 'Wystąpił błąd podczas wysyłania emaila' },
       { status: 500 }
     );
   }

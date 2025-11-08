@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-import { Star, Send } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Star, Send, X, Image as ImageIcon } from 'lucide-react';
 import wooCommerceService from '@/services/woocommerce-optimized';
 
 interface ReviewFormProps {
   productId: number;
   onReviewSubmitted?: () => void;
+}
+
+interface UploadedImage {
+  id: number;
+  url: string;
+  thumbnail: string;
+  file?: File;
+  preview?: string;
 }
 
 export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormProps) {
@@ -16,9 +24,12 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
     review: '',
     rating: 0
   });
+  const [images, setImages] = useState<UploadedImage[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -35,6 +46,80 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
     }));
   };
 
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // Validate total images count (max 5)
+    if (images.length + files.length > 5) {
+      setErrorMessage('Możesz dodać maksymalnie 5 zdjęć');
+      setSubmitStatus('error');
+      return;
+    }
+
+    setIsUploading(true);
+    setErrorMessage('');
+
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`Plik ${file.name} nie jest obrazem`);
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`Plik ${file.name} jest za duży (max 5MB)`);
+        }
+
+        // Create preview
+        const preview = URL.createObjectURL(file);
+
+        // Upload to server
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch('/api/reviews/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Błąd uploadu: ${file.name}`);
+        }
+
+        const result = await response.json();
+        
+        // Clean up preview URL
+        URL.revokeObjectURL(preview);
+
+        return {
+          id: result.attachment_id,
+          url: result.url,
+          thumbnail: result.thumbnail || result.url,
+        };
+      });
+
+      const uploadedImages = await Promise.all(uploadPromises);
+      setImages(prev => [...prev, ...uploadedImages]);
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Błąd podczas uploadu zdjęć');
+      setSubmitStatus('error');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -49,13 +134,21 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
     setErrorMessage('');
 
     try {
-      await wooCommerceService.createProductReview({
+      // Prepare image IDs for submission
+      const imageIds = images.map(img => img.id);
+
+      const result = await wooCommerceService.createProductReview({
         product_id: productId,
         review: formData.review,
         reviewer: formData.reviewer,
         reviewer_email: formData.reviewer_email,
-        rating: formData.rating
+        rating: formData.rating,
+        images: imageIds.length > 0 ? imageIds : undefined
       });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Nie udało się dodać opinii');
+      }
 
       setSubmitStatus('success');
       setFormData({
@@ -64,14 +157,16 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
         review: '',
         rating: 0
       });
+      setImages([]);
 
+      // Call onReviewSubmitted callback to refresh reviews list
       if (onReviewSubmitted) {
         onReviewSubmitted();
       }
     } catch (error) {
       console.error('Error submitting review:', error);
       setSubmitStatus('error');
-      setErrorMessage('Wystąpił błąd podczas dodawania opinii. Spróbuj ponownie.');
+      setErrorMessage(error instanceof Error ? error.message : 'Wystąpił błąd podczas dodawania opinii. Spróbuj ponownie.');
     } finally {
       setIsSubmitting(false);
     }
@@ -84,7 +179,7 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
           Dziękujemy za opinię!
         </div>
         <p className="text-green-700">
-          Twoja opinia została dodana i będzie widoczna po zatwierdzeniu.
+          Twoja opinia została dodana i jest już widoczna!
         </p>
         <button
           onClick={() => setSubmitStatus('idle')}
@@ -186,6 +281,58 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
             placeholder="Podziel się swoją opinią o tym produkcie..."
             required
           />
+        </div>
+
+        {/* Image Upload */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Zdjęcia (opcjonalnie, max 5)
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageSelect}
+            disabled={isUploading || images.length >= 5}
+            className="hidden"
+            id="review-images"
+          />
+          <label
+            htmlFor="review-images"
+            className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer transition-colors ${
+              isUploading || images.length >= 5
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <ImageIcon className="w-4 h-4 mr-2" />
+            {isUploading ? 'Uploadowanie...' : images.length >= 5 ? 'Osiągnięto limit (5)' : 'Dodaj zdjęcia'}
+          </label>
+          {images.length > 0 && (
+            <div className="mt-3 grid grid-cols-5 gap-2">
+              {images.map((image, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={image.thumbnail || image.url}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-20 object-cover rounded-lg border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Usuń zdjęcie"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            Możesz dodać maksymalnie 5 zdjęć (JPEG, PNG, GIF, WebP, max 5MB każdy)
+          </p>
         </div>
 
         {/* Error Message */}

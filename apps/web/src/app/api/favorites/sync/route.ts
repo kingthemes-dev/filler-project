@@ -1,24 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
-import { WooProduct } from '@/types/woocommerce';
+import { syncFavoritesSchema, type SyncFavorites } from '@/lib/schemas/favorites';
+import { validateApiInput } from '@/utils/request-validation';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
 
-// Mock database - w prawdziwej aplikacji używałbyś bazy danych
-const favoritesDB: { [userId: string]: WooProduct[] } = {};
+// Mock database - replace with persistent store if needed
+const favoritesDB: Record<string, SyncFavorites['favorites']> = {};
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId = 'anonymous', favorites } = body;
-    
-    if (!Array.isArray(favorites)) {
-      return NextResponse.json(
-        { success: false, error: 'Favorites must be an array' },
-        { status: 400 }
+    const rawBody = await request.json();
+    const sanitizedBody = validateApiInput(rawBody);
+    const validationResult = syncFavoritesSchema.safeParse(sanitizedBody);
+
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Nieprawidłowe dane synchronizacji ulubionych', validationResult.error.errors),
+        { endpoint: 'favorites/sync', method: 'POST' }
       );
     }
+
+    const { userId, favorites } = validationResult.data;
     
     // Zastąp ulubione użytkownika nowymi danymi
     favoritesDB[userId] = favorites;
+    logger.info('Favorites synchronized', { userId, count: favorites.length });
     
     return NextResponse.json({
       success: true,
@@ -27,7 +34,7 @@ export async function POST(request: NextRequest) {
       count: favoritesDB[userId].length
     });
   } catch (error) {
-    console.error('Error synchronizing favorites:', error);
+    logger.error('Favorites sync error', { error });
     return NextResponse.json(
       { success: false, error: 'Failed to synchronize favorites' },
       { status: 500 }

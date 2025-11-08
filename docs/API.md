@@ -2,6 +2,84 @@
 
 <!-- AUTO:API-START -->
 
+#### Trasy Next.js (`apps/web/src/app/api`)
+
+| Ścieżka | Metody | Runtime | Opis |
+| --- | --- | --- | --- |
+| `/api/admin/auth` | POST, GET | nodejs | Waliduje `ADMIN_CACHE_TOKEN`/`ADMIN_TOKEN` dla narzędzi administracyjnych i monitoringu. |
+| `/api/analytics` | POST, GET | nodejs | Zbiera zdarzenia analityczne (Redis) oraz udostępnia `type=summary|realtime|sessions` do wglądu w czasie rzeczywistym. |
+| `/api/cache/clear` | POST | nodejs | Czyści pamięć podręczną w warstwie Next.js (`lib/cache`). |
+| `/api/cache/purge` | POST, GET | nodejs | Czyści cache po wzorcu lub globalnie (`x-admin-token`/`Authorization: Bearer`). GET zwraca statystyki. |
+| `/api/cache/warm` | POST | nodejs | Dogrzewa cache wykonując równoległe zapytania do najczęściej używanych tras (WooCommerce + health). |
+| `/api/cart-proxy` | POST, OPTIONS | nodejs | Proxy do `king-cart/v1/*` (dodawanie/usuwanie/aktualizacja koszyka) z nagłówkiem `X-King-Secret`. |
+| `/api/edge/analytics` | POST, GET | edge | Lekka funkcja edge: loguje zdarzenia UX z geolokalizacją; GET zwraca skrócone statystyki cache’owane na CDN. |
+| `/api/edge/geolocation` | GET | edge | Zwraca geolokalizację i metadane żądania (Cloudflare/Vercel headers) do personalizacji UI. |
+| `/api/environment` | GET | nodejs | Diagnostyka środowiska uruchomieniowego (Node, platforma, pamięć, uptime). |
+| `/api/error-tracking` | POST, GET | nodejs | Lekkie logowanie wsadowe błędów/performance; GET (`status`) pozwala na health-check integracji. |
+| `/api/errors` | POST, GET | nodejs | Zaawansowane monitorowanie błędów (Redis, metryki, alerty krytyczne) z filtrami `type=summary|list|metrics`. |
+| `/api/favorites` | GET, POST, DELETE | nodejs | Mock Store API dla ulubionych produktów (persist w pamięci – używane w testach/Zustand). |
+| `/api/favorites/sync` | POST | nodejs | Synchronizacja listy ulubionych między klientem a mockowym backendem. |
+| `/api/health` | GET, HEAD | nodejs | Pełny health-check: Redis, WordPress, baza, cache, circuit breakers (status `ok/degraded/error`). |
+| `/api/home-feed` | GET | nodejs | Prefetch danych strony głównej (nowości, promocje, bestsellery) z cache TTL/ETag. |
+| `/api/live` | GET, HEAD | nodejs | Liveness check procesu Next.js (PID, uptime). |
+| `/api/monitoring` | GET | nodejs | HPOS performance dashboard (`action=summary|metrics|timeseries|reset`). |
+| `/api/newsletter/subscribe` | POST | nodejs | Rejestracja w Brevo (Sendinblue), generuje kupon WooCommerce i triggeruje email powitalny. |
+| `/api/performance` | POST, GET | nodejs | Przyjmuje raporty Web Vitals / bundle metrics; GET zwraca status modułu monitoringu. |
+| `/api/performance/metrics` | POST | nodejs | Magazynuje szczegółowe metryki (TTFB/LCP/CLS itd.) w `performanceMonitor`. |
+| `/api/performance/stats` | GET | nodejs | Ekspozycja aktualnych statystyk z `performanceMonitor` (przegląd dla panelu admin). |
+| `/api/ready` | GET, HEAD | nodejs | Readiness probe – sprawdza realne połączenie z WordPressem i WooCommerce. |
+| `/api/recaptcha/verify` | POST | nodejs | Serwerowa weryfikacja tokenów reCAPTCHA v3 (fallback dev-mode gdy brak sekretu). |
+| `/api/revalidate` | POST, GET | nodejs | Wymusza ISR/tag revalidation (`secret=REVALIDATE_SECRET`), opcjonalnie flush MU cache. |
+| `/api/reviews` | GET, POST | nodejs | Proxy dla `king-reviews/v1/reviews` (lista + tworzenie opinii z walidacją Zod). |
+| `/api/reviews/upload` | POST | nodejs | Przesyłanie zdjęć do recenzji (walidacja typu/rozmiaru, delegacja do MU pluginu). |
+| `/api/send-discount-email` | POST | nodejs | Kompozycja i wysyłka maili rabatowych (WooCommerce + fallback HTML). |
+| `/api/send-email` | POST | nodejs | Główna bramka email: próbuje `king-email/v1/trigger-order-email`, fallback do `send-direct-email`. |
+| `/api/send-newsletter-email` | POST | nodejs | Wysyła maile newsletterowe przez MU plugin (`king-email/v1/send-newsletter-email`). |
+| `/api/settings/status` | GET | nodejs | Pokazuje stan konfiguracji (WooCommerce, Redis, security flags). |
+| `/api/test` | GET | nodejs | Lekka trasa diagnostyczna – potwierdza konfigurację WooCommerce. |
+| `/api/test-product` | GET | nodejs | Testowe pobranie produktu po `slug` z usług optymalizacyjnych WooCommerce. |
+| `/api/webhooks` | POST, GET | nodejs | HPOS webhook handler z weryfikacją HMAC i deduplikacją; GET potwierdza status endpointu. |
+| `/api/woocommerce` | GET, POST | nodejs | Uniwersalny proxy do WooCommerce REST + MU (`endpoint=*`, walidacje Zod, cache, rate limiting). |
+| `/api/woocommerce-status` | GET | nodejs | Diagnostyka WooCommerce (system status, statystyki produktów/zamówień/klientów, webhooks). |
+
+#### WordPress MU-plugins (`wp-content/mu-plugins`)
+
+| Namespace | Endpoint | Metody | Opis |
+| --- | --- | --- | --- |
+| `custom/v1` | `/password-reset` | POST | Inicjuje reset hasła WooCommerce (zawsze zwraca sukces, maskuje istnienie konta). |
+| `custom/v1` | `/reset-password` | POST | Kończy reset hasła (`key`, `login`, `password`) z walidacją i logowaniem audytowym. |
+| `custom/v1` | `/invoices` | GET | Lista faktur klienta (zabezpieczenie po stronie MU + sprawdzanie uprawnień). |
+| `custom/v1` | `/invoice/(?P<id>\d+)` | GET | Pobiera dane pojedynczej faktury (JSON). |
+| `custom/v1` | `/invoice/(?P<id>\d+)/pdf` | GET | Generuje binarny PDF faktury (TCPDF) – dodaje nagłówki do pobrania. |
+| `custom/v1` | `/tracking/(?P<order_id>\d+)` | GET | Dane śledzenia przesyłki powiązanej z zamówieniem. |
+| `custom/v1` | `/customer/update-profile` | POST | Aktualizacja profilu klienta B2B (firma, NIP, adresy). |
+| `custom/v1` | `/customer/change-password` | POST | Zmiana hasła z panelu klienta (wymaga `customer_id`, starego i nowego hasła). |
+| `king-cart/v1` | `/nonce` | GET | Generuje nonce dla operacji Store API (fallback gdy brak shared secretu). |
+| `king-cart/v1` | `/add-item` | POST/OPTIONS | Dodaje produkt do koszyka (proxy do `wc/store/v1/cart/add-item`). |
+| `king-cart/v1` | `/remove-item` | POST | Usuwa pozycję z koszyka (Store API). |
+| `king-cart/v1` | `/update-item` | POST | Aktualizuje ilości w koszyku (Store API). |
+| `king-cart/v1` | `/cart` | GET | Zwraca stan koszyka Store API. |
+| `king-email/v1` | `/send-test` | POST | Wysyła testowy email diagnostyczny (wymaga uprawnień admina WP). |
+| `king-email/v1` | `/logs` | GET | Zwraca logi wysyłek mailowych. |
+| `king-email/v1` | `/templates` | GET | Lista szablonów email (adapter mode). |
+| `king-email/v1` | `/hpos-logs` | GET | Historia zdarzeń HPOS powiązanych z emailami. |
+| `king-email/v1` | `/hpos-status` | GET | Status kompatybilności HPOS (włączony/wyłączony). |
+| `king-email/v1` | `/trigger-order-email` | POST | Wymusza wysyłkę maila WooCommerce dla zamówienia. |
+| `king-email/v1` | `/send-direct-email` | POST | Fallback – wysyła email transakcyjny bezpośrednio przez WordPress SMTP. |
+| `king-email/v1` | `/send-newsletter-email` | POST | Bramka do newsletterów/akcji marketingowych (HTML + tracking). |
+| `king-jwt/v1` | `/login` | POST | Logowanie klientów WooCommerce (zwraca token JWT + dane profilu). |
+| `king-jwt/v1` | `/validate` | POST | Walidacja tokenu JWT i odczyt podstawowych informacji o użytkowniku. |
+| `king-jwt/v1` | `/refresh` | POST | Odświeża token JWT (rotacja). |
+| `king-optimized/v1` | `/homepage` | GET | Jeden payload z sekcjami home (produkty, bannery, bestsellery) z cache Redis/WP. |
+| `king-optimized/v1` | `/shop` | GET | Lekka lista produktów dla listingu / infinite scroll. |
+| `king-optimized/v1` | `/product/(?P<id>\d+)` | GET | Szczegóły produktu + warianty. |
+| `king-optimized/v1` | `/product/(?P<slug>[a-zA-Z0-9-]+)` | GET | Szczegóły produktu po slug. |
+| `king-optimized/v1` | `/product-slug/(?P<slug>[a-zA-Z0-9-]+)` | GET | Szybkie wyszukiwanie produktu po slug (fallback). |
+| `king-reviews/v1` | `/reviews` | GET/POST | Lista opinii (GET) i tworzenie recenzji (POST, auto-approve + walidacja). |
+| `king-reviews/v1` | `/upload-image` | POST | Upload obrazów do recenzji (limit 5 MB, typy: jpeg/png/gif/webp). |
+| `king-shop/v1` | `/data` | GET | Agregacja danych sklepu (produkty, kategorie, atrybuty, filtry, statystyki). |
+| `king-shop/v1` | `/attributes` | GET | Dynamiczne przeliczanie atrybutów pod aktualne filtry (tree recalculation). |
+
 <!-- AUTO:API-END -->
 
 ## Przegląd

@@ -1,0 +1,78 @@
+[
+  {
+    "name": "🧠 Full Project Audit",
+    "prompt": "audit full project including API (REST + MU plugins), frontend performance, caching, SEO, env security, and UX. Analyze all Next.js routes, Woo endpoints, Lighthouse results, Sentry logs, and caching strategy. Output prioritized fixes and optimization plan."
+  },
+  {
+    "name": "⚙️ API Audit (Woo + MU Plugins)",
+    "prompt": "analyze all API routes in Next.js and MU-plugins endpoints. Check auth, rate limits, caching, and error handling. List every route with method, purpose, and security notes. Suggest optimizations to reduce latency and redundant Woo REST calls."
+  },
+  {
+    "name": "🚀 Performance Optimization",
+    "prompt": "run performance optimization on frontend and API. Inspect Lighthouse, render-blocking scripts, ISR/SSG/SSR setup, stale-while-revalidate, image optimization, and Next.js Edge runtime. Suggest quick wins and long-term improvements."
+  },
+  {
+    "name": "🧩 Component & Zustand Audit",
+    "prompt": "audit React components and Zustand stores. Detect unnecessary re-renders, large client components, and missing selectors. Suggest splitting logic for performance and adding memoization or RSC boundaries."
+  },
+  {
+    "name": "🔒 Security Audit",
+    "prompt": "check all secrets and API keys for exposure. Validate CSRF, CORS, webhook verification, and rate limiting. Ensure no NEXT_PUBLIC_ secrets expose private tokens. Summarize potential vulnerabilities and fixes."
+  },
+  {
+    "name": "📊 GA4 + GTM Audit",
+    "prompt": "verify GA4 and GTM setup. Check dataLayer pushes for view_item, add_to_cart, begin_checkout, purchase. Ensure events fire once, not duplicated, and tag IDs match env. Output table of event tracking coverage."
+  },
+  {
+    "name": "💬 Brevo + Newsletter Check",
+    "prompt": "analyze Brevo integration. Verify webhook secret, GDPR compliance, double opt-in, list ID, and coupon automation. Suggest analytics events for signup and redemption tracking."
+  },
+  {
+    "name": "🧪 Generate Tests",
+    "prompt": "create Playwright and Jest tests for cart, checkout, product detail, and API routes. Include assertions for key functionality and error states. Organize tests in /tests directory with clear naming."
+  },
+  {
+    "name": "📄 Docs Sync",
+    "prompt": "generate or update documentation files in /docs: ARCHITECTURE.md, API.md, COMPONENTS_BRIEF.md, CHANGELOG.md, README.md. Reflect current REST endpoints, folder structure, and features. Use Markdown with tables and code examples."
+  },
+  {
+    "name": "🧰 Dependency & Code Quality Check",
+    "prompt": "audit package.json dependencies. Mark unused, outdated, or heavy libraries. Check ESLint + Prettier rules consistency with .editorconfig. Auto-fix formatting issues and summarize style violations."
+  },
+  {
+    "name": "🛠️ Build & Deployment Review",
+    "prompt": "inspect Vercel build setup, .env usage, and caching. Verify server-only secrets are protected, build times optimized, and preview vs production configs correct. Output improvement list for CI/CD pipeline."
+  },
+  {
+    "name": "📈 SEO + Schema Audit",
+    "prompt": "analyze SEO: meta tags, OpenGraph, canonical, JSON-LD product schema, hreflang tags, and sitemap. Suggest missing tags or fixes for product pages and blog if present."
+  },
+  {
+    "name": "🧾 GDPR + Cookie Consent",
+    "prompt": "verify GDPR and cookie consent implementation. Check if GA4 and Brevo cookies load only after consent. Suggest minimal JS strategy for compliance and SEO performance."
+  },
+  {
+    "name": "💡 Optimize Woo REST Integration",
+    "prompt": "optimize WooCommerce REST API usage. Cache product responses, batch category fetches, handle pagination properly. Suggest incremental revalidation and conditional requests (ETag/Last-Modified)."
+  },
+  {
+    "name": "🧠 Architecture Compliance",
+    "prompt": "compare implementation with ARCHITECTURE.md. Highlight deviations from documented structure or endpoint naming. Suggest fixes for consistency and scalability."
+  },
+  {
+    "name": "🧩 Refactor API & Store Logic",
+    "prompt": "refactor API and Zustand store logic for clarity and performance. Use async/await consistently, add error boundaries, centralize fetch wrappers, and ensure SSR-friendly state hydration."
+  },
+  {
+    "name": "📦 Generate Build Report",
+    "prompt": "analyze bundle size, dynamic imports, and route splits. Output a table of largest modules and suggest how to reduce JS size with code-splitting or lazy loading."
+  },
+  {
+    "name": "🔍 Lighthouse CI Setup",
+    "prompt": "setup Lighthouse CI GitHub Action. Configure threshold (mobile >= 90, desktop >= 95). Add .lighthouserc and GitHub workflow with caching for speed. Output YAML config and instructions."
+  },
+  {
+    "name": "🧾 Auto Update Docs",
+    "prompt": "Based on recent changes, detect what part of the project was modified and update only the relevant doc among ARCHITECTURE.md, COMPONENTS_BRIEF.md, API.md, README.md, CHANGELOG.md. Respect AUTO markers (<!-- AUTO:API-START/END -->, <!-- AUTO:FOLDERS-START/END -->, <!-- AUTO:COMP-START/END -->). Keep unrelated sections intact."
+  }
+]

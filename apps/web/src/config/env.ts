@@ -24,11 +24,16 @@ interface EnvConfig {
   NEXT_PUBLIC_GA4_ID?: string; // primary GA4 id
   NEXT_PUBLIC_GTM_ID?: string;
 
+  // reCAPTCHA (public site key, server secret key)
+  NEXT_PUBLIC_RECAPTCHA_SITE_KEY?: string;
+  RECAPTCHA_SECRET_KEY?: string;
+
   // Security tokens (server required)
   REVALIDATE_SECRET: string;
   ADMIN_CACHE_TOKEN: string;
   CSRF_SECRET: string;
   WOOCOMMERCE_WEBHOOK_SECRET: string;
+  KING_CART_API_SECRET: string;
 }
 
 // Required environment variables
@@ -47,6 +52,7 @@ const REQUIRED_SERVER_VARS = [
   'ADMIN_CACHE_TOKEN',
   'CSRF_SECRET',
   'WOOCOMMERCE_WEBHOOK_SECRET',
+  'KING_CART_API_SECRET',
 ] as const;
 
 // Optional environment variables
@@ -120,6 +126,7 @@ function validateEnv(): EnvConfig {
     ADMIN_CACHE_TOKEN: process.env.ADMIN_CACHE_TOKEN || 'dev-admin-cache-token',
     CSRF_SECRET: process.env.CSRF_SECRET || 'dev-csrf-secret',
     WOOCOMMERCE_WEBHOOK_SECRET: process.env.WOOCOMMERCE_WEBHOOK_SECRET || 'dev-woo-webhook-secret',
+    KING_CART_API_SECRET: process.env.KING_CART_API_SECRET || 'dev-king-cart-secret',
     NODE_ENV: nodeEnv || 'development'
   };
 }

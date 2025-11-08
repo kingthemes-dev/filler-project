@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Check, AlertCircle, Sparkles } from 'lucide-react';
+import { executeRecaptcha, verifyRecaptchaToken } from '@/utils/recaptcha';
+import { ENV } from '@/config/constants';
 
 export default function NewsletterForm() {
   const [email, setEmail] = useState('');
@@ -29,6 +31,25 @@ export default function NewsletterForm() {
     setError('');
 
     try {
+      // FIX: reCAPTCHA verification
+      let recaptchaToken = '';
+      if (ENV.RECAPTCHA_ENABLED) {
+        try {
+          recaptchaToken = await executeRecaptcha('newsletter');
+          if (recaptchaToken) {
+            const isValid = await verifyRecaptchaToken(recaptchaToken);
+            if (!isValid) {
+              setError('Weryfikacja bezpieczeństwa nie powiodła się. Spróbuj ponownie.');
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('reCAPTCHA error:', error);
+          // Continue if reCAPTCHA fails (graceful degradation)
+        }
+      }
+
       // TODO: Replace with actual newsletter service integration
       const response = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
@@ -38,7 +59,8 @@ export default function NewsletterForm() {
         body: JSON.stringify({
           email: email,
           source: 'homepage',
-          consent: consent
+          consent: consent,
+          recaptchaToken: recaptchaToken || undefined
         }),
       });
 

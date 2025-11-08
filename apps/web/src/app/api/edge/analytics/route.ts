@@ -1,39 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
+import { edgeAnalyticsEventSchema } from '@/lib/schemas/internal';
+import { validateApiInput } from '@/utils/request-validation';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
+
+type NextRequestWithGeo = NextRequest & {
+  geo?: {
+    country?: string;
+    city?: string;
+  };
+  ip?: string | null;
+};
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validate required fields
-    if (!body.event || !body.timestamp) {
-      return NextResponse.json(
-        { error: 'Missing required fields: event, timestamp' },
-        { status: 400 }
+    const sanitizedBody = validateApiInput(body);
+    const validationResult = edgeAnalyticsEventSchema.safeParse(sanitizedBody);
+
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Nieprawidłowe dane analityczne', validationResult.error.errors),
+        { endpoint: 'edge/analytics', method: 'POST' }
       );
     }
 
-    // Get user context from headers
+    const analyticsPayload = validationResult.data;
+
     const userAgent = request.headers.get('user-agent') || 'Unknown';
     const referer = request.headers.get('referer') || 'Direct';
-    const country = (request as any).geo?.country || 'Unknown';
-    const city = (request as any).geo?.city || 'Unknown';
+    const requestWithMeta = request as NextRequestWithGeo;
+    const { geo } = requestWithMeta;
+    const country = geo?.country || request.headers.get('x-vercel-ip-country') || 'Unknown';
+    const city = geo?.city || request.headers.get('x-vercel-ip-city') || 'Unknown';
+    const edgeIp =
+      requestWithMeta.ip ||
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      request.headers.get('x-vercel-ip') ||
+      'Unknown';
 
-    // Create analytics event
     const analyticsEvent = {
-      ...body,
+      ...analyticsPayload,
       userAgent,
       referer,
       country,
       city,
-      ip: (request as any).ip || request.headers.get('x-forwarded-for') || 'Unknown',
-      timestamp: new Date().toISOString(),
+      ip: edgeIp,
+      processedAt: new Date().toISOString(),
     };
 
-    // In a real implementation, you would send this to your analytics service
-    // For now, we'll just log it
-    console.log('Analytics Event:', JSON.stringify(analyticsEvent, null, 2));
+    logger.info('Edge analytics event', {
+      event: analyticsEvent.event,
+      country,
+      city,
+      referer,
+      sessionId: analyticsEvent.sessionId
+    });
 
     return NextResponse.json(
       { success: true, eventId: `evt_${Date.now()}` },
@@ -43,11 +68,13 @@ export async function POST(request: NextRequest) {
         },
       }
     );
-  } catch {
-    return NextResponse.json(
-      { error: 'Failed to process analytics event' },
-      { status: 500 }
-    );
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error('Edge analytics error');
+    logger.error('Edge analytics error', {
+      message: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+    return NextResponse.json({ error: 'Failed to process analytics event' }, { status: 500 });
   }
 }
 

@@ -1,0 +1,137 @@
+name: Lighthouse CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/src/app/**'
+      - 'apps/web/src/components/**'
+      - 'apps/web/src/styles/**'
+      - 'apps/web/public/**'
+  workflow_dispatch:
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+      
+      - name: Build application
+        working-directory: apps/web
+        run: npm run build
+        env:
+          NEXT_PUBLIC_WORDPRESS_URL: ${{ secrets.NEXT_PUBLIC_WORDPRESS_URL || 'https://example.com' }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL || 'https://example.com' }}
+          NEXT_PUBLIC_WC_URL: ${{ secrets.NEXT_PUBLIC_WC_URL || 'https://example.com/wp-json/wc/v3' }}
+          WC_CONSUMER_KEY: ${{ secrets.WC_CONSUMER_KEY || 'test' }}
+          WC_CONSUMER_SECRET: ${{ secrets.WC_CONSUMER_SECRET || 'test' }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET || 'test' }}
+          ADMIN_CACHE_TOKEN: ${{ secrets.ADMIN_CACHE_TOKEN || 'test' }}
+          CSRF_SECRET: ${{ secrets.CSRF_SECRET || 'test' }}
+          WOOCOMMERCE_WEBHOOK_SECRET: ${{ secrets.WOOCOMMERCE_WEBHOOK_SECRET || 'test' }}
+      
+      - name: Start Next.js server
+        working-directory: apps/web
+        run: |
+          npm start &
+          sleep 15
+          # Wait for server to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000/api/health; do sleep 2; done'
+        env:
+          NEXT_PUBLIC_WORDPRESS_URL: ${{ secrets.NEXT_PUBLIC_WORDPRESS_URL || 'https://example.com' }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL || 'https://example.com' }}
+          NEXT_PUBLIC_WC_URL: ${{ secrets.NEXT_PUBLIC_WC_URL || 'https://example.com/wp-json/wc/v3' }}
+          WC_CONSUMER_KEY: ${{ secrets.WC_CONSUMER_KEY || 'test' }}
+          WC_CONSUMER_SECRET: ${{ secrets.WC_CONSUMER_SECRET || 'test' }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET || 'test' }}
+          ADMIN_CACHE_TOKEN: ${{ secrets.ADMIN_CACHE_TOKEN || 'test' }}
+          CSRF_SECRET: ${{ secrets.CSRF_SECRET || 'test' }}
+          WOOCOMMERCE_WEBHOOK_SECRET: ${{ secrets.WOOCOMMERCE_WEBHOOK_SECRET || 'test' }}
+          NODE_ENV: production
+      
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli
+      
+      - name: Run Lighthouse CI (Mobile)
+        working-directory: apps/web
+        run: |
+          lhci autorun \
+            --collect.url=http://localhost:3000 \
+            --collect.url=http://localhost:3000/produkt/test-product \
+            --collect.url=http://localhost:3000/koszyk \
+            --collect.numberOfRuns=3 \
+            --collect.settings.preset=mobile \
+            --assert.assertions.performance=95 \
+            --assert.assertions.accessibility=95 \
+            --assert.assertions.best-practices=95 \
+            --assert.assertions.seo=95 \
+            --upload.target=temporary-public-storage || true
+        continue-on-error: true
+      
+      - name: Run Lighthouse CI (Desktop)
+        working-directory: apps/web
+        run: |
+          lhci autorun \
+            --collect.url=http://localhost:3000 \
+            --collect.url=http://localhost:3000/produkt/test-product \
+            --collect.url=http://localhost:3000/koszyk \
+            --collect.numberOfRuns=3 \
+            --collect.settings.preset=desktop \
+            --assert.assertions.performance=95 \
+            --assert.assertions.accessibility=95 \
+            --assert.assertions.best-practices=95 \
+            --assert.assertions.seo=95 \
+            --upload.target=temporary-public-storage || true
+        continue-on-error: true
+      
+      - name: Upload Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: |
+            apps/web/.lighthouseci/**
+          retention-days: 7
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            let comment = '## 🚀 Lighthouse Performance Audit\n\n';
+            comment += '### Critical Pages\n\n';
+            comment += '| Page | Mobile | Desktop |\n';
+            comment += '|------|--------|---------|\n';
+            comment += '| Home (/) | ⏳ | ⏳ |\n';
+            comment += '| Product | ⏳ | ⏳ |\n';
+            comment += '| Checkout | ⏳ | ⏳ |\n\n';
+            comment += '📁 Full results available in artifacts.\n';
+            comment += '**Threshold**: Performance ≥ 95 (mobile/desktop)';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+

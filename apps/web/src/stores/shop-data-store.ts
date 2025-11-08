@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import shopDataPrefetch, { ShopCategory, ShopAttribute, ShopAttributes } from '@/services/shop-data-prefetch';
+import { logger } from '@/utils/logger';
 
 // Types
 export interface ShopDataState {
@@ -50,12 +51,16 @@ const getSubCategories = (categories: ShopCategory[], parentId: number): ShopCat
 };
 
 // Funkcja do przekształcania płaskiej listy kategorii w hierarchiczną strukturę
-const buildHierarchicalCategories = (categories: ShopCategory[]): any[] => {
+interface HierarchicalCategory extends ShopCategory {
+  subcategories: ShopCategory[];
+}
+
+const buildHierarchicalCategories = (categories: ShopCategory[]): HierarchicalCategory[] => {
   const mainCategories = categories.filter(cat => cat.parent === 0);
   
   return mainCategories.map(mainCat => ({
     ...mainCat,
-    subcategories: categories.filter(cat => cat.parent === mainCat.id)
+    subcategories: categories.filter(cat => cat.parent === mainCat.id),
   }));
 };
 
@@ -93,14 +98,14 @@ export const useShopDataStore = create<ShopDataState>()(
       
       // Jeśli już zainicjalizowane i dane są świeże, nie rób nic
       if (state.isInitialized && state.isDataFresh()) {
-        console.log('🚀 Shop data already initialized and fresh');
+        logger.debug('ShopDataStore: Data already initialized and fresh');
         return;
       }
 
       set({ isLoading: true, error: null });
 
       try {
-        console.log('🚀 Initializing shop data store...');
+        logger.debug('ShopDataStore: Initializing');
         
         const shopData = await shopDataPrefetch.getShopData({
           forceRefresh: false,
@@ -117,14 +122,19 @@ export const useShopDataStore = create<ShopDataState>()(
           error: null
         });
 
-        console.log('✅ Shop data store initialized successfully');
+        logger.info('ShopDataStore: Initialized', {
+          categories: shopData.categories.length,
+          brands: shopData.attributes.brands.length,
+          totalProducts: shopData.totalProducts,
+        });
 
       } catch (error) {
-        console.error('❌ Error initializing shop data store:', error);
+        const message = error instanceof Error ? error.message : 'Nie udało się załadować danych sklepu';
+        logger.error('ShopDataStore: Error during initialization', { error: message });
         
         set({
           isLoading: false,
-          error: error instanceof Error ? error.message : 'Nie udało się załadować danych sklepu'
+          error: message
         });
       }
     },
@@ -133,7 +143,7 @@ export const useShopDataStore = create<ShopDataState>()(
       set({ isLoading: true, error: null });
 
       try {
-        console.log('🔄 Refreshing shop data...');
+        logger.debug('ShopDataStore: Refreshing data');
         
         const shopData = await shopDataPrefetch.getShopData({
           forceRefresh: true,
@@ -150,14 +160,19 @@ export const useShopDataStore = create<ShopDataState>()(
           error: null
         });
 
-        console.log('✅ Shop data refreshed successfully');
+        logger.info('ShopDataStore: Data refreshed', {
+          categories: shopData.categories.length,
+          brands: shopData.attributes.brands.length,
+          totalProducts: shopData.totalProducts,
+        });
 
       } catch (error) {
-        console.error('❌ Error refreshing shop data:', error);
+        const message = error instanceof Error ? error.message : 'Nie udało się odświeżyć danych sklepu';
+        logger.error('ShopDataStore: Error refreshing data', { error: message });
         
         set({
           isLoading: false,
-          error: error instanceof Error ? error.message : 'Nie udało się odświeżyć danych sklepu'
+          error: message
         });
       }
     },
@@ -223,7 +238,7 @@ useShopDataStore.subscribe(
   (isInitialized) => {
     if (isInitialized && !isAutoInitialized) {
       isAutoInitialized = true;
-      console.log('🚀 Shop data store auto-initialized');
+      logger.debug('ShopDataStore: Auto-initialized');
     }
   }
 );

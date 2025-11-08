@@ -14,7 +14,7 @@ if (__isDebug && !(global as any).__nextConfigLogged) {
 
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // Temporarily disabled due to React 18/19 type compatibility issues
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
@@ -153,12 +153,6 @@ const nextConfig: NextConfig = {
     }
     
     // Performance optimizations for all environments
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      // Reduce bundle size by aliasing heavy dependencies
-      'lodash': 'lodash-es',
-    };
-    
     return config;
   },
   transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],

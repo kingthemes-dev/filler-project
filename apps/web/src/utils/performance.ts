@@ -5,31 +5,48 @@
 import { memo, useMemo, startTransition } from 'react';
 import { logger } from './logger';
 
+type GenericCallback<T extends unknown[]> = (...args: T) => void;
+
+type NavigatorConnection = Navigator & {
+  connection?: {
+    effectiveType?: string;
+  };
+};
+
+type PerformanceMemory = Performance & {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+};
+
 // Debounce function for search and input
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
+export function debounce<T extends unknown[]>(
+  func: GenericCallback<T>,
   wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
+): (...args: T) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
   
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
+  return (...args: T) => {
+    if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
 }
 
 // Throttle function for scroll and resize events
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
+export function throttle<T extends unknown[]>(
+  func: GenericCallback<T>,
   limit: number
-): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
-  
-  return (...args: Parameters<T>) => {
+): (...args: T) => void {
+  let inThrottle = false;
+  return (...args: T) => {
     if (!inThrottle) {
       func(...args);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      window.setTimeout(() => {
+        inThrottle = false;
+      }, limit);
     }
   };
 }
@@ -98,7 +115,7 @@ export function analyzeBundleSize() {
     logger.info('Bundle analysis', {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      connection: (navigator as any).connection?.effectiveType
+      connection: (navigator as NavigatorConnection).connection?.effectiveType
     });
   }
 }
@@ -106,12 +123,14 @@ export function analyzeBundleSize() {
 // Memory usage monitoring
 export function monitorMemoryUsage() {
   if (process.env.NODE_ENV === 'development' && 'memory' in performance) {
-    const memory = (performance as any).memory;
-    logger.info('Memory usage', {
-      used: Math.round(memory.usedJSHeapSize / 1024 / 1024),
-      total: Math.round(memory.totalJSHeapSize / 1024 / 1024),
-      limit: Math.round(memory.jsHeapSizeLimit / 1024 / 1024)
-    });
+    const perf = performance as PerformanceMemory;
+    if (perf.memory) {
+      logger.info('Memory usage', {
+        used: Math.round(perf.memory.usedJSHeapSize / 1024 / 1024),
+        total: Math.round(perf.memory.totalJSHeapSize / 1024 / 1024),
+        limit: Math.round(perf.memory.jsHeapSizeLimit / 1024 / 1024)
+      });
+    }
   }
 }
 

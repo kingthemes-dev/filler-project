@@ -7,46 +7,52 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { logger } from '@/utils/logger';
 import { redisCache } from '@/lib/redis';
+import { errorsSchema, type ErrorPayload } from '@/lib/schemas/internal';
+import { validateApiInput } from '@/utils/request-validation';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
 
-// Error data interface
-interface ErrorData {
-  message: string;
-  stack?: string;
-  component?: string;
-  type?: string;
-  severity?: 'low' | 'medium' | 'high' | 'critical';
-  url?: string;
-  user_agent?: string;
-  timestamp: string;
-  error_id?: string;
-  service?: string;
-  version?: string;
-  session_id?: string;
-  user_id?: string;
-}
+type ErrorSummary = {
+  total_errors: number;
+  errors_by_type: Record<string, number>;
+  errors_by_severity: Record<string, number>;
+  errors_by_component: Record<string, number>;
+  last_updated: string;
+  error_rate?: number;
+  top_error_types?: Array<{ name: string; count: number }>;
+  top_error_components?: Array<{ name: string; count: number }>;
+  severity_distribution?: Record<string, number>;
+};
+
+type StoredError = Pick<
+  ErrorPayload,
+  'error_id' | 'message' | 'severity' | 'timestamp' | 'type' | 'component'
+>;
 
 // Error processing
 export async function POST(request: NextRequest) {
   try {
-    const errorData: ErrorData = await request.json();
-    
-    // Validate error data
-    if (!errorData.message || !errorData.timestamp) {
-      return NextResponse.json(
-        { error: 'Invalid error data' },
-        { status: 400 }
+    const errorData = await request.json();
+    const sanitized = validateApiInput(errorData);
+    const validationResult = errorsSchema.safeParse(sanitized);
+
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Nieprawidłowe dane błędu', validationResult.error.errors),
+        { endpoint: 'errors', method: 'POST' }
       );
     }
 
+    const errorPayload = validationResult.data;
+
     // Process error
-    await processError(errorData);
+    await processError(errorPayload);
 
     // Log error collection
     logger.error('Error tracked via API', {
-      message: errorData.message,
-      type: errorData.type,
-      severity: errorData.severity,
-      component: errorData.component
+      message: errorPayload.message,
+      type: errorPayload.type,
+      severity: errorPayload.severity,
+      component: errorPayload.component,
     });
 
     return NextResponse.json({ success: true });
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Process error data
-async function processError(errorData: ErrorData) {
+async function processError(errorData: ErrorPayload) {
   // Store error in Redis for real-time monitoring
   await storeErrorInRedis(errorData);
 
@@ -75,23 +81,21 @@ async function processError(errorData: ErrorData) {
 }
 
 // Store error in Redis
-async function storeErrorInRedis(errorData: ErrorData) {
+async function storeErrorInRedis(errorData: ErrorPayload) {
   try {
     const errorId = errorData.error_id || generateErrorId();
     const redisKey = `errors:${errorId}`;
-    
+
     const errorRecord = {
       ...errorData,
       error_id: errorId,
       processed_at: new Date().toISOString()
     };
 
-    // Store error with 7 days TTL
     await redisCache.set(redisKey, errorRecord, 604800);
 
-    // Store in errors list for quick access
     const errorsListKey = 'errors:list';
-    const errorsList = await redisCache.get(errorsListKey) as any[] || [];
+    const errorsList = (await redisCache.get<StoredError[]>(errorsListKey)) || [];
     errorsList.push({
       error_id: errorId,
       message: errorData.message,
@@ -100,7 +104,6 @@ async function storeErrorInRedis(errorData: ErrorData) {
       type: errorData.type
     });
 
-    // Keep only last 1000 errors
     if (errorsList.length > 1000) {
       errorsList.splice(0, errorsList.length - 1000);
     }
@@ -113,10 +116,10 @@ async function storeErrorInRedis(errorData: ErrorData) {
 }
 
 // Update error metrics
-async function updateErrorMetrics(errorData: ErrorData) {
+async function updateErrorMetrics(errorData: ErrorPayload) {
   try {
     const metricsKey = 'errors:metrics';
-    const metrics = await redisCache.get(metricsKey) as any || {
+    const metrics = (await redisCache.get<ErrorSummary>(metricsKey)) || {
       total_errors: 0,
       errors_by_type: {},
       errors_by_severity: {},
@@ -124,24 +127,21 @@ async function updateErrorMetrics(errorData: ErrorData) {
       last_updated: new Date().toISOString()
     };
 
-    // Update total count
-    metrics.total_errors++;
+    metrics.total_errors += 1;
     metrics.last_updated = new Date().toISOString();
 
-    // Update type count
     const type = errorData.type || 'unknown';
     metrics.errors_by_type[type] = (metrics.errors_by_type[type] || 0) + 1;
 
-    // Update severity count
     const severity = errorData.severity || 'medium';
     metrics.errors_by_severity[severity] = (metrics.errors_by_severity[severity] || 0) + 1;
 
-    // Update component count
     if (errorData.component) {
-      metrics.errors_by_component[errorData.component] = (metrics.errors_by_component[errorData.component] || 0) + 1;
+      const component = errorData.component;
+      metrics.errors_by_component[component] = (metrics.errors_by_component[component] || 0) + 1;
     }
 
-    await redisCache.set(metricsKey, metrics, 86400); // 24 hours TTL
+    await redisCache.set(metricsKey, metrics, 86400);
 
   } catch (error) {
     logger.error('Failed to update error metrics', { error });
@@ -149,14 +149,8 @@ async function updateErrorMetrics(errorData: ErrorData) {
 }
 
 // Send critical error alert
-async function sendCriticalErrorAlert(errorData: ErrorData) {
+async function sendCriticalErrorAlert(errorData: ErrorPayload) {
   try {
-    // In a real implementation, you would send alerts to:
-    // - Slack/Discord webhooks
-    // - Email notifications
-    // - SMS alerts
-    // - External monitoring services
-
     const alertData = {
       title: `Critical Error Alert - ${errorData.service || 'headless-woo'}`,
       message: errorData.message,
@@ -167,29 +161,7 @@ async function sendCriticalErrorAlert(errorData: ErrorData) {
       stack: errorData.stack
     };
 
-    // Log critical error for now
     logger.error('CRITICAL ERROR ALERT', alertData);
-
-    // Example: Send to Slack webhook
-    // if (process.env.SLACK_WEBHOOK_URL) {
-    //   await fetch(process.env.SLACK_WEBHOOK_URL, {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //       text: `🚨 Critical Error in ${errorData.service}`,
-    //       attachments: [{
-    //         color: 'danger',
-    //         fields: [
-    //           { title: 'Message', value: errorData.message, short: false },
-    //           { title: 'Component', value: errorData.component || 'Unknown', short: true },
-    //           { title: 'Severity', value: errorData.severity || 'Unknown', short: true },
-    //           { title: 'Timestamp', value: errorData.timestamp, short: true }
-    //         ]
-    //       }]
-    //     })
-    //   });
-    // }
-
   } catch (error) {
     logger.error('Failed to send critical error alert', { error });
   }
@@ -231,7 +203,7 @@ export async function GET(request: NextRequest) {
 async function getErrorSummary() {
   try {
     const metricsKey = 'errors:metrics';
-    const metrics = await redisCache.get(metricsKey) as any || {
+    const metrics = (await redisCache.get<ErrorSummary>(metricsKey)) || {
       total_errors: 0,
       errors_by_type: {},
       errors_by_severity: {},
@@ -257,31 +229,26 @@ async function getErrorSummary() {
 async function getErrorList(severity?: string, component?: string, limit: number = 50) {
   try {
     const errorsListKey = 'errors:list';
-    const errorsList = await redisCache.get(errorsListKey) as any[] || [];
+    const errorsList = (await redisCache.get<StoredError[]>(errorsListKey)) || [];
 
-    // Filter errors
     let filteredErrors = errorsList;
-    
+
     if (severity) {
-      filteredErrors = filteredErrors.filter((error: any) => error.severity === severity);
+      filteredErrors = filteredErrors.filter((error) => error.severity === severity);
     }
-    
+
     if (component) {
-      filteredErrors = filteredErrors.filter((error: any) => error.component === component);
+      filteredErrors = filteredErrors.filter((error) => error.component === component);
     }
 
-    // Sort by timestamp (newest first)
-    filteredErrors.sort((a: any, b: any) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+    filteredErrors.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    // Limit results
-    filteredErrors = filteredErrors.slice(0, limit);
+    const limited = filteredErrors.slice(0, limit);
 
     return NextResponse.json({
       success: true,
-      data: filteredErrors,
-      total: filteredErrors.length
+      data: limited,
+      total: limited.length
     });
 
   } catch (error) {
@@ -297,9 +264,14 @@ async function getErrorList(severity?: string, component?: string, limit: number
 async function getErrorMetrics() {
   try {
     const metricsKey = 'errors:metrics';
-    const metrics = await redisCache.get(metricsKey) as any || {};
+    const metrics = (await redisCache.get<ErrorSummary>(metricsKey)) || {
+      total_errors: 0,
+      errors_by_type: {},
+      errors_by_severity: {},
+      errors_by_component: {},
+      last_updated: new Date().toISOString()
+    };
 
-    // Calculate additional metrics
     const additionalMetrics = {
       error_rate: calculateErrorRate(metrics),
       top_error_types: getTopErrors(metrics.errors_by_type),
@@ -329,7 +301,7 @@ function generateErrorId(): string {
   return `error_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 }
 
-function calculateErrorRate(metrics: any): number {
+function calculateErrorRate(metrics: ErrorSummary): number {
   // Calculate error rate based on total errors and time period
   // This is a simplified calculation
   return metrics.total_errors || 0;

@@ -3,21 +3,33 @@
  */
 
 import { NextResponse } from 'next/server';
+import { logger } from '@/utils/logger';
+
+declare global {
+  interface Window {
+    logger?: typeof logger;
+  }
+}
 
 export interface AppError {
   code: string;
   message: string;
   statusCode: number;
-  details?: any;
+  details?: unknown;
   timestamp: string;
 }
 
-export class CustomError extends Error {
+export class CustomError<DetailType = unknown> extends Error {
   public code: string;
   public statusCode: number;
-  public details?: any;
+  public details?: DetailType;
 
-  constructor(message: string, code: string = 'UNKNOWN_ERROR', statusCode: number = 500, details?: any) {
+  constructor(
+    message: string,
+    code: string = 'UNKNOWN_ERROR',
+    statusCode: number = 500,
+    details?: DetailType
+  ) {
     super(message);
     this.name = 'CustomError';
     this.code = code;
@@ -56,7 +68,8 @@ export const ERROR_CODES = {
 
 // Error handler for API routes
 export function handleApiError(error: unknown): NextResponse {
-  console.error('🚨 API Error:', error);
+  // FIX: Użyj logger zamiast console.error
+  logger.error('API Error', { error: error instanceof Error ? error.message : String(error) });
 
   let appError: AppError;
 
@@ -101,7 +114,11 @@ export function handleApiError(error: unknown): NextResponse {
 
 // Error handler for client-side
 export function handleClientError(error: unknown): string {
-  console.error('🚨 Client Error:', error);
+  if (typeof window !== 'undefined' && window.logger) {
+    window.logger.error('Client Error', { error });
+  } else {
+    logger.error('Client Error (no window logger)', { error });
+  }
 
   if (error instanceof CustomError) {
     return error.message;
@@ -115,7 +132,7 @@ export function handleClientError(error: unknown): string {
 }
 
 // Validation error creator
-export function createValidationError(message: string, field?: string): CustomError {
+export function createValidationError(message: string, field?: string): CustomError<{ field?: string }> {
   return new CustomError(
     message,
     ERROR_CODES.VALIDATION_ERROR,
@@ -168,40 +185,20 @@ export async function handleNetworkRequest<T>(
 }
 
 // Input sanitization
-export function sanitizeInput(input: any): any {
+export function sanitizeInput<T>(input: T): T {
   if (typeof input === 'string') {
-    return input.trim().replace(/[<>]/g, '');
+    return input.trim().replace(/[<>]/g, '') as T;
   }
   if (Array.isArray(input)) {
-    return input.map(sanitizeInput);
+    return input.map((item) => sanitizeInput(item)) as unknown as T;
   }
   if (input && typeof input === 'object') {
-    const sanitized: any = {};
-    for (const [key, value] of Object.entries(input)) {
-      sanitized[key] = sanitizeInput(value);
-    }
-    return sanitized;
+    const sanitizedEntries = Object.entries(input as Record<string, unknown>).map(
+      ([key, value]) => [key, sanitizeInput(value)] as const
+    );
+    return Object.fromEntries(sanitizedEntries) as T;
   }
   return input;
 }
 
-// Rate limiting helper (simple in-memory)
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
-
-export function checkRateLimit(identifier: string, limit: number = 100, windowMs: number = 60000): boolean {
-  const now = Date.now();
-  const key = identifier;
-  const current = requestCounts.get(key);
-
-  if (!current || now > current.resetTime) {
-    requestCounts.set(key, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-
-  if (current.count >= limit) {
-    return false;
-  }
-
-  current.count++;
-  return true;
-}
+// Rate limiting utilities are available directly from '@/utils/rate-limiter'.

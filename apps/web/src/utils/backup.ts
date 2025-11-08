@@ -453,7 +453,7 @@ export class BackupScheduler {
     logger.info('Backup scheduler initialized');
   }
 
-  private scheduleBackup(name: string, interval: number, backupFunction: () => Promise<any>) {
+  private scheduleBackup(name: string, interval: number, backupFunction: () => Promise<unknown>) {
     const scheduleBackup = async () => {
       try {
         logger.info('Starting scheduled backup', { name });

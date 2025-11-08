@@ -80,7 +80,7 @@ function custom_password_reset_handler($request) {
     $reset_link = rtrim($nextjs_domain, '/') . "/reset-hasla/?key=" . rawurlencode($reset_key) . "&login=" . rawurlencode($user->user_login);
     
     // Przygotuj profesjonalny email
-    $subject = 'Resetowanie hasła - KingBrand';
+    $subject = 'Resetowanie hasła - FILLER';
     $message = "
         <!DOCTYPE html>
         <html>
@@ -114,7 +114,7 @@ function custom_password_reset_handler($request) {
                 </div>
                 
                 <div style='text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;'>
-                    <p>Pozdrawiamy,<br><strong>Zespół KingBrand</strong></p>
+                    <p>Pozdrawiamy,<br><strong>Filler</strong></p>
                 </div>
             </div>
         </body>
@@ -124,7 +124,7 @@ function custom_password_reset_handler($request) {
     // Ustaw headers dla HTML email
     $headers = [
         'Content-Type: text/html; charset=UTF-8',
-        'From: KingBrand <noreply@kingbrand.pl>'
+        'From: FILLER <noreply@filler.pl>'
     ];
     
     // Wyślij email
@@ -211,14 +211,6 @@ function custom_password_reset_confirm_handler($request) {
 }
 
 /**
- * Dodaj CORS headers dla API
+ * CORS is now handled centrally in headless-config.php
+ * Removed duplicate CORS implementation - using centralized handler
  */
-add_action('rest_api_init', function() {
-    remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
-    add_filter('rest_pre_serve_request', function($value) {
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization');
-        return $value;
-    });
-});

@@ -3,6 +3,11 @@
  * Replaces Sentry with comprehensive error tracking
  */
 
+import { logger } from './logger';
+
+type ErrorMetadata = Record<string, unknown>;
+type PerformanceMetadata = Record<string, unknown>;
+
 interface ErrorReport {
   message: string;
   stack?: string;
@@ -13,7 +18,7 @@ interface ErrorReport {
   sessionId: string;
   level: 'error' | 'warning' | 'info';
   category: string;
-  metadata?: Record<string, any>;
+  metadata?: ErrorMetadata;
 }
 
 interface PerformanceMetric {
@@ -21,8 +26,14 @@ interface PerformanceMetric {
   value: number;
   timestamp: string;
   url: string;
-  metadata?: Record<string, any>;
+  metadata?: PerformanceMetadata;
 }
+
+type LayoutShiftEntry = PerformanceEntry & {
+  value?: number;
+  hadRecentInput?: boolean;
+};
+
 
 class ErrorTracker {
   private sessionId: string;
@@ -77,9 +88,16 @@ class ErrorTracker {
   }
 
   private setupNetworkErrorHandling(): void {
-    const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (...args: Parameters<typeof originalFetch>) => {
       const startTime = Date.now();
+      const [requestInfo] = args;
+      const requestUrl =
+        requestInfo instanceof Request
+          ? requestInfo.url
+          : requestInfo instanceof URL
+          ? requestInfo.toString()
+          : requestInfo;
       try {
         const response = await originalFetch(...args);
         
@@ -89,7 +107,7 @@ class ErrorTracker {
             level: 'error',
             category: 'network',
             metadata: {
-              url: args[0],
+              url: requestUrl,
               status: response.status,
               statusText: response.statusText,
               responseTime: Date.now() - startTime,
@@ -104,7 +122,7 @@ class ErrorTracker {
           level: 'error',
           category: 'network',
           metadata: {
-            url: args[0],
+            url: requestUrl,
             responseTime: Date.now() - startTime,
           },
         });
@@ -142,7 +160,7 @@ class ErrorTracker {
         });
         observer.observe({ entryTypes: ['largest-contentful-paint'] });
       } catch (error) {
-        console.warn('LCP monitoring not supported:', error);
+        logger.warn('LCP monitoring not supported', { error });
       }
 
       // First Input Delay
@@ -161,7 +179,7 @@ class ErrorTracker {
         });
         observer.observe({ entryTypes: ['first-input'] });
       } catch (error) {
-        console.warn('FID monitoring not supported:', error);
+        logger.warn('FID monitoring not supported', { error });
       }
 
       // Cumulative Layout Shift
@@ -169,9 +187,9 @@ class ErrorTracker {
         let clsValue = 0;
         const observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
-            }
+            const layoutShift = entry as LayoutShiftEntry;
+            if (layoutShift.hadRecentInput) continue;
+            clsValue += layoutShift.value ?? 0;
           }
           this.capturePerformance({
             name: 'CLS',
@@ -180,7 +198,7 @@ class ErrorTracker {
         });
         observer.observe({ entryTypes: ['layout-shift'] });
       } catch (error) {
-        console.warn('CLS monitoring not supported:', error);
+        logger.warn('CLS monitoring not supported', { error });
       }
     }
   }
@@ -200,9 +218,16 @@ class ErrorTracker {
   }
 
   private observeApiPerformance(): void {
-    const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (...args: Parameters<typeof originalFetch>) => {
       const startTime = performance.now();
+      const [requestInfo, init] = args;
+      const requestUrl =
+        requestInfo instanceof Request
+          ? requestInfo.url
+          : requestInfo instanceof URL
+          ? requestInfo.toString()
+          : requestInfo;
       try {
         const response = await originalFetch(...args);
         const endTime = performance.now();
@@ -211,9 +236,9 @@ class ErrorTracker {
           name: 'APIResponse',
           value: endTime - startTime,
           metadata: {
-            url: args[0],
+            url: requestUrl,
             status: response.status,
-            method: args[1]?.method || 'GET',
+            method: init?.method || (requestInfo instanceof Request ? requestInfo.method : 'GET'),
           },
         });
         
@@ -224,7 +249,7 @@ class ErrorTracker {
           name: 'APIError',
           value: endTime - startTime,
           metadata: {
-            url: args[0],
+            url: requestUrl,
             error: error instanceof Error ? error.message : String(error),
           },
         });
@@ -271,7 +296,9 @@ class ErrorTracker {
 
     // Opcjonalne logowanie performance, tylko gdy jawnie włączone envem
     if (process.env.NEXT_PUBLIC_PERF_LOGS === 'true') {
-      console.log(`[Performance] ${metric.name}: ${metric.value}ms`, metric.metadata);
+      logger.debug(`[Performance] ${metric.name}: ${metric.value}ms`, {
+        metadata: metric.metadata,
+      });
     }
 
     // Flush if queue is full
@@ -281,19 +308,21 @@ class ErrorTracker {
   }
 
   private logError(error: ErrorReport): void {
-    const styles = {
-      error: 'color: #ff4444; font-weight: bold;',
-      warning: 'color: #ffaa00; font-weight: bold;',
-      info: 'color: #4488ff; font-weight: bold;',
-    };
+    const logFn = error.level === 'error'
+      ? logger.error.bind(logger)
+      : error.level === 'warning'
+        ? logger.warn.bind(logger)
+        : logger.info.bind(logger);
 
-    console.group(`%c[${error.level.toUpperCase()}] ${error.category}`, styles[error.level]);
-    console.log('Message:', error.message);
-    console.log('URL:', error.url);
-    console.log('Timestamp:', error.timestamp);
-    if (error.stack) console.log('Stack:', error.stack);
-    if (error.metadata) console.log('Metadata:', error.metadata);
-    console.groupEnd();
+    logFn('Error captured', {
+      message: error.message,
+      category: error.category,
+      timestamp: error.timestamp,
+      url: error.url,
+      userAgent: error.userAgent,
+      stack: error.stack,
+      metadata: error.metadata,
+    });
   }
 
   private async flushErrors(): Promise<void> {
@@ -314,7 +343,7 @@ class ErrorTracker {
         }),
       });
     } catch (error) {
-      console.warn('Failed to flush errors:', error);
+      logger.warn('Failed to flush errors', { error });
       // Re-add errors to queue for retry
       this.errorQueue.unshift(...errors);
     }
@@ -338,7 +367,7 @@ class ErrorTracker {
         }),
       });
     } catch (error) {
-      console.warn('Failed to flush performance metrics:', error);
+      logger.warn('Failed to flush performance metrics', { error });
       // Re-add metrics to queue for retry
       this.performanceQueue.unshift(...metrics);
     }
@@ -357,7 +386,7 @@ class ErrorTracker {
     localStorage.setItem('error_tracker_user_id', userId);
   }
 
-  public captureCustomEvent(eventName: string, data: Record<string, any>): void {
+  public captureCustomEvent(eventName: string, data: ErrorMetadata): void {
     this.captureError({
       message: `Custom Event: ${eventName}`,
       level: 'info',

@@ -15,6 +15,8 @@ class KingShopAPI {
     
     private $cache_duration = 24 * 60 * 60; // 24 hours
     private $redis_available = false;
+    private $rate_limit_requests = 120;
+    private $rate_limit_window = 60; // seconds
     
     public function __construct() {
         // Check if Redis is available
@@ -28,6 +30,7 @@ class KingShopAPI {
         add_action('woocommerce_update_product', array($this, 'clear_shop_cache'));
         add_action('woocommerce_new_product', array($this, 'clear_shop_cache'));
         add_action('woocommerce_delete_product', array($this, 'clear_shop_cache'));
+        add_action('king_flush_all_caches', array($this, 'flush_all_cache'));
     }
     
     /**
@@ -138,6 +141,11 @@ class KingShopAPI {
      * Get complete shop data - products, categories, attributes in one request
      */
     public function get_shop_data($request) {
+        $rate = $this->check_rate_limit('shop_data');
+        if (is_wp_error($rate)) {
+            return $rate;
+        }
+        
         $page = $request->get_param('page');
         $per_page = $request->get_param('per_page');
         $category = $request->get_param('category');
@@ -387,11 +395,14 @@ class KingShopAPI {
         
         // Add category filter - PRO Architecture: Handle multiple categories with OR logic
         if ($category) {
-            error_log('King Shop API Debug - Category filter: ' . $category);
             // Handle multiple categories (comma-separated) - use OR logic
             if (strpos($category, ',') !== false) {
                 $category_slugs = array_filter(array_map('trim', explode(',', $category)));
-                error_log('King Shop API Debug - Multiple categories: ' . print_r($category_slugs, true));
+                // FIX: Conditional debug logging
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('King Shop API Debug - Category filter: ' . $category);
+                    error_log('King Shop API Debug - Multiple categories: ' . print_r($category_slugs, true));
+                }
                 $wp_query_args['tax_query'][] = array(
                     'taxonomy' => 'product_cat',
                     'field' => 'slug',
@@ -430,15 +441,20 @@ class KingShopAPI {
             $wp_query_args['tax_query']['relation'] = 'AND';
         }
         
-        // Debug: Log final tax_query structure
-        error_log('King Shop API Debug - Final tax_query: ' . print_r($wp_query_args['tax_query'], true));
+        // FIX: Conditional debug logging (only in development)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('King Shop API Debug - Final tax_query: ' . print_r($wp_query_args['tax_query'], true));
+        }
         
         $wp_query = new WP_Query($wp_query_args);
         $product_ids = array();
         
-        error_log('King Shop API Debug - WP_Query args: ' . print_r($wp_query_args, true));
-        error_log('King Shop API Debug - WP_Query found posts: ' . $wp_query->found_posts);
-        error_log('King Shop API Debug - WP_Query post count: ' . $wp_query->post_count);
+        // FIX: Conditional debug logging (only in development)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('King Shop API Debug - WP_Query args: ' . print_r($wp_query_args, true));
+            error_log('King Shop API Debug - WP_Query found posts: ' . $wp_query->found_posts);
+            error_log('King Shop API Debug - WP_Query post count: ' . $wp_query->post_count);
+        }
         
         if ($wp_query->have_posts()) {
             while ($wp_query->have_posts()) {
@@ -448,12 +464,14 @@ class KingShopAPI {
             wp_reset_postdata();
         }
         
-        // Debug: log query args and results
-        error_log('King Shop API Debug - Query args: ' . print_r($args, true));
-        error_log('King Shop API Debug - On sale param: ' . ($on_sale ? 'true' : 'false'));
-        error_log('King Shop API Debug - Min price: ' . $min_price);
-        error_log('King Shop API Debug - Max price: ' . $max_price);
-        error_log('King Shop API Debug - Product IDs count: ' . count($product_ids));
+        // FIX: Conditional debug logging (only in development)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('King Shop API Debug - Query args: ' . print_r($args, true));
+            error_log('King Shop API Debug - On sale param: ' . ($on_sale ? 'true' : 'false'));
+            error_log('King Shop API Debug - Min price: ' . $min_price);
+            error_log('King Shop API Debug - Max price: ' . $max_price);
+            error_log('King Shop API Debug - Product IDs count: ' . count($product_ids));
+        }
 
         // Compute total count with the same filters (without pagination)
         $count_args = $args;
@@ -686,18 +704,42 @@ class KingShopAPI {
     
     /**
      * Redis cache methods
+     * FIX: Use environment variables or WordPress options for Redis connection
      */
+    private function get_redis_connection() {
+        // Use environment variable or WordPress option
+        $redis_host = defined('REDIS_HOST') ? REDIS_HOST : get_option('redis_host', '127.0.0.1');
+        $redis_port = defined('REDIS_PORT') ? REDIS_PORT : get_option('redis_port', 6379);
+        $redis_password = defined('REDIS_PASSWORD') ? REDIS_PASSWORD : get_option('redis_password', '');
+        
+        return array(
+            'host' => $redis_host,
+            'port' => (int) $redis_port,
+            'password' => $redis_password
+        );
+    }
+    
     private function get_redis_cache($key) {
         if (!$this->redis_available) return false;
         
         try {
+            $config = $this->get_redis_connection();
             $redis = new Redis();
-            $redis->connect('127.0.0.1', 6379);
+            $redis->connect($config['host'], $config['port']);
+            
+            // Add password if configured
+            if (!empty($config['password'])) {
+                $redis->auth($config['password']);
+            }
+            
             $data = $redis->get($key);
             $redis->close();
             
             return $data ? json_decode($data, true) : false;
         } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Redis cache get error: ' . $e->getMessage());
+            }
             return false;
         }
     }
@@ -706,13 +748,23 @@ class KingShopAPI {
         if (!$this->redis_available) return false;
         
         try {
+            $config = $this->get_redis_connection();
             $redis = new Redis();
-            $redis->connect('127.0.0.1', 6379);
+            $redis->connect($config['host'], $config['port']);
+            
+            // Add password if configured
+            if (!empty($config['password'])) {
+                $redis->auth($config['password']);
+            }
+            
             $redis->setex($key, $duration, json_encode($data));
             $redis->close();
             
             return true;
         } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Redis cache set error: ' . $e->getMessage());
+            }
             return false;
         }
     }
@@ -721,6 +773,11 @@ class KingShopAPI {
      * Get dynamic attributes based on current filters - PRO Architecture
      */
     public function get_dynamic_attributes($request) {
+        $rate = $this->check_rate_limit('shop_attributes');
+        if (is_wp_error($rate)) {
+            return $rate;
+        }
+        
         $category = $request->get_param('category');
         $search = $request->get_param('search');
         $min_price = $request->get_param('min_price');
@@ -909,8 +966,27 @@ class KingShopAPI {
      * Clear shop cache when products are updated
      */
     public function clear_shop_cache() {
-        // Clear WordPress cache
-        wp_cache_flush_group('king_shop');
+        $this->flush_all_cache();
+    }
+    
+    public function flush_all_cache() {
+        // Clear WordPress cache by deleting keys with known prefix
+        global $wp_object_cache;
+        if (is_object($wp_object_cache) && method_exists($wp_object_cache, 'delete')) {
+            if (method_exists($wp_object_cache, 'get_alloptions')) {
+                $all_keys = array_keys((array) $wp_object_cache->cache);
+            } else {
+                $all_keys = array();
+            }
+            foreach ($all_keys as $key) {
+                if (strpos($key, 'king_shop_data_') === 0) {
+                    $wp_object_cache->delete($key, 'king_shop');
+                }
+            }
+        } else {
+            // Fallback: flush entire cache
+            wp_cache_flush();
+        }
         
         // Clear Redis cache if available
         if ($this->redis_available) {
@@ -926,6 +1002,60 @@ class KingShopAPI {
                 // Ignore Redis errors
             }
         }
+    }
+    
+    /**
+     * Simple rate limiting by IP
+     */
+    private function check_rate_limit($key) {
+        if (defined('WP_CLI') && WP_CLI) {
+            return true;
+        }
+        if (php_sapi_name() === 'cli' || wp_doing_cron()) {
+            return true;
+        }
+        
+        $ip = $this->get_client_ip();
+        if (empty($ip)) {
+            return true;
+        }
+        
+        $identifier = md5($ip . '|' . $key);
+        $transient_key = 'king_rl_' . $identifier;
+        $data = get_transient($transient_key);
+        $now = time();
+        
+        if (empty($data) || !isset($data['expires']) || $data['expires'] <= $now) {
+            $data = array(
+                'count' => 1,
+                'expires' => $now + $this->rate_limit_window,
+            );
+            set_transient($transient_key, $data, $this->rate_limit_window);
+            return true;
+        }
+        
+        if ($data['count'] >= $this->rate_limit_requests) {
+            return new WP_Error(
+                'rate_limited',
+                __('Przekroczono limit zapytań. Spróbuj ponownie za chwilę.', 'king'),
+                array('status' => 429)
+            );
+        }
+        
+        $data['count']++;
+        set_transient($transient_key, $data, $data['expires'] - $now);
+        return true;
+    }
+    
+    private function get_client_ip() {
+        $keys = array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR');
+        foreach ($keys as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ip_list = explode(',', $_SERVER[$key]);
+                return trim($ip_list[0]);
+            }
+        }
+        return '';
     }
 }
 

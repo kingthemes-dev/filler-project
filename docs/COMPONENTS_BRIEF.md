@@ -4,6 +4,116 @@
 
 <!-- AUTO:COMP-START -->
 
+#### Komponenty domenowe (`apps/web/src/components`)
+
+| Plik | Eksporty |
+| --- | --- |
+| `admin-nav.tsx` | AdminNav |
+| `conditional-footer.tsx` | ConditionalFooter |
+| `cookie-consent.tsx` | CookieConsent |
+| `defer-client-ui.tsx` | DeferClientUI |
+| `error-boundary.tsx` | ErrorBoundary |
+| `king-hero-rounded.tsx` | KingHeroRounded |
+| `king-product-card.tsx` | KingProductCard |
+| `king-product-grid.tsx` | KingProductGrid |
+| `king-product-tabs-server.tsx` | KingProductTabsServer |
+| `king-product-tabs.tsx` | KingProductTabs |
+| `logout-button.tsx` | LogoutButton |
+| `PerformanceTracker.tsx` | PerformanceTracker |
+| `product-image-server-preload.tsx` | ProductImageServerPreload |
+| `seo/search-tracking.tsx` | SearchTracking |
+| `shop-data-prefetcher.tsx` | ShopDataPrefetcher |
+| `shop-products-grid.tsx` | ShopProductsGrid |
+
+#### Komponenty UI / shadcn (`apps/web/src/components/ui`)
+
+| Plik | Eksporty |
+| --- | --- |
+| `ui/active-filters-bar.tsx` | ActiveFiltersBar |
+| `ui/advanced-dropdown.tsx` | AdvancedDropdown |
+| `ui/alert.tsx` | Alert, AlertDescription |
+| `ui/animated-dropdown.tsx` | AnimatedDropdown |
+| `ui/auth/auth-modal-manager.tsx` | AuthModalManager |
+| `ui/auth/auth-provider.tsx` | AuthProvider |
+| `ui/auth/forgot-password-modal.tsx` | ForgotPasswordModal |
+| `ui/auth/login-modal.tsx` | LoginModal |
+| `ui/auth/register-modal.tsx` | RegisterModal |
+| `ui/badge.tsx` | Badge |
+| `ui/breadcrumbs.tsx` | Breadcrumbs |
+| `ui/button.tsx` | Button |
+| `ui/card.tsx` | Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent |
+| `ui/cart-drawer.tsx` | CartDrawer |
+| `ui/category-tabs.tsx` | CategoryTabs |
+| `ui/cls-optimizer.tsx` | CLSOptimizer, ImageCLSOptimizer, ProductCardCLSOptimizer, Skeleton |
+| `ui/dynamic-attribute-filters.tsx` | DynamicAttributeFilters |
+| `ui/dynamic-category-filters.tsx` | DynamicCategoryFilters |
+| `ui/email/email-notification-center.tsx` | EmailNotificationCenter |
+| `ui/favorites-modal.tsx` | FavoritesModal |
+| `ui/favorites-sync-provider.tsx` | FavoritesSyncProvider |
+| `ui/footer.tsx` | Footer |
+| `ui/free-shipping-banner.tsx` | FreeShippingBanner |
+| `ui/global-breadcrumbs.tsx` | GlobalBreadcrumbs |
+| `ui/header.tsx` | Header |
+| `ui/hierarchical-categories.tsx` | HierarchicalCategories |
+| `ui/hierarchical-category-filters.tsx` | HierarchicalCategoryFilters |
+| `ui/input.tsx` | Input |
+| `ui/invoice-pdf-generator.tsx` | InvoicePDFGenerator |
+| `ui/label.tsx` | Label |
+| `ui/modal-close-button.tsx` | ModalCloseButton |
+| `ui/newsletter-form.tsx` | NewsletterForm |
+| `ui/page-container.tsx` | PageContainer |
+| `ui/page-header.tsx` | PageHeader |
+| `ui/pagination.tsx` | Pagination |
+| `ui/popup-chips-motion.tsx` | PopupChipsMotion |
+| `ui/quick-view-modal.tsx` | QuickViewModal |
+| `ui/recaptcha-provider.tsx` | RecaptchaProvider |
+| `ui/review-form.tsx` | ReviewForm |
+| `ui/reviews-list.tsx` | ReviewsList |
+| `ui/search-modal.tsx` | SearchModal |
+| `ui/select.tsx` | Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue |
+| `ui/shop-dropdown.tsx` | ShopDropdown |
+| `ui/shop-explore-panel.tsx` | ShopExplorePanel |
+| `ui/shop-filters.tsx` | ShopFilters |
+| `ui/similar-products.tsx` | SimilarProducts |
+| `ui/tabs.tsx` | Tabs, TabsList, TabsTrigger, TabsContent |
+| `ui/test-form.tsx` | TestFormUnderNewsletter |
+| `ui/textarea.tsx` | Textarea |
+| `ui/threads.tsx` | Threads |
+| `ui/universal-attribute-filters.tsx` | UniversalAttributeFilters |
+| `ui/universal-category-filters.tsx` | UniversalCategoryFilters |
+| `ui/universal-shop-filters.tsx` | UniversalShopFilters |
+
+#### Hooki (`apps/web/src/hooks`)
+
+| Plik | Eksporty |
+| --- | --- |
+| `hooks/use-debounced-callback.ts` | useDebouncedCallback |
+| `hooks/use-favorites-sync.ts` | useFavoritesSync |
+| `hooks/use-performance-optimization.ts` | useLCPOptimization, useCLSOptimization, useFIDOptimization, useTTFBOptimization, usePageLoadOptimization, useResourcePreloading, useImageOptimization, useBundleOptimization, usePerformanceMonitoring |
+| `hooks/use-viewport-height-var.ts` | useViewportHeightVar |
+| `hooks/use-wishlist.ts` | useWishlist |
+
+#### Store’y Zustand – web (`apps/web/src/stores`)
+
+| Plik | Eksporty |
+| --- | --- |
+| `stores/auth-modal-store.ts` | useAuthModalStore |
+| `stores/auth-store.ts` | useAuthStore |
+| `stores/cart-store.ts` | useCartStore |
+| `stores/favorites-store.ts` | useFavoritesStore |
+| `stores/quickview-store.ts` | useQuickViewStore |
+| `stores/shop-data-store.ts` | useShopDataStore, useShopCategories, useShopAttributes, useShopStats, useShopDataActions |
+| `stores/wishlist-store.ts` | useWishlistStore |
+
+#### Store’y współdzielone (`packages/shared/stores`)
+
+| Plik | Eksporty |
+| --- | --- |
+| `auth-store.ts` | useAuthStore |
+| `cart-store.ts` | useCartStore |
+| `favorites-store.ts` | useFavoritesStore |
+| `wishlist-store.ts` | useWishlistStore |
+
 <!-- AUTO:COMP-END -->
 
 - **Layout i shell**: `page-container`, `page-header`, `header`, `footer`, `conditional-footer`, `global-breadcrumbs`.

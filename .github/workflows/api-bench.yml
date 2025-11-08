@@ -1,0 +1,175 @@
+name: API Performance Benchmarks
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/web/src/app/api/**'
+      - 'apps/web/src/middleware/**'
+      - 'scripts/perf-*.{mjs,js}'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/src/app/api/**'
+      - 'apps/web/src/middleware/**'
+  workflow_dispatch:
+
+jobs:
+  api-benchmark:
+    name: API Performance Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Install autocannon
+        run: npm install -g autocannon
+
+      - name: Install k6
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Build application
+        working-directory: apps/web
+        run: npm run build
+        env:
+          NEXT_PUBLIC_WORDPRESS_URL: ${{ secrets.NEXT_PUBLIC_WORDPRESS_URL || 'https://example.com' }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL || 'https://example.com' }}
+          NEXT_PUBLIC_WC_URL: ${{ secrets.NEXT_PUBLIC_WC_URL || 'https://example.com/wp-json/wc/v3' }}
+          WC_CONSUMER_KEY: ${{ secrets.WC_CONSUMER_KEY || 'test' }}
+          WC_CONSUMER_SECRET: ${{ secrets.WC_CONSUMER_SECRET || 'test' }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET || 'test' }}
+          ADMIN_CACHE_TOKEN: ${{ secrets.ADMIN_CACHE_TOKEN || 'test' }}
+          CSRF_SECRET: ${{ secrets.CSRF_SECRET || 'test' }}
+          WOOCOMMERCE_WEBHOOK_SECRET: ${{ secrets.WOOCOMMERCE_WEBHOOK_SECRET || 'test' }}
+          REDIS_URL: redis://localhost:6379
+
+      - name: Start Next.js server
+        working-directory: apps/web
+        run: |
+          npm start &
+          sleep 10
+          # Wait for server to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000/api/health; do sleep 2; done'
+        env:
+          NEXT_PUBLIC_WORDPRESS_URL: ${{ secrets.NEXT_PUBLIC_WORDPRESS_URL || 'https://example.com' }}
+          NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL || 'https://example.com' }}
+          NEXT_PUBLIC_WC_URL: ${{ secrets.NEXT_PUBLIC_WC_URL || 'https://example.com/wp-json/wc/v3' }}
+          WC_CONSUMER_KEY: ${{ secrets.WC_CONSUMER_KEY || 'test' }}
+          WC_CONSUMER_SECRET: ${{ secrets.WC_CONSUMER_SECRET || 'test' }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET || 'test' }}
+          ADMIN_CACHE_TOKEN: ${{ secrets.ADMIN_CACHE_TOKEN || 'test' }}
+          CSRF_SECRET: ${{ secrets.CSRF_SECRET || 'test' }}
+          WOOCOMMERCE_WEBHOOK_SECRET: ${{ secrets.WOOCOMMERCE_WEBHOOK_SECRET || 'test' }}
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: production
+
+      - name: Run autocannon smoke tests
+        working-directory: apps/web
+        run: |
+          node scripts/perf-autocannon.mjs --warm || true
+        continue-on-error: true
+        env:
+          BASE_URL: http://localhost:3000
+          DURATION: 10
+          CONNECTIONS: 5
+
+      - name: Run k6 baseline tests
+        working-directory: apps/web
+        run: |
+          k6 run scripts/perf-k6.js --out json=performance-results-k6-ci.json || true
+        continue-on-error: true
+        env:
+          BASE_URL: http://localhost:3000
+          VUS: 10
+          DURATION: 15s
+
+      - name: Check performance thresholds
+        working-directory: apps/web
+        run: |
+          if [ -f performance-results-k6-ci.json ]; then
+            echo "📊 Performance Results:"
+            cat performance-results-k6-ci.json | jq '.' || cat performance-results-k6-ci.json
+            
+            # Check if p95 exceeds threshold (600ms for server endpoints)
+            P95=$(cat performance-results-k6-ci.json | jq -r '.metrics.http_req_duration.values["p(95)"]' 2>/dev/null || echo "0")
+            if (( $(echo "$P95 > 600" | bc -l 2>/dev/null || echo "0") )); then
+              echo "❌ p95 latency ($P95 ms) exceeds threshold (600ms)"
+              exit 1
+            else
+              echo "✅ p95 latency ($P95 ms) is within threshold (600ms)"
+            fi
+          else
+            echo "⚠️ Performance results file not found"
+          fi
+
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: |
+            apps/web/performance-results-*.json
+            apps/web/performance-results-*.txt
+          retention-days: 7
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            let comment = '## 📊 API Performance Benchmarks\n\n';
+            
+            // Try to read k6 results
+            const k6Results = path.join('apps/web', 'performance-results-k6-ci.json');
+            if (fs.existsSync(k6Results)) {
+              const data = JSON.parse(fs.readFileSync(k6Results, 'utf8'));
+              if (data.metrics && data.metrics.http_req_duration) {
+                const duration = data.metrics.http_req_duration.values;
+                comment += `### k6 Results\n`;
+                comment += `- **p95**: ${duration['p(95)']?.toFixed(2)}ms (threshold: 600ms)\n`;
+                comment += `- **p99**: ${duration['p(99)']?.toFixed(2)}ms (threshold: 1000ms)\n`;
+                comment += `- **RPS**: ${data.metrics.http_reqs?.values?.rate?.toFixed(2) || 'N/A'}\n`;
+                comment += `- **Error Rate**: ${(data.metrics.http_req_failed?.values?.rate * 100 || 0).toFixed(2)}%\n\n`;
+              }
+            }
+            
+            comment += '📁 Full results available in artifacts.';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+

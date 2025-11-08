@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Calendar, Euro, Eye, User, Package } from 'lucide-react';
+import { FileText, Download, Calendar, Euro, Eye, User, Package, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
 import { httpErrorMessage } from '@/utils/error-messages';
@@ -26,10 +26,16 @@ export interface Invoice {
 // Cache key for sessionStorage
 const INVOICES_CACHE_KEY = 'invoices_cache';
 const INVOICES_CACHE_TIMESTAMP_KEY = 'invoices_cache_timestamp';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes (reduced for better freshness)
 
 // Memoized Invoice Item Component
-const InvoiceItem = memo(({ invoice, onViewInvoice }: { invoice: Invoice; onViewInvoice: (invoice: Invoice) => void }) => {
+interface InvoiceItemProps {
+  invoice: Invoice;
+  onViewInvoice: (invoice: Invoice) => void;
+  onDownloadInvoice: (invoice: Invoice, e?: React.MouseEvent) => void;
+}
+
+const InvoiceItem = memo(({ invoice, onViewInvoice, onDownloadInvoice }: InvoiceItemProps) => {
   const statusInfo = getStatusInfo(invoice.status);
 
   return (
@@ -57,19 +63,34 @@ const InvoiceItem = memo(({ invoice, onViewInvoice }: { invoice: Invoice; onView
               <span className="text-gray-500">Zamówienie #{invoice.orderNumber}</span>
             </div>
           </div>
-          <button
-            onClick={() => onViewInvoice(invoice)}
-            disabled={!invoice.isEligible}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              invoice.isEligible
-                ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                : 'text-gray-400 bg-gray-100 cursor-not-allowed'
-            }`}
-            title={!invoice.isEligible ? getInvoiceTooltip(invoice.status) : ''}
-          >
-            <Eye className="w-4 h-4" />
-            Zobacz fakturę
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => onDownloadInvoice(invoice, e)}
+              disabled={!invoice.isEligible}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                invoice.isEligible
+                  ? 'bg-black text-white hover:bg-gray-800'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+              title={!invoice.isEligible ? getInvoiceTooltip(invoice.status) : 'Pobierz fakturę PDF'}
+            >
+              <Download className="w-4 h-4" />
+              Pobierz PDF
+            </button>
+            <button
+              onClick={() => onViewInvoice(invoice)}
+              disabled={!invoice.isEligible}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                invoice.isEligible
+                  ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                  : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+              }`}
+              title={!invoice.isEligible ? getInvoiceTooltip(invoice.status) : 'Podgląd faktury'}
+            >
+              <Eye className="w-4 h-4" />
+              Podgląd
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -133,8 +154,14 @@ const getStatusInfo = (status: string) => {
 };
 
 // Check if order is eligible for invoice generation
+// Faktura dostępna tylko dla zamówień zrealizowanych lub opłaconych
+// - completed: zrealizowane (zawsze dostępna)
+// - processing: w trakcie realizacji (tylko jeśli opłacone/zapłacone przy zamówieniu)
+// - pending: oczekujące na płatność (NIE dostępna - nie zapłacone)
+// - on-hold: wstrzymane (NIE dostępna - może być problem z płatnością)
 const isOrderEligibleForInvoice = (status: string): boolean => {
-  const eligibleStatuses = ['completed', 'processing', 'on-hold'];
+  // Tylko completed i processing (opłacone/zapłacone)
+  const eligibleStatuses = ['completed', 'processing'];
   return eligibleStatuses.includes(status);
 };
 
@@ -142,15 +169,17 @@ const isOrderEligibleForInvoice = (status: string): boolean => {
 const getInvoiceTooltip = (status: string): string => {
   switch (status) {
     case 'pending':
-      return 'Faktura będzie dostępna po opłaceniu zamówienia';
+      return 'Faktura będzie dostępna po opłaceniu zamówienia. Zamówienie oczekuje na płatność.';
+    case 'on-hold':
+      return 'Faktura będzie dostępna po potwierdzeniu i opłaceniu zamówienia.';
     case 'cancelled':
-      return 'Faktura niedostępna - zamówienie anulowane';
+      return 'Faktura niedostępna - zamówienie zostało anulowane';
     case 'refunded':
-      return 'Faktura niedostępna - zamówienie zwrócone';
+      return 'Faktura niedostępna - zamówienie zostało zwrócone';
     case 'failed':
-      return 'Faktura niedostępna - płatność nieudana';
+      return 'Faktura niedostępna - płatność nie powiodła się';
     default:
-      return 'Faktura niedostępna dla tego statusu zamówienia';
+      return 'Faktura dostępna tylko dla zamówień opłaconych lub zrealizowanych';
   }
 };
 
@@ -163,6 +192,7 @@ export default function MyInvoicesPage() {
   const { user, isAuthenticated } = useAuthStore();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -264,6 +294,22 @@ export default function MyInvoicesPage() {
     }
   }, [user?.id]);
 
+  // Handle manual refresh button
+  const handleRefresh = useCallback(async () => {
+    // Clear cache
+    sessionStorage.removeItem(INVOICES_CACHE_KEY);
+    sessionStorage.removeItem(INVOICES_CACHE_TIMESTAMP_KEY);
+    
+    // Force refresh
+    setRefreshing(true);
+    setErrorMessage(null);
+    try {
+      await fetchInvoices(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchInvoices]);
+
   useEffect(() => {
     // Check cache immediately on mount (before waiting for auth)
     if (typeof window !== 'undefined') {
@@ -300,24 +346,24 @@ export default function MyInvoicesPage() {
     }
 
     try {
-      // Use your custom invoice system - redirect to download endpoint
-      const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${invoice.id}`);
+      // Use your custom invoice system - fetch PDF endpoint
+      // Add timestamp to prevent caching
+      const timestamp = Date.now();
+      const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${invoice.id}&v=${timestamp}`, {
+        cache: 'no-store'
+      });
       
       if (!response.ok) {
-        throw new Error('Nie udało się pobrać faktury');
+        const errorData = await response.json().catch(() => ({ error: 'Nie udało się pobrać faktury' }));
+        throw new Error(errorData.error || 'Nie udało się pobrać faktury');
       }
       
-      const data = await response.json();
+      // Check content type
+      const contentType = response.headers.get('content-type') || '';
       
-      if (data.success && data.base64) {
-        // Convert base64 to blob and open in new tab
-        const binaryString = atob(data.base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const blob = new Blob([bytes], { type: 'application/pdf' });
+      if (contentType.includes('application/pdf')) {
+        // Binary PDF response - create blob and open
+        const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         
         // Open PDF in new tab for viewing
@@ -328,11 +374,118 @@ export default function MyInvoicesPage() {
           window.URL.revokeObjectURL(url);
         }, 1000);
       } else {
-        throw new Error('Nieprawidłowa odpowiedź z serwera');
+        // JSON response (fallback - HTML or base64)
+        const data = await response.json();
+        
+        if (data.success && data.base64) {
+          // Convert base64 to blob and open in new tab
+          const binaryString = atob(data.base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          
+          const blob = new Blob([bytes], { type: data.mime || 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          
+          // Open PDF/HTML in new tab for viewing
+          window.open(url, '_blank');
+          
+          // Clean up after a delay
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+          }, 1000);
+        } else if (data.html) {
+          // HTML fallback - open in new window
+          const newWindow = window.open('', '_blank');
+          if (newWindow) {
+            newWindow.document.write(data.html);
+            newWindow.document.close();
+          }
+        } else {
+          throw new Error('Nieprawidłowa odpowiedź z serwera');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error viewing invoice:', error);
-      setErrorMessage('Nie udało się wyświetlić faktury. Spróbuj ponownie.');
+      setErrorMessage(error?.message || 'Nie udało się wyświetlić faktury. Spróbuj ponownie.');
+    }
+  }, []);
+
+  const handleDownloadInvoice = useCallback(async (invoice: Invoice, e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    
+    // Check if invoice is eligible for download
+    if (!invoice.isEligible) {
+      setErrorMessage(getInvoiceTooltip(invoice.status));
+      return;
+    }
+
+    try {
+      // Use your custom invoice system - fetch PDF endpoint
+      // Add timestamp to prevent caching
+      const timestamp = Date.now();
+      const response = await fetch(`/api/woocommerce?endpoint=customers/invoice-pdf&order_id=${invoice.id}&v=${timestamp}`, {
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Nie udało się pobrać faktury' }));
+        throw new Error(errorData.error || 'Nie udało się pobrać faktury');
+      }
+      
+      // Check content type
+      const contentType = response.headers.get('content-type') || '';
+      let blob: Blob;
+      let filename = `faktura_${invoice.number.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      
+      if (contentType.includes('application/pdf')) {
+        // Binary PDF response
+        blob = await response.blob();
+        // Get filename from Content-Disposition header if available
+        const contentDisposition = response.headers.get('content-disposition');
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+      } else {
+        // JSON response (fallback - HTML or base64)
+        const data = await response.json();
+        
+        if (data.success && data.base64) {
+          // Convert base64 to blob
+          const binaryString = atob(data.base64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          blob = new Blob([bytes], { type: data.mime || 'application/pdf' });
+          filename = data.filename || filename;
+        } else if (data.html) {
+          // HTML fallback - create HTML blob
+          blob = new Blob([data.html], { type: 'text/html' });
+          filename = data.filename || filename.replace('.pdf', '.html');
+        } else {
+          throw new Error('Nieprawidłowa odpowiedź z serwera');
+        }
+      }
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+    } catch (error: any) {
+      console.error('Error downloading invoice:', error);
+      setErrorMessage(error?.message || 'Nie udało się pobrać faktury. Spróbuj ponownie.');
     }
   }, []);
 
@@ -394,6 +547,19 @@ export default function MyInvoicesPage() {
             {errorMessage}
           </div>
         )}
+
+        {/* Refresh Button */}
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Odśwież listę faktur"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Odświeżanie...' : 'Odśwież'}
+          </button>
+        </div>
 
         {/* Tabs */}
         <div className="mb-8">
@@ -480,6 +646,7 @@ export default function MyInvoicesPage() {
                  key={invoice.id}
                  invoice={invoice}
                  onViewInvoice={handleViewInvoice}
+                 onDownloadInvoice={handleDownloadInvoice}
                />
              ))}
           </div>
@@ -558,12 +725,22 @@ export default function MyInvoicesPage() {
                 >
                   Zamknij
                 </button>
-                <button
-                  onClick={() => handleViewInvoice(selectedInvoice)}
-                  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  Pobierz PDF
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={(e) => handleDownloadInvoice(selectedInvoice, e)}
+                    className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    <Download className="w-4 h-4 inline mr-2" />
+                    Pobierz PDF
+                  </button>
+                  <button
+                    onClick={() => handleViewInvoice(selectedInvoice)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Eye className="w-4 h-4 inline mr-2" />
+                    Podgląd
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
