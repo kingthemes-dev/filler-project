@@ -1,5 +1,9 @@
 # API – WooCommerce REST + MU‑pluginy
 
+<!-- AUTO:API-START -->
+
+<!-- AUTO:API-END -->
+
 ## Przegląd
 - Frontend (Next.js) komunikuje się **wyłącznie** przez trasy API w `apps/web/src/app/api/*`. Każda trasa działa w runtime Node.js (wyjątki opisane niżej) i nigdy nie ujawnia tajnych kluczy w odpowiedziach.
 - Warstwa proxy (`app/api/woocommerce/route.ts`) tłumaczy parametry `endpoint=*` na właściwe zasoby:

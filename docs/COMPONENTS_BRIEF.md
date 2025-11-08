@@ -1,6 +1,11 @@
 # Kompendium komponentów i stanów
 
 ## Inwentarz komponentów React
+
+<!-- AUTO:COMP-START -->
+
+<!-- AUTO:COMP-END -->
+
 - **Layout i shell**: `page-container`, `page-header`, `header`, `footer`, `conditional-footer`, `global-breadcrumbs`.
 - **Karty produktów**: `king-product-card`, `king-product-grid`, `shop-products-grid`, `similar-products`, `quick-view-modal`.
 - **Filtrowanie i wyszukiwarka**: `shop-filters`, `shop-explore-panel`, `hierarchical-*`, `dynamic-attribute-filters`, `active-filters-bar`, `search-modal`, `shop-dropdown`.

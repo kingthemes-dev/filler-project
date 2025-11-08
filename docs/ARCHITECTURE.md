@@ -57,6 +57,11 @@
   - MU‑pluginy (`king-shop`, `king-optimized`) czyszczą własny Redis/WP Object Cache przy aktualizacji produktów i przez hook `king_flush_all_caches`.
 
 ## Struktura repozytorium
+
+<!-- AUTO:FOLDERS-START -->
+
+<!-- AUTO:FOLDERS-END -->
+
 | Ścieżka | Zakres |
 | --- | --- |
 | `apps/web/src/app/` | Strony Next.js (App Router), trasy API (`app/api/*`), konfiguracja ISR i runtime. |
