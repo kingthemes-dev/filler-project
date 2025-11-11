@@ -1,9 +1,9 @@
 {
-  "buildCommand": "cd apps/web && pnpm run build",
+  "buildCommand": "pnpm --filter @headless-woo/web build",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs",
   "installCommand": "pnpm install",
-  "devCommand": "cd apps/web && pnpm run dev",
+  "devCommand": "pnpm --filter @headless-woo/web dev",
   "build": {
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1"

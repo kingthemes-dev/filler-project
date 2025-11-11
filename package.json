@@ -29,6 +29,9 @@
     "dev:debug": "cd apps/web && npm run dev:debug",
     "install:all": "npm install && cd apps/web && npm install && cd ../mobile && npm install && cd ../../packages/shared && npm install"
   },
+  "dependencies": {
+    "next": "15.5.6"
+  },
   "pnpm": {
     "overrides": {
       "eslint-plugin-react-hooks": "^5.2.0",
