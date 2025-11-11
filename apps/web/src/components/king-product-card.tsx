@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useCartStore } from '@/stores/cart-store';
-import { useFavoritesStore } from '@/stores/favorites-store';
-import { useQuickViewStore } from '@/stores/quickview-store';
+import { useCartActions } from '@/stores/cart-store';
+import type { CartItem } from '@/stores/cart-store';
+import { useFavoritesActions, useFavoritesItems } from '@/stores/favorites-store';
+import { useQuickViewActions, useQuickViewIsOpen, useQuickViewProduct } from '@/stores/quickview-store';
 // Wishlist tymczasowo wyłączony na kartach
 // import { useWishlist } from '@/hooks/use-wishlist';
 import dynamic from 'next/dynamic';
@@ -26,6 +27,31 @@ interface KingProductCardProps {
   priority?: boolean;
 }
 
+interface VariationAttribute {
+  slug?: string;
+  option: string;
+}
+
+interface ProductVariation {
+  id: number;
+  attributes?: VariationAttribute[];
+  price: string;
+  regular_price: string;
+  sale_price: string;
+  name: string;
+  menu_order: number;
+}
+
+const variationAttributesToRecord = (attributes?: VariationAttribute[]): Record<string, string> => {
+  if (!attributes) return {};
+  return attributes.reduce<Record<string, string>>((acc, attr) => {
+    if (attr.slug && attr.option) {
+      acc[attr.slug] = attr.option;
+    }
+    return acc;
+  }, {});
+};
+
 export default function KingProductCard({ 
   product, 
   showActions = true, 
@@ -34,24 +60,24 @@ export default function KingProductCard({
   priority = false
 }: KingProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { openQuickView, isOpen: isQuickViewOpen, product: quickViewProduct, closeQuickView } = useQuickViewStore();
+  const isQuickViewOpen = useQuickViewIsOpen();
+  const quickViewProduct = useQuickViewProduct();
+  const { openQuickView, closeQuickView } = useQuickViewActions();
   // removed unused showVariants state
   const [selectedVariant, setSelectedVariant] = useState<string>('');
   const [variationsLoaded, setVariationsLoaded] = useState(false);
-  const [variations, setVariations] = useState<Array<{
-    id: number;
-    attributes?: Array<{ slug: string; option: string }>;
-    price: string;
-    regular_price: string;
-    sale_price: string;
-    name: string;
-    menu_order: number;
-  }>>([]);
+  const [variations, setVariations] = useState<ProductVariation[]>([]);
   const [isHovered, setIsHovered] = useState(false);
   // removed unused isButtonHovered state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Use selectors for optimized subscriptions
+  const { addItem, openCart } = useCartActions();
+  const { toggleFavorite } = useFavoritesActions();
+  const favorites = useFavoritesItems();
+  const isFavorite = (productId: number) => favorites.some(fav => fav.id === productId);
   
   // Handle hydration
   useEffect(() => {
@@ -81,28 +107,6 @@ export default function KingProductCard({
       // variations state changed debug removed
     }
   }, [variations]);
-  
-  // Safely access stores with error handling
-  let addItem, openCart, toggleFavorite, isFavorite;
-  try {
-    const cartStore = useCartStore();
-    addItem = cartStore.addItem;
-    openCart = cartStore.openCart;
-  } catch (error) {
-    console.warn('Cart store not available:', error);
-    addItem = () => {};
-    openCart = () => {};
-  }
-  
-  try {
-    const favoritesStore = useFavoritesStore();
-    toggleFavorite = favoritesStore.toggleFavorite;
-    isFavorite = favoritesStore.isFavorite;
-  } catch (error) {
-    console.warn('Favorites store not available:', error);
-    toggleFavorite = () => {};
-    isFavorite = () => false;
-  }
 
   // Wishlist via safe hook (SSR-guarded)
   // Wishlist UI wyłączony na kartach – zostaje tylko Ulubione
@@ -110,18 +114,18 @@ export default function KingProductCard({
   const handleAddToCart = async () => {
     setIsLoading(true);
     try {
-      let cartItem;
+      let cartItem: Omit<CartItem, 'quantity'> | null = null;
       
       if (product.type === 'variable' && selectedVariant) {
-        // For variable products with selected variant, get the specific variation
-        const variations = await wooCommerceService.getProductVariations(product.id);
-        const selectedVariation = variations.variations?.find((variation) => 
+        const variationsResponse = await wooCommerceService.getProductVariations(product.id);
+        const selectedVariation = variationsResponse.variations?.find((variation) => 
           variation.attributes?.some((attr) => 
             attr.slug === 'pa_pojemnosc' && attr.option === selectedVariant
           )
         );
         
         if (selectedVariation) {
+          const variationAttributes = variationAttributesToRecord(selectedVariation.attributes);
           cartItem = {
             id: selectedVariation.id,
             name: `${product.name} - ${selectedVariant}`,
@@ -130,9 +134,14 @@ export default function KingProductCard({
             sale_price: parseFloat(selectedVariation.sale_price),
             image: imageUrl,
             permalink: `/produkt/${product.slug}`,
+            attributes: variationAttributes,
+            variant: {
+              id: selectedVariation.id,
+              name: 'Pojemność',
+              value: selectedVariant,
+            },
           };
         } else {
-          // Fallback to main product if variation not found
           cartItem = {
             id: product.id,
             name: product.name,
@@ -141,10 +150,10 @@ export default function KingProductCard({
             sale_price: parseFloat(product.sale_price),
             image: imageUrl,
             permalink: `/produkt/${product.slug}`,
+            attributes: {},
           };
         }
       } else {
-        // For simple products or variable products without selected variant
         cartItem = {
           id: product.id,
           name: product.name,
@@ -153,12 +162,14 @@ export default function KingProductCard({
           sale_price: parseFloat(product.sale_price),
           image: imageUrl,
           permalink: `/produkt/${product.slug}`,
+          attributes: {},
         };
       }
 
-      // Adding to cart from card debug removed
-      addItem(cartItem);
-      openCart();
+      if (cartItem) {
+        addItem(cartItem);
+        openCart();
+      }
     } catch (error) {
       console.error('Błąd dodawania do koszyka:', error);
     } finally {
@@ -186,19 +197,9 @@ export default function KingProductCard({
     if (!variationsLoaded) {
       try {
         const response = await wooCommerceService.getProductVariations(product.id);
+        const variationsList = response.variations ?? [];
         
-        if (process.env.NODE_ENV === 'development') {
-          // Variations response debug removed
-        }
-        
-        // API zwraca warianty jako tablicę bezpośrednio, nie w obiekcie z właściwością variations
-        const variations = Array.isArray(response) ? response : (response.variations || []);
-        
-        if (process.env.NODE_ENV === 'development') {
-          // Setting variations debug removed
-        }
-        
-        setVariations([...variations]); // Force new array reference
+        setVariations([...variationsList]);
         setVariationsLoaded(true);
         
         if (process.env.NODE_ENV === 'development') {
@@ -219,18 +220,12 @@ export default function KingProductCard({
     await handleAddToCart();
   };
 
-  const handleAddToCartWithVariation = async (variation: { 
-    id: number; 
-    price: string; 
-    regular_price: string; 
-    sale_price: string; 
-    attributes?: Array<{ slug: string; option: string }>; 
-  }, variantName: string) => {
+  const handleAddToCartWithVariation = async (variation: ProductVariation, variantName: string) => {
     // handleAddToCartWithVariation debug removed
     
     setIsLoading(true);
     try {
-      const cartItem = {
+      const cartItem: Omit<CartItem, 'quantity'> = {
         id: variation.id,
         name: `${product.name} - ${variantName}`,
         price: parseFloat(variation.price),
@@ -238,6 +233,12 @@ export default function KingProductCard({
         sale_price: parseFloat(variation.sale_price),
         image: imageUrl,
         permalink: `/produkt/${product.slug}`,
+        attributes: variationAttributesToRecord(variation.attributes),
+        variant: {
+          id: variation.id,
+          name: 'Wariant',
+          value: variantName,
+        },
       };
 
       // Adding variation to cart debug removed
@@ -255,11 +256,11 @@ export default function KingProductCard({
     // getAvailableVariants debug removed
     
     if (variations.length > 0) {
-      const variants = variations.map((variation: any) => {
+      const variants = variations.map((variation) => {
         // Processing variation debug removed
         // Znajdź pierwszy dostępny atrybut (pojemność, kolor, rozmiar, etc.)
-        const firstAttr = variation.attributes?.find((attr: any) => 
-          attr.slug && attr.option
+        const firstAttr = variation.attributes?.find(
+          (attribute) => attribute.slug && attribute.option
         );
         // First attr found debug removed
         const variantName = firstAttr?.option || variation.name || `Wariant ${variation.id}`;
@@ -276,21 +277,14 @@ export default function KingProductCard({
       // No product attributes debug removed
       return [];
     }
-    const firstAttrWithOptions = product.attributes.find((attr) => 
-      (attr as any).options && (attr as any).options.length > 0
-    );
+    const firstAttrWithOptions = product.attributes.find((attr) => Array.isArray(attr.options) && attr.options.length > 0);
     if (!firstAttrWithOptions) {
       // No attributes with options debug removed
       return [];
     }
-    const opts = (firstAttrWithOptions as any).options || [];
+    const opts = firstAttrWithOptions.options ?? [];
     // Product attribute options debug removed
-    return opts.map((o: any) => {
-      if (typeof o === 'string') return o;
-      if (typeof o === 'object' && o.name) return o.name;
-      if (typeof o === 'object' && o.slug) return o.slug;
-      return String(o);
-    }).filter(Boolean);
+    return opts;
   };
 
   // Get attribute name for display
@@ -306,21 +300,23 @@ export default function KingProductCard({
     }
     
     // Check if product has single image property (simplified API format)
-    if (typeof (product as { image?: string }).image === 'string' && (product as { image?: string }).image) {
-      const imageUrl = (product as any).image;
+    const rawImage = (product as { image?: string }).image;
+    if (typeof rawImage === 'string' && rawImage) {
       // Convert to higher quality image by replacing size suffix
-      if (imageUrl.includes('-300x300.')) {
-        return imageUrl.replace('-300x300.', '-600x600.');
-      } else if (imageUrl.includes('-150x150.')) {
-        return imageUrl.replace('-150x150.', '-600x600.');
-      } else if (imageUrl.includes('-100x100.')) {
-        return imageUrl.replace('-100x100.', '-600x600.');
+      if (rawImage.includes('-300x300.')) {
+        return rawImage.replace('-300x300.', '-600x600.');
+      } else if (rawImage.includes('-150x150.')) {
+        return rawImage.replace('-150x150.', '-600x600.');
+      } else if (rawImage.includes('-100x100.')) {
+        return rawImage.replace('-100x100.', '-600x600.');
       }
-      return imageUrl;
+      return rawImage;
     }
     
     return '/images/placeholder-product.jpg';
   })();
+  const primaryImage = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : undefined;
+  const primaryImageAlt = primaryImage?.alt || primaryImage?.name || product.name;
   const price = wooCommerceService.formatPrice(product.price);
   const regularPrice = wooCommerceService.formatPrice(product.regular_price);
 
@@ -329,23 +325,41 @@ export default function KingProductCard({
 
   // Helper function to get main category (parent: 0)
   const getMainCategory = (): string | null => {
-    const cats = (product as { categories?: Array<{ name: string }> }).categories;
-    if (!cats || cats.length === 0) return null;
-    
-    // Main categories (parent: 0) are: Mezoterapia, Peelingi, Stymulatory, Wypełniacze
-    const mainCategories = ['Mezoterapia', 'Peelingi', 'Stymulatory', 'Wypełniacze'];
-    
-    // Find the first main category in the product's categories
-    const main = cats.find((c) => {
-      const categoryName = typeof c === 'string' ? c : c?.name;
-      return categoryName && mainCategories.includes(categoryName);
-    });
-    
-    if (main) {
-      return typeof main === 'string' ? main : main?.name;
+    try {
+      // WooProduct.categories is WooCategory[] where WooCategory = { id: number; name: string; slug: string; }
+      const cats = product.categories;
+      
+      // Ensure cats is an array before using array methods
+      if (!cats || !Array.isArray(cats) || cats.length === 0) {
+        return null;
+      }
+      
+      // Main categories (parent: 0) are: Mezoterapia, Peelingi, Stymulatory, Wypełniacze
+      const mainCategories = ['Mezoterapia', 'Peelingi', 'Stymulatory', 'Wypełniacze'];
+      
+      // Find the first main category in the product's categories
+      // categories is WooCategory[] = { id: number; name: string; slug: string; }[]
+      const main = cats.find((c) => {
+        if (!c || typeof c !== 'object') return false;
+        const categoryName = c.name;
+        return categoryName && mainCategories.includes(categoryName);
+      });
+      
+      if (main && typeof main === 'object' && 'name' in main) {
+        return main.name;
+      }
+      
+      // Fallback: return first category name if no main category found
+      if (cats.length > 0 && cats[0] && typeof cats[0] === 'object' && 'name' in cats[0]) {
+        return cats[0].name;
+      }
+      
+      return null;
+    } catch (error) {
+      // Safely handle any errors
+      console.warn('Error getting main category:', error);
+      return null;
     }
-    
-    return null;
   };
 
   const renderPrice = () => {
@@ -575,7 +589,7 @@ export default function KingProductCard({
           <div className="w-40 h-40 flex-shrink-0 relative">
             <Image
               src={imageUrl}
-              alt={Array.isArray((product as any).images) && (product as any).images[0] && (product as any).images[0].alt ? (product as any).images[0].alt : product.name}
+              alt={primaryImageAlt}
               width={160}
               height={160}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -690,14 +704,9 @@ export default function KingProductCard({
               <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">Wybierz wariant</h3>
               <div className="flex flex-wrap gap-3 justify-center">
                 {getAvailableVariants().map((variant: string) => {
-                  const variation = variations.find((v: { 
-                    id: number; 
-                    attributes?: Array<{ slug: string; option: string }>; 
-                  }) => {
+                  const variation = variations.find((v) => {
                     // Znajdź wariację która ma ten sam atrybut
-                    const firstAttr = v.attributes?.find((attr: { slug: string; option: string }) => 
-                      attr.slug && attr.option
-                    );
+                    const firstAttr = v.attributes?.find((attr) => attr.slug && attr.option);
                     return firstAttr?.option === variant;
                   });
                   
@@ -857,17 +866,13 @@ export default function KingProductCard({
           {/* AUTO: Product Attributes - All attributes in gray badges */}
           {product.attributes && product.attributes.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {product.attributes.map((attr: { name: string; options: string[] }, attrIndex: number) => {
+              {product.attributes.map((attr, attrIndex: number) => {
                 if (!attr.options || !Array.isArray(attr.options)) return null;
                 
-                return attr.options.slice(0, 2).map((option: any, optionIndex: number) => {
+                return attr.options.slice(0, 2).map((option, optionIndex) => {
                   if (!option) return null;
                   
-                  // Handle both string and object options
-                  const optionValue = typeof option === 'string' 
-                    ? option 
-                    : (option?.name || option?.slug || String(option?.id || ''));
-                  
+                  const optionValue = String(option);
                   if (!optionValue) return null;
                   
                   return (
@@ -894,14 +899,8 @@ export default function KingProductCard({
             <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Wybierz wariant</h2>
             <div className="flex flex-wrap gap-3 justify-center">
               {getAvailableVariants().map((variant: string) => {
-                const variation = variations.find((v: { 
-                  id: number; 
-                  attributes?: Array<{ slug: string; option: string }>; 
-                }) => {
-                  // Znajdź wariację która ma ten sam atrybut
-                  const firstAttr = v.attributes?.find((attr: { slug: string; option: string }) => 
-                    attr.slug && attr.option
-                  );
+                const variation = variations.find((v) => {
+                  const firstAttr = v.attributes?.find((attr) => attr.slug && attr.option);
                   return firstAttr?.option === variant;
                 });
                 
@@ -994,14 +993,8 @@ export default function KingProductCard({
                 ) : (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {getAvailableVariants().map((variant: string) => {
-                    const variation = variations.find((v: { 
-                      id: number; 
-                      attributes?: Array<{ slug: string; option: string }>; 
-                    }) => {
-                      // Znajdź wariację która ma ten sam atrybut
-                      const firstAttr = v.attributes?.find((attr: { slug: string; option: string }) => 
-                        attr.slug && attr.option
-                      );
+                    const variation = variations.find((v) => {
+                      const firstAttr = v.attributes?.find((attr) => attr.slug && attr.option);
                       return firstAttr?.option === variant;
                     });
                     

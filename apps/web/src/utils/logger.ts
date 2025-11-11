@@ -11,11 +11,14 @@ export enum LogLevel {
   DEBUG = 3
 }
 
+type Primitive = string | number | boolean | null | undefined;
+type LogContext = Primitive | Record<string, unknown> | LogContext[];
+
 interface LogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
-  context?: any;
+  context?: LogContext;
   userId?: string;
   sessionId?: string;
 }
@@ -28,7 +31,7 @@ class Logger {
     this.logLevel = process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG;
   }
 
-  private formatMessage(level: LogLevel, message: string, context?: any): LogEntry {
+  private formatMessage(level: LogLevel, message: string, context?: LogContext): LogEntry {
     return {
       timestamp: new Date().toISOString(),
       level,
@@ -39,19 +42,29 @@ class Logger {
     };
   }
 
-  private sanitizeContext(context: any): any {
-    if (typeof context !== 'object' || context === null) {
+  private sanitizeContext(context: LogContext): LogContext {
+    if (context === null) {
+      return context;
+    }
+
+    if (Array.isArray(context)) {
+      return context.map((item) => (typeof item === 'object' && item !== null
+        ? this.sanitizeContext(item as LogContext)
+        : item));
+    }
+
+    if (typeof context !== 'object') {
       return context;
     }
 
     const sensitiveKeys = ['password', 'token', 'secret', 'key', 'auth'];
-    const sanitized = { ...context };
+    const sanitized: Record<string, unknown> = { ...context };
 
-    for (const key in sanitized) {
-      if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+    for (const key of Object.keys(sanitized)) {
+      if (sensitiveKeys.some((sensitive) => key.toLowerCase().includes(sensitive))) {
         sanitized[key] = '[REDACTED]';
-      } else if (typeof sanitized[key] === 'object') {
-        sanitized[key] = this.sanitizeContext(sanitized[key]);
+      } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+        sanitized[key] = this.sanitizeContext(sanitized[key] as LogContext);
       }
     }
 
@@ -85,7 +98,7 @@ class Logger {
     return undefined;
   }
 
-  private log(level: LogLevel, message: string, context?: any): void {
+  private log(level: LogLevel, message: string, context?: LogContext): void {
     // Always allow ERROR/WARN. Gate INFO/DEBUG behind NEXT_PUBLIC_DEBUG
     const isDebugEnabled = process.env.NEXT_PUBLIC_DEBUG === 'true';
     if ((level === LogLevel.INFO || level === LogLevel.DEBUG) && !isDebugEnabled) {
@@ -158,19 +171,19 @@ class Logger {
   }
 
   // Public logging methods
-  error(message: string, context?: any): void {
+  error(message: string, context?: LogContext): void {
     this.log(LogLevel.ERROR, message, context);
   }
 
-  warn(message: string, context?: any): void {
+  warn(message: string, context?: LogContext): void {
     this.log(LogLevel.WARN, message, context);
   }
 
-  info(message: string, context?: any): void {
+  info(message: string, context?: LogContext): void {
     this.log(LogLevel.INFO, message, context);
   }
 
-  debug(message: string, context?: any): void {
+  debug(message: string, context?: LogContext): void {
     this.log(LogLevel.DEBUG, message, context);
   }
 
@@ -184,11 +197,11 @@ class Logger {
     });
   }
 
-  userAction(action: string, details?: any): void {
+  userAction(action: string, details?: LogContext): void {
     this.info(`User action: ${action}`, details);
   }
 
-  performance(operation: string, duration: number, details?: any): void {
+  performance(operation: string, duration: number, details?: Record<string, unknown>): void {
     // Reduce noise: only log when explicitly enabled via env and at most every 2s
     if (process.env.NEXT_PUBLIC_PERF_LOGS !== 'true') return;
     const now = Date.now();
@@ -201,7 +214,7 @@ class Logger {
     });
   }
 
-  security(event: string, details?: any): void {
+  security(event: string, details?: LogContext): void {
     this.warn(`Security event: ${event}`, details);
   }
 }
@@ -246,9 +259,11 @@ export async function loggedApiCall<T>(
     const duration = Date.now() - start;
     logger.apiCall(method, url, 200, duration);
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - start;
-    const status = error.status || error.statusCode || 500;
+    const status = (typeof error === 'object' && error && 'status' in error)
+      ? (error as { status?: number; statusCode?: number }).status ?? (error as { statusCode?: number }).statusCode ?? 500
+      : 500;
     logger.apiCall(method, url, status, duration);
     throw error;
   }

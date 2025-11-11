@@ -7,39 +7,52 @@ import type { WooProduct } from '@/types/woocommerce';
 
 // Mock next/link
 jest.mock('next/link', () => {
-  const MockLink = ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  );
-  (MockLink as any).displayName = 'MockNextLink';
+  type MockNextLinkProps = { children: React.ReactNode; href: string };
+  type MockNextLinkComponent = React.FC<MockNextLinkProps> & { displayName?: string };
+
+  const MockLink: MockNextLinkComponent = ({ children, href }) => <a href={href}>{children}</a>;
+  MockLink.displayName = 'MockNextLink';
   return MockLink;
 });
 
 // Mock next/image
 jest.mock('next/image', () => {
-  const MockImage = ({ src, alt, priority: _priority, ...props }: any) => (
-    <img src={src} alt={alt} {...props} />
+  type MockImageProps = React.ImgHTMLAttributes<HTMLImageElement> & { priority?: boolean };
+  type MockImageComponent = React.FC<MockImageProps> & { displayName?: string };
+
+  const MockImage: MockImageComponent = ({ src, alt, priority: _priority, ...props }) => (
+    <img src={src ?? ''} alt={alt ?? ''} {...props} />
   );
-  (MockImage as any).displayName = 'MockNextImage';
+  MockImage.displayName = 'MockNextImage';
   return MockImage;
 });
 
-// Mock useFavoritesStore
+// Mock favorites store selectors
+const mockToggleFavorite = jest.fn();
 jest.mock('@/stores/favorites-store', () => ({
-  useFavoritesStore: () => ({
-    favorites: [],
-    toggleFavorite: jest.fn(),
-    addToFavorites: jest.fn(),
-    removeFromFavorites: jest.fn(),
-    isFavorite: jest.fn(() => false),
+  useFavoritesItems: () => [],
+  useFavoritesActions: () => ({
+    toggleFavorite: mockToggleFavorite,
   }),
 }));
 
-// Mock useCart hook
+// Mock cart store selectors
+const mockAddItem = jest.fn();
+const mockOpenCart = jest.fn();
 jest.mock('@/stores/cart-store', () => ({
-  useCartStore: () => ({
-    addItem: jest.fn(),
-    openCart: jest.fn(),
-    items: [],
+  useCartActions: () => ({
+    addItem: mockAddItem,
+    openCart: mockOpenCart,
+  }),
+}));
+
+// Mock quickview store selectors
+jest.mock('@/stores/quickview-store', () => ({
+  useQuickViewIsOpen: () => false,
+  useQuickViewProduct: () => null,
+  useQuickViewActions: () => ({
+    openQuickView: jest.fn(),
+    closeQuickView: jest.fn(),
   }),
 }));
 
@@ -54,13 +67,18 @@ const mockProduct: Partial<WooProduct> = {
   images: [
     {
       id: 1,
+      date_created: '',
+      date_created_gmt: '',
+      date_modified: '',
+      date_modified_gmt: '',
       src: 'https://example.com/image.jpg',
+      name: 'Test Product Image',
       alt: 'Test Product Image',
-    } as any,
-  ] as any,
-  stock_status: 'instock' as any,
-  variations: [] as any,
-  attributes: [] as any,
+    },
+  ],
+  stock_status: 'instock',
+  variations: [],
+  attributes: [],
   rating_count: 5,
   average_rating: '4.5',
   short_description: 'Test product description',

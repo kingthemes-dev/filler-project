@@ -92,6 +92,44 @@ export const ENDPOINT_RATE_LIMITS: Record<string, EndpointRateLimit> = {
     windowMs: 60 * 1000, // 1 minute
     keyPrefix: 'ratelimit:webhooks',
   },
+  // Cache endpoints (admin, but still rate limited)
+  '/api/cache/clear': {
+    maxRequests: 10,
+    windowMs: 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:cache-clear',
+  },
+  '/api/cache/purge': {
+    maxRequests: 20,
+    windowMs: 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:cache-purge',
+  },
+  '/api/cache/warm': {
+    maxRequests: 5,
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    keyPrefix: 'ratelimit:cache-warm',
+  },
+  // Favorites sync (mutation)
+  '/api/favorites/sync': {
+    maxRequests: 30,
+    windowMs: 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:favorites-sync',
+  },
+  // Performance endpoints (admin, but still rate limited)
+  '/api/performance': {
+    maxRequests: 50,
+    windowMs: 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:performance',
+  },
+  '/api/performance/metrics': {
+    maxRequests: 100,
+    windowMs: 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:performance-metrics',
+  },
+  '/api/performance/stats': {
+    maxRequests: 50,
+    windowMs: 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:performance-stats',
+  },
 };
 
 /**
@@ -141,6 +179,27 @@ export function getEndpointRateLimit(path: string, searchParams?: URLSearchParam
   }
   if (path.startsWith('/api/webhooks')) {
     return ENDPOINT_RATE_LIMITS['/api/webhooks'] || null;
+  }
+  if (path.startsWith('/api/cache/clear')) {
+    return ENDPOINT_RATE_LIMITS['/api/cache/clear'] || null;
+  }
+  if (path.startsWith('/api/cache/purge')) {
+    return ENDPOINT_RATE_LIMITS['/api/cache/purge'] || null;
+  }
+  if (path.startsWith('/api/cache/warm')) {
+    return ENDPOINT_RATE_LIMITS['/api/cache/warm'] || null;
+  }
+  if (path.startsWith('/api/favorites/sync')) {
+    return ENDPOINT_RATE_LIMITS['/api/favorites/sync'] || null;
+  }
+  if (path.startsWith('/api/performance/metrics')) {
+    return ENDPOINT_RATE_LIMITS['/api/performance/metrics'] || null;
+  }
+  if (path.startsWith('/api/performance/stats')) {
+    return ENDPOINT_RATE_LIMITS['/api/performance/stats'] || null;
+  }
+  if (path.startsWith('/api/performance')) {
+    return ENDPOINT_RATE_LIMITS['/api/performance'] || null;
   }
 
   // Default: no specific limit (use global)

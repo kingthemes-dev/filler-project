@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import PageContainer from '@/components/ui/page-container';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Calendar, Euro, Eye, User, Package, RefreshCw } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth-store';
+import { motion } from 'framer-motion';
+import { FileText, Download, Calendar, Eye, User, Package, RefreshCw } from 'lucide-react';
+import { useAuthUser, useAuthIsAuthenticated } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
 import { httpErrorMessage } from '@/utils/error-messages';
+import { WooOrder } from '@/types/woocommerce';
 
 export interface Invoice {
   id: string;
@@ -189,7 +190,8 @@ const formatPrice = (price: number) => {
 
 export default function MyInvoicesPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const user = useAuthUser();
+  const isAuthenticated = useAuthIsAuthenticated();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -230,7 +232,7 @@ export default function MyInvoicesPage() {
                 fetchInvoices(true).catch(console.error);
               }
               return;
-            } catch (e) {
+            } catch {
               // Cache corrupted, fetch fresh data
               sessionStorage.removeItem(INVOICES_CACHE_KEY);
               sessionStorage.removeItem(INVOICES_CACHE_TIMESTAMP_KEY);
@@ -256,15 +258,23 @@ export default function MyInvoicesPage() {
 
       if (Array.isArray(data)) {
         // Show all orders, but mark which ones are eligible for invoices
-        const transformedInvoices = data.map((order: any) => {
-          const invoiceNumber = order.meta_data?.find((meta: any) => meta.key === '_invoice_number')?.value;
-          const invoiceDate = order.meta_data?.find((meta: any) => meta.key === '_invoice_date')?.value;
+        const transformedInvoices = data.map((order: WooOrder): Invoice => {
+          const invoiceNumberRaw = order.meta_data?.find((meta) => meta.key === '_invoice_number')?.value;
+          const invoiceDateRaw = order.meta_data?.find((meta) => meta.key === '_invoice_date')?.value;
           const isEligible = isOrderEligibleForInvoice(order.status);
+          const invoiceNumber =
+            typeof invoiceNumberRaw === 'string' && invoiceNumberRaw.trim().length > 0
+              ? invoiceNumberRaw
+              : `FV/${order.number}`;
+          const invoiceDate =
+            typeof invoiceDateRaw === 'string' && invoiceDateRaw.trim().length > 0
+              ? invoiceDateRaw
+              : order.date_created;
           
           return {
             id: order.id.toString(),
-            number: invoiceNumber || `FV/${order.number}`,
-            date: invoiceDate || order.date_created,
+            number: invoiceNumber,
+            date: invoiceDate,
             total: parseFloat(order.total),
             currency: order.currency || 'PLN',
             status: order.status,
@@ -284,15 +294,13 @@ export default function MyInvoicesPage() {
         setInvoices([]);
       }
     } catch (error) {
-      console.error('Error fetching invoices:', (error as any)?.message || error);
-      if (!errorMessage) {
-        setErrorMessage('Nie udało się pobrać listy faktur. Spróbuj ponownie.');
-      }
+      console.error('Error fetching invoices:', error instanceof Error ? error.message : error);
+      setErrorMessage((prev) => prev ?? 'Nie udało się pobrać listy faktur. Spróbuj ponownie.');
       setInvoices([]);
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, invoices.length]);
 
   // Handle manual refresh button
   const handleRefresh = useCallback(async () => {
@@ -323,7 +331,7 @@ export default function MyInvoicesPage() {
             const parsedData = JSON.parse(cachedData);
             setInvoices(parsedData);
             setLoading(false);
-          } catch (e) {
+          } catch {
             // Cache corrupted
             sessionStorage.removeItem(INVOICES_CACHE_KEY);
             sessionStorage.removeItem(INVOICES_CACHE_TIMESTAMP_KEY);
@@ -406,9 +414,9 @@ export default function MyInvoicesPage() {
           throw new Error('Nieprawidłowa odpowiedź z serwera');
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error viewing invoice:', error);
-      setErrorMessage(error?.message || 'Nie udało się wyświetlić faktury. Spróbuj ponownie.');
+      setErrorMessage(error instanceof Error ? error.message : 'Nie udało się wyświetlić faktury. Spróbuj ponownie.');
     }
   }, []);
 
@@ -483,9 +491,9 @@ export default function MyInvoicesPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error downloading invoice:', error);
-      setErrorMessage(error?.message || 'Nie udało się pobrać faktury. Spróbuj ponownie.');
+      setErrorMessage(error instanceof Error ? error.message : 'Nie udało się pobrać faktury. Spróbuj ponownie.');
     }
   }, []);
 

@@ -2,33 +2,36 @@
  * Optimized caching system with Redis and fallback
  */
 
+import type { Redis } from 'ioredis';
 import { env } from '@/config/env';
 import { logger } from '@/utils/logger';
 
 // Redis client (optional)
-let redis: any = null;
+let redis: Redis | null = null;
 
 // Initialize Redis if available
 try {
   if (env.NODE_ENV === 'production' && process.env.REDIS_URL) {
-    const Redis = require('ioredis');
-    redis = new Redis(process.env.REDIS_URL, {
+    const RedisClient = require('ioredis') as typeof import('ioredis').default;
+    redis = new RedisClient(process.env.REDIS_URL, {
       maxRetriesPerRequest: 3,
       lazyConnect: true,
       keepAlive: 30000,
       connectTimeout: 10000,
       commandTimeout: 5000,
-    });
+    }) as Redis;
     logger.info('Redis cache initialized');
   } else {
     logger.info('Redis not configured, using in-memory cache');
   }
 } catch (error) {
   logger.warn('Redis not available, using in-memory cache', { error });
+  redis = null;
 }
 
 // In-memory cache as fallback
-const memoryCache = new Map<string, { value: any; expires: number }>();
+type MemoryCacheValue = { value: unknown; expires: number };
+const memoryCache = new Map<string, MemoryCacheValue>();
 
 // Cache configuration
 const CACHE_CONFIG = {
@@ -46,19 +49,19 @@ interface CacheOptions {
 }
 
 class CacheManager {
-  private async getFromRedis(key: string): Promise<any> {
+  private async getFromRedis<T>(key: string): Promise<T | null> {
     if (!redis) return null;
     
     try {
       const value = await redis.get(key);
-      return value ? JSON.parse(value) : null;
+      return value ? (JSON.parse(value) as T) : null;
     } catch (error) {
       logger.error('Redis get error', { key, error });
       return null;
     }
   }
 
-  private async setInRedis(key: string, value: any, ttl: number): Promise<void> {
+  private async setInRedis(key: string, value: unknown, ttl: number): Promise<void> {
     if (!redis) return;
     
     try {
@@ -78,7 +81,7 @@ class CacheManager {
     }
   }
 
-  private getFromMemory(key: string): any {
+  private getFromMemory<T>(key: string): T | null {
     const item = memoryCache.get(key);
     if (!item) return null;
     
@@ -87,10 +90,10 @@ class CacheManager {
       return null;
     }
     
-    return item.value;
+    return item.value as T;
   }
 
-  private setInMemory(key: string, value: any, ttl: number): void {
+  private setInMemory(key: string, value: unknown, ttl: number): void {
     // Clean up old items if cache is too large
     if (memoryCache.size >= CACHE_CONFIG.MAX_MEMORY_ITEMS) {
       const now = Date.now();
@@ -114,14 +117,14 @@ class CacheManager {
   // Public cache methods
   async get<T>(key: string): Promise<T | null> {
     // Try Redis first
-    const redisValue = await this.getFromRedis(key);
+    const redisValue = await this.getFromRedis<T>(key);
     if (redisValue !== null) {
       logger.debug('Cache hit (Redis)', { key });
       return redisValue;
     }
 
     // Fallback to memory
-    const memoryValue = this.getFromMemory(key);
+    const memoryValue = this.getFromMemory<T>(key);
     if (memoryValue !== null) {
       logger.debug('Cache hit (Memory)', { key });
       return memoryValue;
@@ -131,7 +134,7 @@ class CacheManager {
     return null;
   }
 
-  async set(key: string, value: any, options: CacheOptions = {}): Promise<void> {
+  async set<T>(key: string, value: T, options: CacheOptions = {}): Promise<void> {
     const ttl = options.ttl || CACHE_CONFIG.DEFAULT_TTL;
     
     // Set in Redis
@@ -165,10 +168,17 @@ class CacheManager {
     return this.generateKey('product', id);
   }
 
-  productsKey(params: Record<string, any>): string {
+  productsKey(params: Record<string, unknown>): string {
     const sortedParams = Object.keys(params)
       .sort()
-      .map(key => `${key}=${params[key]}`)
+      .map((key) => {
+        const value = params[key];
+        const serializedValue =
+          typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+            ? String(value)
+            : JSON.stringify(value);
+        return `${key}=${serializedValue}`;
+      })
       .join('&');
     return this.generateKey('products', sortedParams);
   }
@@ -202,13 +212,13 @@ export const cache = new CacheManager();
 
 // Cache decorators and helpers
 export function withCache<T>(
-  keyGenerator: (...args: any[]) => string,
+  keyGenerator: (...args: unknown[]) => string,
   options: CacheOptions = {}
 ) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
+  return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value as (...args: unknown[]) => Promise<T> | T;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (...args: unknown[]) {
       const key = keyGenerator(...args);
       
       // Try to get from cache

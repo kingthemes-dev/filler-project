@@ -4,9 +4,9 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { 
-  CreditCard, 
-  User, 
+import {
+  CreditCard,
+  User as UserIcon,
   Lock,
   CheckCircle,
   ArrowLeft,
@@ -15,13 +15,13 @@ import {
 } from 'lucide-react';
 import PageContainer from '@/components/ui/page-container';
 import PageHeader from '@/components/ui/page-header';
-import { useCartStore } from '@/stores/cart-store';
+import { useCartItems, useCartTotal, useCartActions } from '@/stores/cart-store';
 import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import { SHIPPING_CONFIG, ENV } from '@/config/constants';
 import Link from 'next/link';
 import { PaymentMethod } from '@/services/mock-payment';
 import wooCommerceService from '@/services/woocommerce-optimized';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthUser, useAuthIsAuthenticated, useAuthActions, type User } from '@/stores/auth-store';
 import RegisterModal from '@/components/ui/auth/register-modal';
 import { validateEmail, validatePhone, validatePostalCode, validateName, validateAddress } from '@/utils/validation';
 import { Button } from '@/components/ui/button';
@@ -64,13 +64,263 @@ interface CheckoutForm {
   acceptNewsletter: boolean;
 }
 
+type PaymentMethodId = CheckoutForm['paymentMethod'];
+const QUICK_PAYMENT_METHODS: PaymentMethodId[] = ['google_pay', 'apple_pay'];
+const URL_PAYMENT_METHOD_MAP: Record<string, PaymentMethodId> = {
+  google_pay: 'google_pay',
+  apple_pay: 'apple_pay',
+  card: 'card',
+  transfer: 'transfer',
+  cash: 'cash',
+  cod: 'cash',
+  bacs: 'transfer',
+};
+
+type BillingWithExtras = Required<User>['billing'] & {
+  address_1?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  invoiceRequest?: unknown;
+};
+
+type ShippingWithExtras = Required<User>['shipping'] & {
+  address_1?: string;
+  first_name?: string;
+  last_name?: string;
+  company?: string;
+};
+
+type AuthUserWithMeta = User & {
+  first_name?: string;
+  last_name?: string;
+  billing?: BillingWithExtras | null;
+  shipping?: ShippingWithExtras | null;
+  meta_data?: Array<{ key: string; value: unknown }>;
+  _billing_nip?: string;
+  _invoice_request?: string;
+};
+
+interface ShippingMethod {
+  id: string;
+  method_id: string;
+  method_title: string;
+  method_description: string;
+  cost: number;
+  free_shipping_threshold: number;
+  zone_id: string;
+  zone_name: string;
+  settings?: Record<string, unknown>;
+}
+
+interface OrderLineItemPayload {
+  product_id: number;
+  quantity: number;
+  variation_id?: number;
+  meta_data: Array<{ key: string; value: string }>;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const getMetaValue = (user: AuthUserWithMeta | null, key: string): unknown =>
+  user?.meta_data?.find((entry) => entry.key === key)?.value;
+
+const interpretBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    return ['yes', 'true', '1', 'tak'].includes(value.toLowerCase());
+  }
+  return false;
+};
+
+const pickString = (...values: Array<string | undefined | null>): string => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value;
+    }
+  }
+  return '';
+};
+
+const asAuthUser = (user: User | null): AuthUserWithMeta | null => (user ? (user as AuthUserWithMeta) : null);
+
+const buildFormDefaultsFromUser = (user: AuthUserWithMeta | null) => {
+  const billing = user?.billing ?? null;
+  const shipping = user?.shipping ?? null;
+  const metaNip = getMetaValue(user, '_billing_nip');
+  const metaInvoiceRequest = getMetaValue(user, '_invoice_request');
+
+  const nip = pickString(
+    billing?.nip,
+    typeof metaNip === 'string' ? metaNip : undefined,
+    user?._billing_nip,
+  );
+
+  const invoiceRequest =
+    interpretBoolean(billing?.invoiceRequest) ||
+    interpretBoolean(metaInvoiceRequest) ||
+    Boolean(nip);
+
+  return {
+    firstName: pickString(user?.firstName, user?.first_name, billing?.first_name),
+    lastName: pickString(user?.lastName, user?.last_name, billing?.last_name),
+    email: pickString(user?.email, billing?.email),
+    phone: pickString(billing?.phone),
+    company: pickString(billing?.company),
+    nip,
+    invoiceRequest,
+    billingAddress: pickString(billing?.address, billing?.address_1),
+    billingCity: pickString(billing?.city),
+    billingPostcode: pickString(billing?.postcode),
+    billingCountry: pickString(billing?.country, 'PL'),
+    shippingFirstName: pickString(
+      shipping?.first_name,
+      billing?.first_name,
+      user?.firstName,
+      user?.first_name,
+    ),
+    shippingLastName: pickString(
+      shipping?.last_name,
+      billing?.last_name,
+      user?.lastName,
+      user?.last_name,
+    ),
+    shippingCompany: pickString(shipping?.company, billing?.company),
+    shippingAddress: pickString(
+      shipping?.address,
+      shipping?.address_1,
+      billing?.address,
+      billing?.address_1,
+    ),
+    shippingCity: pickString(shipping?.city, billing?.city),
+    shippingPostcode: pickString(shipping?.postcode, billing?.postcode),
+    shippingCountry: pickString(shipping?.country, billing?.country, 'PL'),
+  };
+};
+
+const applyUserDefaults = (
+  prev: CheckoutForm,
+  defaults: ReturnType<typeof buildFormDefaultsFromUser>,
+): CheckoutForm => ({
+  ...prev,
+  firstName: pickString(prev.firstName, defaults.firstName),
+  lastName: pickString(prev.lastName, defaults.lastName),
+  email: pickString(prev.email, defaults.email),
+  phone: pickString(prev.phone, defaults.phone),
+  company: pickString(prev.company, defaults.company),
+  nip: pickString(prev.nip, defaults.nip),
+  invoiceRequest: prev.invoiceRequest || defaults.invoiceRequest,
+  billingAddress: pickString(prev.billingAddress, defaults.billingAddress),
+  billingCity: pickString(prev.billingCity, defaults.billingCity),
+  billingPostcode: pickString(prev.billingPostcode, defaults.billingPostcode),
+  billingCountry: pickString(prev.billingCountry, defaults.billingCountry),
+  shippingFirstName: pickString(prev.shippingFirstName, defaults.shippingFirstName),
+  shippingLastName: pickString(prev.shippingLastName, defaults.shippingLastName),
+  shippingCompany: pickString(prev.shippingCompany, defaults.shippingCompany),
+  shippingAddress: pickString(prev.shippingAddress, defaults.shippingAddress),
+  shippingCity: pickString(prev.shippingCity, defaults.shippingCity),
+  shippingPostcode: pickString(prev.shippingPostcode, defaults.shippingPostcode),
+  shippingCountry: pickString(prev.shippingCountry, defaults.shippingCountry),
+});
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  isRecord(value) ? (value as Record<string, unknown>) : undefined;
+
+const getRecordString = (record: Record<string, unknown> | undefined, key: string): string =>
+  typeof record?.[key] === 'string' ? (record[key] as string) : '';
+
+const extractErrorDetails = (details: unknown): string[] => {
+  if (!Array.isArray(details)) return [];
+  return details
+    .map((detail) => {
+      if (typeof detail === 'string') return detail;
+      if (isRecord(detail)) {
+        const message = typeof detail.message === 'string' ? detail.message : '';
+        const path = Array.isArray(detail.path) ? detail.path.join('.') : '';
+        if (message && path) return `${path}: ${message}`;
+        if (message) return message;
+        return JSON.stringify(detail);
+      }
+      return null;
+    })
+    .filter((value): value is string => Boolean(value));
+};
+
+const extractErrorMessage = (data: unknown): string | null => {
+  if (typeof data === 'string') return data;
+  if (!isRecord(data)) return null;
+
+  const errorField = data.error;
+  if (typeof errorField === 'string') {
+    return errorField;
+  }
+
+  if (isRecord(errorField)) {
+    const message = typeof errorField.message === 'string' ? errorField.message : '';
+    const validationMessages = extractErrorDetails(errorField.details);
+    if (message && validationMessages.length) {
+      return `${message}: ${validationMessages.join(', ')}`;
+    }
+    if (message) return message;
+  }
+
+  if (typeof data.message === 'string') return data.message;
+
+  const detailMessages = extractErrorDetails(data.details);
+  if (detailMessages.length) return detailMessages.join(', ');
+
+  if (Array.isArray(data.errors)) {
+    const messages = data.errors
+      .map((err) => {
+        if (typeof err === 'string') return err;
+        if (isRecord(err) && typeof err.message === 'string') return err.message;
+        return null;
+      })
+      .filter((value): value is string => Boolean(value));
+    if (messages.length) {
+      return messages.join(', ');
+    }
+  }
+
+  return null;
+};
+
+const parseErrorResponse = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+};
+
+const isCheckoutPaymentMethod = (value: string): value is PaymentMethodId =>
+  Object.prototype.hasOwnProperty.call(URL_PAYMENT_METHOD_MAP, value);
+
+const mapGatewayIdToPaymentMethodId = (gatewayId: string): PaymentMethodId => {
+  if (URL_PAYMENT_METHOD_MAP[gatewayId]) {
+    return URL_PAYMENT_METHOD_MAP[gatewayId];
+  }
+  if (isCheckoutPaymentMethod(gatewayId)) {
+    return gatewayId;
+  }
+  return 'card';
+};
+
+const getRecordBoolean = (record: Record<string, unknown> | undefined, key: string): boolean =>
+  interpretBoolean(record?.[key]);
+
 function CheckoutPageInner() {
-  const { items, total, clearCart } = useCartStore();
+  const items = useCartItems();
+  const total = useCartTotal();
+  const { clearCart } = useCartActions();
   
   // Debug total value
   // Checkout total debug removed
   const searchParams = useSearchParams();
-  const { user, isAuthenticated, fetchUserProfile } = useAuthStore();
+  const user = useAuthUser();
+  const isAuthenticated = useAuthIsAuthenticated();
+  const { fetchUserProfile } = useAuthActions();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -126,6 +376,13 @@ function CheckoutPageInner() {
   } | null>(null);
   const [discountLoading, setDiscountLoading] = useState(false);
   
+  const handlePaymentMethodChange = (value: string) => {
+    const mapped = URL_PAYMENT_METHOD_MAP[value];
+    if (!mapped) return;
+    setForm((prev) => ({ ...prev, paymentMethod: mapped }));
+    setQuickPaymentSelected(QUICK_PAYMENT_METHODS.includes(mapped));
+  };
+  
   // Helper functions
   const getPaymentMethodTitle = (method: string) => {
     const titles: Record<string, string> = {
@@ -150,17 +407,7 @@ function CheckoutPageInner() {
   // removed unused helper getSelectedShippingMethod
   
   // Shipping state
-  const [shippingMethods, setShippingMethods] = useState<Array<{
-    id: string;
-    method_id: string;
-    method_title: string;
-    method_description: string;
-    cost: number;
-    free_shipping_threshold: number;
-    zone_id: string;
-    zone_name: string;
-  }>>([]);
-  const [, setShippingCost] = useState(0);
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [_isLoadingShipping, setIsLoadingShipping] = useState(false);
 
   // Load shipping methods
@@ -168,41 +415,29 @@ function CheckoutPageInner() {
     // Loading shipping methods debug removed
     setIsLoadingShipping(true);
     try {
-      const methods = await wooCommerceService.getShippingMethods(
+      const response = await wooCommerceService.getShippingMethods(
         form.shippingCountry,
         '', // state
         form.shippingCity,
         form.shippingPostcode
       );
-      console.log('🚚 Shipping methods response:', methods);
-      // Shipping methods loaded debug removed
-      if (methods && methods.success && methods.methods) {
-        console.log('✅ Shipping methods loaded:', methods.methods);
-        setShippingMethods(methods.methods);
-      } else if (Array.isArray(methods)) {
-        console.log('✅ Shipping methods loaded (array):', methods);
-        setShippingMethods(methods);
-      } else {
-        console.warn('⚠️ No shipping methods found');
-        setShippingMethods([]);
-      }
-      
-      // Auto-select first shipping method for quick payment
-      const methodsArray = methods && methods.methods ? methods.methods : (Array.isArray(methods) ? methods : []);
-      // Available shipping methods debug removed
-      
-      // Auto-select first shipping method if available and no method is selected
-      if (methodsArray.length > 0 && !form.shippingMethod) {
-        const firstMethod = methodsArray[0];
-        setForm(prev => ({ ...prev, shippingMethod: firstMethod.method_id }));
-        // Auto-selected first shipping method debug removed
+      const methodsList: ShippingMethod[] = response.success && Array.isArray(response.methods)
+        ? response.methods
+        : [];
+
+      setShippingMethods(methodsList);
+
+      if (methodsList.length > 0) {
+        const firstMethod = methodsList[0];
+        setForm((prev) => (prev.shippingMethod ? prev : { ...prev, shippingMethod: firstMethod.method_id }));
       }
     } catch (error) {
       console.error('Error loading shipping methods:', error);
+      setShippingMethods([]);
     } finally {
       setIsLoadingShipping(false);
     }
-  }, [form.shippingCountry, form.shippingCity, form.shippingPostcode, form.shippingMethod]);
+  }, [form.shippingCountry, form.shippingCity, form.shippingPostcode]);
 
   // Load payment methods and handle URL params
   useEffect(() => {
@@ -211,57 +446,43 @@ function CheckoutPageInner() {
       const res = await wooCommerceService.getPaymentGateways();
       if (res.success && res.gateways) {
         const mapped: PaymentMethod[] = res.gateways
-          .filter(g => g.enabled)
-          .map(g => ({ 
-            id: g.id as any, 
-            name: g.title, 
-            description: g.description || '',
-            icon: g.id === 'cod' ? 'truck' : 'credit-card',
-            processingTime: g.id === 'cod' ? 0 : 3000,
-            successRate: 0.95
+          .filter((gateway) => gateway.enabled)
+          .map((gateway) => ({
+            id: mapGatewayIdToPaymentMethodId(gateway.id),
+            name: gateway.title,
+            description: gateway.description || '',
+            icon: gateway.id === 'cod' ? 'truck' : 'credit-card',
+            processingTime: gateway.id === 'cod' ? 0 : 3000,
+            successRate: gateway.id === 'cod' ? 1 : 0.95,
           }));
         setPaymentMethods(mapped);
       }
     })();
     
     // Handle payment method from URL
-    const paymentMethod = searchParams.get('payment');
-    if (paymentMethod && ['google_pay', 'apple_pay', 'card', 'transfer', 'cash', 'cod', 'bacs'].includes(paymentMethod)) {
-      setForm(prev => ({ ...prev, paymentMethod: paymentMethod as 'google_pay' | 'apple_pay' | 'card' | 'transfer' | 'cash' }));
-      setQuickPaymentSelected(['google_pay', 'apple_pay'].includes(paymentMethod));
+    const paymentParam = searchParams.get('payment');
+    const mappedPaymentMethod = paymentParam ? URL_PAYMENT_METHOD_MAP[paymentParam] : undefined;
+
+    if (mappedPaymentMethod) {
+      setForm((prev) => ({ ...prev, paymentMethod: mappedPaymentMethod }));
+      setQuickPaymentSelected(QUICK_PAYMENT_METHODS.includes(mappedPaymentMethod));
       
       // TRUE QUICK PAYMENT - skip to payment step and use defaults
-      if (['google_pay', 'apple_pay'].includes(paymentMethod)) {
+      if (QUICK_PAYMENT_METHODS.includes(mappedPaymentMethod)) {
         setCurrentStep(2); // Go to shipping and payment step
         
         // Set user data for quick payment (or defaults if not logged in)
-        const u: any = user;
-        const billing = u?.billing || {};
+        const extendedUser = asAuthUser(user);
+        const defaults = buildFormDefaultsFromUser(extendedUser);
         
-        setForm(prev => ({
-          ...prev,
-          // Use real user data or defaults
-          firstName: prev.firstName || u?.firstName || u?.first_name || billing.first_name || '',
-          lastName: prev.lastName || u?.lastName || u?.last_name || billing.last_name || '',
-          email: prev.email || u?.email || billing.email || '',
-          phone: prev.phone || billing.phone || '',
-          billingAddress: prev.billingAddress || billing.address || billing.address_1 || '',
-          billingCity: prev.billingCity || billing.city || '',
-          billingPostcode: prev.billingPostcode || billing.postcode || '',
-          billingCountry: billing.country || 'PL',
-          
-          // Default shipping (same as billing)
-          shippingSameAsBilling: true,
-          shippingFirstName: prev.firstName || u?.firstName || u?.first_name || billing.first_name || '',
-          shippingLastName: prev.lastName || u?.lastName || u?.last_name || billing.last_name || '',
-          shippingAddress: prev.billingAddress || billing.address || billing.address_1 || '',
-          shippingCity: prev.billingCity || billing.city || '',
-          shippingPostcode: prev.billingPostcode || billing.postcode || '',
-          shippingCountry: billing.country || 'PL',
-          
-          // Accept terms for quick payment
-          acceptTerms: true,
-        }));
+        setForm((prev) => {
+          const merged = applyUserDefaults(prev, defaults);
+          return {
+            ...merged,
+            shippingSameAsBilling: true,
+            acceptTerms: true,
+          };
+        });
         
         // Load shipping methods for quick payment
         setTimeout(() => {
@@ -297,58 +518,81 @@ function CheckoutPageInner() {
     // Add small delay to ensure auth store is fully loaded
     const timer = setTimeout(() => {
       if (!isAuthenticated || !user) return;
-    const u: any = user;
-    const billing = u.billing || {};
-    const shipping = u.shipping || {};
-      // Auto-filling form with user data debug removed
+      const extendedUser = asAuthUser(user);
+      const defaults = buildFormDefaultsFromUser(extendedUser);
 
-    setForm(prev => ({
-      ...prev,
-      firstName: prev.firstName || u.firstName || u.first_name || billing.first_name || '',
-      lastName: prev.lastName || u.lastName || u.last_name || billing.last_name || '',
-      email: prev.email || u.email || billing.email || '',
-      phone: prev.phone || u.phone || billing.phone || '',
-      company: prev.company || billing.company || '',
-      nip: prev.nip || u.nip || u._billing_nip || billing.nip || '',
-      // Auto-check invoice request if user has _invoice_request = 'yes' OR has NIP
-      // Priority: preserve existing value if set > billing.invoiceRequest > has NIP
-      invoiceRequest: prev.invoiceRequest || billing.invoiceRequest === true || billing.invoiceRequest === 'yes' || Boolean(u.nip || u._billing_nip || billing.nip || prev.nip),
-      billingAddress: prev.billingAddress || billing.address || billing.address_1 || '',
-      billingCity: prev.billingCity || billing.city || '',
-      billingPostcode: prev.billingPostcode || billing.postcode || '',
-      billingCountry: prev.billingCountry || billing.country || 'PL',
-      shippingFirstName: prev.shippingFirstName || shipping.first_name || u.firstName || u.first_name || '',
-      shippingLastName: prev.shippingLastName || shipping.last_name || u.lastName || u.last_name || '',
-      shippingCompany: prev.shippingCompany || shipping.company || billing.company || '',
-      shippingAddress: prev.shippingAddress || shipping.address || shipping.address_1 || billing.address || billing.address_1 || '',
-      shippingCity: prev.shippingCity || shipping.city || billing.city || '',
-      shippingPostcode: prev.shippingPostcode || shipping.postcode || billing.postcode || '',
-      shippingCountry: prev.shippingCountry || shipping.country || billing.country || 'PL'
-    }));
+      setForm((prev) => applyUserDefaults(prev, defaults));
     }, 100); // 100ms delay
     
     return () => clearTimeout(timer);
   }, [isAuthenticated, user]);
 
   // Auto-fill form after successful registration
-  const handleRegistrationSuccess = (userData: any) => {
-        // Registration successful debug removed
-    setForm(prev => ({
+  const handleRegistrationSuccess = (userData: unknown) => {
+    const record = asRecord(userData);
+    const billingRecord = asRecord(record?.billing);
+    const shippingRecord = asRecord(record?.shipping);
+
+    const nip = pickString(
+      getRecordString(record, 'nip'),
+      getRecordString(record, '_billing_nip'),
+      getRecordString(billingRecord, 'nip'),
+    );
+
+    const invoiceRequestFlag =
+      getRecordBoolean(record, 'invoiceRequest') ||
+      getRecordBoolean(billingRecord, 'invoiceRequest') ||
+      Boolean(nip);
+
+    setForm((prev) => ({
       ...prev,
-      firstName: userData.first_name || userData.firstName || prev.firstName,
-      lastName: userData.last_name || userData.lastName || prev.lastName,
-      email: userData.email || prev.email,
-      phone: userData.phone || prev.phone,
-      company: userData.company || prev.company,
-      nip: userData.nip || userData._billing_nip || prev.nip,
-      invoiceRequest: Boolean(userData.nip || userData._billing_nip) || prev.invoiceRequest,
-      // Auto-fill shipping with billing data
-      shippingFirstName: userData.first_name || userData.firstName || prev.shippingFirstName,
-      shippingLastName: userData.last_name || userData.lastName || prev.shippingLastName,
-      shippingCompany: userData.company || prev.shippingCompany,
-      shippingAddress: userData.address || userData.address_1 || prev.shippingAddress,
-      shippingCity: userData.city || prev.shippingCity,
-      shippingPostcode: userData.postcode || prev.shippingPostcode,
+      firstName: pickString(prev.firstName, getRecordString(record, 'first_name'), getRecordString(record, 'firstName')),
+      lastName: pickString(prev.lastName, getRecordString(record, 'last_name'), getRecordString(record, 'lastName')),
+      email: pickString(prev.email, getRecordString(record, 'email')),
+      phone: pickString(prev.phone, getRecordString(record, 'phone')),
+      company: pickString(prev.company, getRecordString(record, 'company')),
+      nip: pickString(prev.nip, nip),
+      invoiceRequest: prev.invoiceRequest || invoiceRequestFlag,
+      billingAddress: pickString(
+        prev.billingAddress,
+        getRecordString(record, 'billingAddress'),
+        getRecordString(billingRecord, 'address'),
+        getRecordString(billingRecord, 'address_1'),
+      ),
+      billingCity: pickString(
+        prev.billingCity,
+        getRecordString(record, 'billingCity'),
+        getRecordString(billingRecord, 'city'),
+      ),
+      billingPostcode: pickString(
+        prev.billingPostcode,
+        getRecordString(record, 'billingPostcode'),
+        getRecordString(billingRecord, 'postcode'),
+      ),
+      billingCountry: pickString(
+        prev.billingCountry,
+        getRecordString(record, 'billingCountry'),
+        getRecordString(billingRecord, 'country'),
+        'PL',
+      ),
+      shippingFirstName: pickString(prev.shippingFirstName, getRecordString(shippingRecord, 'first_name'), getRecordString(record, 'first_name'), getRecordString(record, 'firstName')),
+      shippingLastName: pickString(prev.shippingLastName, getRecordString(shippingRecord, 'last_name'), getRecordString(record, 'last_name'), getRecordString(record, 'lastName')),
+      shippingCompany: pickString(prev.shippingCompany, getRecordString(shippingRecord, 'company'), getRecordString(record, 'company')),
+      shippingAddress: pickString(
+        prev.shippingAddress,
+        getRecordString(shippingRecord, 'address'),
+        getRecordString(shippingRecord, 'address_1'),
+        getRecordString(billingRecord, 'address'),
+        getRecordString(billingRecord, 'address_1'),
+      ),
+      shippingCity: pickString(prev.shippingCity, getRecordString(shippingRecord, 'city')),
+      shippingPostcode: pickString(prev.shippingPostcode, getRecordString(shippingRecord, 'postcode')),
+      shippingCountry: pickString(
+        prev.shippingCountry,
+        getRecordString(shippingRecord, 'country'),
+        getRecordString(billingRecord, 'country'),
+        'PL',
+      ),
     }));
     
     // Close modal and show success message
@@ -585,13 +829,18 @@ function CheckoutPageInner() {
           postcode: form.shippingPostcode,
           country: form.shippingCountry
         },
-        line_items: items.map(item => {
-          const lineItem: any = {
+        line_items: items.map((item): OrderLineItemPayload => {
+          const lineItem: OrderLineItemPayload = {
             product_id: item.id,
             quantity: item.quantity,
-            meta_data: item.variant ? [
-              { key: 'Wybrany wariant', value: item.variant.name || `Wariant ${item.variant.id}` }
-            ] : []
+            meta_data: item.variant
+              ? [
+                  {
+                    key: 'Wybrany wariant',
+                    value: item.variant.name || `Wariant ${item.variant.id}`,
+                  },
+                ]
+              : [],
           };
           // Only include variation_id if variant exists and has an ID
           if (item.variant?.id) {
@@ -627,70 +876,33 @@ function CheckoutPageInner() {
       // Check if response is ok
       if (!orderResponse.ok) {
         let errorText = '';
-        let errorData: any = {};
+        let parsedError: unknown = {};
         
         try {
           // Try to get response as text first
           errorText = await orderResponse.clone().text();
-          console.log('🔍 Raw error response:', errorText);
-          
-          // Try to parse as JSON
           if (errorText) {
-            try {
-              errorData = JSON.parse(errorText);
-            } catch {
-              // If not JSON, use text as error message
-              errorData = { error: errorText };
-            }
+            parsedError = parseErrorResponse(errorText);
           }
         } catch (e) {
           console.error('❌ Failed to read error response:', e);
-          errorData = { error: `HTTP ${orderResponse.status}: Nie udało się odczytać odpowiedzi serwera` };
+          parsedError = {
+            error: `HTTP ${orderResponse.status}: Nie udało się odczytać odpowiedzi serwera`,
+          };
         }
         
         // Extract error message from different possible formats
         // Handle AppError format: { error: { message: "...", details: [...] } }
-        let errorMessage = null;
-        
-        if (errorData.error) {
-          // AppError format
-          if (typeof errorData.error === 'string') {
-            errorMessage = errorData.error;
-          } else if (typeof errorData.error === 'object') {
-            errorMessage = errorData.error.message;
-            
-            // If there are validation details, format them
-            if (errorData.error.details && Array.isArray(errorData.error.details)) {
-              const validationMessages = errorData.error.details
-                .map((d: any) => {
-                  if (typeof d === 'string') return d;
-                  if (d.message) return d.message;
-                  if (d.path) return `${d.path.join('.')}: ${d.message || 'Invalid'}`;
-                  return JSON.stringify(d);
-                })
-                .filter(Boolean)
-                .join(', ');
-              if (validationMessages) {
-                errorMessage = `${errorMessage}: ${validationMessages}`;
-              }
-            }
-          }
-        }
-        
-        // Fallback to other formats
-        if (!errorMessage) {
-          errorMessage = 
-            errorData.message || 
-            errorData.details ||
-            (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.map((e: any) => e.message || e).join(', ') : null) ||
-            (typeof errorText === 'string' && errorText.trim() ? errorText : null) ||
-            `HTTP ${orderResponse.status}: Nie udało się utworzyć zamówienia`;
-        }
+        const extractedMessage = extractErrorMessage(parsedError);
+        const errorMessage =
+          extractedMessage ||
+          (typeof errorText === 'string' && errorText.trim() ? errorText : null) ||
+          `HTTP ${orderResponse.status}: Nie udało się utworzyć zamówienia`;
         
         console.error('❌ Order creation HTTP error:', {
           status: orderResponse.status,
           statusText: orderResponse.statusText,
-          errorData,
+          errorData: parsedError,
           errorText,
           errorMessage
         });
@@ -1037,7 +1249,7 @@ function CheckoutPageInner() {
               <div className="mb-8">
                 <div className="flex items-center">
                   {[
-                    { number: 1, label: 'Dane osobowe', icon: User },
+                    { number: 1, label: 'Dane osobowe', icon: UserIcon },
                     { number: 2, label: 'Dostawa i Płatność', icon: CreditCard }
                   ].map((step, index) => (
                     <div key={step.number} className="flex items-center">
@@ -1103,7 +1315,7 @@ function CheckoutPageInner() {
                                   onClick={() => setShowRegisterModal(true)}
                                   className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
                                 >
-                                  <User className="w-4 h-4 mr-2" />
+                                  <UserIcon className="w-4 h-4 mr-2" />
                                   Załóż konto za darmo
                                 </button>
                                 <div className="text-xs text-green-600">
@@ -1128,7 +1340,7 @@ function CheckoutPageInner() {
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                           <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                              <User className="w-4 h-4 text-white" />
+                              <UserIcon className="w-4 h-4 text-white" />
                             </div>
                             <div>
                               <p className="text-sm font-medium text-blue-900">
@@ -1459,7 +1671,6 @@ function CheckoutPageInner() {
                                 checked={form.shippingMethod === method.method_id}
                                 onChange={(e) => {
                                   setForm(prev => ({ ...prev, shippingMethod: e.target.value }));
-                                  setShippingCost((method.cost || 0) * 1.23); // Add VAT to netto cost
                                 }}
                                 className="mr-3"
                               />
@@ -1527,14 +1738,14 @@ function CheckoutPageInner() {
                               name="paymentMethod"
                               value={method.id}
                               checked={form.paymentMethod === method.id}
-                              onChange={(e) => setForm(prev => ({ ...prev, paymentMethod: e.target.value as any }))}
+                              onChange={(e) => handlePaymentMethodChange(e.target.value)}
                               className="mr-3"
                             />
                             <div className="flex-1">
                               <div className="flex items-center">
                                 <div>
                                   <div className="text-sm text-gray-900">
-                                    {method.id === 'cod' ? 'Płatność przy odbiorze' : method.name || (method as any).title || method.id}
+                                    {method.name}
                                   </div>
                                 </div>
                               </div>
@@ -1688,7 +1899,7 @@ function CheckoutPageInner() {
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-300 rounded-lg flex items-center justify-center">
-                          <User className="w-8 h-8 text-gray-500" />
+                          <UserIcon className="w-8 h-8 text-gray-500" />
                         </div>
                       )}
                     </div>

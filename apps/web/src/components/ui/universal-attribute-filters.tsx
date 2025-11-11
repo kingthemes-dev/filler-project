@@ -7,15 +7,31 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FixedSizeList as List } from 'react-window';
+import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 // removed unused imports from universal-filter-service
 import { FilterConfig } from '@/config/filter-config';
 
+type FilterValue = string[] | string | number | boolean;
+
+interface AttributeTerm {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+interface AttributeData {
+  name: string;
+  order?: number;
+  terms: AttributeTerm[];
+}
+
+type AttributeMap = Record<string, AttributeData>;
+
 interface UniversalAttributeFiltersProps {
   onFilterChange: (key: string, value: string) => void;
-  selectedFilters: { [key: string]: string[] | string | number | boolean };
+  selectedFilters: Record<string, FilterValue>;
   totalProducts: number;
   config?: Partial<FilterConfig>;
   preset?: 'woocommerce' | 'shopify' | 'custom';
@@ -25,7 +41,7 @@ interface UniversalAttributeFiltersProps {
     minPrice?: number;
     maxPrice?: number;
     attributes?: string[];
-    attributeValues?: Record<string, any>;
+    attributeValues?: Record<string, FilterValue>;
   };
 }
 
@@ -40,7 +56,7 @@ export default function UniversalAttributeFilters({
   const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(new Set());
 
   // 🚀 USE PREFETCHED DATA - No loading, instant display!
-  const attributesQuery = useQuery({
+  const attributesQuery = useQuery<AttributeMap>({
     queryKey: ['universal-filters', 'attributes', preset, config],
     queryFn: async () => {
       // This should NEVER run if data is prefetched!
@@ -52,7 +68,7 @@ export default function UniversalAttributeFilters({
   });
 
   // Use prefetched data - should be instant! (memoized for stable identity)
-  const attributes = useMemo(() => attributesQuery.data || {}, [attributesQuery.data]);
+  const attributes = useMemo<AttributeMap>(() => attributesQuery.data || {}, [attributesQuery.data]);
   const loading = attributesQuery.isLoading && !attributesQuery.data; // Only show loading if no data at all
 
   const toggleAttribute = (attributeSlug: string) => {
@@ -94,14 +110,14 @@ export default function UniversalAttributeFilters({
   // Sort attributes by order and filter by count
   const sortedAttributes = useMemo(() => {
     return Object.entries(attributes)
-      .filter(([_, attr]: [string, any]) => attr.terms.length > 0)
-      .sort(([_, a]: [string, any], [__, b]: [string, any]) => (a.order || 0) - (b.order || 0))
-      .map(([slug, attr]: [string, any]) => ({
+      .filter(([, attr]) => attr.terms.length > 0)
+      .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0))
+      .map(([slug, attr]) => ({
         slug,
         ...attr,
         terms: attr.terms
-          .filter((term: any) => term.count > 0)
-          .sort((a: any, b: any) => b.count - a.count)
+          .filter((term) => term.count > 0)
+          .sort((a, b) => b.count - a.count)
       }));
   }, [attributes]);
 
@@ -132,8 +148,10 @@ export default function UniversalAttributeFilters({
 
   return (
     <div className="space-y-4">
-      {sortedAttributes.map(([attributeSlug, attribute]) => (
-        <div key={attributeSlug} className="border border-gray-100 rounded-lg overflow-hidden">
+      {sortedAttributes.map((attribute) => {
+        const attributeSlug = attribute.slug;
+        return (
+          <div key={attributeSlug} className="border border-gray-100 rounded-lg overflow-hidden">
           {/* Attribute header */}
           <div className="bg-gray-50">
             <button
@@ -165,8 +183,8 @@ export default function UniversalAttributeFilters({
                 <div className="border-t border-gray-100">
                   {(() => {
                     const items = attribute.terms;
-                    const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-                      const term = items[index];
+                    const Row = ({ index, style }: ListChildComponentProps) => {
+                      const term = items[index] as AttributeTerm;
                       return (
                         <div style={style}>
                           <label className="flex items-center px-2 sm:px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0 min-w-0">
@@ -188,7 +206,7 @@ export default function UniversalAttributeFilters({
                     const height = Math.min(8, items.length) * itemSize; // show up to 8 rows without scroll
                     return (
                       <List height={height} width={'100%'} itemCount={items.length} itemSize={itemSize} overscanCount={8}>
-                        {Row as any}
+                        {Row}
                       </List>
                     );
                   })()}
@@ -197,7 +215,8 @@ export default function UniversalAttributeFilters({
             )}
           </AnimatePresence>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

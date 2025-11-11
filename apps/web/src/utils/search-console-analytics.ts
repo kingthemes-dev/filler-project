@@ -13,7 +13,7 @@ declare global {
   }
 }
 
-type GA4Parameters = Record<string, string | number | boolean | null | undefined>;
+export type GA4Parameters = Record<string, string | number | boolean | null | undefined>;
 type LayoutShiftEntry = PerformanceEntry & {
   value?: number;
   hadRecentInput?: boolean;

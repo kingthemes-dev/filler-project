@@ -8,7 +8,7 @@ import { Redis } from 'ioredis';
 interface JobData {
   id: string;
   type: string;
-  payload: any;
+  payload: unknown;
   priority: number;
   attempts: number;
   maxAttempts: number;
@@ -132,7 +132,7 @@ class BackgroundJobsService {
    */
   async addJob(
     type: string,
-    payload: any,
+    payload: unknown,
     priority: number = 0,
     scheduledFor?: Date
   ): Promise<string> {

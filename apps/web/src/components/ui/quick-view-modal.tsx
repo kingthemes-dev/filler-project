@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, Star, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import ModalCloseButton from './modal-close-button';
-import { useCartStore } from '@/stores/cart-store';
+import { useCartActions } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import wooCommerceService from '@/services/woocommerce-optimized';
@@ -25,19 +25,35 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const [quantity, setQuantity] = useState(1);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [variations, setVariations] = useState<Array<{
+
+  interface VariationAttribute {
+    id?: number;
+    name?: string;
+    slug?: string;
+    option: string;
+  }
+
+  interface Variation {
     id: number;
-    attributes?: Array<{ slug: string; option: string }>;
+    attributes?: VariationAttribute[];
     price: string;
     regular_price: string;
     sale_price: string;
     name: string;
     menu_order: number;
-  }>>([]);
+  }
+
+  interface GalleryImage {
+    src: string;
+    name: string;
+    alt: string;
+  }
+
+  const [variations, setVariations] = useState<Variation[]>([]);
   const [selectedCapacity, setSelectedCapacity] = useState<string>('');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-  const { addItem, openCart } = useCartStore();
+  const { addItem, openCart } = useCartActions();
   
   useViewportHeightVar();
 
@@ -110,12 +126,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       
       if (variations.length > 0 && selectedCapacity) {
         // Find the selected variation
-        const selectedVariation = variations.find(v => {
-          const hasCapacityAttr = v.attributes && v.attributes.some((attr) => 
-            (attr as any).name?.toLowerCase().includes('pojemność') && attr.option === selectedCapacity
-          );
-          return hasCapacityAttr;
-        });
+        const selectedVariation = variations.find((variation) =>
+          variation.attributes?.some(
+            (attribute) =>
+              attribute.name?.toLowerCase().includes('pojemność') && attribute.option === selectedCapacity
+          )
+        );
         
         if (selectedVariation) {
           finalId = selectedVariation.id; // Use variation ID for unique cart items
@@ -196,33 +212,52 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     return /woocommerce-placeholder/i.test(src);
   };
 
-  const galleryImages = (() => {
+  const galleryImages: GalleryImage[] = (() => {
     // Quick View - Product images debug removed
-    
-    // Handle both string array and object array formats
-    let imageArray: any[] = [];
-    if (Array.isArray(product.images) && product.images.length > 0) {
-      // If it's an array of strings
-      if (typeof product.images[0] === 'string') {
-        imageArray = (product.images as any).map((src: string) => ({ src, name: product.name, alt: product.name }));
-      } else {
-        // If it's an array of objects
-        imageArray = product.images.filter((img) => img && img.src && !isWooPlaceholder(img.src));
+
+    const images = product.images as unknown;
+
+    if (Array.isArray(images) && images.length > 0) {
+      const firstImage = images[0];
+
+      if (typeof firstImage === 'string') {
+        return (images as string[])
+          .map((src) => ({ src, name: product.name, alt: product.name }))
+          .filter((image) => image.src && !isWooPlaceholder(image.src));
+      }
+
+      const imageObjects = images as Array<{ src?: string; name?: string; alt?: string }>;
+      const filtered = imageObjects.filter(
+        (image): image is { src: string; name?: string; alt?: string } =>
+          Boolean(image?.src) && !isWooPlaceholder(image.src)
+      );
+
+      if (filtered.length > 0) {
+        return filtered.map((image) => ({
+          src: image.src,
+          name: image.name || product.name,
+          alt: image.alt || image.name || product.name,
+        }));
       }
     }
-    
-    // Quick View - Processed images debug removed
-    if (imageArray.length > 0) return imageArray;
-    
-    // Try to get image from product.images[0] if available
+
     if (product.images && product.images.length > 0 && product.images[0].src && !isWooPlaceholder(product.images[0].src)) {
-      // Quick View - Using product.images[0] debug removed
-      return [{ src: product.images[0].src, name: product.name, alt: product.name }];
+      return [
+        {
+          src: product.images[0].src,
+          name: product.images[0].name || product.name,
+          alt: product.images[0].alt || product.images[0].name || product.name,
+        },
+      ];
     }
-    
-    // fallback – keep one placeholder to avoid empty UI
-    // Quick View - Using fallback placeholder debug removed
-    return [{ src: 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp', name: product.name, alt: product.name } as any];
+
+    return [
+      {
+        src: 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp',
+        name: product.name,
+        alt: product.name,
+      },
+    ];
   })();
 
   return (
@@ -405,15 +440,13 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       {/* AUTO: Product Attributes - All attributes in gray badges */}
                       {product.attributes && product.attributes.length > 0 && (
                         <div className="flex flex-wrap gap-1">
-                          {product.attributes.map((attr: any, attrIndex: number) => {
-                            if (!attr.options || !Array.isArray(attr.options)) return null;
-                            
-                            return attr.options.map((option: any, optionIndex: number) => {
-                              const value = typeof option === 'string' 
-                                ? option 
-                                : (option?.name || option?.slug || String(option?.id || ''));
+                          {product.attributes.map((attribute, attrIndex) => {
+                            if (!Array.isArray(attribute.options)) return null;
+
+                            return attribute.options.map((option, optionIndex) => {
+                              const value = typeof option === 'string' ? option : option;
                               if (!value) return null;
-                              
+
                               return (
                                 <span
                                   key={`${attrIndex}-${optionIndex}`}
@@ -438,8 +471,10 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           </h3>
                           <div className="flex flex-wrap gap-2">
                             {variations.map((variation, index) => {
-                              const capacityAttr = variation.attributes?.find((attr: any) => 
-                                attr.slug === 'pa_pojemnosc' || attr.name?.toLowerCase().includes('pojemność')
+                              const capacityAttr = variation.attributes?.find(
+                                (attribute) =>
+                                  attribute.slug === 'pa_pojemnosc' ||
+                                  attribute.name?.toLowerCase().includes('pojemność')
                               );
                               const capacity = capacityAttr?.option || `Wariant ${variation.id}`;
                               const isSelected = selectedCapacity === capacity;

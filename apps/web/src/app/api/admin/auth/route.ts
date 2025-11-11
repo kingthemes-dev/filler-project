@@ -13,7 +13,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!parsed.success) {
       return createErrorResponse(
-        new ValidationError('Nieprawidłowy token administracyjny', parsed.error.errors),
+        new ValidationError('Nieprawidłowy token administracyjny', { issues: parsed.error.errors }),
         { endpoint: 'admin/auth', method: 'POST' }
       );
     }

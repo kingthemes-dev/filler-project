@@ -4,22 +4,17 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ModalCloseButton from './modal-close-button';
 import { Heart, Trash2 } from 'lucide-react';
-import { useFavoritesStore } from '@/stores/favorites-store';
+import { useFavoritesItems, useFavoritesIsModalOpen, useFavoritesIsLoading, useFavoritesActions } from '@/stores/favorites-store';
 import { Button } from '@/components/ui/button';
 import KingProductCard from '@/components/king-product-card';
 import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
 import { useViewportHeightVar } from '@/hooks/use-viewport-height-var';
 
 export default function FavoritesModal() {
-  const { 
-    favorites, 
-    isModalOpen, 
-    closeFavoritesModal, 
-    removeFromFavorites,
-    clearFavorites,
-    isLoading,
-    lastSyncTime: _lastSyncTime
-  } = useFavoritesStore();
+  const favorites = useFavoritesItems();
+  const isModalOpen = useFavoritesIsModalOpen();
+  const isLoading = useFavoritesIsLoading();
+  const { closeFavoritesModal, removeFromFavorites, clearFavorites } = useFavoritesActions();
   
   useViewportHeightVar();
   

@@ -13,13 +13,18 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "baseUrl": ".",
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@headless-woo/shared": ["../../packages/shared/index.ts"],
+      "@headless-woo/shared/*": ["../../packages/shared/*"],
+      "@king/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@king/shared-types/*": ["../../packages/shared-types/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import PageContainer from '@/components/ui/page-container';
@@ -29,6 +29,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
 import { useDebouncedCallback } from 'use-debounce';
 // Removed ProductImagePreload - using server-side preload instead
+
+type FilterChangeValue = string | number | boolean | string[];
 
 interface FilterState {
   search: string;
@@ -64,7 +66,7 @@ interface ShopClientProps {
 const useContextualAttributes = (selectedCategories: string[]) => {
   return useQuery({
     queryKey: ['shop', 'attributes', 'contextual', selectedCategories],
-    queryFn: async () => {
+    queryFn: async (): Promise<Record<string, unknown>> => {
       const params = new URLSearchParams();
       params.append('endpoint', 'attributes');
       if (selectedCategories.length > 0) {
@@ -73,7 +75,8 @@ const useContextualAttributes = (selectedCategories: string[]) => {
       }
       const res = await fetch(`/api/woocommerce?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
+      const json: unknown = await res.json();
+      return (json && typeof json === 'object') ? json as Record<string, unknown> : {};
     },
     enabled: selectedCategories.length > 0,
     staleTime: 2 * 60_000, // 2 minuty cache
@@ -87,6 +90,16 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   // Zawsze wywołuj hooks - dane są prefetchowane
   const { categories, mainCategories: _mainCategories, hierarchicalCategories, getSubCategories: _getSubCategories, isLoading: _categoriesLoading } = useShopCategories();
   const { brands, capacities, zastosowanie, isLoading: attributesLoading } = useShopAttributes();
+
+  const normalizeAttributeTerms = <T extends { count?: number }>(terms: T[]): (T & { count: number })[] =>
+    terms.map((term) => ({
+      ...term,
+      count: typeof term.count === 'number' ? term.count : 0,
+    }));
+
+  const normalizedBrands = normalizeAttributeTerms(brands);
+  const normalizedCapacities = normalizeAttributeTerms(capacities);
+  const normalizedZastosowanie = normalizeAttributeTerms(zastosowanie);
   const { totalProducts: storeTotalProducts, initialize } = useShopDataStore();
   
   const [products, setProducts] = useState<WooProduct[]>(initialShopData?.products || []);
@@ -213,7 +226,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           ? newAttrs['pa_marka'] 
           : urlBrands;
         
-        const updatedFilters = {
+        const updatedFilters: FilterState = {
           ...prev,
           categories: urlCategories,
           brands: finalBrands,
@@ -222,7 +235,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         // Remove pa_* attributes that are no longer in URL (but keep pa_marka if it exists)
         Object.keys(updatedFilters).forEach(key => {
           if (key.startsWith('pa_') && !newAttrs.hasOwnProperty(key)) {
-            delete (updatedFilters as any)[key];
+            delete updatedFilters[key];
           }
         });
         
@@ -396,7 +409,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     300 // 300ms debounce
   );
 
-  const handleFilterChange = (key: string, value: string | number | boolean) => {
+  const handleFilterChange = (key: string, value: FilterChangeValue) => {
     // handleFilterChange debug removed
     
     // Optimistic UI update - natychmiastowa zmiana w interfejsie
@@ -598,9 +611,9 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             dynamicFiltersData={{
               categories: hierarchicalCategories,
               attributes: {
-                marka: { terms: brands },
-                pojemnosc: { terms: capacities },
-                zastosowanie: { terms: zastosowanie }
+                marka: { terms: normalizedBrands },
+                pojemnosc: { terms: normalizedCapacities },
+                zastosowanie: { terms: normalizedZastosowanie }
               }
             }}
             contextualAttributes={contextualAttributes}

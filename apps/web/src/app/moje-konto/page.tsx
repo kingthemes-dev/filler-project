@@ -4,17 +4,11 @@ import { useState, useEffect } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, ShoppingCart, Eye, FileText, Package, AlertCircle } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth-store';
+import { User as UserIcon, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, ShoppingCart, FileText, Package, AlertCircle } from 'lucide-react';
+import { useAuthUser, useAuthIsAuthenticated, useAuthActions, type User } from '@/stores/auth-store';
 
-import { useCartStore } from '@/stores/cart-store';
-import { WooProduct } from '@/types/woocommerce';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import wooCommerceService from '@/services/woocommerce-optimized';
 import { 
   validateNIP, 
   validatePhone, 
@@ -30,11 +24,117 @@ import {
 const __DEBUG__ = process.env.NEXT_PUBLIC_DEBUG === 'true';
 const debugLog = (...args: unknown[]) => { if (__DEBUG__) console.log(...args); };
 
+type UserMetaEntry = { key: string; value: unknown };
+
+type ExtendedUser = User & {
+  meta_data?: UserMetaEntry[];
+  billing?: (User['billing'] & {
+    address_1?: string;
+    invoiceRequest?: boolean | string;
+    nip?: string;
+  }) | null;
+  shipping?: (User['shipping'] & {
+    address_1?: string;
+  }) | null;
+};
+
+const ensureString = (value: unknown): string => (typeof value === 'string' ? value : '');
+
+const interpretInvoiceRequest = (value: unknown): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    return ['yes', 'true', '1', 'tak'].includes(value.toLowerCase());
+  }
+  return false;
+};
+
+const getMetaValue = (meta: UserMetaEntry[] | undefined, key: string): unknown =>
+  meta?.find((entry) => entry.key === key)?.value;
+
+const initialFormState = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  company: '',
+  nip: '',
+  invoiceRequest: false,
+  billingAddress: '',
+  billingCity: '',
+  billingPostcode: '',
+  billingCountry: 'PL',
+  shippingAddress: '',
+  shippingCity: '',
+  shippingPostcode: '',
+  shippingCountry: 'PL',
+};
+
+type FormState = typeof initialFormState;
+
+const buildFormStateFromUser = (rawUser: User): {
+  form: FormState;
+  sameAsBilling: boolean;
+} => {
+  const user = rawUser as ExtendedUser;
+  const meta = user.meta_data ?? [];
+  const billing = user.billing ?? {
+    address: '',
+    city: '',
+    postcode: '',
+    country: 'PL',
+    phone: '',
+    company: '',
+    nip: '',
+    invoiceRequest: false,
+  };
+  const shipping = user.shipping ?? {
+    address: '',
+    city: '',
+    postcode: '',
+    country: 'PL',
+  };
+
+  const metaInvoiceRequest = getMetaValue(meta, '_invoice_request');
+  const metaNip = getMetaValue(meta, '_billing_nip');
+
+  const billingAddress = billing.address || billing.address_1 || '';
+  const shippingAddress = shipping.address || shipping.address_1 || '';
+
+  const invoiceRequest =
+    interpretInvoiceRequest(billing.invoiceRequest) ||
+    interpretInvoiceRequest(metaInvoiceRequest) ||
+    (!!billing.nip || !!metaNip);
+
+  const form = {
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    email: user.email || '',
+    phone: billing.phone || '',
+    company: billing.company || '',
+    nip: ensureString(billing.nip ?? metaNip ?? ''),
+    invoiceRequest,
+    billingAddress,
+    billingCity: billing.city || '',
+    billingPostcode: billing.postcode || '',
+    billingCountry: billing.country || 'PL',
+    shippingAddress,
+    shippingCity: shipping.city || '',
+    shippingPostcode: shipping.postcode || '',
+    shippingCountry: shipping.country || 'PL',
+  };
+
+  const sameAsBilling =
+    !shippingAddress && !shipping.city && !shipping.postcode;
+
+  return { form, sameAsBilling };
+};
+
 export default function MyAccountPage() {
   const router = useRouter();
-  const { user, isAuthenticated, updateProfile, changePassword, logout, fetchUserProfile } = useAuthStore();
+  const user = useAuthUser();
+  const isAuthenticated = useAuthIsAuthenticated();
+  const { updateProfile, changePassword, logout, fetchUserProfile } = useAuthActions();
 
-  const { addItem, openCart } = useCartStore();
   const [isEditing, setIsEditing] = useState(false);
   const [openSection, setOpenSection] = useState<{ profile: boolean; billing: boolean; shipping: boolean }>({ profile: true, billing: false, shipping: false });
   const [activeTab, setActiveTab] = useState('profile');
@@ -45,23 +145,7 @@ export default function MyAccountPage() {
     newPassword: '',
     confirmPassword: ''
   });
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    company: '',
-    nip: '',
-    invoiceRequest: false,
-    billingAddress: '',
-    billingCity: '',
-    billingPostcode: '',
-    billingCountry: 'PL',
-    shippingAddress: '',
-    shippingCity: '',
-    shippingPostcode: '',
-    shippingCountry: 'PL'
-  });
+  const [formData, setFormData] = useState<FormState>(initialFormState);
   const [sameAsBilling, setSameAsBilling] = useState(true);
 
   // Redirect if not authenticated (but wait for auth store to load)
@@ -118,41 +202,9 @@ export default function MyAccountPage() {
   useEffect(() => {
     debugLog('🔍 My Account useEffect - user check:', { user: !!user, billing: user?.billing });
     if (user) {
-      const meta = (user as any)?.meta_data as Array<{ key: string; value: any }> | undefined;
-      const getMeta = (k: string) => meta?.find((m) => m.key === k)?.value;
-      const billing = (user as any)?.billing || {};
-      const shipping = (user as any)?.shipping || {};
-      const resolvedBillingAddress = billing.address || billing.address_1 || '';
-      const resolvedShippingAddress = shipping.address || shipping.address_1 || '';
-      const resolvedNip = billing.nip || getMeta?.('_billing_nip') || '';
-      // Check invoiceRequest from multiple sources: billing.invoiceRequest, meta_data, or auto-set if NIP exists
-      const resolvedInvoiceReqRaw = (billing.invoiceRequest !== undefined ? billing.invoiceRequest : getMeta?.('_invoice_request'));
-      let resolvedInvoiceReq = resolvedInvoiceReqRaw === true || resolvedInvoiceReqRaw === 'yes' || resolvedInvoiceReqRaw === '1';
-      // Auto-set invoice request if NIP is provided but invoiceRequest is not explicitly set to 'yes'
-      if (!resolvedInvoiceReq && resolvedNip) {
-        resolvedInvoiceReq = true;
-      }
-
-      setFormData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: billing.phone || '',
-        company: billing.company || '',
-        nip: String(resolvedNip || ''),
-        invoiceRequest: resolvedInvoiceReq,
-        billingAddress: resolvedBillingAddress,
-        billingCity: billing.city || '',
-        billingPostcode: billing.postcode || '',
-        billingCountry: billing.country || 'PL',
-        shippingAddress: resolvedShippingAddress,
-        shippingCity: shipping.city || '',
-        shippingPostcode: shipping.postcode || '',
-        shippingCountry: shipping.country || 'PL'
-      });
-      setSameAsBilling(
-        !resolvedShippingAddress && !shipping.city && !shipping.postcode
-      );
+      const { form, sameAsBilling: shouldMirror } = buildFormStateFromUser(user);
+      setFormData(form);
+      setSameAsBilling(shouldMirror);
     }
   }, [user]);
 
@@ -318,56 +370,11 @@ export default function MyAccountPage() {
     }
   };
 
-  const handleAddToCart = (product: WooProduct) => {
-    const cartItem = {
-      id: product.id,
-      name: product.name,
-      price: parseFloat(product.price),
-      regular_price: parseFloat(product.regular_price),
-      sale_price: parseFloat(product.sale_price),
-      image: wooCommerceService.getProductImageUrl(product, 'medium'),
-      permalink: `/produkt/${product.slug}`,
-    };
-
-    addItem(cartItem);
-    openCart();
-  };
-
   const handleCancel = () => {
-    // Reset form to original user data
     if (user) {
-      const meta = (user as any)?.meta_data as Array<{ key: string; value: any }> | undefined;
-      const getMeta = (k: string) => meta?.find((m) => m.key === k)?.value;
-      const billing = (user as any)?.billing || {};
-      const shipping = (user as any)?.shipping || {};
-      const resolvedBillingAddress = billing.address || billing.address_1 || '';
-      const resolvedShippingAddress = shipping.address || shipping.address_1 || '';
-      const resolvedNip = billing.nip || getMeta?.('_billing_nip') || '';
-      // Check invoiceRequest from multiple sources: billing.invoiceRequest, meta_data, or auto-set if NIP exists
-      const resolvedInvoiceReqRaw = (billing.invoiceRequest !== undefined ? billing.invoiceRequest : getMeta?.('_invoice_request'));
-      let resolvedInvoiceReq = resolvedInvoiceReqRaw === true || resolvedInvoiceReqRaw === 'yes' || resolvedInvoiceReqRaw === '1';
-      // Auto-set invoice request if NIP is provided but invoiceRequest is not explicitly set to 'yes'
-      if (!resolvedInvoiceReq && resolvedNip) {
-        resolvedInvoiceReq = true;
-      }
-
-      setFormData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: billing.phone || '',
-        company: billing.company || '',
-        nip: String(resolvedNip || ''),
-        invoiceRequest: resolvedInvoiceReq,
-        billingAddress: resolvedBillingAddress,
-        billingCity: billing.city || '',
-        billingPostcode: billing.postcode || '',
-        billingCountry: billing.country || 'PL',
-        shippingAddress: resolvedShippingAddress,
-        shippingCity: shipping.city || '',
-        shippingPostcode: shipping.postcode || '',
-        shippingCountry: shipping.country || 'PL'
-      });
+      const { form, sameAsBilling: shouldMirror } = buildFormStateFromUser(user);
+      setFormData(form);
+      setSameAsBilling(shouldMirror);
     }
     setIsEditing(false);
   };
@@ -423,7 +430,7 @@ export default function MyAccountPage() {
                 } ${
                   activeTab === 'profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
                 }`}>
-                  <User className="w-5 h-5 sm:w-5 sm:h-5" />
+                  <UserIcon className="w-5 h-5 sm:w-5 sm:h-5" />
                 </div>
                 <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
                   activeTab === 'profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
@@ -491,7 +498,7 @@ export default function MyAccountPage() {
                 aria-expanded={openSection.profile}
               >
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <User className="w-5 h-5 mr-2" />
+                  <UserIcon className="w-5 h-5 mr-2" />
                   Dane osobowe
                 </h2>
                 {!isEditing && (
@@ -968,7 +975,7 @@ export default function MyAccountPage() {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
-                    <User className="w-5 h-5 text-gray-400" />
+                    <UserIcon className="w-5 h-5 text-gray-400" />
                     <span className="text-sm text-gray-600">
                       {user.firstName} {user.lastName}
                     </span>

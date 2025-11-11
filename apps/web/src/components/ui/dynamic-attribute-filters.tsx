@@ -4,15 +4,52 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { FixedSizeList as List } from 'react-window';
+import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 // removed unused DynamicFilters import
+
+export type FilterValue = string[] | string | number | boolean;
+
+interface AttributeTerm {
+  slug: string;
+  name: string;
+  count: number;
+}
+
+interface AttributeResponseItem {
+  name?: string;
+  terms?: AttributeTerm[];
+  order?: number;
+}
+
+export type AttributeCollection = Record<string, AttributeResponseItem>;
+
+interface AttributesResponse {
+  attributes: AttributeCollection;
+}
+
+interface PreparedAttribute {
+  name: string;
+  slug: string;
+  terms: AttributeTerm[];
+}
+
+type PreparedAttributeMap = Record<string, PreparedAttribute>;
+
+export interface DynamicFiltersData {
+  categories: unknown[];
+  attributes: AttributeCollection;
+}
+
+export interface ContextualAttributes {
+  attributes?: AttributeCollection;
+}
 
 interface DynamicAttributeFiltersProps {
   onFilterChange: (key: string, value: string) => void;
-  selectedFilters: { [key: string]: string[] | string | number | boolean };
+  selectedFilters: Record<string, FilterValue>;
   totalProducts: number;
-  dynamicFiltersData?: { categories: any[]; attributes: any };
-  contextualAttributes?: any; // Contextual attributes na podstawie wybranych kategorii
+  dynamicFiltersData?: DynamicFiltersData;
+  contextualAttributes?: ContextualAttributes; // Contextual attributes na podstawie wybranych kategorii
   contextualLoading?: boolean; // Loading state dla contextual attributes
   currentFilters?: { // Dodaj aktualne filtry
     categories: string[];
@@ -20,7 +57,7 @@ interface DynamicAttributeFiltersProps {
     minPrice?: number;
     maxPrice?: number;
     attributes?: string[];
-    attributeValues?: Record<string, any>; // PRO: Actual attribute values
+    attributeValues?: Record<string, FilterValue>; // PRO: Actual attribute values
   };
 }
 
@@ -36,7 +73,7 @@ export default function DynamicAttributeFilters({
   const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(new Set());
 
   // Użyj prefetchowanych danych jeśli dostępne, w przeciwnym razie React Query
-  const attributesQuery = useQuery({
+  const attributesQuery = useQuery<AttributesResponse>({
     queryKey: ['shop','attributes',{ categories: [], search: '', min: 0, max: 10000, selected: [] }],
     queryFn: async () => {
       // attributesQuery queryFn called - fetching all attributes
@@ -46,30 +83,35 @@ export default function DynamicAttributeFilters({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       // attributesQuery data received
-      return data;
+      return data as AttributesResponse;
     },
     staleTime: 0, // Brak cache - zawsze pobierz świeże dane
     enabled: currentFilters.categories.length === 0, // Włącz gdy nie ma wybranych kategorii
   });
 
   // Przetwórz dane atrybutów z contextual, prefetchowanych danych lub React Query
-  const attributes = useMemo(() => {
+  const attributes = useMemo<PreparedAttributeMap>(() => {
     // Priorytet: contextual attributes (tylko gdy są kategorie) > React Query (gdy brak kategorii) > prefetchowane dane
-    const attributesData = (currentFilters.categories.length > 0 ? contextualAttributes?.attributes : null) || 
-                          (currentFilters.categories.length === 0 ? attributesQuery.data?.attributes : null) ||
-                          dynamicFiltersData?.attributes;
+    const attributesData =
+      (currentFilters.categories.length > 0 ? contextualAttributes?.attributes : null) ||
+      (currentFilters.categories.length === 0 ? attributesQuery.data?.attributes : null) ||
+      dynamicFiltersData?.attributes;
     
     // DynamicAttributeFilters attributes debug removed
     
     if (!attributesData) return {};
     
-    const attributesMap: { [key: string]: { name: string; slug: string; terms: any[] } } = {};
-    Object.entries(attributesData).forEach(([attrSlug, attrData]: [string, any]) => {
+    const attributesMap: PreparedAttributeMap = {};
+    Object.entries(attributesData).forEach(([attrSlug, attrData]) => {
       const cleanName = (attrData.name || attrSlug)
         .replace(/^pa_/i, '')
         .replace(/_/g, ' ')
         .replace(/\b\w/g, (l: string) => l.toUpperCase());
-      attributesMap[attrSlug] = { name: cleanName, slug: attrSlug, terms: attrData.terms || [] };
+      attributesMap[attrSlug] = {
+        name: cleanName,
+        slug: attrSlug,
+        terms: attrData.terms ?? [],
+      };
     });
     return attributesMap;
   }, [contextualAttributes?.attributes, currentFilters.categories.length, attributesQuery.data?.attributes, dynamicFiltersData?.attributes]);
@@ -90,24 +132,8 @@ export default function DynamicAttributeFilters({
   };
 
   const handleAttributeTermClick = (attributeSlug: string, termSlug: string) => {
-    // handleAttributeTermClick debug removed
     // Ensure filterKey starts with pa_ (attributeSlug may already have it)
     const filterKey = attributeSlug.startsWith('pa_') ? attributeSlug : `pa_${attributeSlug}`;
-    const filterValue = selectedFilters[filterKey];
-    
-    // Get current terms as array
-    let currentTerms: string[] = [];
-    if (Array.isArray(filterValue)) {
-      currentTerms = [...filterValue];
-    } else if (typeof filterValue === 'string' && filterValue) {
-      currentTerms = filterValue.split(',').map(t => t.trim()).filter(Boolean);
-    }
-    
-    // Toggle the term (add if not exists, remove if exists)
-    const isSelected = currentTerms.includes(termSlug);
-    
-    // Pass only the termSlug - handleFilterChange will handle toggle logic
-    // This ensures proper toggle behavior
     onFilterChange(filterKey, termSlug);
   };
 
@@ -187,7 +213,7 @@ export default function DynamicAttributeFilters({
               const items = attribute.terms
                 .filter(term => term.count > 0)
                 .sort((a, b) => b.count - a.count);
-              const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+              const Row = ({ index, style }: ListChildComponentProps) => {
                 const term = items[index];
                 return (
                   <div style={style}>
@@ -210,7 +236,7 @@ export default function DynamicAttributeFilters({
               const height = Math.min(8, items.length) * itemSize; // show up to 8 rows without scroll
               return (
                 <List height={height} width={'100%'} itemCount={items.length} itemSize={itemSize} overscanCount={8}>
-                  {Row as any}
+                  {Row}
                 </List>
               );
             })()}

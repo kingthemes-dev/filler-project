@@ -28,7 +28,7 @@ interface HPOSCacheConfig {
   };
 }
 
-interface CacheEntry<T = any> {
+interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
   ttl: number;
@@ -37,7 +37,7 @@ interface CacheEntry<T = any> {
 }
 
 class HPOSCacheManager {
-  private cache: Map<string, CacheEntry> = new Map();
+  private cache: Map<string, CacheEntry<unknown>> = new Map();
   private config: HPOSCacheConfig;
   private compressionEnabled: boolean = false;
 
@@ -109,12 +109,12 @@ class HPOSCacheManager {
     }
   }
 
-  private generateKey(type: keyof HPOSCacheConfig, identifier: string, params?: Record<string, any>): string {
+  private generateKey(type: keyof HPOSCacheConfig, identifier: string, params?: Record<string, unknown>): string {
     const paramString = params ? JSON.stringify(params) : '';
     return `hpos:${type}:${identifier}:${paramString}`;
   }
 
-  private async compressData(data: any): Promise<string> {
+  private async compressData(data: unknown): Promise<string> {
     if (!this.compressionEnabled) {
       return JSON.stringify(data);
     }
@@ -154,7 +154,7 @@ class HPOSCacheManager {
     }
   }
 
-  private async decompressData(compressedData: string): Promise<any> {
+  private async decompressData(compressedData: string): Promise<unknown> {
     if (!this.compressionEnabled) {
       return JSON.parse(compressedData);
     }
@@ -194,7 +194,7 @@ class HPOSCacheManager {
     }
   }
 
-  async get<T>(type: keyof HPOSCacheConfig, identifier: string, params?: Record<string, any>): Promise<T | null> {
+  async get<T>(type: keyof HPOSCacheConfig, identifier: string, params?: Record<string, unknown>): Promise<T | null> {
     const key = this.generateKey(type, identifier, params);
     const entry = this.cache.get(key);
 
@@ -209,14 +209,14 @@ class HPOSCacheManager {
     }
 
     try {
-      let data = entry.data;
+      let data: unknown = entry.data;
       
       if (entry.compressed) {
-        data = await this.decompressData(entry.data);
+        data = await this.decompressData(entry.data as string);
       }
 
       logger.debug('HPOS Cache: Cache hit', { type, identifier, age: now - entry.timestamp });
-      return data;
+      return data as T;
     } catch (error) {
       logger.warn('HPOS Cache: Failed to retrieve cached data', { key, error });
       this.cache.delete(key);
@@ -224,7 +224,7 @@ class HPOSCacheManager {
     }
   }
 
-  async set<T>(type: keyof HPOSCacheConfig, identifier: string, data: T, params?: Record<string, any>, tags: string[] = []): Promise<void> {
+  async set<T>(type: keyof HPOSCacheConfig, identifier: string, data: T, params?: Record<string, unknown>, tags: string[] = []): Promise<void> {
     const config = this.config[type];
     const key = this.generateKey(type, identifier, params);
 
@@ -234,7 +234,7 @@ class HPOSCacheManager {
     }
 
     try {
-      let processedData: any = data;
+      let processedData: unknown = data;
       let compressed = false;
 
       if (config.enableCompression && this.compressionEnabled) {
@@ -242,7 +242,7 @@ class HPOSCacheManager {
         compressed = true;
       }
 
-      const entry: CacheEntry = {
+      const entry: CacheEntry<unknown> = {
         data: processedData,
         timestamp: Date.now(),
         ttl: config.ttl,

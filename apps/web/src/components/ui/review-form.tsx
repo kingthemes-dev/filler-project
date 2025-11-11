@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Star, Send, X, Image as ImageIcon } from 'lucide-react';
 import wooCommerceService from '@/services/woocommerce-optimized';
 
@@ -313,10 +314,13 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
             <div className="mt-3 grid grid-cols-5 gap-2">
               {images.map((image, index) => (
                 <div key={index} className="relative group">
-                  <img
+                  <Image
                     src={image.thumbnail || image.url}
                     alt={`Preview ${index + 1}`}
+                    width={80}
+                    height={80}
                     className="w-full h-20 object-cover rounded-lg border border-gray-300"
+                    unoptimized
                   />
                   <button
                     type="button"

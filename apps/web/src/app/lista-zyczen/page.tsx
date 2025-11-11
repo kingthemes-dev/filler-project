@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingCart, Eye, Trash2, ArrowLeft, User, Package, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useWishlist } from '@/hooks/use-wishlist';
-import { useCartStore } from '@/stores/cart-store';
-import { useQuickViewStore } from '@/stores/quickview-store';
+import { useCartActions } from '@/stores/cart-store';
+import { useQuickViewActions, useQuickViewIsOpen, useQuickViewProduct } from '@/stores/quickview-store';
+import type { WishlistItem } from '@/stores/wishlist-store';
 import { WooProduct } from '@/types/woocommerce';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -34,57 +35,118 @@ export default function WishlistPage() {
     { label: 'Lista życzeń', href: '/lista-zyczen' }
   ];
   
-  const { addItem, openCart } = useCartStore();
-  const { openQuickView, isOpen: isQuickViewOpen, product: quickViewProduct, closeQuickView } = useQuickViewStore();
+  const { addItem, openCart } = useCartActions();
+  const isQuickViewOpen = useQuickViewIsOpen();
+  const quickViewProduct = useQuickViewProduct();
+  const { openQuickView, closeQuickView } = useQuickViewActions();
 
   useEffect(() => {
     // Load wishlist from server on mount
     loadFromServer();
   }, [loadFromServer]);
 
-  const handleAddToCart = async (item: any) => {
-    try {
-      await       addItem({
-        id: item.id,
+  const toCartItem = (item: WishlistItem) => ({
+    id: item.id,
+    name: item.name,
+    price: Number.parseFloat(item.price),
+    sale_price: item.sale_price ? Number.parseFloat(item.sale_price) : undefined,
+    regular_price: Number.parseFloat(item.regular_price),
+    image: item.images[0]?.src || '/images/placeholder-product.jpg',
+    permalink: item.slug ? `/produkt/${item.slug}` : item.id.toString(),
+  });
+
+  const createProductFromWishlist = (item: WishlistItem): WooProduct => {
+    const now = new Date(item.addedAt).toISOString();
+    const saleActive = Boolean(item.sale_price && Number.parseFloat(item.sale_price) > 0);
+
+    return {
+      id: item.id,
+      name: item.name,
+      slug: item.slug || item.id.toString(),
+      permalink: item.slug ? `/produkt/${item.slug}` : `/produkt/${item.id}`,
+      date_created: now,
+      date_created_gmt: now,
+      date_modified: now,
+      date_modified_gmt: now,
+      type: 'simple',
+      status: 'publish',
+      featured: false,
+      catalog_visibility: 'visible',
+      description: '',
+      short_description: '',
+      sku: '',
+      price: item.price,
+      regular_price: item.regular_price,
+      sale_price: item.sale_price,
+      date_on_sale_from: null,
+      date_on_sale_from_gmt: null,
+      date_on_sale_to: null,
+      date_on_sale_to_gmt: null,
+      price_html: item.price,
+      on_sale: saleActive,
+      purchasable: true,
+      total_sales: 0,
+      virtual: false,
+      downloadable: false,
+      downloads: [],
+      download_limit: 0,
+      download_expiry: 0,
+      tax_status: 'taxable',
+      tax_class: '',
+      manage_stock: false,
+      stock_quantity: null,
+      stock_status: item.stock_status || 'instock',
+      backorders: 'no',
+      backorders_allowed: false,
+      backordered: false,
+      sold_individually: false,
+      weight: '',
+      dimensions: { length: '', width: '', height: '' },
+      shipping_required: true,
+      shipping_taxable: true,
+      shipping_class: '',
+      shipping_class_id: 0,
+      categories: [],
+      reviews_allowed: true,
+      average_rating: '0',
+      rating_count: 0,
+      related_ids: [],
+      upsell_ids: [],
+      cross_sell_ids: [],
+      parent_id: 0,
+      purchase_note: '',
+      tags: [],
+      images: item.images.map((image, index) => ({
+        id: index,
+        date_created: now,
+        date_created_gmt: now,
+        date_modified: now,
+        date_modified_gmt: now,
+        src: image.src,
         name: item.name,
-        price: parseFloat(item.price),
-        sale_price: item.sale_price ? parseFloat(item.sale_price) : undefined,
-        regular_price: parseFloat(item.regular_price),
-        image: item.images[0]?.src || '/images/placeholder-product.jpg',
-        permalink: item.permalink
-      });
+        alt: image.alt || item.name,
+      })),
+      attributes: [],
+      default_attributes: [],
+      variations: [],
+      grouped_products: [],
+      menu_order: 0,
+      meta_data: [],
+      _links: { self: [], collection: [] },
+    };
+  };
+
+  const handleAddToCart = async (item: WishlistItem) => {
+    try {
+      await addItem(toCartItem(item));
       openCart();
     } catch (error) {
       console.error('Error adding to cart:', error);
     }
   };
 
-  const handleQuickView = (item: any) => {
-    const product = {
-      id: item.id,
-      name: item.name,
-      slug: item.slug,
-      price: item.price,
-      regular_price: item.regular_price,
-      sale_price: item.sale_price,
-      images: item.images,
-      stock_status: item.stock_status,
-      type: 'simple' as const,
-      permalink: item.permalink || `/produkt/${item.slug}`,
-      sku: '',
-      description: '',
-      short_description: '',
-      on_sale: false,
-      featured: false,
-      categories: [],
-      tags: [],
-      attributes: [],
-      default_attributes: [],
-      variations: [],
-      related_ids: [],
-      meta_data: []
-    } as unknown as WooProduct;
-    openQuickView(product);
+  const handleQuickView = (item: WishlistItem) => {
+    openQuickView(createProductFromWishlist(item));
   };
 
   if (isLoading) {

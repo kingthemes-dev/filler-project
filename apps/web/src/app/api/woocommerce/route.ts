@@ -1,12 +1,16 @@
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import type { ZodIssue } from 'zod';
+import type { Span } from '@sentry/types';
 import { 
-  woocommerceQuerySchema,
   orderSchema,
   passwordResetSchema,
   resetPasswordSchema,
   updateProfileSchema,
   changePasswordSchema,
+  woocommerceQuerySchema,
 } from '@/lib/schemas/woocommerce';
 export const runtime = 'nodejs';
 // Debug helper (no logs in prod unless explicitly enabled)
@@ -24,43 +28,27 @@ const maskUrlSecrets = (urlString: string | URL) => {
 };
 import { cache } from '@/lib/cache';
 
-// 🚀 PRIORITY 2: Request deduplication - cache identycznych requestów w 100ms window
-const requestCache = new Map<string, { data: any; timestamp: number; headers: Headers }>();
-const DEDUP_WINDOW = 100; // 100ms window dla deduplication
-const MAX_CACHE_SIZE = 100; // Maksymalna liczba cached requests (zapobiega memory leak)
-
-function getCacheKey(req: NextRequest): string {
-  const url = new URL(req.url);
-  // Cache key = endpoint + wszystkie parametry
-  return `${url.pathname}?${url.searchParams.toString()}`;
-}
-
-function cleanupOldCache() {
-  if (requestCache.size > MAX_CACHE_SIZE) {
-    // Usuń najstarsze 20% entries
-    const entries = Array.from(requestCache.entries());
-    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    const toRemove = Math.floor(entries.length * 0.2);
-    for (let i = 0; i < toRemove; i++) {
-      requestCache.delete(entries[i][0]);
-    }
-  }
-}
+// Request deduplication is now handled by requestDeduplicator utility
+// (500ms window, Redis-backed for distributed systems)
 
 import { WooShippingMethod } from '@/types/woocommerce';
 import { sentryMetrics } from '@/utils/sentry-metrics';
 import { env } from '@/config/env';
-import { withCircuitBreaker } from '@/utils/circuit-breaker';
 import { hposApi } from '@/services/hpos-api';
 import { orderLimitHandler } from '@/services/order-limit-handler';
 import { hposPerformanceMonitor } from '@/services/hpos-performance-monitor';
 import { checkEndpointRateLimit } from '@/utils/rate-limiter';
 import { RateLimitError } from '@/lib/errors';
 import { getRequestId, setRequestIdHeader } from '@/utils/request-id';
+import { getClientIP } from '@/utils/client-ip';
 import * as Sentry from '@sentry/nextjs';
+import { httpAgent } from '@/utils/http-agent';
+import { requestDeduplicator } from '@/utils/request-deduplicator';
+import { getTimeoutConfig, createTimeoutSignal } from '@/utils/timeout-config';
 
-// Redis client (optional)
-let redis: any = null;
+// Redis client (optional) - kept for backward compatibility
+type RedisClient = import('ioredis').Redis;
+let redis: RedisClient | null = null;
 
 // Initialize Redis if available
 try {
@@ -77,6 +65,302 @@ try {
 } catch (error) {
   console.warn('Redis not available, using in-memory cache', error);
 }
+
+interface WooCoupon {
+  id: number;
+  code: string;
+  discount_type: string;
+  amount: string;
+  minimum_amount?: string | null;
+  maximum_amount?: string | null;
+  usage_limit?: number | null;
+  usage_count?: number | null;
+  usage_limit_per_user?: number | null;
+  date_expires?: string | null;
+}
+
+interface InvoicePdfResult {
+  base64: string;
+  filename: string;
+  mime: string;
+}
+
+interface RawOrderLineItemPayload {
+  product_id: number;
+  quantity: number;
+  variation_id?: number;
+  meta_data?: unknown[];
+}
+
+interface RawOrderAddress {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  address: string;
+  city: string;
+  postcode: string;
+  country?: string;
+}
+
+interface RawOrderShippingAddress {
+  firstName: string;
+  lastName: string;
+  company?: string;
+  address: string;
+  city: string;
+  postcode: string;
+  country?: string;
+}
+
+interface RawOrderPayload {
+  billing: RawOrderAddress;
+  shipping?: RawOrderShippingAddress | null;
+  line_items: RawOrderLineItemPayload[];
+  payment_method: string;
+  payment_method_title?: string;
+  set_paid?: boolean;
+  customer_id?: number;
+  shipping_lines?: unknown[];
+  coupon_lines?: unknown[];
+  meta_data?: unknown[];
+}
+
+interface WooOrderCreateLineItem {
+  product_id: number;
+  variation_id?: number;
+  quantity: number;
+  meta_data?: unknown[];
+}
+
+interface WooOrderCreatePayload {
+  payment_method: string;
+  payment_method_title: string;
+  set_paid: boolean;
+  customer_id?: number;
+  billing: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+    company?: string;
+    address_1: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+  };
+  shipping: {
+    first_name: string;
+    last_name: string;
+    company?: string;
+    address_1: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+  };
+  line_items: WooOrderCreateLineItem[];
+  shipping_lines: unknown[];
+  coupon_lines: unknown[];
+  meta_data: Array<{ key: string; value: unknown }>;
+}
+
+interface OrdersQueryParams {
+  customer?: number;
+  status?: string;
+  page?: number;
+  per_page?: number;
+  orderby?: string;
+  order?: 'asc' | 'desc';
+  after?: string;
+  before?: string;
+  search?: string;
+}
+
+const isUnknownArray = (value: unknown): value is unknown[] =>
+  Array.isArray(value);
+
+const hasString = (value: unknown): value is string => typeof value === 'string';
+
+const isRawOrderLineItem = (value: unknown): value is RawOrderLineItemPayload => {
+  if (!isRecord(value)) return false;
+  return typeof value.product_id === 'number' &&
+    typeof value.quantity === 'number' &&
+    (value.variation_id === undefined || typeof value.variation_id === 'number') &&
+    (value.meta_data === undefined || isUnknownArray(value.meta_data));
+};
+
+const isRawOrderAddressData = (value: unknown): value is RawOrderAddress => {
+  if (!isRecord(value)) return false;
+  return hasString(value.firstName) &&
+    hasString(value.lastName) &&
+    hasString(value.email) &&
+    hasString(value.address) &&
+    hasString(value.city) &&
+    hasString(value.postcode);
+};
+
+const isRawOrderShippingAddressData = (value: unknown): value is RawOrderShippingAddress => {
+  if (!isRecord(value)) return false;
+  return hasString(value.firstName) &&
+    hasString(value.lastName) &&
+    hasString(value.address) &&
+    hasString(value.city) &&
+    hasString(value.postcode);
+};
+
+const isRawOrderPayload = (value: unknown): value is RawOrderPayload => {
+  if (!isRecord(value)) return false;
+  if (!isRawOrderAddressData(value.billing)) return false;
+  if (!Array.isArray(value.line_items) || !value.line_items.every(isRawOrderLineItem)) return false;
+  if (!hasString(value.payment_method)) return false;
+  if (value.shipping !== undefined && value.shipping !== null && !isRawOrderShippingAddressData(value.shipping)) {
+    return false;
+  }
+  if (value.shipping_lines !== undefined && !isUnknownArray(value.shipping_lines)) {
+    return false;
+  }
+  if (value.coupon_lines !== undefined && !isUnknownArray(value.coupon_lines)) {
+    return false;
+  }
+  if (value.meta_data !== undefined && !isUnknownArray(value.meta_data)) {
+    return false;
+  }
+  if (value.customer_id !== undefined && typeof value.customer_id !== 'number') {
+    return false;
+  }
+  if (value.payment_method_title !== undefined && !hasString(value.payment_method_title)) {
+    return false;
+  }
+  return true;
+};
+
+const getSettingValue = (settings: Record<string, unknown>, key: string): string | undefined => {
+  const entry = settings[key];
+  if (isRecord(entry) && typeof entry.value === 'string') {
+    return entry.value;
+  }
+  return undefined;
+};
+
+const getSettingArray = (settings: Record<string, unknown>, key: string): unknown[] | undefined => {
+  const entry = settings[key];
+  if (isRecord(entry) && Array.isArray(entry.value)) {
+    return entry.value;
+  }
+  return undefined;
+};
+
+const transformOrderPayload = (raw: unknown): unknown => {
+  if (!isRecord(raw)) {
+    return raw;
+  }
+
+  const result: Record<string, unknown> = { ...raw };
+
+  const rawBilling = isRecord(raw.billing) ? raw.billing : null;
+  if (rawBilling) {
+    result.billing = {
+      first_name: rawBilling.firstName ?? rawBilling.first_name ?? '',
+      last_name: rawBilling.lastName ?? rawBilling.last_name ?? '',
+      company: rawBilling.company ?? '',
+      address_1: rawBilling.address ?? rawBilling.address_1 ?? '',
+      address_2: rawBilling.address_2 ?? '',
+      city: rawBilling.city ?? '',
+      state: rawBilling.state ?? '',
+      postcode: rawBilling.postcode ?? '',
+      country: rawBilling.country ?? 'PL',
+      email: rawBilling.email ?? '',
+      phone: rawBilling.phone ?? '',
+    };
+  }
+
+  const rawShipping = isRecord(raw.shipping) ? raw.shipping : null;
+  if (raw.shipping === null) {
+    result.shipping = null;
+  } else if (rawShipping) {
+    result.shipping = {
+      first_name: rawShipping.firstName ?? rawShipping.first_name ?? '',
+      last_name: rawShipping.lastName ?? rawShipping.last_name ?? '',
+      company: rawShipping.company ?? '',
+      address_1: rawShipping.address ?? rawShipping.address_1 ?? '',
+      address_2: rawShipping.address_2 ?? '',
+      city: rawShipping.city ?? '',
+      state: rawShipping.state ?? '',
+      postcode: rawShipping.postcode ?? '',
+      country: rawShipping.country ?? 'PL',
+    };
+  }
+
+  if (Array.isArray(raw.line_items)) {
+    result.line_items = raw.line_items
+      .filter(isRecord)
+      .map((item) => {
+        const variationId = item.variation_id ?? (isRecord(item.variant) ? item.variant.id : undefined);
+        const lineItem: Record<string, unknown> = {
+          product_id: item.product_id ?? item.id,
+          quantity: item.quantity,
+          meta_data: Array.isArray(item.meta_data) ? item.meta_data : [],
+        };
+        if (typeof variationId === 'number' && variationId > 0) {
+          lineItem.variation_id = variationId;
+        }
+        return lineItem;
+      });
+  }
+
+  return result;
+};
+
+const extractCustomerId = (raw: unknown): number | null => {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  if (typeof raw.customer_id === 'number') {
+    return raw.customer_id;
+  }
+  const billing = isRecord(raw.billing) ? raw.billing : null;
+  if (billing && typeof billing.customer_id === 'number') {
+    return billing.customer_id;
+  }
+  return null;
+};
+
+const mapCouponRecord = (coupon: Record<string, unknown>): WooCoupon | null => {
+  if (typeof coupon.id !== 'number' || typeof coupon.code !== 'string') {
+    return null;
+  }
+
+  const readString = (value: unknown): string | undefined =>
+    typeof value === 'string' ? value : undefined;
+
+  const readNullableString = (value: unknown): string | null | undefined => {
+    if (typeof value === 'string') return value;
+    if (value === null) return null;
+    return undefined;
+  };
+
+  const readNullableNumber = (value: unknown): number | null | undefined => {
+    if (typeof value === 'number') return value;
+    if (value === null) return null;
+    return undefined;
+  };
+
+  return {
+    id: coupon.id,
+    code: coupon.code,
+    discount_type: readString(coupon.discount_type) ?? '',
+    amount: readString(coupon.amount) ?? String(coupon.amount ?? '0'),
+    minimum_amount: readNullableString(coupon.minimum_amount),
+    maximum_amount: readNullableString(coupon.maximum_amount),
+    usage_limit: readNullableNumber(coupon.usage_limit),
+    usage_count: readNullableNumber(coupon.usage_count),
+    usage_limit_per_user: readNullableNumber(coupon.usage_limit_per_user),
+    date_expires: readNullableString(coupon.date_expires),
+  };
+};
 
 const WC_URL = env.NEXT_PUBLIC_WC_URL;
 const SITE_BASE = WC_URL ? WC_URL.replace(/\/wp-json\/wc\/v3.*/, '') : '';
@@ -117,7 +401,7 @@ async function handlePasswordReset(body: { email: string }) {
     // Użyj custom mu-plugin endpoint
     const customUrl = `${WORDPRESS_URL}/wp-json/custom/v1/password-reset`;
     
-    const response = await fetch(customUrl, {
+    const response = await httpAgent.fetch(customUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,7 +431,7 @@ async function handlePasswordReset(body: { email: string }) {
       const wcUrl = `${WORDPRESS_URL}/wp-json/wc/v3/customers`;
       const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
       
-      const wcResponse = await fetch(`${wcUrl}?email=${encodeURIComponent(email)}`, {
+      const wcResponse = await httpAgent.fetch(`${wcUrl}?email=${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
           'Authorization': auth,
@@ -209,7 +493,7 @@ async function handlePasswordResetConfirm(body: { key: string; login: string; pa
     
     console.log('🔄 Attempting password reset with:', { key: key.substring(0, 10) + '...', login, passwordLength: password.length });
     
-    const response = await fetch(customUrl, {
+    const response = await httpAgent.fetch(customUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -275,7 +559,7 @@ async function handleCustomerInvoices(req: NextRequest) {
     const invoicesUrl = `${WORDPRESS_URL}/wp-json/custom/v1/invoices?customer_id=${customerId}`;
     console.log('🔄 Calling WordPress API:', invoicesUrl);
     
-    const response = await fetch(invoicesUrl, {
+    const response = await httpAgent.fetch(invoicesUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -287,33 +571,65 @@ async function handleCustomerInvoices(req: NextRequest) {
     console.log('🔄 WordPress API response status:', response.status);
 
     const raw = await response.text();
-    let data: any = null;
-    try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
+    let parsed: unknown = null;
+    try {
+      parsed = raw ? JSON.parse(raw) : null;
+    } catch {
+      // not JSON, leave parsed as null
+    }
     if (!response.ok) {
-      const msg = (data && (data.error || data.message)) || raw || 'Błąd pobierania faktur';
-      return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: response.status || 502 });
+      const message =
+        isRecord(parsed) && typeof parsed.error === 'string'
+          ? parsed.error
+          : isRecord(parsed) && typeof parsed.message === 'string'
+          ? parsed.message
+          : raw || 'Błąd pobierania faktur';
+      return NextResponse.json(
+        { success: false, error: String(message).slice(0, 1000) },
+        { status: response.status || 502 },
+      );
     }
 
-    if (!data) {
+    if (!parsed || !isRecord(parsed)) {
       return NextResponse.json({ success: true, invoices: [] });
     }
     
     console.log('✅ Successfully fetched invoices for customer:', customerId);
     
-    const rawInvoices = Array.isArray(data.invoices) ? data.invoices : [];
-    const enriched = rawInvoices.map((inv: any) => {
-      const id = inv.id || inv.order_id;
-      const hasDownload = inv.download_url && typeof inv.download_url === 'string' && inv.download_url.length > 0;
-      const pluginUrl = id ? `${SITE_BASE}/?action=generate_wpo_wcpdf&document_type=invoice&order_ids=${id}` : undefined;
-      return {
-        ...inv,
-        download_url: hasDownload ? inv.download_url : pluginUrl
-      };
-    });
+    const rawInvoices = Array.isArray(parsed.invoices) ? parsed.invoices : [];
+    const enriched = rawInvoices
+      .map((invoiceEntry) => {
+        if (!isRecord(invoiceEntry)) {
+          return null;
+        }
+
+        const invoiceRecord = invoiceEntry as Record<string, unknown>;
+        const idValue = invoiceRecord.id ?? invoiceRecord.order_id;
+        const id =
+          typeof idValue === 'string'
+            ? idValue
+            : typeof idValue === 'number'
+            ? String(idValue)
+            : undefined;
+
+        const rawDownloadUrl =
+          typeof invoiceRecord.download_url === 'string' ? invoiceRecord.download_url : undefined;
+        const hasDownload = Boolean(rawDownloadUrl && rawDownloadUrl.length > 0);
+        const pluginUrl = id ? `${SITE_BASE}/?action=generate_wpo_wcpdf&document_type=invoice&order_ids=${id}` : undefined;
+
+        return {
+          ...invoiceRecord,
+          download_url: hasDownload ? rawDownloadUrl : pluginUrl,
+        };
+      })
+      .filter(
+        (invoice): invoice is Record<string, unknown> & { download_url: string | undefined } =>
+          invoice !== null
+      );
 
     return NextResponse.json({
       success: true,
-      invoices: enriched
+      invoices: enriched,
     });
 
   } catch (error) {
@@ -347,7 +663,7 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
     const timestamp = Date.now();
     const invoicePdfUrl = `${WORDPRESS_URL}/wp-json/custom/v1/invoice/${orderId}/pdf?v=${timestamp}`;
     
-    const pdfResponse = await fetch(invoicePdfUrl, {
+    const pdfResponse = await httpAgent.fetch(invoicePdfUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/pdf, application/json',
@@ -358,21 +674,27 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
     
     if (!pdfResponse.ok) {
       const errorText = await pdfResponse.text();
-      let errorData: any = null;
+      let errorBody: unknown;
       try {
-        errorData = JSON.parse(errorText);
+        errorBody = errorText ? JSON.parse(errorText) : null;
       } catch {
-        // Not JSON
+        errorBody = null;
       }
       
-      debugLog('⚠️ WordPress invoice PDF endpoint failed:', pdfResponse.status, errorData?.error || errorText);
+      const humanReadableError =
+        (isRecord(errorBody) && typeof errorBody.error === 'string' && errorBody.error) || errorText;
+      
+      debugLog('⚠️ WordPress invoice PDF endpoint failed:', pdfResponse.status, humanReadableError);
       
       // If endpoint returns 403 or 404, don't try fallback - invoice is not available
       if (pdfResponse.status === 403 || pdfResponse.status === 404) {
-        return NextResponse.json({
-          success: false,
-          error: errorData?.error || 'Faktura nie jest dostępna dla tego zamówienia'
-        }, { status: pdfResponse.status });
+        return NextResponse.json(
+          {
+            success: false,
+            error: humanReadableError || 'Faktura nie jest dostępna dla tego zamówienia',
+          },
+          { status: pdfResponse.status },
+        );
       }
       
       // For other errors, try to generate PDF locally as fallback
@@ -439,15 +761,22 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
       });
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     debugLog('🚨 Error fetching invoice PDF:', error);
     
+    const errorMessage =
+      error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error';
+    const errorCode =
+      typeof (error as { code?: string })?.code === 'string'
+        ? (error as { code?: string }).code
+        : undefined;
+
     // Fallback: try to generate PDF locally only if it's a network/server error
-    if (error?.message?.includes('fetch') || error?.code === 'ECONNREFUSED') {
+    if (errorMessage.includes('fetch') || errorCode === 'ECONNREFUSED') {
       try {
         debugLog('⚠️ Network error, trying local PDF generation');
         return await generateInvoicePdfLocally(orderId);
-      } catch (localError: any) {
+      } catch (localError: unknown) {
         debugLog('🚨 Local PDF generation also failed:', localError);
       }
     }
@@ -455,7 +784,7 @@ async function handleCustomerInvoicePdf(req: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Nie udało się wygenerować faktury PDF',
-      details: error?.message || 'Unknown error'
+      details: errorMessage
     }, { status: 500 });
   }
 }
@@ -467,7 +796,7 @@ async function generateInvoicePdfLocally(orderId: string) {
   const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
   const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
   
-  const orderResponse = await fetch(orderUrl, {
+  const orderResponse = await httpAgent.fetch(orderUrl, {
     headers: {
       'Authorization': auth,
       'Content-Type': 'application/json',
@@ -479,21 +808,25 @@ async function generateInvoicePdfLocally(orderId: string) {
     throw new Error('Nie udało się pobrać danych zamówienia');
   }
   
-  const orderData = await orderResponse.json();
+  const orderData = (await orderResponse.json()) as Record<string, unknown>;
   
   // Check if order is eligible for invoice generation
   // Allow invoices for: completed, processing, on-hold, and pending (if invoice was requested)
   const eligibleStatuses = ['completed', 'processing', 'on-hold'];
-  const invoiceRequested = orderData.meta_data?.some((meta: any) => 
-    meta.key === '_invoice_request' && meta.value === 'yes'
-  ) || false;
+  const orderStatus = typeof orderData.status === 'string' ? orderData.status : '';
+  const invoiceRequested =
+    Array.isArray(orderData.meta_data) &&
+    orderData.meta_data.some((meta): boolean => {
+      if (!isRecord(meta)) return false;
+      return meta.key === '_invoice_request' && meta.value === 'yes';
+    });
   
-  if (!eligibleStatuses.includes(orderData.status) && !(orderData.status === 'pending' && invoiceRequested)) {
+  if (!eligibleStatuses.includes(orderStatus) && !(orderStatus === 'pending' && invoiceRequested)) {
     const errorResponse = NextResponse.json({ 
       success: false,
       error: 'Faktura może być wystawiona tylko dla opłaconych lub zrealizowanych zamówień',
       eligible: false,
-      status: orderData.status,
+      status: orderStatus,
       invoiceRequested
     }, { status: 403 });
     return errorResponse;
@@ -503,11 +836,7 @@ async function generateInvoicePdfLocally(orderId: string) {
   debugLog('🔄 Generating improved PDF for order:', orderId);
   
   // Generate improved PDF using InvoiceGenerator with timeout and sanitization
-  const improvedPdf = await generateImprovedInvoicePdf(orderId, {
-    base64: '',
-    filename: `faktura_${orderId}.pdf`,
-    mime: 'application/pdf'
-  });
+  const improvedPdf = await generateImprovedInvoicePdf(orderId);
   
   return NextResponse.json({
     success: true,
@@ -536,13 +865,13 @@ function sanitizePdfText(text: string | null | undefined, maxLength: number = 20
  * Generate professional invoice PDF using new InvoiceGenerator
  * With timeout and PII sanitization
  */
-async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
+async function generateImprovedInvoicePdf(orderId: string): Promise<InvoicePdfResult> {
   const PDF_GENERATION_TIMEOUT = 30000; // 30 seconds
   const MAX_PDF_SIZE_BASE64 = 10 * 1024 * 1024; // 10MB base64 (~7.5MB binary)
   
   try {
     // Create timeout promise for entire PDF generation
-    const timeoutPromise = new Promise((_, reject) => {
+    const timeoutPromise = new Promise<InvoicePdfResult>((_, reject) => {
       setTimeout(() => reject(new Error('Timeout: Generowanie PDF przekroczyło limit czasu')), PDF_GENERATION_TIMEOUT);
     });
     
@@ -551,7 +880,7 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
       const orderUrl = `${WORDPRESS_URL}/wp-json/wc/v3/orders/${orderId}`;
       const auth = 'Basic ' + Buffer.from(`${CK}:${CS}`).toString('base64');
       
-      const orderResponse = await fetch(orderUrl, {
+      const orderResponse = await httpAgent.fetch(orderUrl, {
         headers: {
           'Authorization': auth,
           'Content-Type': 'application/json',
@@ -564,18 +893,18 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
         throw new Error('Nie udało się pobrać danych zamówienia');
       }
       
-      const order = await orderResponse.json();
+      const order = (await orderResponse.json()) as Record<string, unknown>;
       
       // Sanitize order data before using in PDF
       const sanitizedOrder = {
-        number: sanitizePdfText(order.number, 50),
-        date_created: order.date_created,
+        number: sanitizePdfText(typeof order.number === 'string' ? order.number : String(order.number ?? '')),
+        date_created: typeof order.date_created === 'string' ? order.date_created : '',
         billing: {
-          first_name: sanitizePdfText(order.billing?.first_name, 100),
-          last_name: sanitizePdfText(order.billing?.last_name, 100),
-          address_1: sanitizePdfText(order.billing?.address_1, 200),
+          first_name: sanitizePdfText(isRecord(order.billing) ? order.billing.first_name ?? null : null, 100),
+          last_name: sanitizePdfText(isRecord(order.billing) ? order.billing.last_name ?? null : null, 100),
+          address_1: sanitizePdfText(isRecord(order.billing) ? order.billing.address_1 ?? null : null, 200),
         },
-        total: sanitizePdfText(order.total, 50),
+        total: sanitizePdfText(typeof order.total === 'string' ? order.total : String(order.total ?? '')),
       };
       
       // Generate simple PDF using jsPDF
@@ -589,7 +918,7 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
       // Add order details (sanitized)
       doc.setFontSize(12);
       doc.text(`Zamówienie: ${sanitizedOrder.number}`, 20, 50);
-      doc.text(`Data: ${new Date(sanitizedOrder.date_created).toLocaleDateString('pl-PL')}`, 20, 60);
+      doc.text(`Data: ${new Date(sanitizedOrder.date_created || Date.now()).toLocaleDateString('pl-PL')}`, 20, 60);
       
       // Add customer info (sanitized)
       const customerName = `${sanitizedOrder.billing.first_name} ${sanitizedOrder.billing.last_name}`.trim();
@@ -624,10 +953,12 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
     })();
     
     // Race between PDF generation and timeout
-    return await Promise.race([pdfGenerationPromise, timeoutPromise]) as any;
+    return await Promise.race<InvoicePdfResult>([pdfGenerationPromise, timeoutPromise]);
     
-  } catch (error: any) {
-    if (error.name === 'TimeoutError' || error.message?.includes('Timeout')) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+    const errorName = error instanceof Error ? error.name : undefined;
+    if (errorName === 'TimeoutError' || errorMessage.includes('Timeout')) {
       debugLog('⏱️ PDF generation timeout', { orderId });
       throw new Error('Generowanie PDF przekroczyło limit czasu. Spróbuj ponownie.');
     }
@@ -641,275 +972,15 @@ async function generateImprovedInvoicePdf(orderId: string, originalData: any) {
 /**
  * OLD FUNCTION - REMOVED
  */
-function _generateSimplePdf_OLD(html: string, orderId: string, order: any): string {
-  // Extract order data from order object
-  const orderDate = new Date(order.date_created).toLocaleDateString('pl-PL');
-  const invoiceNumber = `FV/${new Date().getFullYear()}/${order.number}`;
-  
-  // Get customer data
-  const customerName = `${order.billing.first_name} ${order.billing.last_name}`;
-  const customerAddress = `${order.billing.address_1}, ${order.billing.postcode} ${order.billing.city}`;
-  const customerEmail = order.billing.email;
-  const customerPhone = order.billing.phone;
-  
-  // Get products data
-  const products = order.line_items.map((item: any) => 
-    `${item.name} | ${item.quantity} | ${parseFloat(item.total).toFixed(2)} zł`
-  ).join('\n0 -15 Td\n(');
-  
-  // Get totals
-  const subtotal = parseFloat(order.total).toFixed(2);
-  const shipping = parseFloat(order.shipping_total || 0).toFixed(2);
-  const tax = parseFloat(order.total_tax || 0).toFixed(2);
-  const total = parseFloat(order.total).toFixed(2);
-  
-  // Create PDF content with proper invoice data
-  const pdfContent = `%PDF-1.4
-1 0 obj
-<<
-/Type /Catalog
-/Pages 2 0 R
->>
-endobj
-
-2 0 obj
-<<
-/Type /Pages
-/Kids [3 0 R]
-/Count 1
->>
-endobj
-
-3 0 obj
-<<
-/Type /Page
-/Parent 2 0 R
-/MediaBox [0 0 612 792]
-/Contents 4 0 R
-/Resources <<
-/Font <<
-/F1 5 0 R
-/F2 6 0 R
->>
->>
->>
-endobj
-
-4 0 obj
-<<
-/Length 2000
->>
-stream
-BT
-/F2 18 Tf
-250 750 Td
-(FAKTURA VAT) Tj
-0 -30 Td
-/F1 14 Tf
-280 720 Td
-(${invoiceNumber}) Tj
-0 -40 Td
-/F1 12 Tf
-72 680 Td
-(Data wystawienia: ${orderDate}) Tj
-0 -20 Td
-(Data sprzedaży: ${orderDate}) Tj
-0 -20 Td
-(Numer zamówienia: ${order.number}) Tj
-0 -40 Td
-(FIRMA SPRZEDAWCY:) Tj
-0 -20 Td
-(KingBrand Sp. z o.o.) Tj
-0 -15 Td
-(ul. Przykładowa 123, 00-001 Warszawa) Tj
-0 -15 Td
-(NIP: 1234567890) Tj
-0 -15 Td
-(Tel: +48 123 456 789) Tj
-0 -15 Td
-(Email: info@kingbrand.pl) Tj
-0 -40 Td
-(DANE NABYWCY:) Tj
-0 -20 Td
-(Imię i nazwisko: ${customerName}) Tj
-0 -15 Td
-(Adres: ${customerAddress}) Tj
-0 -15 Td
-(Email: ${customerEmail}) Tj
-0 -15 Td
-(Telefon: ${customerPhone}) Tj
-0 -40 Td
-(PRODUKTY:) Tj
-0 -20 Td
-(Nazwa produktu | Ilość | Cena) Tj
-0 -20 Td
-(${products}) Tj
-0 -40 Td
-(PODSUMOWANIE:) Tj
-0 -20 Td
-(Wartość netto: ${subtotal} zł) Tj
-0 -15 Td
-(Dostawa: ${shipping} zł) Tj
-0 -15 Td
-(VAT: ${tax} zł) Tj
-0 -20 Td
-/F2 14 Tf
-(RAZEM: ${total} zł) Tj
-0 -40 Td
-/F1 10 Tf
-(Płatność: ${order.payment_method_title}) Tj
-0 -20 Td
-(Dziękujemy za zakupy w KingBrand!) Tj
-ET
-endstream
-endobj
-
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-
-6 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica-Bold
->>
-endobj
-
-xref
-0 7
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000274 00000 n 
-0000000500 00000 n 
-0000000600 00000 n 
-trailer
-<<
-/Size 7
-/Root 1 0 R
->>
-startxref
-${2000 + 600}
-%%EOF`;
-
-  return pdfContent;
+function _generateSimplePdf_OLD(_html: string, _orderId: string, _order: unknown): string {
+  throw new Error('Legacy PDF generator is no longer supported.');
 }
 
 /**
  * Generate HTML template for invoice
  */
-function _generateInvoiceHtmlTemplate(order: any) {
-  const orderDate = new Date(order.date_created).toLocaleDateString('pl-PL');
-  const invoiceNumber = `FV/${new Date().getFullYear()}/${order.number}`;
-  
-  const itemsHtml = order.line_items.map((item: any) => `
-    <tr>
-      <td style="border: 1px solid #ddd; padding: 8px;">${item.name}</td>
-      <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.quantity}</td>
-      <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${parseFloat(item.total).toFixed(2)} zł</td>
-    </tr>
-  `).join('');
-  
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Faktura ${invoiceNumber}</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
-            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
-            .company-info { float: left; width: 50%; }
-            .invoice-info { float: right; width: 50%; text-align: right; }
-            .clear { clear: both; }
-            .customer-info { margin: 20px 0; }
-            .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .items-table th { background-color: #f5f5f5; font-weight: bold; }
-            .totals { float: right; width: 300px; margin-top: 20px; }
-            .total-row { display: flex; justify-content: space-between; padding: 5px 0; }
-            .total-final { font-weight: bold; font-size: 1.2em; border-top: 2px solid #000; padding-top: 10px; }
-            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>FAKTURA VAT</h1>
-            <h2>${invoiceNumber}</h2>
-        </div>
-        
-        <div class="company-info">
-            <h3>KingBrand Sp. z o.o.</h3>
-            <p>ul. Przykładowa 123, 00-001 Warszawa</p>
-            <p>NIP: 1234567890</p>
-            <p>Tel: +48 123 456 789</p>
-            <p>Email: info@kingbrand.pl</p>
-        </div>
-        
-        <div class="invoice-info">
-            <p><strong>Data wystawienia:</strong> ${orderDate}</p>
-            <p><strong>Data sprzedaży:</strong> ${orderDate}</p>
-            <p><strong>Numer zamówienia:</strong> ${order.number}</p>
-        </div>
-        
-        <div class="clear"></div>
-        
-        <div class="customer-info">
-            <h3>Dane nabywcy:</h3>
-            <p><strong>${order.billing.first_name} ${order.billing.last_name}</strong></p>
-            <p>${order.billing.address_1}</p>
-            <p>${order.billing.postcode} ${order.billing.city}</p>
-            <p>Email: ${order.billing.email}</p>
-            <p>Tel: ${order.billing.phone}</p>
-        </div>
-        
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th>Nazwa produktu</th>
-                    <th style="text-align: center;">Ilość</th>
-                    <th style="text-align: right;">Cena</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${itemsHtml}
-            </tbody>
-        </table>
-        
-        <div class="totals">
-            <div class="total-row">
-                <span>Wartość netto:</span>
-                <span>${parseFloat(order.total).toFixed(2)} zł</span>
-            </div>
-            <div class="total-row">
-                <span>Dostawa:</span>
-                <span>0.00 zł</span>
-            </div>
-            <div class="total-row">
-                <span>VAT:</span>
-                <span>0.00 zł</span>
-            </div>
-            <div class="total-row total-final">
-                <span>RAZEM:</span>
-                <span>${parseFloat(order.total).toFixed(2)} zł</span>
-            </div>
-        </div>
-        
-        <div class="clear"></div>
-        
-        <div class="footer">
-            <p>Płatność: ${order.payment_method_title}</p>
-            <p>Dziękujemy za zakupy w KingBrand!</p>
-        </div>
-    </body>
-    </html>
-  `;
+function _generateInvoiceHtmlTemplate(_order: unknown): string {
+  throw new Error('Legacy invoice template generator is no longer supported.');
 }
 
 async function handleOrderTracking(req: NextRequest) {
@@ -929,7 +1000,7 @@ async function handleOrderTracking(req: NextRequest) {
     // Call WordPress custom API
     const trackingUrl = `${WORDPRESS_URL}/wp-json/custom/v1/tracking/${orderId}`;
     
-    const response = await fetch(trackingUrl, {
+    const response = await httpAgent.fetch(trackingUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -939,14 +1010,22 @@ async function handleOrderTracking(req: NextRequest) {
     });
 
     const raw = await response.text();
-    let data: any = null;
-    try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
+    let parsed: unknown = null;
+    try {
+      parsed = raw ? JSON.parse(raw) : null;
+    } catch {
+      parsed = null;
+    }
     if (!response.ok) {
-      const msg = (data && (data.error || data.message)) || raw || 'Błąd pobierania śledzenia';
+      const msg =
+        (isRecord(parsed) && typeof parsed.error === 'string' && parsed.error) ||
+        (isRecord(parsed) && typeof parsed.message === 'string' && parsed.message) ||
+        raw ||
+        'Błąd pobierania śledzenia';
       return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: response.status || 502 });
     }
 
-    if (!data) {
+    if (!parsed || !isRecord(parsed)) {
       return NextResponse.json({ success: true, tracking: {} });
     }
     
@@ -954,7 +1033,7 @@ async function handleOrderTracking(req: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      tracking: data.tracking || {}
+      tracking: 'tracking' in parsed ? parsed.tracking : {}
     });
 
   } catch (error) {
@@ -967,7 +1046,7 @@ async function handleOrderTracking(req: NextRequest) {
   }
 }
 
-async function handleCustomerProfileUpdate(body: any) {
+async function handleCustomerProfileUpdate(body: unknown) {
   console.log('🔍 handleCustomerProfileUpdate received body:', JSON.stringify(body, null, 2));
   
   const parsed = updateProfileSchema.safeParse(body);
@@ -978,7 +1057,7 @@ async function handleCustomerProfileUpdate(body: any) {
       { 
         success: false, 
         error: parsed.error.issues[0]?.message || 'Nieprawidłowe dane',
-        details: parsed.error.issues.map((issue: any) => ({
+        details: parsed.error.issues.map((issue: ZodIssue) => ({
           path: issue.path.join('.'),
           message: issue.message
         }))
@@ -999,10 +1078,10 @@ async function handleCustomerProfileUpdate(body: any) {
     console.log('🔄 Updating customer profile:', customer_id);
     
     // 1) Update via custom WP endpoint (best-effort)
-    let customerFromCustom: any = null;
+    let customerFromCustom: Record<string, unknown> | null = null;
     try {
       const updateUrl = `${WORDPRESS_URL}/wp-json/custom/v1/customer/update-profile`;
-      const response = await fetch(updateUrl, {
+      const response = await httpAgent.fetch(updateUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1015,10 +1094,11 @@ async function handleCustomerProfileUpdate(body: any) {
         }),
       });
       const raw = await response.text();
-      let data: any = null;
+      let data: unknown = null;
       try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
-      if (response.ok && data && data.success) {
-        customerFromCustom = data.customer || null;
+      if (response.ok && isRecord(data) && data.success === true) {
+        const customerCandidate = isRecord(data.customer) ? data.customer : null;
+        customerFromCustom = customerCandidate;
       } else {
         console.log('ℹ️ Custom update-profile did not return success, continuing with Woo update');
       }
@@ -1031,7 +1111,9 @@ async function handleCustomerProfileUpdate(body: any) {
       return NextResponse.json({ success: false, error: 'Brak konfiguracji WooCommerce API' }, { status: 500 });
     }
 
-    const wooPayload: Record<string, any> = {
+    const metaData: Array<{ key: string; value: string }> = [];
+
+    const wooPayload: Record<string, unknown> = {
       first_name: profile_data.firstName,
       last_name: profile_data.lastName,
       billing: {
@@ -1057,20 +1139,20 @@ async function handleCustomerProfileUpdate(body: any) {
           country: profile_data.shipping.country || 'PL',
         }
       } : {}),
-      meta_data: [] as Array<{ key: string; value: string }>,
+      meta_data: metaData,
     };
 
     const nip = profile_data.billing?.nip;
     const invoiceReq = profile_data.billing?.invoiceRequest;
     if (nip !== undefined) {
-      wooPayload.meta_data.push({ key: '_billing_nip', value: String(nip) });
+      metaData.push({ key: '_billing_nip', value: String(nip) });
     }
     if (invoiceReq !== undefined) {
-      wooPayload.meta_data.push({ key: '_invoice_request', value: invoiceReq ? 'yes' : 'no' });
+      metaData.push({ key: '_invoice_request', value: invoiceReq ? 'yes' : 'no' });
     }
 
     const wooUrl = `${WC_URL}/customers/${customer_id}?consumer_key=${CK}&consumer_secret=${CS}`;
-    const wooResp = await fetch(wooUrl, {
+    const wooResp = await httpAgent.fetch(wooUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -1081,34 +1163,39 @@ async function handleCustomerProfileUpdate(body: any) {
     });
 
     const wooRaw = await wooResp.text();
-    let wooData: any = null;
+    let wooData: unknown = null;
     try { wooData = wooRaw ? JSON.parse(wooRaw) : null; } catch { /* not json */ }
     if (!wooResp.ok) {
-      const msg = (wooData && (wooData.error || wooData.message)) || wooRaw || 'Błąd aktualizacji klienta w WooCommerce';
+      const msg =
+        (isRecord(wooData) && typeof wooData.error === 'string' && wooData.error) ||
+        (isRecord(wooData) && typeof wooData.message === 'string' && wooData.message) ||
+        wooRaw ||
+        'Błąd aktualizacji klienta w WooCommerce';
       return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: wooResp.status || 502 });
     }
 
     console.log('✅ WooCommerce customer updated:', customer_id);
 
     // Merge best available customer data
-    const mergedCustomer = customerFromCustom || wooData;
+    const wooCustomer = isRecord(wooData) ? wooData : null;
+    const mergedCustomer = customerFromCustom || wooCustomer;
     return NextResponse.json({
       success: true,
       message: 'Profil został zaktualizowany',
       customer: mergedCustomer,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('🚨 Error updating customer profile:', error);
     
     return NextResponse.json({
       success: false,
-      error: error.message || 'Nie udało się zaktualizować profilu'
+      error: error instanceof Error ? error.message : 'Nie udało się zaktualizować profilu'
     }, { status: 500 });
   }
 }
 
-async function handleCustomerPasswordChange(body: any) {
+async function handleCustomerPasswordChange(body: unknown) {
   const parsed = changePasswordSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -1131,7 +1218,7 @@ async function handleCustomerPasswordChange(body: any) {
     // Call WordPress custom API
     const changePasswordUrl = `${WORDPRESS_URL}/wp-json/custom/v1/customer/change-password`;
     
-    const response = await fetch(changePasswordUrl, {
+    const response = await httpAgent.fetch(changePasswordUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1146,139 +1233,156 @@ async function handleCustomerPasswordChange(body: any) {
     });
 
     const raw = await response.text();
-    let data: any = null;
+    let data: unknown = null;
     try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
     if (!response.ok) {
       const msg = response.status === 404
         ? 'Funkcja zmiany hasła nie jest jeszcze dostępna. Skontaktuj się z administratorem.'
-        : (data && (data.error || data.message)) || raw || 'Błąd zmiany hasła';
+        : (isRecord(data) && typeof data.error === 'string' && data.error) ||
+          (isRecord(data) && typeof data.message === 'string' && data.message) ||
+          raw ||
+          'Błąd zmiany hasła';
       return NextResponse.json({ success: false, error: String(msg).slice(0, 1000) }, { status: response.status || 502 });
     }
 
-    if (!data) {
-      return NextResponse.json({ success: true, message: 'Hasło zostało zmienione' });
-    }
-    
     console.log('✅ Successfully changed customer password:', customer_id);
     
     return NextResponse.json({
       success: true,
-      message: data.message
+      message:
+        (isRecord(data) && typeof data.message === 'string' && data.message) ||
+        'Hasło zostało zmienione'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('🚨 Error changing customer password:', error);
     
     return NextResponse.json({
       success: false,
-      error: error.message || 'Nie udało się zmienić hasła'
+      error: error instanceof Error ? error.message : 'Nie udało się zmienić hasła'
     }, { status: 500 });
   }
 }
 
-async function _handleOrderCreation(body: any) {
-  const { 
-    billing, 
-    shipping, 
-    line_items, 
-    payment_method, 
-    payment_method_title,
-    shipping_lines,
-    customer_id,
-    coupon_lines,
-    meta_data
-  } = body;
-
-  if (!billing || !line_items || !payment_method) {
+async function _handleOrderCreation(body: unknown) {
+  if (!isRawOrderPayload(body)) {
     return NextResponse.json(
       { success: false, error: 'Brakuje wymaganych danych zamówienia' },
       { status: 400 }
     );
   }
 
+  const {
+    billing,
+    shipping,
+    line_items,
+    payment_method,
+    payment_method_title,
+    set_paid,
+    shipping_lines,
+    customer_id,
+    coupon_lines,
+    meta_data,
+  } = body;
+
   try {
     console.log('🔄 Creating order in WooCommerce');
     console.log('🎫 Coupon lines received:', coupon_lines);
     
-    // Prepare order data for WooCommerce
-    const orderData: any = {
-      payment_method: payment_method,
-      payment_method_title: payment_method_title || payment_method,
-      set_paid: false, // Will be set to true after payment confirmation
-      customer_id: customer_id,
+    const shippingSource: RawOrderShippingAddress = shipping ?? {
+      firstName: billing.firstName,
+      lastName: billing.lastName,
+      company: billing.company ?? '',
+      address: billing.address,
+      city: billing.city,
+      postcode: billing.postcode,
+      country: fallbackCountry,
+    };
+
+    const wooLineItems: WooOrderCreateLineItem[] = line_items.map((item) => ({
+      product_id: item.product_id,
+      variation_id: item.variation_id,
+      quantity: item.quantity,
+      meta_data: item.meta_data ?? [],
+    }));
+
+    const existingMetaEntries: Array<{ key: string; value: unknown }> = [];
+    if (Array.isArray(meta_data)) {
+      for (const entry of meta_data) {
+        if (isRecord(entry) && typeof entry.key === 'string') {
+          existingMetaEntries.push({ key: entry.key, value: entry.value });
+        }
+      }
+    }
+
+    const wooPayload: WooOrderCreatePayload = {
+      payment_method,
+      payment_method_title: payment_method_title ?? payment_method,
+      set_paid: set_paid ?? false,
+      customer_id,
       billing: {
         first_name: billing.firstName,
         last_name: billing.lastName,
         email: billing.email,
         phone: billing.phone,
-        company: billing.company || '',
+        company: billing.company ?? '',
         address_1: billing.address,
         city: billing.city,
         state: '',
         postcode: billing.postcode,
-        country: billing.country || 'PL'
+        country: fallbackCountry,
       },
-      shipping: shipping ? {
-        first_name: shipping.firstName,
-        last_name: shipping.lastName,
-        company: shipping.company || '',
-        address_1: shipping.address,
-        city: shipping.city,
+      shipping: {
+        first_name: shippingSource.firstName,
+        last_name: shippingSource.lastName,
+        company: shippingSource.company ?? '',
+        address_1: shippingSource.address,
+        city: shippingSource.city,
         state: '',
-        postcode: shipping.postcode,
-        country: shipping.country || 'PL'
-      } : {
-        first_name: billing.firstName,
-        last_name: billing.lastName,
-        company: billing.company || '',
-        address_1: billing.address,
-        city: billing.city,
-        state: '',
-        postcode: billing.postcode,
-        country: billing.country || 'PL'
+        postcode: shippingSource.postcode,
+        country: shippingSource.country ?? fallbackCountry,
       },
-      line_items: line_items.map((item: any) => ({
-        product_id: item.product_id,
-        variation_id: item.variation_id || 0,
-        quantity: item.quantity,
-        meta_data: item.meta_data || []
-      })),
-      shipping_lines: shipping_lines || [],
-      coupon_lines: coupon_lines || [],
+      line_items: wooLineItems,
+      shipping_lines: shipping_lines ?? [],
+      coupon_lines: coupon_lines ?? [],
       meta_data: [
-        ...(meta_data || []),
+        ...existingMetaEntries,
         { key: '_created_via', value: 'headless-woo' },
-        { key: '_order_version', value: '1.0.0' }
-      ]
+        { key: '_order_version', value: '1.0.0' },
+      ],
     };
 
 
     // Create order via WooCommerce REST API
     const orderUrl = `${WC_URL}/orders?consumer_key=${CK}&consumer_secret=${CS}`;
     
-    const response = await fetch(orderUrl, {
+    const response = await httpAgent.fetch(orderUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; HeadlessWoo/1.0)',
       },
-      body: JSON.stringify(orderData),
+      body: JSON.stringify(wooPayload),
     });
 
     const raw = await response.text();
-    let data: any = null;
+    let data: unknown = null;
     try { data = raw ? JSON.parse(raw) : null; } catch { /* not json */ }
     
     if (!response.ok) {
-      const msg = (data && (data.message || data.error)) || raw || 'Błąd tworzenia zamówienia';
+      const msg =
+        (isRecord(data) && typeof data.message === 'string' && data.message) ||
+        (isRecord(data) && typeof data.error === 'string' && data.error) ||
+        raw ||
+        'Błąd tworzenia zamówienia';
       return NextResponse.json({ 
         success: false, 
         error: String(msg).slice(0, 1000) 
       }, { status: response.status || 502 });
     }
 
-    if (!data) {
+    if (!isRecord(data)) {
       return NextResponse.json({ 
         success: false, 
         error: 'Nie udało się utworzyć zamówienia' 
@@ -1299,7 +1403,7 @@ async function _handleOrderCreation(body: any) {
         console.warn('⚠️ WordPress URL not configured, cannot trigger emails');
       } else {
         const emailApiUrl = `${wordpressUrl}/wp-json/king-email/v1/trigger-order-email`;
-        const emailResponse = await fetch(emailApiUrl, {
+        const emailResponse = await httpAgent.fetch(emailApiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1340,12 +1444,12 @@ async function _handleOrderCreation(body: any) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('🚨 Error creating order:', error);
     
     return NextResponse.json({
       success: false,
-      error: error.message || 'Nie udało się utworzyć zamówienia'
+      error: error instanceof Error ? error.message : 'Nie udało się utworzyć zamówienia'
     }, { status: 500 });
   }
 }
@@ -1370,7 +1474,7 @@ async function handleAttributeTermsEndpoint(req: NextRequest, endpoint: string) 
     
     console.log('🏷️ Attribute terms endpoint - calling WooCommerce Store API:', termsUrl);
     
-    const response = await fetch(termsUrl, {
+    const response = await httpAgent.fetch(termsUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -1404,10 +1508,10 @@ async function handleAttributeTermsEndpoint(req: NextRequest, endpoint: string) 
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error in handleAttributeTermsEndpoint:', error);
     return NextResponse.json(
-      { error: 'Błąd serwera', details: error.message },
+      { error: 'Błąd serwera', details: error instanceof Error ? error.message : 'Nieznany błąd' },
       { status: 500 }
     );
   }
@@ -1441,7 +1545,7 @@ async function handleAttributesEndpoint(req: NextRequest, requestId?: string) {
     // Try King Shop API first
     let response;
     try {
-      response = await fetch(attributesUrl, {
+      response = await httpAgent.fetch(attributesUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1460,7 +1564,7 @@ async function handleAttributesEndpoint(req: NextRequest, requestId?: string) {
       
       // Try Store API as fallback
       const storeAttributesUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products/attributes`;
-      const storeResponse = await fetch(storeAttributesUrl, {
+      const storeResponse = await httpAgent.fetch(storeAttributesUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1472,18 +1576,24 @@ async function handleAttributesEndpoint(req: NextRequest, requestId?: string) {
       });
       
       if (storeResponse.ok) {
-        const storeData = await storeResponse.json();
+        const storeData: unknown = await storeResponse.json();
         // Normalize Store API response to match expected format
+        const normalizedAttributes = Array.isArray(storeData)
+          ? storeData.reduce<Record<string, { id: unknown; name?: string; slug: string; terms: unknown[] }>>((acc, attr) => {
+              if (!isRecord(attr) || typeof attr.slug !== 'string') {
+                return acc;
+              }
+              acc[attr.slug] = {
+                id: attr.id,
+                name: typeof attr.name === 'string' ? attr.name : undefined,
+                slug: attr.slug,
+                terms: [],
+              };
+              return acc;
+            }, {})
+          : {};
         const normalized = {
-          attributes: Array.isArray(storeData) ? storeData.reduce((acc: any, attr: any) => {
-            acc[attr.slug] = {
-              id: attr.id,
-              name: attr.name,
-              slug: attr.slug,
-              terms: []
-            };
-            return acc;
-          }, {}) : {},
+          attributes: normalizedAttributes,
           total_products: 0
         };
         
@@ -1574,10 +1684,10 @@ async function handleProductsCategoriesEndpoint(req: NextRequest) {
     
     // Retry logic (2 attempts) for Woo API
     let wcResp: Response | null = null;
-    let lastErr: any = null;
+    let lastErr: unknown = null;
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        wcResp = await fetch(categoriesUrl, {
+        wcResp = await httpAgent.fetch(categoriesUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -1612,23 +1722,28 @@ async function handleProductsCategoriesEndpoint(req: NextRequest) {
     const perPage = searchParams.get('per_page') || '100';
     const storeUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products/categories?per_page=${encodeURIComponent(perPage)}`;
     console.log('📂 Fallback to Store API for categories:', storeUrl);
-    const storeResp = await fetch(storeUrl, {
+    const storeResp = await httpAgent.fetch(storeUrl, {
       headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
       cache: 'no-store'
     });
     if (storeResp.ok) {
       const arr = await storeResp.json();
       // Normalize to WC v3-like minimal fields
-      const mapped = Array.isArray(arr) ? arr.map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        parent: c.parent || 0,
-        count: c.count || 0,
-        image: c.image || null,
-        display: c.display || 'default',
-        menu_order: c.menu_order || 0,
-      })) : [];
+      const mapped = Array.isArray(arr)
+        ? arr
+            .filter(isRecord)
+            .filter((c): c is Record<string, unknown> & { slug: string } => typeof c.slug === 'string')
+            .map((c) => ({
+              id: typeof c.id === 'number' ? c.id : Number(c.id ?? 0),
+              name: typeof c.name === 'string' ? c.name : String(c.name ?? ''),
+              slug: c.slug,
+              parent: typeof c.parent === 'number' ? c.parent : Number(c.parent ?? 0),
+              count: typeof c.count === 'number' ? c.count : Number(c.count ?? 0),
+              image: isRecord(c.image) ? c.image : null,
+              display: typeof c.display === 'string' ? c.display : 'default',
+              menu_order: typeof c.menu_order === 'number' ? c.menu_order : Number(c.menu_order ?? 0),
+            }))
+        : [];
       console.log('✅ Categories from Store API:', { categories_count: mapped.length });
       return NextResponse.json(mapped, {
         status: 200,
@@ -1642,14 +1757,21 @@ async function handleProductsCategoriesEndpoint(req: NextRequest) {
 
     console.error('❌ Both WC and Store API failed for categories');
     return NextResponse.json(
-      { error: 'Błąd pobierania kategorii', details: (wcResp && !wcResp.ok) ? wcResp.statusText : (lastErr?.message || 'Unknown') },
+      {
+        error: 'Błąd pobierania kategorii',
+        details: (wcResp && !wcResp.ok)
+          ? wcResp.statusText
+          : lastErr instanceof Error
+            ? lastErr.message
+            : 'Unknown'
+      },
       { status: (wcResp && !wcResp.ok) ? wcResp.status : 502 }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error in handleProductsCategoriesEndpoint:', error);
     return NextResponse.json(
-      { error: 'Błąd serwera', details: error.message },
+      { error: 'Błąd serwera', details: error instanceof Error ? error.message : 'Nieznany błąd' },
       { status: 500 }
     );
   }
@@ -1675,7 +1797,7 @@ async function handleProductsAttributesEndpoint(req: NextRequest) {
 
     console.log('🏷️ Products attributes endpoint - calling WooCommerce API:', attributesUrl);
     
-    const response = await fetch(attributesUrl, {
+    const response = await httpAgent.fetch(attributesUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -1708,10 +1830,10 @@ async function handleProductsAttributesEndpoint(req: NextRequest) {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error in handleProductsAttributesEndpoint:', error);
     return NextResponse.json(
-      { error: 'Błąd serwera', details: error.message },
+      { error: 'Błąd serwera', details: error instanceof Error ? error.message : 'Nieznany błąd' },
       { status: 500 }
     );
   }
@@ -1755,9 +1877,11 @@ async function handleShopEndpoint(req: NextRequest, requestId?: string) {
       console.log('🔍 WordPress URL:', WORDPRESS_URL);
     
     // Try King Shop API first
+    // Use adaptive timeout for Shop API
+    const shopTimeoutConfig = getTimeoutConfig('shop', 'GET');
     let wpResponse;
     try {
-      wpResponse = await fetch(shopUrl, {
+      wpResponse = await httpAgent.fetch(shopUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1765,7 +1889,7 @@ async function handleShopEndpoint(req: NextRequest, requestId?: string) {
           'User-Agent': 'Filler-Store/1.0'
         },
         cache: 'no-store',
-        signal: AbortSignal.timeout(10000)
+        signal: createTimeoutSignal(shopTimeoutConfig.timeout)
       });
       
       if (!wpResponse.ok) {
@@ -1779,7 +1903,9 @@ async function handleShopEndpoint(req: NextRequest, requestId?: string) {
       const page = cleanParams.get('page') || '1';
       const storeProductsUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products?per_page=${perPage}&page=${page}`;
       
-      const storeResponse = await fetch(storeProductsUrl, {
+      // Use adaptive timeout for Store API fallback
+      const storeTimeoutConfig = getTimeoutConfig('products', 'GET');
+      const storeResponse = await httpAgent.fetch(storeProductsUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1787,25 +1913,49 @@ async function handleShopEndpoint(req: NextRequest, requestId?: string) {
           'User-Agent': 'Filler-Store/1.0'
         },
         cache: 'no-store',
-        signal: AbortSignal.timeout(10000)
+        signal: createTimeoutSignal(storeTimeoutConfig.timeout)
       });
       
       if (storeResponse.ok) {
-        const storeProducts = await storeResponse.json();
+        const storeProducts: unknown = await storeResponse.json();
         // Normalize Store API response to match expected format
+        const normalizedProducts = Array.isArray(storeProducts)
+          ? storeProducts
+              .filter(isRecord)
+              .filter((p): p is Record<string, unknown> & { id: unknown; slug?: string } => typeof p.id !== 'undefined')
+              .map((p) => {
+                const prices = isRecord(p.prices) ? p.prices : {};
+                const priceValue = prices && typeof prices.price === 'string'
+                  ? prices.price
+                  : typeof p.price === 'string'
+                    ? p.price
+                    : String(p.price ?? '0');
+                const regularPriceValue = prices && typeof prices.regular_price === 'string'
+                  ? prices.regular_price
+                  : typeof p.regular_price === 'string'
+                    ? p.regular_price
+                    : String(p.regular_price ?? '0');
+                const salePriceValue = prices && typeof prices.sale_price === 'string'
+                  ? prices.sale_price
+                  : typeof p.sale_price === 'string'
+                    ? p.sale_price
+                    : '';
+                return {
+                  id: p.id,
+                  name: typeof p.name === 'string' ? p.name : String(p.name ?? ''),
+                  slug: typeof p.slug === 'string' ? p.slug : String(p.slug ?? ''),
+                  price: priceValue,
+                  regular_price: regularPriceValue,
+                  sale_price: salePriceValue,
+                  images: Array.isArray(p.images) ? p.images : [],
+                  stock_status: typeof p.stock_status === 'string' ? p.stock_status : 'instock',
+                  categories: Array.isArray(p.categories) ? p.categories : [],
+                  attributes: Array.isArray(p.attributes) ? p.attributes : [],
+                };
+              })
+          : [];
         const normalized = {
-          products: Array.isArray(storeProducts) ? storeProducts.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            slug: p.slug,
-            price: p.prices?.price || p.price || '0',
-            regular_price: p.prices?.regular_price || p.regular_price || '0',
-            sale_price: p.prices?.sale_price || p.sale_price || '',
-            images: p.images || [],
-            stock_status: p.stock_status || 'instock',
-            categories: p.categories || [],
-            attributes: p.attributes || [],
-          })) : [],
+          products: normalizedProducts,
           total: Array.isArray(storeProducts) ? storeProducts.length : 0,
           categories: [],
           attributes: {}
@@ -1827,15 +1977,7 @@ async function handleShopEndpoint(req: NextRequest, requestId?: string) {
         });
         if (requestId) setRequestIdHeader(fallbackResponse, requestId);
         
-        // Cache response dla request deduplication
-        const shopCacheKey = getCacheKey(req);
-        cleanupOldCache();
-        requestCache.set(shopCacheKey, {
-          data: normalized,
-          timestamp: Date.now(),
-          headers: fallbackResponse.headers,
-        });
-        
+        // Return fallback response (deduplication handled by requestDeduplicator)
         return fallbackResponse;
       }
       
@@ -1867,15 +2009,7 @@ async function handleShopEndpoint(req: NextRequest, requestId?: string) {
     });
     if (requestId) setRequestIdHeader(nextResponse, requestId);
 
-    // 🚀 PRIORITY 2: Cache response dla request deduplication (tylko dla shop endpoint)
-    const shopCacheKey = getCacheKey(req);
-    cleanupOldCache();
-    requestCache.set(shopCacheKey, {
-      data,
-      timestamp: Date.now(),
-      headers: nextResponse.headers,
-    });
-
+    // Return response (deduplication handled by requestDeduplicator)
     return nextResponse;
 
   } catch (error) {
@@ -1922,7 +2056,7 @@ async function handleShippingMethods(req: NextRequest) {
   try {
     // Get shipping zones and methods from WooCommerce
     const shippingZonesUrl = `${WC_URL}/shipping/zones?consumer_key=${CK}&consumer_secret=${CS}`;
-    const zonesResponse = await fetch(shippingZonesUrl, {
+    const zonesResponse = await httpAgent.fetch(shippingZonesUrl, {
       headers: {
         Accept: 'application/json',
         'User-Agent': 'Filler-Store/1.0'
@@ -1935,14 +2069,22 @@ async function handleShippingMethods(req: NextRequest) {
     
     // Harden against HTML/non-JSON responses
     const zonesText = await zonesResponse.text();
-    let zonesParsed: Array<{ id: number; name: string }>; 
+    let zonesParsed: Array<{ id: number; name: string; locations?: unknown[] }> = [];
     try {
-      zonesParsed = JSON.parse(zonesText);
+      const parsed = JSON.parse(zonesText);
+      if (Array.isArray(parsed)) {
+        zonesParsed = parsed
+          .filter(isRecord)
+          .map((zone) => ({
+            id: typeof zone.id === 'number' ? zone.id : Number(zone.id ?? 0),
+            name: typeof zone.name === 'string' ? zone.name : String(zone.name ?? ''),
+            locations: Array.isArray(zone.locations) ? zone.locations : undefined,
+          }));
+      }
     } catch {
       console.error('Shipping zones returned non-JSON (truncated):', zonesText.substring(0, 200));
-      zonesParsed = [] as any;
     }
-    const zones = Array.isArray(zonesParsed) ? zonesParsed : [];
+    const zones = zonesParsed;
     
     // Get methods for each zone
     const shippingMethods: Array<{
@@ -1956,17 +2098,11 @@ async function handleShippingMethods(req: NextRequest) {
     
     for (const zone of zones) {
       const methodsUrl = `${WC_URL}/shipping/zones/${zone.id}/methods?consumer_key=${CK}&consumer_secret=${CS}`;
-      const methodsResponse = await fetch(methodsUrl);
+      const methodsResponse = await httpAgent.fetch(methodsUrl);
       
       if (methodsResponse.ok) {
         const responseText = await methodsResponse.text();
-        let methods: Array<{
-          id: string;
-          method_id: string;
-          title: string;
-          cost: string;
-          enabled: boolean;
-        }> = [];
+        let methods: Array<Record<string, unknown>> = [];
         
         // Prefer native JSON parsing first
         try {
@@ -1983,7 +2119,8 @@ async function handleShippingMethods(req: NextRequest) {
                 const clean = String(g1).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
                 return `"method_title":"${clean}"`;
               });
-            methods = JSON.parse(sanitized);
+            const parsed = JSON.parse(sanitized);
+            methods = Array.isArray(parsed) ? parsed.filter(isRecord) : [];
           } catch (error) {
             console.error('Nie udało się bezpiecznie sparsować metod wysyłki:', error);
             console.log('Response text (truncated):', responseText.substring(0, 200));
@@ -1991,27 +2128,32 @@ async function handleShippingMethods(req: NextRequest) {
           }
         }
         for (const method of methods) {
-          if (method.enabled) {
-            shippingMethods.push({
-              id: method.id,
-              method_id: method.method_id,
-              title: method.title,
-              cost: method.cost || '0',
-              zone_id: zone.id,
-              zone_name: zone.name,
-              // Additional properties for internal use
-              method_title: (method as Record<string, unknown>).method_title as string || method.title,
-              method_description: (method as Record<string, unknown>).method_description as string || '',
-              settings: (method as Record<string, unknown>).settings as Record<string, unknown> || {},
-              zone_locations: (zone as Record<string, unknown>).locations as unknown[] || []
-            } as WooShippingMethod);
+          if (!isRecord(method) || method.enabled !== true) {
+            continue;
           }
+          const methodSettings = isRecord(method.settings) ? method.settings : {};
+          const methodTitleSetting = getSettingValue(methodSettings, 'method_title');
+          const methodDescriptionSetting = getSettingValue(methodSettings, 'method_description');
+          const zoneLocations = Array.isArray(zone.locations) ? zone.locations : undefined;
+          const shippingMethod: WooShippingMethod = {
+            id: typeof method.id === 'string' ? method.id : String(method.id ?? ''),
+            method_id: typeof method.method_id === 'string' ? method.method_id : String(method.method_id ?? ''),
+            title: typeof method.title === 'string' ? method.title : String(method.title ?? ''),
+            cost: typeof method.cost === 'string' ? method.cost : String(method.cost ?? '0'),
+            zone_id: zone.id,
+            zone_name: zone.name,
+            method_title: methodTitleSetting ?? (typeof method.title === 'string' ? method.title : ''),
+            method_description: methodDescriptionSetting ?? (typeof method.method_description === 'string' ? method.method_description : ''),
+            settings: methodSettings,
+            zone_locations: Array.isArray(zoneLocations) ? zoneLocations : [],
+          };
+          shippingMethods.push(shippingMethod);
         }
       }
     }
     
     // Process and normalize shipping methods (same logic as in service)
-    const processedMethods = shippingMethods.map((method: Record<string, unknown>) => {
+    const processedMethods = shippingMethods.map((method) => {
       let cost = 0;
       let freeShippingThreshold = 0;
       
@@ -2020,24 +2162,25 @@ async function handleShippingMethods(req: NextRequest) {
         const settings = method.settings || {};
         
         // Get free shipping threshold
-        if ((settings as any).method_free_shipping && (settings as any).method_free_shipping.value) {
-          freeShippingThreshold = parseFloat((settings as any).method_free_shipping.value); // Keep as PLN, not cents
+        const freeShippingValue = getSettingValue(settings, 'method_free_shipping');
+        if (freeShippingValue) {
+          freeShippingThreshold = parseFloat(freeShippingValue);
         }
         
         // Get cost from rules
-        if ((settings as any).method_rules && (settings as any).method_rules.value && (settings as any).method_rules.value.length > 0) {
-          const rules = (settings as any).method_rules.value;
-          // Find the rule that applies (usually the first one)
-          if (rules[0] && rules[0].cost_per_order) {
-            cost = parseFloat(rules[0].cost_per_order); // Keep as PLN, not cents
+        const rules = getSettingArray(settings, 'method_rules');
+        if (Array.isArray(rules) && rules.length > 0) {
+          const firstRule = rules[0];
+          if (isRecord(firstRule) && typeof firstRule.cost_per_order === 'string') {
+            cost = parseFloat(firstRule.cost_per_order);
           }
         }
       }
       // Handle Flat Rate methods
       else if (method.method_id === 'flat_rate') {
-        const settings = method.settings || {};
-        if ((settings as any).cost && (settings as any).cost.value) {
-          cost = parseFloat((settings as any).cost.value); // Keep as PLN, not cents
+        const costSetting = getSettingValue(method.settings, 'cost');
+        if (costSetting) {
+          cost = parseFloat(costSetting);
         }
       }
       
@@ -2059,9 +2202,11 @@ async function handleShippingMethods(req: NextRequest) {
       return {
         id: method.id,
         method_id: method.method_id,
-        method_title: (method.settings as any)?.method_title?.value || method.method_title,
-        method_description: cleanDescription((method.settings as any)?.method_description?.value || method.method_description),
-        cost: cost,
+        method_title: getSettingValue(method.settings, 'method_title') ?? method.method_title,
+        method_description: cleanDescription(
+          getSettingValue(method.settings, 'method_description') ?? method.method_description,
+        ),
+        cost,
         free_shipping_threshold: freeShippingThreshold,
         zone_id: method.zone_id,
         zone_name: method.zone_name,
@@ -2127,7 +2272,7 @@ async function handleShippingMethods(req: NextRequest) {
 }
 
 // Handle payment gateways endpoint
-async function handlePaymentGateways(req: NextRequest) {
+async function handlePaymentGateways(_req: NextRequest) {
   if (!WC_URL || !CK || !CS) {
     return NextResponse.json(
       { error: 'Błąd konfiguracji serwera', details: 'Brakuje zmiennych środowiskowych WooCommerce' },
@@ -2137,7 +2282,7 @@ async function handlePaymentGateways(req: NextRequest) {
 
   try {
     const gatewaysUrl = `${WC_URL}/payment_gateways?consumer_key=${CK}&consumer_secret=${CS}`;
-    const response = await fetch(gatewaysUrl, {
+    const response = await httpAgent.fetch(gatewaysUrl, {
       headers: {
         Accept: 'application/json',
         'User-Agent': 'Filler-Store/1.0'
@@ -2207,7 +2352,7 @@ async function handlePaymentGateways(req: NextRequest) {
   }
 }
 
-async function handleCoupons(req: NextRequest) {
+async function _handleCoupons(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
@@ -2218,7 +2363,7 @@ async function handleCoupons(req: NextRequest) {
 
     // If specific code requested, validate it
     if (code) {
-      const response = await fetch(`${WC_URL}/coupons?code=${encodeURIComponent(code)}&status=active`, {
+      const response = await httpAgent.fetch(`${WC_URL}/coupons?code=${encodeURIComponent(code)}&status=active`, {
         headers: {
           'Authorization': `Basic ${Buffer.from(`${CK}:${CS}`).toString('base64')}`,
         },
@@ -2228,16 +2373,20 @@ async function handleCoupons(req: NextRequest) {
         return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400, headers: { 'Cache-Control': 'public, max-age=60' } });
       }
       
-      const coupons = await response.json();
-      
-      if (coupons.length === 0) {
+      const couponsRaw: unknown = await response.json();
+      if (!Array.isArray(couponsRaw) || couponsRaw.length === 0) {
         return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400, headers: { 'Cache-Control': 'public, max-age=60' } });
       }
       
-      const coupon = coupons[0];
+      const couponRecord = couponsRaw[0];
+      const coupon = isRecord(couponRecord) ? mapCouponRecord(couponRecord) : null;
+      
+      if (!coupon) {
+        return NextResponse.json({ error: 'Nieprawidłowy kod rabatowy' }, { status: 400, headers: { 'Cache-Control': 'public, max-age=60' } });
+      }
       
       // Check if coupon is still valid
-      if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
+      if (coupon.usage_limit && coupon.usage_count && coupon.usage_count >= coupon.usage_limit) {
         return NextResponse.json({ error: 'Kod rabatowy został już wykorzystany' }, { status: 400, headers: { 'Cache-Control': 'public, max-age=60' } });
       }
       
@@ -2258,9 +2407,9 @@ async function handleCoupons(req: NextRequest) {
           id: coupon.id,
           code: coupon.code,
           discount_type: coupon.discount_type,
-          amount: parseFloat(coupon.amount),
-          minimum_amount: coupon.minimum_amount ? parseFloat(coupon.minimum_amount) : null,
-          maximum_amount: coupon.maximum_amount ? parseFloat(coupon.maximum_amount) : null,
+          amount: Number.parseFloat(coupon.amount),
+          minimum_amount: coupon.minimum_amount ? Number.parseFloat(coupon.minimum_amount) : null,
+          maximum_amount: coupon.maximum_amount ? Number.parseFloat(coupon.maximum_amount) : null,
           usage_limit: coupon.usage_limit,
           usage_count: coupon.usage_count,
           date_expires: coupon.date_expires
@@ -2269,26 +2418,33 @@ async function handleCoupons(req: NextRequest) {
     }
     
     // Return all active coupons (for admin purposes)
-    const response = await fetch(`${WC_URL}/coupons?status=active&_fields=id,code,discount_type,amount,minimum_amount,maximum_amount,usage_limit,usage_count,date_expires`, {
+    const response = await httpAgent.fetch(`${WC_URL}/coupons?status=active&_fields=id,code,discount_type,amount,minimum_amount,maximum_amount,usage_limit,usage_count,date_expires`, {
       headers: {
         'Authorization': `Basic ${Buffer.from(`${CK}:${CS}`).toString('base64')}`,
       },
     });
     
-    const coupons = await response.json();
-    
+    const couponsRaw: unknown = await response.json();
+    const couponsArray = Array.isArray(couponsRaw)
+      ? couponsRaw
+          .map((coupon): WooCoupon | null =>
+            isRecord(coupon) ? mapCouponRecord(coupon) : null,
+          )
+          .filter((coupon): coupon is WooCoupon => coupon !== null)
+      : [];
+
     return NextResponse.json({
       success: true,
-      coupons: coupons.map((coupon: any) => ({
+      coupons: couponsArray.map((coupon) => ({
         id: coupon.id,
         code: coupon.code,
         discount_type: coupon.discount_type,
-        amount: parseFloat(coupon.amount),
-        minimum_amount: coupon.minimum_amount ? parseFloat(coupon.minimum_amount) : null,
-        maximum_amount: coupon.maximum_amount ? parseFloat(coupon.maximum_amount) : null,
-        usage_limit: coupon.usage_limit,
-        usage_count: coupon.usage_count,
-        date_expires: coupon.date_expires
+        amount: Number.parseFloat(coupon.amount),
+        minimum_amount: coupon.minimum_amount ? Number.parseFloat(coupon.minimum_amount) : null,
+        maximum_amount: coupon.maximum_amount ? Number.parseFloat(coupon.maximum_amount) : null,
+        usage_limit: coupon.usage_limit ?? null,
+        usage_count: coupon.usage_count ?? null,
+        date_expires: coupon.date_expires ?? null,
       }))
     }, { headers: { 'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=900' } });
     
@@ -2302,30 +2458,14 @@ async function handleCoupons(req: NextRequest) {
 }
 
 // Helper to get client IP (using utility from middleware)
-function getClientIPFromRequest(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const realIp = request.headers.get('x-real-ip');
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
-  
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-  if (realIp) {
-    return realIp;
-  }
-  if (cfConnectingIp) {
-    return cfConnectingIp;
-  }
-  
-  return 'unknown';
-}
+// getClientIP is now imported from '@/utils/client-ip'
 
 export async function GET(req: NextRequest) {
   // Generate/retrieve request ID for correlation
   const requestId = getRequestId(req);
   
   // Start Sentry span for performance monitoring (optional)
-  let span: any = null;
+  let span: Span | null = null;
   try {
     span = Sentry.startSpan(
       {
@@ -2352,39 +2492,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 🚀 PRIORITY 2: Request deduplication - sprawdź cache przed wykonaniem
-    const cacheKey = getCacheKey(req);
-    const cached = requestCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < DEDUP_WINDOW) {
-      // Return cached response with same headers
-      const cachedResponse = NextResponse.json(cached.data, {
-        status: 200,
-        headers: {
-          ...Object.fromEntries(cached.headers.entries()),
-          'X-Cache': 'DEDUP',
-        },
-      });
-      setRequestIdHeader(cachedResponse, requestId);
-      if (span) {
-        span.setAttribute('cache', 'dedup');
-        span.end();
-      }
-      return cachedResponse;
-    }
-
+    // Request deduplication is now handled by requestDeduplicator in the fetch call
     debugLog('🔍 GET request received:', req.url);
     
     const { searchParams } = new URL(req.url);
-    const endpoint = searchParams.get("endpoint") || "products";
-    const bypassCache = searchParams.get("cache") === "off";
-
-      if (span) {
-        Sentry.getCurrentScope().setTag('endpoint', endpoint);
-        span.setAttribute('endpoint', endpoint);
-      }
     
-    // Per-endpoint rate limiting
-    const clientIp = getClientIPFromRequest(req);
+    // Per-endpoint rate limiting (before validation to avoid wasting resources)
+    const clientIp = getClientIP(req);
     const path = req.nextUrl.pathname;
     let rateLimitResult: Awaited<ReturnType<typeof checkEndpointRateLimit>> | null = null;
     
@@ -2392,38 +2506,71 @@ export async function GET(req: NextRequest) {
       rateLimitResult = await checkEndpointRateLimit(path, clientIp, searchParams);
       
       if (!rateLimitResult.allowed) {
-        debugLog(`⛔ Rate limit exceeded for ${endpoint}`, { ip: clientIp, remaining: rateLimitResult.remaining });
-          if (span) {
-            span.setAttribute('rate_limited', 'true');
-            span.setStatus({ code: 8, message: 'resource_exhausted' }); // 8 = RESOURCE_EXHAUSTED
-            span.end();
-          }
-        
-        const { createErrorResponse } = await import('@/lib/errors');
+        debugLog(`⛔ Rate limit exceeded`, { ip: clientIp, remaining: rateLimitResult.remaining });
+        if (span) {
+          span.setAttribute('rate_limited', 'true');
+          span.setStatus({ code: 8, message: 'resource_exhausted' });
+          span.end();
+        }
+        const { createErrorResponse, RateLimitError } = await import('@/lib/errors');
         const response = createErrorResponse(
           new RateLimitError(
-            `Rate limit exceeded for endpoint: ${endpoint}`,
+            'Rate limit exceeded',
             rateLimitResult.retryAfter
           ),
-          { endpoint, method: 'GET', requestId }
+          { endpoint: 'woocommerce', method: 'GET', requestId }
         );
         setRequestIdHeader(response, requestId);
         return response;
       }
     } catch (error) {
-      // If it's a RateLimitError, return it directly
       if (error instanceof RateLimitError) {
         if (span) {
           span.setStatus({ code: 8, message: 'resource_exhausted' });
           span.end();
         }
         const { createErrorResponse } = await import('@/lib/errors');
-        const response = createErrorResponse(error, { endpoint, method: 'GET', requestId });
+        const response = createErrorResponse(error, { endpoint: 'woocommerce', method: 'GET', requestId });
         setRequestIdHeader(response, requestId);
         return response;
       }
-      // Otherwise, continue (might be a different error)
     }
+    
+    // Validate query parameters
+    const queryParams: Record<string, string> = {};
+    searchParams.forEach((value, key) => {
+      queryParams[key] = value;
+    });
+    
+    // Set default endpoint if not provided
+    if (!queryParams.endpoint) {
+      queryParams.endpoint = 'products';
+    }
+    
+    // Validate query parameters with Zod schema
+    const validationResult = woocommerceQuerySchema.safeParse(queryParams);
+    if (!validationResult.success) {
+      if (span) {
+        span.setStatus({ code: 3, message: 'invalid_argument' });
+        span.end();
+      }
+      const { createErrorResponse, ValidationError } = await import('@/lib/errors');
+      const response = createErrorResponse(
+        new ValidationError('Invalid query parameters', validationResult.error.errors),
+        { endpoint: 'woocommerce', method: 'GET', requestId }
+      );
+      setRequestIdHeader(response, requestId);
+      return response;
+    }
+    
+    const validatedParams = validationResult.data;
+    const endpoint = validatedParams.endpoint;
+    const bypassCache = validatedParams.cache === 'off';
+
+      if (span) {
+        Sentry.getCurrentScope().setTag('endpoint', endpoint);
+        span.setAttribute('endpoint', endpoint);
+      }
     
     // Special endpoints routing (aliases and helpers)
     if (endpoint === 'attributes') {
@@ -2538,20 +2685,27 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Cap per_page to avoid huge payloads
+    // Cap per_page to avoid huge payloads (use validated params if available)
     if (endpoint === 'products') {
-      const per = parseInt(searchParams.get('per_page') || '24');
-      if (per > 24) searchParams.set('per_page', '24');
+      const per = validatedParams.per_page || 24;
+      if (per > 24) {
+        searchParams.set('per_page', '24');
+        validatedParams.per_page = 24;
+      }
       // If searching by term, increase per_page to improve hit rate (cap at 100)
-      if (searchParams.has('search')) {
-        const current = parseInt(searchParams.get('per_page') || '0');
-        const desired = Math.min(100, current || 100);
+      if (validatedParams.search) {
+        const current = validatedParams.per_page || 100;
+        const desired = Math.min(100, current);
         searchParams.set('per_page', String(desired));
+        validatedParams.per_page = desired;
       }
     }
     if (endpoint === 'orders' || endpoint.startsWith('orders/')) {
-      const per = parseInt(searchParams.get('per_page') || '20');
-      if (per > 20) searchParams.set('per_page', '20');
+      const per = validatedParams.per_page || 20;
+      if (per > 20) {
+        searchParams.set('per_page', '20');
+        validatedParams.per_page = 20;
+      }
     }
 
     // Handle conditional requests (If-None-Match)
@@ -2584,7 +2738,7 @@ export async function GET(req: NextRequest) {
         slugUrl.searchParams.set('_fields', 'id,slug');
         slugUrl.searchParams.set('consumer_key', CK || '');
         slugUrl.searchParams.set('consumer_secret', CS || '');
-        const r = await fetch(slugUrl.toString(), { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        const r = await httpAgent.fetch(slugUrl.toString(), { headers: { Accept: 'application/json' }, cache: 'no-store' });
         if (!r.ok) {
           if (span) {
             span.setStatus({ code: 5, message: 'not_found' }); // 5 = NOT_FOUND
@@ -2594,16 +2748,23 @@ export async function GET(req: NextRequest) {
           setRequestIdHeader(response, requestId);
           return response;
         }
-        const arr = await r.json();
-        const found = Array.isArray(arr) ? arr.find((p: any) => p.slug === slug) : null;
-        const body = JSON.stringify(found ? { id: found.id, slug: found.slug } : { id: null, slug, error: 'not_found' });
+        const arr: unknown = await r.json();
+        const foundProduct = Array.isArray(arr)
+          ? arr.find(
+              (p): p is Record<string, unknown> & { slug: string } =>
+                isRecord(p) && typeof p.slug === 'string' && p.slug === slug
+            )
+          : undefined;
+        const body = JSON.stringify(
+          foundProduct ? { id: foundProduct.id, slug: foundProduct.slug } : { id: null, slug, error: 'not_found' }
+        );
         await cache.set(key, body, 600_000, {});
         if (span) {
-          span.setStatus({ code: found ? 1 : 5, message: found ? 'ok' : 'not_found' });
+          span.setStatus({ code: foundProduct ? 1 : 5, message: foundProduct ? 'ok' : 'not_found' });
           span.end();
         }
         const response = new NextResponse(body, {
-          status: found ? 200 : 404,
+          status: foundProduct ? 200 : 404,
           headers: { 'content-type': 'application/json', 'Cache-Control': 'public, max-age=600' },
         });
         setRequestIdHeader(response, requestId);
@@ -2624,7 +2785,7 @@ export async function GET(req: NextRequest) {
       try {
         if (endpoint === 'orders') {
           // GET orders list - use hposApi.getOrders()
-          const query: any = {};
+          const query: OrdersQueryParams = {};
           const customer = searchParams.get('customer');
           if (customer) query.customer = parseInt(customer);
           const status = searchParams.get('status');
@@ -2712,9 +2873,12 @@ export async function GET(req: NextRequest) {
             return response;
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If hposApi fails, fall back to generic passthrough
-        debugLog('hposApi failed, falling back to generic passthrough', { error: error.message, endpoint });
+        debugLog('hposApi failed, falling back to generic passthrough', {
+          error: error instanceof Error ? error.message : error,
+          endpoint,
+        });
         // Continue to generic passthrough below
       }
     }
@@ -2805,11 +2969,13 @@ export async function GET(req: NextRequest) {
       // For customers/password-reset, customers/reset-password, customers/invoices - don't add _fields
     }
 
-    // Decide cache policy for pass-through responses
+    // Decide cache policy for pass-through responses (improved with stale-while-revalidate)
     const isUserFeatures = endpoint.startsWith('orders') || endpoint.startsWith('customers');
     const passThroughCacheHeader = isUserFeatures
-      ? 'private, max-age=120'
-      : 'public, max-age=60, s-maxage=180, stale-while-revalidate=300';
+      ? 'private, max-age=120, stale-while-revalidate=60'
+      : endpoint === 'products/categories' || endpoint.startsWith('products/categories') || endpoint === 'products/attributes' || endpoint.startsWith('products/attributes')
+      ? 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400' // 1 hour for static data, 24h stale-while-revalidate
+      : 'public, max-age=300, s-maxage=600, stale-while-revalidate=1800'; // 5min for products, 30min stale-while-revalidate
 
     if (__DEBUG__) {
       console.log('🔍 API Route Debug:');
@@ -2882,10 +3048,13 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Get adaptive timeout configuration
+      const timeoutConfig = getTimeoutConfig(endpoint, 'GET');
+      
       // Retry logic for better reliability
       let lastError: Error | null = null;
       let responseTime = 0;
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      for (let attempt = 1; attempt <= timeoutConfig.maxRetries; attempt++) {
         try {
           debugLog(`🔄 Attempt ${attempt} for ${maskUrlSecrets(url.toString())}`);
           
@@ -2903,20 +3072,37 @@ export async function GET(req: NextRequest) {
             isrTags.push('attributes');
           }
           
-        const r = await fetch(url.toString(), {
+          // Create timeout signal for this attempt
+          const timeoutSignal = createTimeoutSignal(timeoutConfig.timeout);
+          
+        // Use HTTP agent for connection pooling
+        // Note: Request deduplicator temporarily disabled for shop/attributes endpoints due to Response cloning issues
+        // Will be re-enabled after fixing Response handling
+        const useDeduplicator = !endpoint.includes('shop') && !endpoint.includes('attributes');
+        
+        const fetchOptions: RequestInit & { next?: { revalidate?: number; tags?: string[] } } = {
           headers: { 
             Accept: "application/json",
             'User-Agent': 'Filler-Store/1.0'
           },
-          cache: "no-store",
-            // Add ISR for static data endpoints
-            ...(isrTags.length > 0 && {
-              next: { 
-                revalidate: endpoint.includes('categories') || endpoint.includes('attributes') ? 1800 : 300, // 30min for categories/attributes, 5min for products
-                tags: isrTags 
-              }
-            })
-        });
+          cache: "no-store" as RequestCache,
+          signal: timeoutSignal, // Add adaptive timeout
+          // Add ISR for static data endpoints
+          ...(isrTags.length > 0 && {
+            next: { 
+              revalidate: endpoint.includes('categories') || endpoint.includes('attributes') ? 1800 : 300, // 30min for categories/attributes, 5min for products
+              tags: isrTags 
+            }
+          })
+        };
+        
+        const r = useDeduplicator
+          ? await requestDeduplicator.deduplicate(
+              url.toString(),
+              fetchOptions,
+              (url, options) => httpAgent.fetch(url, options)
+            )
+          : await httpAgent.fetch(url.toString(), fetchOptions);
         responseTime = Date.now() - startTime;
         
         // Record API metrics
@@ -2938,10 +3124,12 @@ export async function GET(req: NextRequest) {
               try {
                 const perPage = searchParams.get('per_page') || '24';
                 const storeUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products?per_page=${encodeURIComponent(perPage)}`;
-                const storeResp = await fetch(storeUrl, {
+                // Use adaptive timeout for Store API fallback
+                const storeTimeoutConfig = getTimeoutConfig('products', 'GET');
+                const storeResp = await httpAgent.fetch(storeUrl, {
                   headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
                   cache: 'no-store',
-                  signal: AbortSignal.timeout(5000)
+                  signal: createTimeoutSignal(storeTimeoutConfig.timeout)
                 });
                 if (storeResp.ok) {
                   const storeData = await storeResp.json();
@@ -2971,10 +3159,12 @@ export async function GET(req: NextRequest) {
                 const id = endpoint.replace('products/', '').trim();
                 const storeSingleUrl = `${WORDPRESS_URL}/wp-json/wc/store/v1/products/${encodeURIComponent(id)}`;
                 debugLog(`🔄 Single product failed (attempt ${attempt}), trying Store API by id:`, storeSingleUrl);
-                const storeSingleResp = await fetch(storeSingleUrl, {
+                // Use adaptive timeout for Store API single product fallback
+                const storeSingleTimeoutConfig = getTimeoutConfig('products-single', 'GET');
+                const storeSingleResp = await httpAgent.fetch(storeSingleUrl, {
                   headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
                   cache: 'no-store',
-                  signal: AbortSignal.timeout(6000) // Increased timeout for Store API
+                  signal: createTimeoutSignal(storeSingleTimeoutConfig.timeout)
                 });
                 if (storeSingleResp.ok) {
                   const json = await storeSingleResp.json();
@@ -3020,9 +3210,13 @@ export async function GET(req: NextRequest) {
             }
             
             // If not last attempt, continue retry loop
-            if (attempt < 3) {
+            if (attempt < timeoutConfig.maxRetries) {
               lastError = new Error(`HTTP ${r.status}: ${text.slice(0, 200)}`);
-              await new Promise(resolve => setTimeout(resolve, attempt * 500));
+              // Use exponential backoff
+              const { getRetryDelay } = await import('@/utils/timeout-config');
+              const retryDelay = getRetryDelay(attempt, timeoutConfig);
+              debugLog(`⏳ Retrying in ${retryDelay}ms (attempt ${attempt + 1}/${timeoutConfig.maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
               continue;
             }
             
@@ -3041,9 +3235,9 @@ export async function GET(req: NextRequest) {
           debugLog(`❌ WordPress returned HTML instead of JSON: ${text.substring(0, 100)}...`);
           
           // Try to get cached data first
-          if (!bypassCache && redis && typeof (redis as Record<string, unknown>).get === 'function') {
+          if (!bypassCache && redis && typeof redis.get === 'function') {
             try {
-              const cachedData = await (redis as any).get(cacheKey) as string;
+              const cachedData = await redis.get(cacheKey);
               if (cachedData) {
                 debugLog('✅ Using cached data as fallback');
                   span.setStatus({ code: 1, message: 'ok' });
@@ -3063,7 +3257,7 @@ export async function GET(req: NextRequest) {
           
           // Retry the request once more
           debugLog('🔄 Retrying request...');
-          const retryResponse = await fetch(url, {
+          const retryResponse = await httpAgent.fetch(url, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -3124,12 +3318,12 @@ export async function GET(req: NextRequest) {
         // Populate cache (skip if bypass)
         if (!bypassCache) {
           const cacheSetStart = Date.now();
-            // Determine TTL based on endpoint type
+            // Determine TTL based on endpoint type (improved cache strategy)
             let ttlMs = 60000; // Default 60s
             if (endpoint === 'products/categories' || endpoint.startsWith('products/categories')) {
-              ttlMs = 1800000; // 30 minutes for categories
+              ttlMs = 3600000; // 60 minutes for categories (increased from 30min)
             } else if (endpoint === 'products/attributes' || endpoint.startsWith('products/attributes')) {
-              ttlMs = 1800000; // 30 minutes for attributes
+              ttlMs = 3600000; // 60 minutes for attributes (increased from 30min)
             } else if (endpoint === 'products' || endpoint.startsWith('products/')) {
               ttlMs = 300000; // 5 minutes for products
             } else if (endpoint.startsWith('orders') || endpoint.startsWith('customers')) {
@@ -3190,9 +3384,13 @@ export async function GET(req: NextRequest) {
           }
         );
         
-        if (attempt < 3) {
-          // Wait before retry (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        if (attempt < timeoutConfig.maxRetries) {
+          // Use exponential backoff
+          const { getRetryDelay } = await import('@/utils/timeout-config');
+          const retryDelay = getRetryDelay(attempt, timeoutConfig);
+          debugLog(`⏳ Retrying in ${retryDelay}ms (attempt ${attempt + 1}/${timeoutConfig.maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue;
         }
         }
       }
@@ -3244,7 +3442,7 @@ export async function POST(req: NextRequest) {
   debugLog('🔄 POST request to endpoint:', endpoint);
 
   try {
-    const body = await req.json();
+    const body: unknown = await req.json();
 
     // Special handling for password reset
     if (endpoint === 'customers/password-reset') {
@@ -3272,47 +3470,7 @@ export async function POST(req: NextRequest) {
       
       try {
         // Transform body to match schema format (firstName -> first_name)
-        const transformedBody: any = {
-          ...body,
-          billing: body.billing ? {
-            first_name: body.billing.firstName || body.billing.first_name,
-            last_name: body.billing.lastName || body.billing.last_name,
-            company: body.billing.company || '',
-            address_1: body.billing.address || body.billing.address_1,
-            address_2: body.billing.address_2 || '',
-            city: body.billing.city,
-            state: body.billing.state || '',
-            postcode: body.billing.postcode,
-            country: body.billing.country || 'PL',
-            email: body.billing.email,
-            phone: body.billing.phone,
-          } : undefined,
-          shipping: (body.shipping && body.shipping !== null) ? {
-            first_name: body.shipping.firstName || body.shipping.first_name,
-            last_name: body.shipping.lastName || body.shipping.last_name,
-            company: body.shipping.company || '',
-            address_1: body.shipping.address || body.shipping.address_1,
-            address_2: body.shipping.address_2 || '',
-            city: body.shipping.city,
-            state: body.shipping.state || '',
-            postcode: body.shipping.postcode,
-            country: body.shipping.country || 'PL',
-          } : null,
-          line_items: body.line_items?.map((item: any) => {
-            const variationId = item.variation_id || item.variant?.id;
-            // Only include variation_id if it's a valid positive number, otherwise omit it
-            const lineItem: any = {
-              product_id: item.product_id || item.id,
-              quantity: item.quantity,
-              meta_data: item.meta_data || [],
-            };
-            // Only add variation_id if it's > 0 (0 means no variation, so we omit it)
-            if (variationId && variationId > 0) {
-              lineItem.variation_id = variationId;
-            }
-            return lineItem;
-          }),
-        };
+        const transformedBody = transformOrderPayload(body);
 
         // Validate order data with Zod
         console.log('🔍 Validating order data:', JSON.stringify(transformedBody, null, 2));
@@ -3417,7 +3575,7 @@ export async function POST(req: NextRequest) {
           if (wordpressUrl) {
             // Use king-email endpoint to trigger WooCommerce emails
             const emailTriggerUrl = `${wordpressUrl}/wp-json/king-email/v1/trigger-order-email`;
-            const emailResponse = await fetch(emailTriggerUrl, {
+            const emailResponse = await httpAgent.fetch(emailTriggerUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -3464,12 +3622,12 @@ export async function POST(req: NextRequest) {
             line_items: order.line_items
           }
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('❌ HPOS Order creation error:', error);
         
         // Record failed order creation
         // Try to get customer ID from body if validation failed
-        const customerId = (body as any)?.customer_id || (body as any)?.billing?.customer_id;
+        const customerId = extractCustomerId(body);
         const sessionId = req.headers.get('x-session-id') || 'anonymous';
         
         if (customerId) {
@@ -3536,7 +3694,7 @@ export async function POST(req: NextRequest) {
       try {
         debugLog(`🔄 POST Attempt ${attempt} for ${maskUrlSecrets(url.toString())}`);
         
-        const r = await fetch(url.toString(), {
+        const r = await httpAgent.fetch(url.toString(), {
           method: 'POST',
           headers: { 
             Accept: "application/json",

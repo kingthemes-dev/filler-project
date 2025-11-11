@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, User, Heart, ShoppingCart, LogOut, Mail, Settings, Package, ChevronDown, ChevronRight, FileText, Phone, Facebook, Instagram, Plus, Tag, Menu } from 'lucide-react';
-import { useCartStore } from '@/stores/cart-store';
-import { useAuthStore } from '@/stores/auth-store';
-import { useFavoritesStore } from '@/stores/favorites-store';
-import { useQuickViewStore } from '@/stores/quickview-store';
-import { useAuthModalStore } from '@/stores/auth-modal-store';
+import { useCartItemCount, useCartActions } from '@/stores/cart-store';
+import { useAuthUser, useAuthIsAuthenticated, useAuthActions } from '@/stores/auth-store';
+import { useFavoritesCount, useFavoritesActions } from '@/stores/favorites-store';
 // import { useWishlist } from '@/hooks/use-wishlist';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -27,13 +25,11 @@ export default function Header() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEmailCenterOpen, setIsEmailCenterOpen] = useState(false);
-  const [favoritesCount, setFavoritesCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isShopExpanded] = useState(false);
   const [isBrandsExpanded] = useState(false);
   const [shopHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isHeaderSticky, setIsHeaderSticky] = useState(false);
   
   // 🚀 SENIOR LEVEL - Slide Navigation State
@@ -66,72 +62,31 @@ export default function Header() {
     });
   };
   
-  // Safely access stores with error handling
-  let itemCount = 0, openCart = () => {}, user = null, isAuthenticated = false, logout = () => {};
-  let openFavoritesModal = () => {}, favorites = [], favoritesIsModalOpen = false;
+  // Use selectors for optimized subscriptions
+  // Always call hooks, but use values conditionally after mount to prevent SSR issues
+  const itemCountRaw = useCartItemCount();
+  const cartActions = useCartActions();
+  const userRaw = useAuthUser();
+  const isAuthenticatedRaw = useAuthIsAuthenticated();
+  const authActions = useAuthActions();
+  const favoritesCountRaw = useFavoritesCount();
+  const favoritesActions = useFavoritesActions();
   
-  try {
-    const cartStore = useCartStore();
-    itemCount = cartStore.itemCount;
-    openCart = cartStore.openCart;
-  } catch (error) {
-    console.warn('Cart store not available:', error);
-  }
+  // Use values only after mount to prevent hydration mismatches
+  const itemCount = isMounted ? itemCountRaw : 0;
+  const user = isMounted ? userRaw : null;
+  const isAuthenticated = isMounted ? isAuthenticatedRaw : false;
+  const favoritesCount = isMounted ? favoritesCountRaw : 0;
+  const openCart = cartActions.openCart;
+  const logout = authActions.logout;
+  const openFavoritesModal = favoritesActions.openFavoritesModal;
   
-  try {
-    const authStore = useAuthStore();
-    user = authStore.user;
-    isAuthenticated = authStore.isAuthenticated;
-    logout = authStore.logout;
-  } catch (error) {
-    console.warn('Auth store not available:', error);
-  }
-  
-  try {
-    const favoritesStore = useFavoritesStore();
-    openFavoritesModal = favoritesStore.openFavoritesModal;
-    favorites = favoritesStore.favorites;
-    favoritesIsModalOpen = favoritesStore.isModalOpen;
-  } catch (error) {
-    console.warn('Favorites store not available:', error);
-  }
-  
-  let quickViewIsOpen = false;
-  try {
-    const quickViewStore = useQuickViewStore();
-    quickViewIsOpen = quickViewStore.isOpen;
-  } catch (error) {
-    console.warn('QuickView store not available:', error);
-  }
-  
-  // Check if any modal is open (search, favorites, quickview, auth)
-  // Access stores directly in useMemo to avoid closure issues
-  const favoritesStore = useFavoritesStore();
-  const quickViewStore = useQuickViewStore();
-  const authModalStore = useAuthModalStore();
-  
-  const isAnyModalOpen = useMemo(() => {
-    const searchOpen = isSearchModalOpen || false;
-    const favOpen = typeof favoritesIsModalOpen !== 'undefined' ? favoritesIsModalOpen : (favoritesStore?.isModalOpen || false);
-    const qvOpen = quickViewIsOpen || (quickViewStore?.isOpen || false);
-    const authOpen = authModalStore?.isOpen || false;
-    return searchOpen || favOpen || qvOpen || authOpen;
-  }, [isSearchModalOpen, favoritesIsModalOpen, quickViewIsOpen, favoritesStore?.isModalOpen, quickViewStore?.isOpen, authModalStore?.isOpen]);
-
-  // wishlist removed
-
   // Mount flag for client-only UI updates
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
 
-  // Update favorites count when favorites array changes
-  useEffect(() => {
-    if (isMounted) {
-      setFavoritesCount(favorites.length);
-    }
-  }, [favorites.length, isMounted]);
 
   // Inicjalizuj store gdy potrzebne
   useEffect(() => {
@@ -212,7 +167,6 @@ export default function Header() {
       const scrollY = window.scrollY;
       // Show sticky effects only after scrolling down 80px (3-4 scrolls)
       const scrollThreshold = 80;
-      setIsScrolled(scrollY > 10);
       setIsHeaderSticky(scrollY > scrollThreshold);
     };
 
@@ -579,10 +533,7 @@ export default function Header() {
             <button 
               className="text-black hover:text-gray-800 transition duration-150 ease-out will-change-transform hover:scale-[1.04] active:scale-[0.98] hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 rounded relative group"
               onClick={() => {
-                console.log('🛒 Cart button clicked!');
-                console.log('🛒 Current cart state:', useCartStore.getState());
                 openCart();
-                console.log('🛒 After openCart call');
               }}
               title="Koszyk"
               aria-label="Koszyk zakupowy"

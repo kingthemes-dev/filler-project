@@ -6,7 +6,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getSearchConsoleAnalytics } from '@/utils/search-console-analytics';
+import { getSearchConsoleAnalytics, type GA4Parameters } from '@/utils/search-console-analytics';
 
 interface SearchTrackingProps {
   searchQuery?: string;
@@ -52,7 +52,7 @@ export function useSearchTracking() {
     }
   };
 
-  const trackSEOEvent = (eventName: string, parameters: Record<string, any>) => {
+  const trackSEOEvent = (eventName: string, parameters: GA4Parameters) => {
     const analytics = getSearchConsoleAnalytics();
     if (analytics) {
       analytics.trackSEOEvent(eventName, parameters);

@@ -1,0 +1,33 @@
+#!/usr/bin/expect -f
+# Check server structure
+set timeout 30
+set ssh_user "qvwltjhdjw"
+set ssh_host "s62.cyber-folks.pl"
+set ssh_port "222"
+set ssh_pass "Haslo963!@#"
+
+puts "🔍 Checking server structure..."
+
+spawn ssh -p $ssh_port -o StrictHostKeyChecking=no $ssh_user@$ssh_host "pwd && ls -la && echo '---' && cd /domains/qvwltjhdjw.cfolks.pl/public_html && pwd && ls -la wp-content/ 2>&1 || echo 'Path not found, checking home...' && cd ~ && pwd && find . -name 'wp-content' -type d 2>/dev/null | head -5"
+
+expect {
+    "password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+    timeout {
+        puts "⚠️  Connection timeout"
+    }
+}
+

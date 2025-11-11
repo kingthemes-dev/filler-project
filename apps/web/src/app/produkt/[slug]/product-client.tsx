@@ -4,8 +4,8 @@ import React, { useMemo, useState } from 'react';
 import PageContainer from '@/components/ui/page-container';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Truck, Shield } from 'lucide-react';
-import { useCartStore } from '@/stores/cart-store';
-import { useFavoritesStore } from '@/stores/favorites-store';
+import { useCartActions } from '@/stores/cart-store';
+import { useFavoritesActions, useFavoritesItems } from '@/stores/favorites-store';
 import { formatPrice } from '@/utils/format-price';
 import { wooCommerceOptimized } from '@/services/woocommerce-optimized';
 import ReviewsList from '@/components/ui/reviews-list';
@@ -28,8 +28,10 @@ import { usePerformanceMonitoring } from '@/hooks/use-performance-optimization';
 type ProductClientProps = { slug: string };
 
 export default function ProductClient({ slug }: ProductClientProps) {
-  const { addItem, openCart } = useCartStore();
-  const { toggleFavorite, isFavorite } = useFavoritesStore();
+  const { addItem, openCart } = useCartActions();
+  const { toggleFavorite } = useFavoritesActions();
+  const favorites = useFavoritesItems();
+  const isFavorite = (productId: number) => favorites.some(fav => fav.id === productId);
   const queryClient = useQueryClient();
   
   // Performance monitoring
@@ -109,7 +111,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
         "datePublished": review.date_created
       }))
     };
-  }, [productQuery.data, reviewsQuery.data]);
+  }, [productQuery.data, reviewsQuery.data, slug]);
 
   // Breadcrumb JSON-LD
   const breadcrumbJsonLd = useMemo(() => {
@@ -147,7 +149,7 @@ export default function ProductClient({ slug }: ProductClientProps) {
         }
       ]
     };
-  }, [productQuery.data]);
+  }, [productQuery.data, slug]);
 
   // JSON-LD is handled by Next.js Script components in the JSX
 
@@ -155,7 +157,6 @@ export default function ProductClient({ slug }: ProductClientProps) {
   const variations = variationsQuery.data?.variations || [];
 
   const isLoading = productQuery.isLoading || productQuery.isFetching;
-  const isError = productQuery.isError;
   const hasTriedFetching = productQuery.isFetched || productQuery.isFetching;
 
   const isOnSale = useMemo(() => {

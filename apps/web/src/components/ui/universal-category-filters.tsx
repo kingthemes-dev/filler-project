@@ -12,6 +12,14 @@ import { useQuery } from '@tanstack/react-query';
 // removed unused imports from universal-filter-service
 import { FilterConfig } from '@/config/filter-config';
 
+interface CategoryNode {
+  id: string;
+  slug: string;
+  name: string;
+  count: number;
+  subcategories: CategoryNode[];
+}
+
 interface UniversalCategoryFiltersProps {
   onCategoryChange: (categoryId: string, subcategoryId?: string) => void;
   selectedCategories: string[];
@@ -30,7 +38,7 @@ export default function UniversalCategoryFilters({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // 🚀 USE PREFETCHED DATA - No loading, instant display!
-  const categoriesQuery = useQuery({
+  const categoriesQuery = useQuery<CategoryNode[]>({
     queryKey: ['universal-filters', 'categories', preset, config],
     queryFn: async () => {
       // This should NEVER run if data is prefetched!
@@ -42,16 +50,17 @@ export default function UniversalCategoryFilters({
   });
 
   // Use prefetched data - should be instant!
-  const categories = categoriesQuery.data || [];
+  const categories = categoriesQuery.data ?? [];
   const loading = categoriesQuery.isLoading && !categoriesQuery.data; // Only show loading if no data at all
 
-  const toggleCategory = (categoryId: string) => {
+  const toggleCategory = (categoryId: string | number) => {
+    const id = String(categoryId);
     setExpandedCategories(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
+      if (newSet.has(id)) {
+        newSet.delete(id);
       } else {
-        newSet.add(categoryId);
+        newSet.add(id);
       }
       return newSet;
     });
@@ -59,7 +68,7 @@ export default function UniversalCategoryFilters({
 
   // removed unused handleCategoryClick helper
 
-  const isCategoryExpanded = (categoryId: string) => expandedCategories.has(categoryId);
+  const isCategoryExpanded = (categoryId: string | number) => expandedCategories.has(String(categoryId));
   const isCategorySelected = (categorySlug: string) => selectedCategories.includes(categorySlug);
 
   if (loading) {
@@ -93,7 +102,7 @@ export default function UniversalCategoryFilters({
       </div>
 
       {/* Dynamic categories from API */}
-      {categories.map((category: any) => (
+      {categories.map((category) => (
         <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
           {/* Main category */}
           <div className="bg-gray-50">
@@ -149,7 +158,7 @@ export default function UniversalCategoryFilters({
                 className="overflow-hidden bg-white"
               >
                 <div className="border-t border-gray-100">
-                  {category.subcategories.map((subcategory: any, index: number) => (
+                  {category.subcategories.map((subcategory, index) => (
                     <motion.label
                       key={subcategory.id}
                       className="flex items-center p-2 sm:p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"

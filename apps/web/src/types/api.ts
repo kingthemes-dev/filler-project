@@ -3,7 +3,7 @@
  */
 
 // Base API response
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -189,7 +189,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   image?: string;
-  variation?: Record<string, any>;
+  variation?: Record<string, unknown>;
 }
 
 export interface CartResponse {
@@ -298,17 +298,17 @@ export interface ApiError {
   code: string;
   message: string;
   statusCode: number;
-  details?: any;
+  details?: Record<string, unknown> | string | null;
   timestamp: string;
 }
 
 // Request/Response helpers
 export type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
-export interface RequestConfig {
+export interface RequestConfig<TBody = unknown> {
   method: RequestMethod;
   headers?: Record<string, string>;
-  body?: any;
+  body?: TBody;
   cache?: RequestCache;
   next?: {
     revalidate?: number;

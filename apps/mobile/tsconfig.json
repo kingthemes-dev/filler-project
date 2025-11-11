@@ -1,6 +1,14 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@headless-woo/shared": ["../../packages/shared/index.ts"],
+      "@headless-woo/shared/*": ["../../packages/shared/*"],
+      "@king/shared-types": ["../../packages/shared-types/src/index.ts"],
+      "@king/shared-types/*": ["../../packages/shared-types/src/*"]
+    }
   }
 }

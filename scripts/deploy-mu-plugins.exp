@@ -1,0 +1,90 @@
+#!/usr/bin/expect -f
+# Deploy MU Plugins to server using expect
+# Usage: ./scripts/deploy-mu-plugins.exp [plugin-file]
+
+set timeout 30
+set ssh_user "qvwltjhdjw"
+set ssh_host "s62.cyber-folks.pl"
+set ssh_port "222"
+set ssh_pass "Haslo963!@#"
+set remote_base "~/domains/qvwltjhdjw.cfolks.pl/public_html"
+set remote_path "$remote_base/wp-content/mu-plugins"
+set local_path "wp-content/mu-plugins"
+
+# Get plugin file from argument
+set plugin_file [lindex $argv 0]
+
+if {$plugin_file == ""} {
+    puts "Usage: ./scripts/deploy-mu-plugins.exp <plugin-file>"
+    exit 1
+}
+
+set local_file "$local_path/$plugin_file"
+set remote_file "$remote_path/$plugin_file"
+
+# Check if file exists
+if {![file exists $local_file]} {
+    puts "❌ File not found: $local_file"
+    exit 1
+}
+
+puts "📤 Deploying $plugin_file to server..."
+
+# First, ensure directory exists
+spawn ssh -p $ssh_port -o StrictHostKeyChecking=no $ssh_user@$ssh_host "mkdir -p $remote_path && ls -la $remote_path"
+
+expect {
+    "password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+    timeout {
+        puts "⚠️  SSH connection timeout (directory check)"
+    }
+}
+
+# Wait a bit before next command
+sleep 1
+
+# Deploy using scp
+spawn scp -P $ssh_port -o StrictHostKeyChecking=no $local_file $ssh_user@$ssh_host:$remote_file
+
+expect {
+    "password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+        set exit_code [lindex $result 3]
+        if {$exit_code == 0} {
+            puts "✅ Successfully deployed $plugin_file"
+        } else {
+            puts "❌ Failed to deploy $plugin_file (exit code: $exit_code)"
+        }
+        exit $exit_code
+    }
+    timeout {
+        puts "❌ Connection timeout"
+        exit 1
+    }
+}

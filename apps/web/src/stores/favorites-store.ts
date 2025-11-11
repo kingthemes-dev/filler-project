@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { WooProduct } from '@/types/woocommerce';
@@ -223,3 +224,37 @@ export const useFavoritesStore = create<FavoritesStore>()(
     }
   )
 );
+
+// Selectors for optimized subscriptions
+export const useFavoritesItems = () => useFavoritesStore((state) => state.favorites);
+export const useFavoritesIsModalOpen = () => useFavoritesStore((state) => state.isModalOpen);
+export const useFavoritesIsLoading = () => useFavoritesStore((state) => state.isLoading);
+export const useFavoritesLastSyncTime = () => useFavoritesStore((state) => state.lastSyncTime);
+export const useFavoritesCount = () => useFavoritesStore((state) => state.favorites.length);
+
+// Memoized selectors for actions to prevent re-renders
+export const useFavoritesActions = () => {
+  const addToFavorites = useFavoritesStore((state) => state.addToFavorites);
+  const removeFromFavorites = useFavoritesStore((state) => state.removeFromFavorites);
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
+  const isFavorite = useFavoritesStore((state) => state.isFavorite);
+  const openFavoritesModal = useFavoritesStore((state) => state.openFavoritesModal);
+  const closeFavoritesModal = useFavoritesStore((state) => state.closeFavoritesModal);
+  const clearFavorites = useFavoritesStore((state) => state.clearFavorites);
+  const getFavoritesCount = useFavoritesStore((state) => state.getFavoritesCount);
+  const syncWithAPI = useFavoritesStore((state) => state.syncWithAPI);
+  const loadFromAPI = useFavoritesStore((state) => state.loadFromAPI);
+  
+  return useMemo(() => ({
+    addToFavorites,
+    removeFromFavorites,
+    toggleFavorite,
+    isFavorite,
+    openFavoritesModal,
+    closeFavoritesModal,
+    clearFavorites,
+    getFavoritesCount,
+    syncWithAPI,
+    loadFromAPI,
+  }), [addToFavorites, removeFromFavorites, toggleFavorite, isFavorite, openFavoritesModal, closeFavoritesModal, clearFavorites, getFavoritesCount, syncWithAPI, loadFromAPI]);
+};

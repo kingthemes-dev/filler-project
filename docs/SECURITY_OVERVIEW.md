@@ -98,6 +98,7 @@ done
 | `SENDINBLUE_API_KEY` / `SENDINBLUE_LIST_ID` | ⚠️ zależne od środowiska | Jeśli brak – endpoint `newsletter/subscribe` działa w trybie „no-op” (loguje). |
 | `RECAPTCHA_SECRET_KEY` / `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | ⚠️ do weryfikacji | Endpoint `/api/recaptcha/verify` gotowy – sprawdzić, czy jest włączony w produkcji. |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | ⚠️ do weryfikacji | Sprawdzić, czy PII scrubbing skonfigurowany (patrz TODO). |
+| `CSRF_FORCE_ENABLE` / `CSRF_FORCE_DISABLE` | ⚠️ opcjonalne | Flagi awaryjne: włącz CSRF na stagingu (`true`) lub wyłącz całkowicie (`true`) – należy je kontrolować operacyjnie. |
 
 ---
 

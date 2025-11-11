@@ -5,6 +5,36 @@ import type { NextRequest } from 'next/server';
 import { createErrorResponse, ExternalApiError, InternalError } from '@/lib/errors';
 import { logger } from '@/utils/logger';
 
+type HomeFeedCategory = string | { name?: string; slug?: string };
+
+interface HomeFeedProduct {
+  id?: number;
+  slug?: string;
+  name?: string;
+  status?: string;
+  categories?: HomeFeedCategory[];
+  price?: string;
+  regular_price?: string;
+  sale_price?: string;
+  on_sale?: boolean;
+  date_created?: string;
+  featured?: boolean;
+}
+
+type WooProductResponse = {
+  products?: unknown;
+  data?: {
+    products?: unknown;
+  };
+};
+
+const toProductsArray = (source: unknown): HomeFeedProduct[] => {
+  if (!Array.isArray(source)) {
+    return [];
+  }
+  return source as HomeFeedProduct[];
+};
+
 export const runtime = 'nodejs';
 
 export async function GET(request?: NextRequest) {
@@ -96,13 +126,15 @@ export async function GET(request?: NextRequest) {
     const responses = await Promise.allSettled(fetchPromises);
     
     // Process main products
-    let allProducts: any[] = [];
-    let promocjeProducts: any[] = [];
+    let allProducts: HomeFeedProduct[] = [];
+    let promocjeProducts: HomeFeedProduct[] = [];
     
     // First response: main products page 1
     if (responses[0].status === 'fulfilled' && responses[0].value.ok) {
-      const responseData = await responses[0].value.json();
-      const pageProducts = responseData.products || responseData.data?.products || [];
+      const responseData = (await responses[0].value.json()) as WooProductResponse;
+      const pageProducts =
+        toProductsArray(responseData.products) ||
+        toProductsArray(responseData.data?.products);
       allProducts = [...allProducts, ...pageProducts];
     } else {
       if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
@@ -115,8 +147,10 @@ export async function GET(request?: NextRequest) {
     
     // Second response: promocje
     if (responses[1].status === 'fulfilled' && responses[1].value.ok) {
-      const promocjeData = await responses[1].value.json();
-      promocjeProducts = promocjeData.products || promocjeData.data?.products || [];
+      const promocjeData = (await responses[1].value.json()) as WooProductResponse;
+      promocjeProducts =
+        toProductsArray(promocjeData.products) ||
+        toProductsArray(promocjeData.data?.products);
     } else {
       if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
         logger.debug('Failed to fetch promocje, will filter from all products');
@@ -125,8 +159,10 @@ export async function GET(request?: NextRequest) {
     
     // Third response: main products page 2 (if fetched)
     if (maxPages > 1 && responses[2]?.status === 'fulfilled' && responses[2].value.ok) {
-      const responseData = await responses[2].value.json();
-      const pageProducts = responseData.products || responseData.data?.products || [];
+      const responseData = (await responses[2].value.json()) as WooProductResponse;
+      const pageProducts =
+        toProductsArray(responseData.products) ||
+        toProductsArray(responseData.data?.products);
       allProducts = [...allProducts, ...pageProducts];
     }
     
@@ -142,53 +178,70 @@ export async function GET(request?: NextRequest) {
     
     // Filter out test products (products with empty prices or generic names)
     // PRO: Don't require images - products can have placeholder images
-    const validProducts = products.filter((p: any) => 
-      p?.name && p.name !== 'Produkt' &&
-      (p.status === 'publish' || !p.status)
+    const validProducts = products.filter(
+      (product): product is HomeFeedProduct =>
+        Boolean(product?.name && product.name !== 'Produkt') &&
+        (product.status === 'publish' || !product.status)
     );
 
     // Sort products by date (newest first)
-    const sortedProducts = validProducts.sort((a: any, b: any) => 
-      new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
-    );
+    const getCreatedAt = (product: HomeFeedProduct) =>
+      product.date_created ? new Date(product.date_created).getTime() : 0;
 
-    const ensureUnique = (items: any[]) => {
-      const seen = new Set();
+    const sortedProducts = [...validProducts].sort((a, b) => getCreatedAt(b) - getCreatedAt(a));
+
+    const ensureUnique = (items: HomeFeedProduct[]) => {
+      const seen = new Set<string | number>();
       return items.filter((item) => {
-        const key = item?.id ?? `${item?.slug}`;
+        const key = item?.id ?? item?.slug;
         if (!key || seen.has(key)) return false;
         seen.add(key);
         return true;
       });
     };
 
-    const takeTop = (items: any[], limit = 8) => ensureUnique(items).slice(0, limit);
+    const takeTop = (items: HomeFeedProduct[], limit = 8) =>
+      ensureUnique(items).slice(0, limit);
+
+    const categoryMatches = (product: HomeFeedProduct, categories: string[]) =>
+      Array.isArray(product.categories) &&
+      product.categories.some((cat) =>
+        typeof cat === 'string'
+          ? categories.includes(cat)
+          : categories.includes(cat?.name ?? '')
+      );
 
     // Organize data into categories with proper fallbacks
     // Use promocjeProducts from API if available, otherwise filter from validProducts
-    let finalPromocjeProducts: any[] = [];
+    let finalPromocjeProducts: HomeFeedProduct[] = [];
     const fallbackPromoCategories = ['Promocje', 'Promocja', 'Wyprzedaż'];
 
     if (promocjeProducts.length > 0) {
-      finalPromocjeProducts = promocjeProducts.filter((p: any) =>
-        p?.name && (p.status === 'publish' || !p.status)
+      finalPromocjeProducts = promocjeProducts.filter(
+        (product): product is HomeFeedProduct =>
+          Boolean(product?.name) && (product.status === 'publish' || !product.status)
       );
     }
 
     if (finalPromocjeProducts.length < 4) {
-      const categoryBased = validProducts.filter((p: any) =>
-        Array.isArray(p?.categories) &&
-        p.categories.some((cat: string) => fallbackPromoCategories.includes(cat))
+      const categoryBased = validProducts.filter((product) =>
+        categoryMatches(product, fallbackPromoCategories)
       );
       finalPromocjeProducts = [...finalPromocjeProducts, ...categoryBased];
     }
 
     if (finalPromocjeProducts.length < 4) {
-      const discountedFallback = validProducts.filter((p: any) => {
-        const hasSalePrice = p?.sale_price && p.sale_price !== '' && p.sale_price !== '0';
-        const hasOnSaleFlag = p?.on_sale === true;
+      const discountedFallback = validProducts.filter((product) => {
+        const hasSalePrice =
+          product?.sale_price !== undefined &&
+          product.sale_price !== '' &&
+          product.sale_price !== '0';
+        const hasOnSaleFlag = product?.on_sale === true;
         const priceDiffers =
-          p?.price && p?.regular_price && parseFloat(p.price) > 0 && parseFloat(p.price) < parseFloat(p.regular_price ?? '0');
+          product?.price !== undefined &&
+          product?.regular_price !== undefined &&
+          parseFloat(product.price) > 0 &&
+          parseFloat(product.price) < parseFloat(product.regular_price ?? '0');
         return hasSalePrice || hasOnSaleFlag || priceDiffers;
       });
       finalPromocjeProducts = [...finalPromocjeProducts, ...discountedFallback];
@@ -198,13 +251,12 @@ export async function GET(request?: NextRequest) {
       finalPromocjeProducts = [...finalPromocjeProducts, ...sortedProducts];
     }
 
-    let polecaneProducts = validProducts.filter((p: any) => p?.featured === true);
+    let polecaneProducts = validProducts.filter((product) => product?.featured === true);
 
     if (polecaneProducts.length < 4) {
       const curatedCategories = ['Stymulatory', 'Kwas hialuronowy', 'Mezoterapia'];
-      const categoryFallback = validProducts.filter((p: any) =>
-        Array.isArray(p?.categories) &&
-        p.categories.some((cat: string) => curatedCategories.includes(cat))
+      const categoryFallback = validProducts.filter((product) =>
+        categoryMatches(product, curatedCategories)
       );
       polecaneProducts = [...polecaneProducts, ...categoryFallback];
     }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sanitizeString, sanitizeEmail, sanitizePhone } from '@/utils/input-validation';
+import { sanitizeString, sanitizeEmail } from '@/utils/input-validation';
 
 const sanitizedString = (min = 0, max = 500) =>
   z
@@ -26,14 +26,6 @@ const optionalEmailField = () =>
     .string({ invalid_type_error: 'Email musi być tekstem' })
     .email('Nieprawidłowy adres email')
     .transform((value) => sanitizeEmail(value))
-    .optional();
-
-const optionalPhoneField = () =>
-  z
-    .string({ invalid_type_error: 'Telefon musi być tekstem' })
-    .min(6, 'Telefon jest za krótki')
-    .max(30, 'Telefon jest za długi')
-    .transform((value) => sanitizePhone(value))
     .optional();
 
 const numericString = () =>
@@ -290,6 +282,29 @@ export const recaptchaVerifySchema = z
   .object({
     token: sanitizedString(10, 200),
   })
+  .strict();
+
+/**
+ * Revalidate schema for ISR revalidation endpoint
+ */
+export const revalidateSchema = z
+  .object({
+    paths: z
+      .array(sanitizedString(1, 500))
+      .max(100, 'Maximum 100 paths allowed')
+      .optional(),
+    tags: z
+      .array(sanitizedString(1, 500))
+      .max(100, 'Maximum 100 tags allowed')
+      .optional(),
+  })
+  .refine(
+    (data) => (data.paths && data.paths.length > 0) || (data.tags && data.tags.length > 0),
+    {
+      message: 'At least one path or tag is required',
+      path: ['paths'],
+    }
+  )
   .strict();
 
 export const customerUpdateProfileSchema = z

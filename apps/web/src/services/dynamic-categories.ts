@@ -61,7 +61,7 @@ export interface DynamicFilters {
 
 class DynamicCategoriesService {
   private baseUrl: string;
-  private cache: Map<string, any> = new Map();
+  private cache: Map<string, unknown> = new Map();
 
   constructor() {
     // Use absolute URL on server (Node fetch requires it), relative in browser
@@ -78,7 +78,7 @@ class DynamicCategoriesService {
     
     // Sprawdź cache
     if (this.cache.has(cacheKey)) {
-      return this.cache.get(cacheKey);
+      return this.cache.get(cacheKey) as WooCategory[];
     }
     
     try {
@@ -89,7 +89,15 @@ class DynamicCategoriesService {
       }
       
       const data = await response.json();
-      const categories = Array.isArray(data) ? data : (data.categories || []);
+      const categoriesRaw = Array.isArray(data)
+        ? data
+        : this.toRecord(data)?.categories;
+
+      const categories = Array.isArray(categoriesRaw)
+        ? categoriesRaw
+            .map((item) => this.transformCategory(item))
+            .filter((category): category is WooCategory => category !== null)
+        : [];
       
       // Zapisz w cache
       this.cache.set(cacheKey, categories);
@@ -110,7 +118,7 @@ class DynamicCategoriesService {
     
     // Sprawdź cache
     if (this.cache.has(cacheKey)) {
-      return this.cache.get(cacheKey);
+      return this.cache.get(cacheKey) as WooAttribute[];
     }
     
     try {
@@ -122,23 +130,29 @@ class DynamicCategoriesService {
       }
       
       const data = await response.json();
-      let attributes: any[] = [];
+      const parsedData = this.toRecord(data);
+
+      let attributesRaw: unknown[] = [];
       if (Array.isArray(data)) {
-        attributes = data;
-      } else if (data && typeof data === 'object' && data.attributes && typeof data.attributes === 'object') {
-        // King Shop API shape: attributes is an object keyed by slug
-        attributes = Object.entries(data.attributes).map(([slug, value]: [string, any]) => ({
-          id: (value && value.id) || slug,
-          name: (value && value.name) || slug,
-          slug,
-          type: (value && value.type) || 'select',
-          order_by: (value && value.order_by) || 'menu_order',
-          has_archives: false,
-          terms: []
-        }));
-      } else {
-        attributes = [];
+        attributesRaw = data;
+      } else if (parsedData?.attributes && typeof parsedData.attributes === 'object') {
+        attributesRaw = Object.entries(parsedData.attributes as Record<string, unknown>).map(([slug, value]) => {
+          const valueRecord = this.toRecord(value);
+          return {
+            id: valueRecord?.id ?? slug,
+            name: valueRecord?.name ?? slug,
+            slug,
+            type: valueRecord?.type ?? 'select',
+            order_by: valueRecord?.order_by ?? 'menu_order',
+            has_archives: false,
+            terms: [],
+          };
+        });
       }
+
+      const attributes = attributesRaw
+        .map((item) => this.transformAttribute(item))
+        .filter((attribute): attribute is WooAttribute => attribute !== null);
       
       // Zapisz w cache
       this.cache.set(cacheKey, attributes);
@@ -166,16 +180,134 @@ class DynamicCategoriesService {
       
       const data = await response.json();
       const termsArray = Array.isArray(data) ? data : [];
-      return termsArray.map((term: any) => ({
-        id: term.id,
-        name: term.name,
-        slug: term.slug,
-        count: term.count || 0
-      }));
+      return termsArray
+        .map((term) => this.transformTerm(term))
+        .filter((term): term is WooAttributeTerm => term !== null);
     } catch (error) {
       console.warn(`Error fetching terms for attribute ${attributeSlug}:`, error);
       return [];
     }
+  }
+
+  private transformCategory(raw: unknown): WooCategory | null {
+    const record = this.toRecord(raw);
+    if (!record) {
+      return null;
+    }
+
+    const idValue = this.toNumber(record.id);
+    const parent = this.toNumber(record.parent, 0) ?? 0;
+    const count = this.toNumber(record.count, 0) ?? 0;
+    const name = this.toOptionalString(record.name);
+    const slug = this.toOptionalString(record.slug);
+    const imageRecord = this.toRecord(record.image);
+
+    if (idValue === undefined || !name || !slug) {
+      return null;
+    }
+
+    const image = imageRecord
+      ? {
+          src: this.toOptionalString(imageRecord.src) || '',
+          alt: this.toOptionalString(imageRecord.alt) || name,
+        }
+      : undefined;
+
+    return {
+      id: idValue,
+      name,
+      slug,
+      parent,
+      count,
+      description: this.toOptionalString(record.description),
+      image,
+    };
+  }
+
+  private transformAttribute(raw: unknown): WooAttribute | null {
+    const record = this.toRecord(raw);
+    if (!record) {
+      return null;
+    }
+
+    const idValue = this.toNumber(record.id);
+    const name = this.toOptionalString(record.name);
+    const slug = this.toOptionalString(record.slug);
+    const type = this.toOptionalString(record.type) || 'select';
+    const orderBy = this.toOptionalString(record.order_by) || 'menu_order';
+    const hasArchives = typeof record.has_archives === 'boolean' ? record.has_archives : false;
+
+    if (idValue === undefined || !name || !slug) {
+      return null;
+    }
+
+    const termsRaw = Array.isArray(record.terms) ? record.terms : [];
+    const terms = termsRaw
+      .map((term) => this.transformTerm(term))
+      .filter((term): term is WooAttributeTerm => term !== null);
+
+    return {
+      id: idValue,
+      name,
+      slug,
+      type,
+      order_by: orderBy,
+      has_archives: hasArchives,
+      terms,
+    };
+  }
+
+  private transformTerm(raw: unknown): WooAttributeTerm | null {
+    const record = this.toRecord(raw);
+    if (!record) {
+      return null;
+    }
+
+    const idValue = this.toNumber(record.id);
+    const name = this.toOptionalString(record.name);
+    const slug = this.toOptionalString(record.slug);
+    const count = this.toNumber(record.count, 0) ?? 0;
+
+    if (idValue === undefined || !name || !slug) {
+      return null;
+    }
+
+    return {
+      id: idValue,
+      name,
+      slug,
+      count,
+    };
+  }
+
+  private toRecord(value: unknown): Record<string, unknown> | null {
+    if (typeof value === 'object' && value !== null) {
+      return value as Record<string, unknown>;
+    }
+    return null;
+  }
+
+  private toNumber(value: unknown, fallback?: number): number | undefined {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  }
+
+  private toOptionalString(value: unknown): string | undefined {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    return undefined;
   }
 
   /**

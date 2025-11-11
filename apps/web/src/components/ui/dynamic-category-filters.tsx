@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { dynamicCategoriesService } from '@/services/dynamic-categories';
+import { dynamicCategoriesService, type DynamicFilters, type HierarchicalCategory } from '@/services/dynamic-categories';
 import { useQuery } from '@tanstack/react-query';
 
 interface DynamicCategoryFiltersProps {
   onCategoryChange: (categoryId: string, subcategoryId?: string) => void;
   selectedCategories: string[];
   totalProducts: number;
-  dynamicFiltersData?: { categories: any[]; attributes: any };
+  dynamicFiltersData?: DynamicFilters;
 }
 
 export default function DynamicCategoryFilters({ 
@@ -22,7 +22,7 @@ export default function DynamicCategoryFilters({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Użyj React Query jako fallback jeśli nie ma prefetchowanych danych
-  const dynamicFiltersQuery = useQuery({
+  const dynamicFiltersQuery = useQuery<DynamicFilters>({
     queryKey: ['shop','dynamic-filters'],
     queryFn: async () => {
       console.log('🔄 Loading dynamic categories from prefetched data...');
@@ -33,7 +33,8 @@ export default function DynamicCategoryFilters({
   });
 
   // Użyj prefetchowanych danych jeśli dostępne, w przeciwnym razie React Query
-  const categories = dynamicFiltersData?.categories || dynamicFiltersQuery.data?.categories || [];
+  const categories: HierarchicalCategory[] =
+    dynamicFiltersData?.categories || dynamicFiltersQuery.data?.categories || [];
   // Usunięto główny loading state - dane są prefetchowane
 
   const toggleCategory = (categoryId: string) => {
@@ -91,7 +92,7 @@ export default function DynamicCategoryFilters({
                 className="overflow-hidden bg-white"
               >
                 <div className="border-t border-gray-100">
-                  {category.subcategories && category.subcategories.map((subcategory: any, index: number) => (
+                  {category.subcategories && category.subcategories.map((subcategory, index) => (
                     <motion.label
                       key={subcategory.id}
                       className="flex items-center p-2 sm:p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"

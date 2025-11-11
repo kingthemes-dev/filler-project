@@ -9,23 +9,77 @@ import { z } from 'zod';
 // ============================================
 
 export const woocommerceQuerySchema = z.object({
-  endpoint: z.string().min(1, 'Endpoint is required'),
-  page: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
-  per_page: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
-  customer: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
-  status: z.string().optional(),
-  search: z.string().optional(),
-  category: z.string().optional().transform((val) => (val ? parseInt(val, 10) : undefined)),
-  orderby: z.string().optional(),
+  endpoint: z.string().min(1, 'Endpoint is required').max(100, 'Endpoint name too long'),
+  page: z
+    .string()
+    .optional()
+    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
+      message: 'Page must be a positive number',
+    })
+    .transform((val) => (val ? parseInt(val, 10) : undefined)),
+  per_page: z
+    .string()
+    .optional()
+    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 100), {
+      message: 'Per page must be between 1 and 100',
+    })
+    .transform((val) => {
+      if (!val) return undefined;
+      const num = parseInt(val, 10);
+      // Cap at 100 even if validation passes (safety)
+      return num > 100 ? 100 : num;
+    }),
+  customer: z
+    .string()
+    .optional()
+    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
+      message: 'Customer ID must be a positive number',
+    })
+    .transform((val) => (val ? parseInt(val, 10) : undefined)),
+  status: z.string().max(50, 'Status too long').optional(),
+  search: z.string().max(200, 'Search term too long').optional(),
+  category: z
+    .string()
+    .optional()
+    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
+      message: 'Category ID must be a positive number',
+    })
+    .transform((val) => (val ? parseInt(val, 10) : undefined)),
+  orderby: z.enum(['date', 'id', 'title', 'price', 'popularity', 'rating']).optional(),
   order: z.enum(['asc', 'desc']).optional(),
   cache: z.enum(['on', 'off']).optional(),
   // Product-specific
-  slug: z.string().optional(),
-  include: z.string().optional(), // Comma-separated IDs
+  slug: z.string().max(200, 'Slug too long').optional(),
+  include: z.string().max(500, 'Include list too long').optional(), // Comma-separated IDs
+  exclude: z.string().max(500, 'Exclude list too long').optional(), // Comma-separated IDs
   // Order-specific
-  after: z.string().optional(),
-  before: z.string().optional(),
-});
+  after: z.string().max(50, 'After date too long').optional(),
+  before: z.string().max(50, 'Before date too long').optional(),
+  // Additional common params
+  featured: z
+    .string()
+    .optional()
+    .transform((val) => val === 'true' || val === '1'),
+  on_sale: z
+    .string()
+    .optional()
+    .transform((val) => val === 'true' || val === '1'),
+  min_price: z
+    .string()
+    .optional()
+    .refine((val) => !val || !isNaN(Number(val)) && Number(val) >= 0, {
+      message: 'Min price must be a non-negative number',
+    })
+    .transform((val) => (val ? parseFloat(val) : undefined)),
+  max_price: z
+    .string()
+    .optional()
+    .refine((val) => !val || !isNaN(Number(val)) && Number(val) >= 0, {
+      message: 'Max price must be a non-negative number',
+    })
+    .transform((val) => (val ? parseFloat(val) : undefined)),
+  // Allow unknown params (for WooCommerce-specific params)
+}).passthrough();
 
 // ============================================
 // POST /api/woocommerce?endpoint=orders

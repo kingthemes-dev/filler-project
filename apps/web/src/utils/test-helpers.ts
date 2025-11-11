@@ -19,7 +19,7 @@ export const mockEnv = {
 };
 
 // Mock fetch for API testing
-export function mockFetch(response: any, status: number = 200) {
+export function mockFetch<T = unknown>(response: T, status: number = 200) {
   return jest.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
     status,
@@ -207,16 +207,16 @@ export function renderWithProviders(
 }
 
 // Test utilities for forms
-export function createMockFormEvent(values: Record<string, any>) {
+export function createMockFormEvent(values: Record<string, unknown>) {
   return {
     preventDefault: jest.fn(),
     target: {
       elements: Object.keys(values).reduce((acc, key) => {
         acc[key] = { value: values[key] };
         return acc;
-      }, {} as Record<string, { value: any }>)
+      }, {} as Record<string, { value: unknown }>)
     }
-  } as any;
+  } as unknown;
 }
 
 // Test utilities for async operations

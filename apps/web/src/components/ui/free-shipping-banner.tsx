@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { Truck } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useCartStore } from '@/stores/cart-store';
+import { useCartTotal, useCartItemCount } from '@/stores/cart-store';
 import { SHIPPING_CONFIG } from '@/config/constants';
 
 export default function FreeShippingBanner() {
   const [isShopModalOpen, setIsShopModalOpen] = useState(false);
-  const { total, itemCount } = useCartStore();
+  const total = useCartTotal();
+  const itemCount = useCartItemCount();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   

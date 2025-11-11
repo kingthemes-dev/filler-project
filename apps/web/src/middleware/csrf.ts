@@ -3,6 +3,18 @@ import { env } from '@/config/env';
 
 const CSRF_SECRET = env.CSRF_SECRET;
 
+export function shouldEnforceCsrf(): boolean {
+  const forceEnable = process.env.CSRF_FORCE_ENABLE === 'true';
+  const forceDisable = process.env.CSRF_FORCE_DISABLE === 'true';
+  if (forceDisable) {
+    return false;
+  }
+  if (forceEnable) {
+    return true;
+  }
+  return process.env.NODE_ENV === 'production';
+}
+
 export function generateCSRFToken(): string {
   const crypto = require('crypto');
   const timestamp = Date.now().toString();
@@ -39,8 +51,7 @@ export function validateCSRFToken(token: string): boolean {
 }
 
 export async function csrfMiddleware(request: NextRequest) {
-  // Disable CSRF checks in development to avoid edge runtime limitations
-  if (process.env.NODE_ENV !== 'production') {
+  if (!shouldEnforceCsrf()) {
     return NextResponse.next();
   }
 

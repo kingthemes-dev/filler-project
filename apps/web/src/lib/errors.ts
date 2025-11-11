@@ -31,12 +31,16 @@ export enum ErrorSeverity {
 }
 
 // Base error class
-export class AppError extends Error {
+export interface RateLimitDetails {
+  retryAfter: number;
+}
+
+export class AppError<TDetails = unknown> extends Error {
   public readonly type: ErrorType;
   public readonly statusCode: number;
   public readonly severity: ErrorSeverity;
   public readonly code: string;
-  public readonly details?: any;
+  public readonly details?: TDetails;
   public readonly retryable: boolean;
   public readonly timestamp: string;
 
@@ -47,7 +51,7 @@ export class AppError extends Error {
     options: {
       severity?: ErrorSeverity;
       code?: string;
-      details?: any;
+      details?: TDetails;
       retryable?: boolean;
     } = {}
   ) {
@@ -85,7 +89,7 @@ export class AppError extends Error {
 
 // Specific error classes
 export class ValidationError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: unknown) {
     super(message, ErrorType.VALIDATION, 400, {
       severity: ErrorSeverity.LOW,
       code: 'VALIDATION_ERROR',
@@ -97,7 +101,7 @@ export class ValidationError extends AppError {
 }
 
 export class AuthenticationError extends AppError {
-  constructor(message: string = 'Authentication required', details?: any) {
+  constructor(message: string = 'Authentication required', details?: Record<string, unknown>) {
     super(message, ErrorType.AUTHENTICATION, 401, {
       severity: ErrorSeverity.MEDIUM,
       code: 'AUTH_REQUIRED',
@@ -109,7 +113,7 @@ export class AuthenticationError extends AppError {
 }
 
 export class AuthorizationError extends AppError {
-  constructor(message: string = 'Insufficient permissions', details?: any) {
+  constructor(message: string = 'Insufficient permissions', details?: Record<string, unknown>) {
     super(message, ErrorType.AUTHORIZATION, 403, {
       severity: ErrorSeverity.MEDIUM,
       code: 'FORBIDDEN',
@@ -121,7 +125,7 @@ export class AuthorizationError extends AppError {
 }
 
 export class NotFoundError extends AppError {
-  constructor(message: string = 'Resource not found', details?: any) {
+  constructor(message: string = 'Resource not found', details?: Record<string, unknown>) {
     super(message, ErrorType.NOT_FOUND, 404, {
       severity: ErrorSeverity.LOW,
       code: 'NOT_FOUND',
@@ -132,7 +136,7 @@ export class NotFoundError extends AppError {
   }
 }
 
-export class RateLimitError extends AppError {
+export class RateLimitError extends AppError<RateLimitDetails | undefined> {
   constructor(message: string = 'Rate limit exceeded', retryAfter?: number) {
     super(message, ErrorType.RATE_LIMIT, 429, {
       severity: ErrorSeverity.MEDIUM,
@@ -148,7 +152,7 @@ export class ExternalApiError extends AppError {
   constructor(
     message: string,
     statusCode: number = 502,
-    details?: any,
+    details?: Record<string, unknown>,
     retryable: boolean = true
   ) {
     super(message, ErrorType.EXTERNAL_API, statusCode, {
@@ -162,7 +166,7 @@ export class ExternalApiError extends AppError {
 }
 
 export class TimeoutError extends AppError {
-  constructor(message: string = 'Request timeout', details?: any) {
+  constructor(message: string = 'Request timeout', details?: Record<string, unknown>) {
     super(message, ErrorType.TIMEOUT, 504, {
       severity: ErrorSeverity.MEDIUM,
       code: 'TIMEOUT',
@@ -174,7 +178,7 @@ export class TimeoutError extends AppError {
 }
 
 export class CircuitBreakerError extends AppError {
-  constructor(message: string = 'Service temporarily unavailable', details?: any) {
+  constructor(message: string = 'Service temporarily unavailable', details?: Record<string, unknown>) {
     super(message, ErrorType.CIRCUIT_BREAKER, 503, {
       severity: ErrorSeverity.HIGH,
       code: 'CIRCUIT_BREAKER_OPEN',
@@ -186,7 +190,7 @@ export class CircuitBreakerError extends AppError {
 }
 
 export class InternalError extends AppError {
-  constructor(message: string = 'Internal server error', details?: any) {
+  constructor(message: string = 'Internal server error', details?: Record<string, unknown>) {
     super(message, ErrorType.INTERNAL, 500, {
       severity: ErrorSeverity.CRITICAL,
       code: 'INTERNAL_ERROR',
@@ -300,7 +304,7 @@ export function createErrorResponse(error: unknown, context?: { endpoint?: strin
 
 // Success response helper (for consistency)
 export function createSuccessResponse(
-  data: any,
+  data: unknown,
   statusCode: number = 200,
   headers: Record<string, string> = {}
 ): NextResponse {
@@ -373,16 +377,16 @@ export async function withRetry<T>(
 }
 
 // Error boundary helper for async route handlers
-export function withErrorHandler<T extends (...args: any[]) => Promise<NextResponse>>(
+export function withErrorHandler<T extends (...args: unknown[]) => Promise<NextResponse>>(
   handler: T,
   context?: { endpoint?: string; method?: string }
-): T {
+): (...args: Parameters<T>) => Promise<NextResponse> {
   return (async (...args: Parameters<T>) => {
     try {
       return await handler(...args);
     } catch (error) {
       return createErrorResponse(error, context);
     }
-  }) as T;
+  });
 }
 

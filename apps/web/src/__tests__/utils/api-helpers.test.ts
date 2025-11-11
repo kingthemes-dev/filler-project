@@ -43,8 +43,8 @@ describe('sanitizeInput', () => {
 
   it('handles empty input', () => {
     expect(sanitizeInput('')).toBe('');
-    expect(sanitizeInput(null as any)).toBe('');
-    expect(sanitizeInput(undefined as any)).toBe('');
+    expect(sanitizeInput(null)).toBe('');
+    expect(sanitizeInput(undefined)).toBe('');
   });
 
   it('handles special characters', () => {
@@ -64,7 +64,7 @@ describe('validateEmail', () => {
     expect(validateEmail('@example.com')).toBe(false);
     expect(validateEmail('test@')).toBe(false);
     expect(validateEmail('')).toBe(false);
-    expect(validateEmail(null as any)).toBe(false);
+    expect(validateEmail(null)).toBe(false);
   });
 });
 
@@ -86,7 +86,7 @@ describe('formatError', () => {
   });
 
   it('handles unknown errors', () => {
-    const result = formatError(null as any);
+    const result = formatError(null);
     
     expect(result.message).toBe('Unknown error');
     expect(result.type).toBe('unknown');

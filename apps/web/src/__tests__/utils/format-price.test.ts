@@ -30,8 +30,8 @@ describe('formatPrice', () => {
   it('handles edge cases', () => {
     const norm = (s: string) => s.replace(/\u00A0/g, ' ');
     expect(norm(formatPrice(''))).toBe('0,00 zł');
-    expect(norm(formatPrice(null as any))).toBe('0,00 zł');
-    expect(norm(formatPrice(undefined as any))).toBe('0,00 zł');
+    expect(norm(formatPrice(null))).toBe('0,00 zł');
+    expect(norm(formatPrice(undefined))).toBe('0,00 zł');
   });
 });
 

@@ -5,14 +5,14 @@ import wooCommerceService from './woocommerce-optimized';
 import { logger } from '@/utils/logger';
 
 // Simple in-memory cache for dev mode
-const memoryCache = new Map<string, { value: any; expires: number }>();
+const memoryCache = new Map<string, { value: unknown; expires: number }>();
 
 const getCacheKey = (prefix: string, key: string): string => `${prefix}:${key}`;
 
 const getFromCache = <T>(key: string): T | null => {
   const cached = memoryCache.get(key);
   if (cached && cached.expires > Date.now()) {
-    return cached.value;
+    return cached.value as T;
   }
   if (cached) {
     memoryCache.delete(key);
@@ -20,7 +20,7 @@ const getFromCache = <T>(key: string): T | null => {
   return null;
 };
 
-const setToCache = (key: string, value: any, ttlSeconds: number = 300): void => {
+const setToCache = (key: string, value: unknown, ttlSeconds: number = 300): void => {
   const expires = Date.now() + (ttlSeconds * 1000);
   memoryCache.set(key, { value, expires });
   
@@ -115,7 +115,7 @@ export class WooCommerceSearchService {
 
       return result;
     } catch (error) {
-      logger.error('WooCommerce search error:', error);
+      logger.error('WooCommerce search error:', { error });
       return {
         products: [],
         total: 0,
@@ -193,7 +193,7 @@ export class WooCommerceSearchService {
 
       return result;
     } catch (error) {
-      logger.error('Error getting search suggestions:', error);
+      logger.error('Error getting search suggestions:', { error });
       // Fall back to popular searches on error
       return this.popularSearches.filter(search =>
         search.toLowerCase().includes(query.toLowerCase())
@@ -224,7 +224,7 @@ export class WooCommerceSearchService {
       
       return this.popularSearches.slice(0, limit);
     } catch (error) {
-      logger.error('Error getting popular searches:', error);
+      logger.error('Error getting popular searches:', { error });
       // Fallback to basic popular terms if API fails
       const fallbackSearches = [
         'kwas hialuronowy',
@@ -290,7 +290,7 @@ export class WooCommerceSearchService {
         });
       }
     } catch (error) {
-      logger.error('Error loading popular searches from WooCommerce:', error);
+      logger.error('Error loading popular searches from WooCommerce:', { error });
       // Set basic fallback searches
       this.popularSearches = [
         'kwas hialuronowy',
@@ -343,7 +343,7 @@ export class WooCommerceSearchService {
       }
 
       // Build search parameters
-      const searchParams: any = {
+      const searchParams: Record<string, unknown> = {
         search: query,
         per_page: limit,
         page: page,
@@ -382,7 +382,7 @@ export class WooCommerceSearchService {
 
       return result;
     } catch (error) {
-      logger.error('Advanced search error:', error);
+      logger.error('Advanced search error:', { error });
       return {
         products: [],
         total: 0,
@@ -422,7 +422,7 @@ export class WooCommerceSearchService {
         cacheHitRate: 0
       };
     } catch (error) {
-      logger.error('Error getting search analytics:', error);
+      logger.error('Error getting search analytics:', { error });
       return {
         totalSearches: 0,
         popularQueries: [],
@@ -450,7 +450,7 @@ export class WooCommerceSearchService {
         logger.info('Search cache cleared', { keysCount: allKeys.length });
       }
     } catch (error) {
-      logger.error('Error clearing search cache:', error);
+      logger.error('Error clearing search cache:', { error });
     }
   }
 }

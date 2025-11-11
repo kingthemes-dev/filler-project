@@ -4,9 +4,28 @@ import { logger } from '@/utils/logger';
 import { performanceReportSchema } from '@/lib/schemas/internal';
 import { validateApiInput } from '@/utils/request-validation';
 import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { checkEndpointRateLimit } from '@/utils/rate-limiter';
+import { getClientIP } from '@/utils/client-ip';
+import { RateLimitError } from '@/lib/errors';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const clientIp = getClientIP(request);
+    const path = request.nextUrl.pathname;
+    const rateLimitResult = await checkEndpointRateLimit(path, clientIp);
+    
+    if (!rateLimitResult.allowed) {
+      logger.warn('Performance POST: Rate limit exceeded', {
+        ip: clientIp,
+        remaining: rateLimitResult.remaining,
+      });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retryAfter: rateLimitResult.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfter || 60) } }
+      );
+    }
+    
     const body = await request.json();
     const sanitizedBody = validateApiInput(body);
     const validationResult = performanceReportSchema.safeParse(sanitizedBody);
@@ -53,10 +72,34 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
-  return NextResponse.json({
-    status: 'active',
-    features: ['web-vitals', 'api-monitoring', 'bundle-size', 'memory-usage'],
-    version: '1.0.0',
-  });
+export async function GET(request: NextRequest) {
+  try {
+    // Rate limiting
+    const clientIp = getClientIP(request);
+    const path = request.nextUrl.pathname;
+    const rateLimitResult = await checkEndpointRateLimit(path, clientIp);
+    
+    if (!rateLimitResult.allowed) {
+      logger.warn('Performance GET: Rate limit exceeded', {
+        ip: clientIp,
+        remaining: rateLimitResult.remaining,
+      });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retryAfter: rateLimitResult.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfter || 60) } }
+      );
+    }
+    
+    return NextResponse.json({
+      status: 'active',
+      features: ['web-vitals', 'api-monitoring', 'bundle-size', 'memory-usage'],
+      version: '1.0.0',
+    });
+  } catch (error) {
+    logger.error('Performance GET error', { error });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }

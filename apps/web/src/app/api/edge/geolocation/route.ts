@@ -5,13 +5,13 @@ export const runtime = 'edge';
 export async function GET(request: NextRequest) {
   try {
     // Get user's country from Cloudflare headers
-    const country = (request as any).geo?.country || 'US';
-    const city = (request as any).geo?.city || 'Unknown';
-    const region = (request as any).geo?.region || 'Unknown';
-    const timezone = (request as any).geo?.timezone || 'UTC';
+    const country = request.geo?.country ?? 'US';
+    const city = request.geo?.city ?? 'Unknown';
+    const region = request.geo?.region ?? 'Unknown';
+    const timezone = request.geo?.timezone ?? 'UTC';
 
     // Get user's IP
-    const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'Unknown';
+    const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? 'Unknown';
 
     // Get user agent
     const userAgent = request.headers.get('user-agent') || 'Unknown';

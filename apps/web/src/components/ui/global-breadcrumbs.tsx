@@ -3,6 +3,10 @@
 import { usePathname } from 'next/navigation';
 import Breadcrumbs from './breadcrumbs';
 import { Home, FileText } from 'lucide-react';
+import type { ComponentType } from 'react';
+
+const HomeIcon: ComponentType<{ className?: string }> = (props) => <Home {...props} />;
+const FileIcon: ComponentType<{ className?: string }> = (props) => <FileText {...props} />;
 
 // Map slugs to readable labels
 const pageLabels: Record<string, string> = {
@@ -32,7 +36,7 @@ export default function GlobalBreadcrumbs() {
   // Generate breadcrumbs from pathname
   const generateBreadcrumbs = () => {
     const breadcrumbs = [
-      { label: 'Strona główna', href: '/', icon: Home as any }
+      { label: 'Strona główna', href: '/', icon: HomeIcon }
     ];
     
     const segments = pathname.split('/').filter(Boolean);
@@ -40,7 +44,7 @@ export default function GlobalBreadcrumbs() {
     segments.forEach((segment, index) => {
       const href = '/' + segments.slice(0, index + 1).join('/');
       const label = pageLabels[segment] || segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
-      breadcrumbs.push({ label, href, icon: FileText as any });
+      breadcrumbs.push({ label, href, icon: FileIcon });
     });
     
     return breadcrumbs;

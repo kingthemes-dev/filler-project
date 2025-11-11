@@ -3,6 +3,54 @@ import ShopClient from './shop-client';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
 import { Metadata } from 'next';
 import { getFirstProductImageUrl } from '@/components/product-image-server-preload';
+import type { WooProduct } from '@/types/woocommerce';
+
+interface WooCategorySummary {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface ShopCategory {
+  id: number;
+  name: string;
+  slug: string;
+  count?: number;
+}
+
+interface ShopApiResponse {
+  success: boolean;
+  products: WooProduct[];
+  total: number;
+  categories: ShopCategory[];
+  attributes: Record<string, unknown>;
+}
+const isWooProduct = (value: unknown): value is WooProduct => {
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return typeof record.id === 'number' && typeof record.name === 'string';
+};
+
+const isShopCategory = (value: unknown): value is ShopCategory => {
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.id === 'number' &&
+    typeof record.name === 'string' &&
+    typeof record.slug === 'string'
+  );
+};
+
+
+const isWooCategorySummary = (value: unknown): value is WooCategorySummary => {
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.id === 'number' &&
+    typeof record.name === 'string' &&
+    typeof record.slug === 'string'
+  );
+};
 
 // PRO: Static generation with ISR for better performance
 export const revalidate = 300; // 5 minutes
@@ -16,7 +64,7 @@ export async function generateMetadata({ searchParams }: { searchParams?: Promis
   
   // Statyczne metadata dla szybkości - fetch opcjonalny tylko jeśli potrzebny
   // Fetch tylko dla kategorii (nie blokuje głównego renderowania)
-  let categoryData = null;
+  let categoryData: WooCategorySummary | null = null;
   if (category) {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 
@@ -26,8 +74,12 @@ export async function generateMetadata({ searchParams }: { searchParams?: Promis
         signal: AbortSignal.timeout(3000) // Zredukowany z 5s do 3s
       });
       if (res.ok) {
-        const categories = await res.json();
-        categoryData = categories?.find((cat: any) => cat.slug === category);
+        const categoriesJson: unknown = await res.json();
+        if (Array.isArray(categoriesJson)) {
+          categoryData = categoriesJson.find((cat): cat is WooCategorySummary => {
+            return isWooCategorySummary(cat) && cat.slug === category;
+          }) ?? null;
+        }
       }
     } catch {
       // Ignore - użyj fallback metadata
@@ -110,7 +162,8 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     shopParams.append('order', initialFilters.sortOrder);
     
     // Server-side initial payload for instant render (critical path)
-    let initialShopData: any = { products: [], total: 0, categories: [] };
+    const emptyShopData: ShopApiResponse = { success: false, products: [], total: 0, categories: [], attributes: {} };
+    let initialShopData: ShopApiResponse = emptyShopData;
     
     // Równoległe prefetche - wszystkie naraz zamiast sekwencyjnie
     const [shopDataRes] = await Promise.allSettled([
@@ -123,7 +176,15 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
     
     // Przetwórz wynik shop data
     if (shopDataRes.status === 'fulfilled' && shopDataRes.value.ok) {
-      initialShopData = await shopDataRes.value.json();
+      const shopDataJson: unknown = await shopDataRes.value.json();
+      if (shopDataJson && typeof shopDataJson === 'object') {
+        const rawProducts = (shopDataJson as { products?: unknown[] }).products ?? [];
+        const products = Array.isArray(rawProducts) ? rawProducts.filter(isWooProduct) : [];
+        const total = Number((shopDataJson as { total?: number }).total ?? 0);
+        const rawCategories = (shopDataJson as { categories?: unknown[] }).categories ?? [];
+        const categories = Array.isArray(rawCategories) ? rawCategories.filter(isShopCategory) : [];
+        initialShopData = { success: true, products, total, categories, attributes: {} };
+      }
     }
     
     // Prefetch dla React Query cache (non-blocking, równoległe)
@@ -131,13 +192,22 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       // Shop products query cache
       qc.prefetchQuery({
         queryKey: ['shop','products',{ page: 1, perPage: 16, filters: JSON.stringify(initialFilters) }],
-        queryFn: async () => {
+        queryFn: async (): Promise<ShopApiResponse> => {
           const res = await fetch(`/api/woocommerce?${shopParams.toString()}`, { 
             next: { revalidate: 30 },
             signal: AbortSignal.timeout(5000)
           });
-          if (!res.ok) return { products: [], total: 0, categories: [] };
-          return res.json();
+          if (!res.ok) return emptyShopData;
+          const json: unknown = await res.json();
+          if (json && typeof json === 'object') {
+            const rawProducts = (json as { products?: unknown[] }).products ?? [];
+            const products = Array.isArray(rawProducts) ? rawProducts.filter(isWooProduct) : [];
+            const total = Number((json as { total?: number }).total ?? 0);
+            const rawCategories = (json as { categories?: unknown[] }).categories ?? [];
+            const categories = Array.isArray(rawCategories) ? rawCategories.filter(isShopCategory) : [];
+            return { success: true, products, total, categories, attributes: {} };
+          }
+          return emptyShopData;
         },
         staleTime: 2 * 60_000, // 2 minuty cache
         retry: 1,
@@ -146,13 +216,19 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       // Categories cache (mniej krytyczne - można lazy load)
       qc.prefetchQuery({
         queryKey: ['shop','categories'],
-        queryFn: async () => {
+        queryFn: async (): Promise<WooCategorySummary[]> => {
           const res = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/categories`, {
             next: { revalidate: 600 },
             signal: AbortSignal.timeout(3000) // Zredukowany z 5s do 3s
           });
           if (!res.ok) return [];
-          return res.json();
+          const json: unknown = await res.json();
+          if (Array.isArray(json)) {
+            return json.filter((cat): cat is WooCategorySummary => {
+              return typeof cat === 'object' && cat !== null && 'slug' in cat && 'name' in cat && 'id' in cat;
+            });
+          }
+          return [];
         },
         staleTime: 30 * 60_000, // 🚀 PRIORITY 1: 30 minut cache (kategorie rzadko się zmieniają)
         gcTime: 60 * 60_000, // 1 godzina garbage collection
@@ -166,7 +242,7 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
       prefetchPromises.push(
         qc.prefetchQuery({
           queryKey: ['shop','attributes',{ categories: [], search: '', min: 0, max: 10000, selected: [] }],
-          queryFn: async () => {
+          queryFn: async (): Promise<Record<string, unknown>> => {
             const params = new URLSearchParams();
             params.append('endpoint', 'attributes');
             const res = await fetch(`/api/woocommerce?${params.toString()}`, { 
@@ -174,7 +250,8 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
               signal: AbortSignal.timeout(5000)
             });
             if (!res.ok) return {};
-            return res.json();
+            const json: unknown = await res.json();
+            return (json && typeof json === 'object') ? json as Record<string, unknown> : {};
           },
           staleTime: 30 * 60_000, // 🚀 PRIORITY 1: 30 minut cache (atrybuty rzadko się zmieniają)
           gcTime: 60 * 60_000, // 1 godzina garbage collection

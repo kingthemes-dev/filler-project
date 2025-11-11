@@ -4,6 +4,8 @@ import { performanceMetricsSchema } from '@/lib/schemas/internal';
 import { validateApiInput } from '@/utils/request-validation';
 import { createErrorResponse, ValidationError } from '@/lib/errors';
 import { logger } from '@/utils/logger';
+import { checkEndpointRateLimit } from '@/utils/rate-limiter';
+import { getClientIP } from '@/utils/client-ip';
 
 type MetricMetadata = Record<string, unknown>;
 type MetricRecord = { name: string; value: number; timestamp?: string; url?: string; metadata?: MetricMetadata };
@@ -26,6 +28,22 @@ function isMetricObject(value: unknown): value is MetricObject {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const clientIp = getClientIP(request);
+    const path = request.nextUrl.pathname;
+    const rateLimitResult = await checkEndpointRateLimit(path, clientIp);
+    
+    if (!rateLimitResult.allowed) {
+      logger.warn('Performance metrics: Rate limit exceeded', {
+        ip: clientIp,
+        remaining: rateLimitResult.remaining,
+      });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retryAfter: rateLimitResult.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfter || 60) } }
+      );
+    }
+    
     const body = await request.json();
     const sanitizedBody = validateApiInput(body);
     const validationResult = performanceMetricsSchema.safeParse(sanitizedBody);

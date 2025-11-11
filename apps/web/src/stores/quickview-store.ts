@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { WooProduct } from '@/types/woocommerce';
 
@@ -14,3 +15,18 @@ export const useQuickViewStore = create<QuickViewStore>((set) => ({
   openQuickView: (product: WooProduct | null) => set({ isOpen: true, product }),
   closeQuickView: () => set({ isOpen: false, product: null }),
 }));
+
+// Selectors for optimized subscriptions
+export const useQuickViewIsOpen = () => useQuickViewStore((state) => state.isOpen);
+export const useQuickViewProduct = () => useQuickViewStore((state) => state.product);
+
+// Memoized selectors for actions to prevent re-renders
+export const useQuickViewActions = () => {
+  const openQuickView = useQuickViewStore((state) => state.openQuickView);
+  const closeQuickView = useQuickViewStore((state) => state.closeQuickView);
+  
+  return useMemo(() => ({
+    openQuickView,
+    closeQuickView,
+  }), [openQuickView, closeQuickView]);
+};

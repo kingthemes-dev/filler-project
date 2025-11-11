@@ -11,3 +11,16 @@ respect_project_rules: true
 include_aliases: true
 enforce_env_security: true
 framework_strict: true
+
+rules:
+  - rule: "Alias Consistency"
+    check: "verify tsconfig paths match existing folders; warn if alias missing or unused"
+    autoFix: true
+
+  - rule: "Docs Sync Reminder"
+    check: "if source code changes affect endpoints or components, remind to run Docs Sync"
+    autoFix: false
+    
+  - rule: "Changelog Update Reminder"
+    check: "after commits tagged feat or fix, remind to update CHANGELOG.md"
+    autoFix: false

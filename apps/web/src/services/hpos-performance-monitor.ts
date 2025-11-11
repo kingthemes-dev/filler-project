@@ -40,7 +40,7 @@ interface PerformanceMetrics {
 interface MetricEntry {
   timestamp: number;
   value: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 class HPOSPerformanceMonitor {
@@ -93,7 +93,7 @@ class HPOSPerformanceMonitor {
     }, 5 * 60 * 1000);
   }
 
-  private addTimeSeriesData(key: string, value: number, metadata?: Record<string, any>): void {
+  private addTimeSeriesData(key: string, value: number, metadata?: Record<string, unknown>): void {
     const entry: MetricEntry = {
       timestamp: Date.now(),
       value,

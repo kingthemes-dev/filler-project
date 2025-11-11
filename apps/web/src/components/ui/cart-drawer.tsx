@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import ModalCloseButton from './modal-close-button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Trash2, Plus, Minus, Truck, ArrowRight } from 'lucide-react';
-import { useCartStore, type CartItem } from '@/stores/cart-store';
-import { useAuthStore } from '@/stores/auth-store';
+import { useCartState, useCartActions, type CartItem } from '@/stores/cart-store';
+import { useAuthIsAuthenticated, useAuthUser, useAuthActions } from '@/stores/auth-store';
 import { analytics } from '@headless-woo/shared/utils/analytics';
 import { formatPrice } from '@/utils/format-price';
 import { SHIPPING_CONFIG } from '@/config/constants';
@@ -13,8 +13,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export default function CartDrawer() {
-  const { isOpen, closeCart, items, total, itemCount, removeItem, updateQuantity } = useCartStore();
-  const { isAuthenticated, user, fetchUserProfile } = useAuthStore();
+  const { isOpen, items, total, itemCount } = useCartState();
+  const { closeCart, removeItem, updateQuantity } = useCartActions();
+  const isAuthenticated = useAuthIsAuthenticated();
+  const user = useAuthUser();
+  const { fetchUserProfile } = useAuthActions();
   
   // Swipe gesture state
   const [touchStart, setTouchStart] = useState<number | null>(null);

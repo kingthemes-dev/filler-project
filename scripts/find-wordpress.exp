@@ -1,0 +1,33 @@
+#!/usr/bin/expect -f
+# Find WordPress location
+set timeout 30
+set ssh_user "qvwltjhdjw"
+set ssh_host "s62.cyber-folks.pl"
+set ssh_port "222"
+set ssh_pass "Haslo963!@#"
+
+puts "🔍 Finding WordPress installation..."
+
+spawn ssh -p $ssh_port -o StrictHostKeyChecking=no $ssh_user@$ssh_host "cd ~ && echo 'Home dir:' && pwd && echo '---' && echo 'Checking public_html...' && ls -la public_html/ 2>&1 | head -10 || echo 'public_html not in home' && echo '---' && echo 'Checking domains...' && ls -la domains/ 2>&1 | head -10 || echo 'domains not in home' && echo '---' && echo 'Finding wp-config.php...' && find ~ -name 'wp-config.php' -type f 2>/dev/null | head -3"
+
+expect {
+    "password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+    timeout {
+        puts "⚠️  Connection timeout"
+    }
+}
+

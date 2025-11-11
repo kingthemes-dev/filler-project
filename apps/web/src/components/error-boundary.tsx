@@ -91,8 +91,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     // Log error to external service in production
     if (process.env.NODE_ENV === 'production') {
       // FIX: Użyj Sentry zamiast console.error
-      if (typeof window !== 'undefined' && (window as any).Sentry) {
-        (window as any).Sentry.captureException(error, {
+      if (typeof window !== 'undefined' && window.Sentry) {
+        window.Sentry.captureException(error, {
           contexts: {
             react: {
               componentStack: errorInfo.componentStack

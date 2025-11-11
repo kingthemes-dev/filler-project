@@ -14,6 +14,27 @@ import {
   changePasswordSchema,
 } from '@/lib/schemas/woocommerce';
 
+const createMinimalBilling = () => ({
+  first_name: 'Jan',
+  last_name: 'Kowalski',
+  address_1: 'ul. Testowa 1',
+  city: 'Warszawa',
+  postcode: '00-001',
+  country: 'PL',
+});
+
+const createMinimalLineItem = () => ({
+  product_id: 123,
+  quantity: 1,
+});
+
+const buildBaseOrder = (overrides = {}) => ({
+  billing: createMinimalBilling(),
+  line_items: [createMinimalLineItem()],
+  payment_method: 'bacs',
+  ...overrides,
+});
+
 describe('WooCommerce Zod Schemas', () => {
   describe('woocommerceQuerySchema', () => {
     test('validates valid query parameters', () => {
@@ -206,16 +227,8 @@ describe('WooCommerce Zod Schemas', () => {
 
   describe('orderSchema', () => {
     test('validates valid order', () => {
-      const valid = {
+      const valid = buildBaseOrder({
         customer_id: 123,
-        billing: {
-          first_name: 'Jan',
-          last_name: 'Kowalski',
-          address_1: 'ul. Testowa 1',
-          city: 'Warszawa',
-          postcode: '00-001',
-          country: 'PL',
-        },
         shipping: {
           first_name: 'Jan',
           last_name: 'Kowalski',
@@ -224,13 +237,6 @@ describe('WooCommerce Zod Schemas', () => {
           postcode: '00-001',
           country: 'PL',
         },
-        line_items: [
-          {
-            product_id: 123,
-            quantity: 1,
-          },
-        ],
-        payment_method: 'bacs',
         payment_method_title: 'Przelew bankowy',
         set_paid: false,
         meta_data: [{ key: 'test', value: 'test' }],
@@ -242,16 +248,14 @@ describe('WooCommerce Zod Schemas', () => {
             total: '0',
           },
         ],
-      };
+      });
 
       const result = orderSchema.safeParse(valid);
       expect(result.success).toBe(true);
     });
 
     test('requires at least one line item', () => {
-      const invalid = {
-        line_items: [],
-      };
+      const invalid = buildBaseOrder({ line_items: [] });
 
       const result = orderSchema.safeParse(invalid);
       expect(result.success).toBe(false);
@@ -261,14 +265,7 @@ describe('WooCommerce Zod Schemas', () => {
     });
 
     test('accepts minimal order', () => {
-      const minimal = {
-        line_items: [
-          {
-            product_id: 123,
-            quantity: 1,
-          },
-        ],
-      };
+      const minimal = buildBaseOrder();
 
       const result = orderSchema.safeParse(minimal);
       expect(result.success).toBe(true);

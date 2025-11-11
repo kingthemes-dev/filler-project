@@ -13,7 +13,7 @@ export interface ErrorReport {
   sessionId: string;
   level: 'error' | 'warning' | 'info';
   category: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PerformanceMetric {
@@ -21,13 +21,13 @@ export interface PerformanceMetric {
   value: number;
   timestamp: string;
   url: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Analytics Types
 export interface AnalyticsEvent {
   event_name: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   timestamp: string;
   user_id?: string;
   session_id: string;
@@ -47,7 +47,7 @@ export interface EcommerceEvent {
       price?: number;
     }>;
   };
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
 }
 
 // Security Types
@@ -56,7 +56,7 @@ export interface SecurityCheck {
   status: 'pass' | 'fail' | 'warning';
   message: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  details?: any;
+  details?: Record<string, unknown> | string | null;
 }
 
 export interface SecurityAuditResult {
@@ -107,8 +107,8 @@ declare global {
       getSessionId: () => string;
     };
     analytics?: {
-      trackEvent: (eventName: string, parameters?: Record<string, any>) => void;
-      trackPurchase: (transactionId: string, value: number, items: any[], currency?: string) => void;
+      trackEvent: (eventName: string, parameters?: Record<string, unknown>) => void;
+      trackPurchase: (transactionId: string, value: number, items: Array<Record<string, unknown>>, currency?: string) => void;
       trackAddToCart: (itemId: string, itemName: string, itemCategory: string, price: number, quantity?: number) => void;
       trackViewItem: (itemId: string, itemName: string, itemCategory: string, price: number) => void;
       setUserId: (userId: string) => void;

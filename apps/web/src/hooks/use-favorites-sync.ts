@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
-import { useFavoritesStore } from '@/stores/favorites-store';
-import { useAuthStore } from '@/stores/auth-store';
+import { useFavoritesActions, useFavoritesLastSyncTime } from '@/stores/favorites-store';
+import { useAuthIsAuthenticated, useAuthUser } from '@/stores/auth-store';
 
 export const useFavoritesSync = () => {
-  const { isAuthenticated, user } = useAuthStore();
-  const { loadFromAPI, syncWithAPI, lastSyncTime } = useFavoritesStore();
+  const isAuthenticated = useAuthIsAuthenticated();
+  const user = useAuthUser();
+  const { loadFromAPI, syncWithAPI } = useFavoritesActions();
+  const lastSyncTime = useFavoritesLastSyncTime();
 
   useEffect(() => {
     const syncFavorites = async () => {

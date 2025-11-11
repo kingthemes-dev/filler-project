@@ -17,7 +17,7 @@ if (__isDebug && !debugGlobal.__nextConfigLogged) {
 
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,

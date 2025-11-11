@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import ModalCloseButton from '../modal-close-button';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthIsAuthenticated, useAuthIsLoading, useAuthError, useAuthActions } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import ForgotPasswordModal from './forgot-password-modal';
 import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
@@ -17,7 +17,10 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: LoginModalProps) {
-  const { login, isLoading, error, isAuthenticated } = useAuthStore();
+  const { login } = useAuthActions();
+  const isLoading = useAuthIsLoading();
+  const error = useAuthError();
+  const isAuthenticated = useAuthIsAuthenticated();
   const [formData, setFormData] = useState({
     email: '',
     password: ''

@@ -7,6 +7,11 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
+type LayoutShiftEntry = PerformanceEntry & {
+  value: number;
+  hadRecentInput?: boolean;
+};
+
 /**
  * Hook to optimize Largest Contentful Paint (LCP)
  */
@@ -56,32 +61,33 @@ export function useLCPOptimization() {
  */
 export function useCLSOptimization() {
   const [clsScore, setClsScore] = useState<number>(0);
-  const [clsEntries, setClsEntries] = useState<any[]>([]);
+  const [clsEntries, setClsEntries] = useState<LayoutShiftEntry[]>([]);
   const observerRef = useRef<PerformanceObserver | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     let clsValue = 0;
-    const clsEntries: any[] = [];
+    const layoutShifts: LayoutShiftEntry[] = [];
 
     observerRef.current = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         // Only count layout shifts without recent user input
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
-          clsEntries.push(entry);
+        const layoutShift = entry as LayoutShiftEntry;
+        if (!layoutShift.hadRecentInput) {
+          clsValue += layoutShift.value;
+          layoutShifts.push(layoutShift);
         }
       }
 
       setClsScore(clsValue);
-      setClsEntries([...clsEntries]);
+      setClsEntries([...layoutShifts]);
 
       // Log CLS for debugging
       if (clsValue > 0.1) {
         console.warn('⚠️ CLS detected:', {
           score: clsValue,
-          entries: clsEntries.length,
+          entries: layoutShifts.length,
           threshold: 0.1
         });
       }

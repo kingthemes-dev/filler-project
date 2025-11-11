@@ -5,6 +5,9 @@ import { z } from 'zod';
 import { validateApiInput } from '@/utils/request-validation';
 import { createErrorResponse, ValidationError } from '@/lib/errors';
 import { logger } from '@/utils/logger';
+import { env } from '@/config/env';
+import { checkEndpointRateLimit } from '@/utils/rate-limiter';
+import { getClientIP } from '@/utils/client-ip';
 
 const cachePurgeSchema = z
   .object({
@@ -28,14 +31,33 @@ const cachePurgeSchema = z
     }
   });
 
-const ADMIN_TOKEN = process.env.ADMIN_CACHE_TOKEN || 'dev-token-123';
-
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting (before auth to avoid wasting resources)
+    const clientIp = getClientIP(request);
+    const path = request.nextUrl.pathname;
+    const rateLimitResult = await checkEndpointRateLimit(path, clientIp);
+    
+    if (!rateLimitResult.allowed) {
+      logger.warn('Cache purge: Rate limit exceeded', {
+        ip: clientIp,
+        remaining: rateLimitResult.remaining,
+      });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retryAfter: rateLimitResult.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfter || 60) } }
+      );
+    }
+    
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '') || request.headers.get('x-admin-token');
+    const expectedToken = env.ADMIN_CACHE_TOKEN || process.env.ADMIN_CACHE_TOKEN;
     
-    if (!token || token !== ADMIN_TOKEN) {
+    if (!token || !expectedToken || token !== expectedToken) {
+      logger.warn('Cache purge: Unauthorized attempt', {
+        hasToken: !!token,
+        hasExpectedToken: !!expectedToken,
+      });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -92,10 +114,31 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting (before auth to avoid wasting resources)
+    const clientIp = getClientIP(request);
+    const path = request.nextUrl.pathname;
+    const rateLimitResult = await checkEndpointRateLimit(path, clientIp);
+    
+    if (!rateLimitResult.allowed) {
+      logger.warn('Cache purge GET: Rate limit exceeded', {
+        ip: clientIp,
+        remaining: rateLimitResult.remaining,
+      });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded', retryAfter: rateLimitResult.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfter || 60) } }
+      );
+    }
+    
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '') || request.headers.get('x-admin-token');
+    const expectedToken = env.ADMIN_CACHE_TOKEN || process.env.ADMIN_CACHE_TOKEN;
     
-    if (!token || token !== ADMIN_TOKEN) {
+    if (!token || !expectedToken || token !== expectedToken) {
+      logger.warn('Cache purge GET: Unauthorized attempt', {
+        hasToken: !!token,
+        hasExpectedToken: !!expectedToken,
+      });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

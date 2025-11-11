@@ -58,7 +58,7 @@ class CacheWarmer {
 
       logger.info('Cache warming completed successfully');
     } catch (error) {
-      logger.error('Cache warming failed:', error);
+      logger.error('Cache warming failed:', { error });
     } finally {
       this.isRunning = false;
     }
@@ -82,7 +82,7 @@ class CacheWarmer {
         logger.info(`Warmed categories cache: ${categories.length} categories`);
       }
     } catch (error) {
-      logger.error('Failed to warm categories cache:', error);
+      logger.error('Failed to warm categories cache:', { error });
     }
   }
 
@@ -110,7 +110,7 @@ class CacheWarmer {
         }
       }
     } catch (error) {
-      logger.error('Failed to warm products cache:', error);
+      logger.error('Failed to warm products cache:', { error });
     }
   }
 
@@ -132,7 +132,7 @@ class CacheWarmer {
         logger.info('Warmed home feed cache');
       }
     } catch (error) {
-      logger.error('Failed to warm home feed cache:', error);
+      logger.error('Failed to warm home feed cache:', { error });
     }
   }
 
@@ -167,7 +167,7 @@ class CacheWarmer {
         }
       }
     } catch (error) {
-      logger.error('Failed to warm search cache:', error);
+      logger.error('Failed to warm search cache:', { error });
     }
   }
 

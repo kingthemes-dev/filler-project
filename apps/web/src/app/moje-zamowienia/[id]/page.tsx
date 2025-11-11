@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Package, ArrowLeft, Calendar, CheckCircle, Clock, Truck, User, MapPin, CreditCard } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthUser, useAuthIsAuthenticated } from '@/stores/auth-store';
 import { formatPrice } from '@/utils/format-price';
 import PageContainer from '@/components/ui/page-container';
+import { WooOrder, WooLineItem, WooMetaData } from '@/types/woocommerce';
+
+const PLACEHOLDER_IMAGE = 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
 
 interface OrderItem {
 	id: number;
@@ -70,19 +73,60 @@ function mapOrderStatusToUi(status: string) {
 	}
 }
 
+const lineItemImage = (item: WooLineItem): string => {
+	const withImage = item as WooLineItem & { image?: { src?: string }; product_image?: string };
+	return withImage.image?.src || withImage.product_image || PLACEHOLDER_IMAGE;
+};
+
+const toOrderItem = (item: WooLineItem): OrderItem => ({
+	id: item.id,
+	name: item.name,
+	quantity: item.quantity,
+	price: Math.round((typeof item.price === 'number' ? item.price : Number.parseFloat(String(item.price))) * 100),
+	image: lineItemImage(item),
+	meta: (item.meta_data as WooMetaData[] | undefined)?.map((meta) => ({
+		key: meta.key,
+		value: String(meta.value ?? ''),
+	})),
+});
+
+const transformOrder = (data: WooOrder): OrderDetails => ({
+	id: data.id,
+	number: data.number,
+	status: data.status,
+	date_created: data.date_created,
+	currency: data.currency,
+	total: Math.round(Number.parseFloat(data.total) * 100),
+	customer_id: data.customer_id,
+	payment_method_title: data.payment_method_title,
+	billing: data.billing,
+	shipping: data.shipping,
+	line_items: (data.line_items ?? []).map(toOrderItem),
+	meta_data: data.meta_data.map((meta) => ({
+		key: meta.key,
+		value: String(meta.value ?? ''),
+	})),
+});
+
 export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
 	const router = useRouter();
-	const { user, isAuthenticated } = useAuthStore();
+	const user = useAuthUser();
+	const isAuthenticated = useAuthIsAuthenticated();
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [order, setOrder] = useState<OrderDetails | null>(null);
-	const [orderId, setOrderId] = useState<string | null>(null);
+	const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
 
-	// Handle async params
 	useEffect(() => {
-		params.then(resolvedParams => {
-			setOrderId(resolvedParams.id);
+		let isCancelled = false;
+		params.then((value) => {
+			if (!isCancelled) {
+				setResolvedParams(value);
+			}
 		});
+		return () => {
+			isCancelled = true;
+		};
 	}, [params]);
 
 	useEffect(() => {
@@ -91,6 +135,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 			router.push('/');
 			return;
 		}
+		const orderId = resolvedParams?.id;
 		if (!orderId) return;
 
 		const fetchOrder = async () => {
@@ -98,33 +143,20 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 				setLoading(true);
 				setError(null);
 				const res = await fetch(`/api/woocommerce?endpoint=orders/${orderId}`);
-				const data = await res.json();
+				const data: unknown = await res.json();
 				if (!res.ok) {
-					throw new Error(data?.error || 'Nie udało się pobrać zamówienia');
+					const message =
+						typeof data === 'object' && data !== null && 'error' in data
+							? String((data as { error?: unknown }).error ?? '')
+							: 'Nie udało się pobrać zamówienia';
+					throw new Error(message || 'Nie udało się pobrać zamówienia');
 				}
 
-				// Woo zwraca pojedynczy obiekt
-				const transformed: OrderDetails = {
-					id: data.id,
-					number: data.number,
-					status: data.status,
-					date_created: data.date_created,
-					currency: data.currency,
-					total: Math.round(parseFloat(data.total) * 100),
-					customer_id: data.customer_id,
-					payment_method_title: data.payment_method_title,
-					billing: data.billing,
-					shipping: data.shipping,
-					line_items: (data.line_items || []).map((it: any) => ({
-						id: it.id,
-						name: it.name,
-						quantity: it.quantity,
-						price: Math.round(parseFloat(it.price) * 100),
-						image: it.image?.src,
-						meta: it.meta_data
-					})),
-					meta_data: data.meta_data
-				};
+				if (!data || typeof data !== 'object') {
+					throw new Error('Nieprawidłowa odpowiedź serwera');
+				}
+
+				const transformed = transformOrder(data as WooOrder);
 
 				// Autoryzacja po stronie klienta – widok tylko dla właściciela
 				if (user?.id && transformed.customer_id && Number(user.id) !== Number(transformed.customer_id)) {
@@ -132,15 +164,15 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 				}
 
 				setOrder(transformed);
-			} catch (e: any) {
-				setError(e?.message || 'Wystąpił błąd');
+			} catch (error) {
+				setError(error instanceof Error ? error.message : 'Wystąpił błąd');
 			} finally {
 				setLoading(false);
 			}
 		};
 
 		fetchOrder();
-	}, [isAuthenticated, orderId, router, user?.id]);
+	}, [isAuthenticated, resolvedParams?.id, router, user?.id]);
 
 	if (!isAuthenticated) {
 		return (

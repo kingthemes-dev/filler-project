@@ -2,7 +2,11 @@
  * Formatuje cenę w formacie PLN (wejście w złotówkach)
  * Bez separatorów tysięcy (np. 1999,00 zł zamiast 1 999,00 zł)
  */
-export function formatPrice(price: number | string): string {
+export function formatPrice(price: number | string | null | undefined): string {
+  if (price === null || price === undefined || (typeof price === 'string' && price.trim() === '')) {
+    return '0,00 zł';
+  }
+
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
   
   if (isNaN(numPrice)) {

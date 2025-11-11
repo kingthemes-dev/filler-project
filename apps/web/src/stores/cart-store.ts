@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useMemo } from 'react';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import { calculatePriceWithVAT } from '@/utils/format-price';
 import { logger } from '@/utils/logger';
@@ -251,3 +252,46 @@ export const useCartStore = create<CartStore>()(
     }
   )
 );
+
+// Selectors for optimized subscriptions
+export const useCartItems = () => useCartStore((state) => state.items);
+export const useCartIsOpen = () => useCartStore((state) => state.isOpen);
+export const useCartTotal = () => useCartStore((state) => state.total);
+export const useCartItemCount = () => useCartStore((state) => state.itemCount);
+
+// Memoized selectors for actions to prevent re-renders
+export const useCartActions = () => {
+  const addItem = useCartStore((state) => state.addItem);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const toggleCart = useCartStore((state) => state.toggleCart);
+  const openCart = useCartStore((state) => state.openCart);
+  const closeCart = useCartStore((state) => state.closeCart);
+  const calculateTotal = useCartStore((state) => state.calculateTotal);
+  
+  return useMemo(() => ({
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    toggleCart,
+    openCart,
+    closeCart,
+    calculateTotal,
+  }), [addItem, removeItem, updateQuantity, clearCart, toggleCart, openCart, closeCart, calculateTotal]);
+};
+
+export const useCartState = () => {
+  const items = useCartStore((state) => state.items);
+  const isOpen = useCartStore((state) => state.isOpen);
+  const total = useCartStore((state) => state.total);
+  const itemCount = useCartStore((state) => state.itemCount);
+  
+  return useMemo(() => ({
+    items,
+    isOpen,
+    total,
+    itemCount,
+  }), [items, isOpen, total, itemCount]);
+};

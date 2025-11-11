@@ -4,11 +4,12 @@
  */
 
 import { logger } from '@/utils/logger';
+import type { Redis } from 'ioredis';
 
 class RedisCache {
-  private redis: any = null;
+  private redis: Redis | null = null;
   private isConnected = false;
-  private memoryCache = new Map<string, { value: any; expires: number }>();
+  private memoryCache = new Map<string, { value: unknown; expires: number }>();
   private maxMemoryCacheSize = 1000; // Max 1000 items in memory
   private isServer = typeof window === 'undefined';
 
@@ -38,9 +39,9 @@ class RedisCache {
       }
 
       // Dynamic import to avoid client-side issues
-      const Redis = (await import('ioredis')).default;
+      const RedisModule = await import('ioredis');
       
-      this.redis = new Redis(redisUrl, {
+      this.redis = new RedisModule.default(redisUrl, {
         maxRetriesPerRequest: 3,
         lazyConnect: true,
         connectTimeout: 5000,
@@ -53,9 +54,9 @@ class RedisCache {
         logger.info('Redis connected successfully');
       });
 
-      this.redis.on('error', (error: any) => {
+      this.redis.on('error', (error: unknown) => {
         this.isConnected = false;
-        logger.warn('Redis connection failed - falling back to in-memory cache:', error.message);
+        logger.warn('Redis connection failed - falling back to in-memory cache', { error });
         // Don't throw error, just fall back to in-memory cache
       });
 
@@ -65,7 +66,7 @@ class RedisCache {
       });
 
     } catch (error) {
-      logger.error('Failed to initialize Redis:', error);
+      logger.error('Failed to initialize Redis:', { error });
       this.redis = null;
     }
   }
@@ -80,7 +81,7 @@ class RedisCache {
         const value = await this.redis.get(key);
         return value ? JSON.parse(value) : null;
       } catch (error) {
-        logger.warn('Redis GET error, falling back to memory:', error);
+        logger.warn('Redis GET error, falling back to memory:', { error });
         // Fall through to memory cache
       }
     }
@@ -88,7 +89,7 @@ class RedisCache {
     // Fallback to memory cache
     const cached = this.memoryCache.get(key);
     if (cached && cached.expires > Date.now()) {
-      return cached.value;
+      return cached.value as T;
     }
 
     // Clean up expired entry
@@ -102,7 +103,7 @@ class RedisCache {
   /**
    * Set value in cache
    */
-  async set(key: string, value: any, ttlSeconds?: number): Promise<boolean> {
+  async set(key: string, value: unknown, ttlSeconds?: number): Promise<boolean> {
     // Try Redis first if available
     if (this.redis && this.isConnected) {
       try {
@@ -116,7 +117,7 @@ class RedisCache {
         
         return true;
       } catch (error) {
-        logger.warn('Redis SET error, falling back to memory:', error);
+        logger.warn('Redis SET error, falling back to memory:', { error });
         // Fall through to memory cache
       }
     }
@@ -136,7 +137,7 @@ class RedisCache {
       this.memoryCache.set(key, { value, expires });
       return true;
     } catch (error) {
-      logger.error('Memory cache SET error:', error);
+      logger.error('Memory cache SET error:', { error });
       return false;
     }
   }
@@ -151,7 +152,7 @@ class RedisCache {
         await this.redis.del(key);
         return true;
       } catch (error) {
-        logger.warn('Redis DEL error, falling back to memory:', error);
+        logger.warn('Redis DEL error, falling back to memory:', { error });
         // Fall through to memory cache
       }
     }
@@ -170,7 +171,7 @@ class RedisCache {
         const result = await this.redis.exists(key);
         return result === 1;
       } catch (error) {
-        logger.warn('Redis EXISTS error, falling back to memory:', error);
+        logger.warn('Redis EXISTS error, falling back to memory:', { error });
         // Fall through to memory cache
       }
     }
@@ -190,7 +191,7 @@ class RedisCache {
         const result = await this.redis.expire(key, ttlSeconds);
         return result === 1;
       } catch (error) {
-        logger.warn('Redis EXPIRE error, falling back to memory:', error);
+        logger.warn('Redis EXPIRE error, falling back to memory:', { error });
         // Fall through to memory cache
       }
     }
@@ -208,7 +209,7 @@ class RedisCache {
   /**
    * Set key with expiration (Redis setex equivalent)
    */
-  async setex(key: string, ttlSeconds: number, value: any): Promise<boolean> {
+  async setex(key: string, ttlSeconds: number, value: unknown): Promise<boolean> {
     return this.set(key, value, ttlSeconds);
   }
 
@@ -221,7 +222,7 @@ class RedisCache {
       try {
         return await this.redis.keys(pattern);
       } catch (error) {
-        logger.warn('Redis KEYS error, falling back to memory:', error);
+        logger.warn('Redis KEYS error, falling back to memory:', { error });
         // Fall through to memory cache
       }
     }
@@ -249,7 +250,7 @@ class RedisCache {
       const values = await this.redis.mget(...keys);
       return values.map((value: string | null) => value ? JSON.parse(value) : null);
     } catch (error) {
-      logger.error('Redis MGET error:', error);
+      logger.error('Redis MGET error:', { error });
       return keys.map(() => null);
     }
   }
@@ -257,7 +258,7 @@ class RedisCache {
   /**
    * Set multiple key-value pairs
    */
-  async mset(keyValuePairs: Record<string, any>, ttlSeconds?: number): Promise<boolean> {
+  async mset(keyValuePairs: Record<string, unknown>, ttlSeconds?: number): Promise<boolean> {
     if (!this.redis || !this.isConnected) {
       return false;
     }
@@ -281,7 +282,7 @@ class RedisCache {
 
       return true;
     } catch (error) {
-      logger.error('Redis MSET error:', error);
+      logger.error('Redis MSET error:', { error });
       return false;
     }
   }
@@ -291,8 +292,8 @@ class RedisCache {
    */
   async getStats(): Promise<{
     connected: boolean;
-    memory: any;
-    info: any;
+    memory: unknown;
+    info: string | null;
   }> {
     if (!this.redis || !this.isConnected) {
       return {
@@ -311,7 +312,7 @@ class RedisCache {
         info
       };
     } catch (error) {
-      logger.error('Redis stats error:', error);
+      logger.error('Redis stats error:', { error });
       return {
         connected: false,
         memory: null,
@@ -332,7 +333,7 @@ class RedisCache {
       await this.redis.flushall();
       return true;
     } catch (error) {
-      logger.error('Redis FLUSHALL error:', error);
+      logger.error('Redis FLUSHALL error:', { error });
       return false;
     }
   }
@@ -354,7 +355,7 @@ export const redisCache = new RedisCache();
 
 // Cache key generators
 export const cacheKeys = {
-  products: (page: number, perPage: number, filters?: any) => 
+  products: (page: number, perPage: number, filters?: Record<string, unknown>) => 
     `products:${page}:${perPage}:${JSON.stringify(filters || {})}`,
   
   product: (id: string) => `product:${id}`,
@@ -365,7 +366,7 @@ export const cacheKeys = {
   
   homeFeed: () => 'home:feed',
   
-  search: (query: string, filters?: any) => 
+  search: (query: string, filters?: Record<string, unknown>) => 
     `search:${query}:${JSON.stringify(filters || {})}`,
   
   user: (id: string) => `user:${id}`,

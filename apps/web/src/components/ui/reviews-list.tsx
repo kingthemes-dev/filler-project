@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Star, X, ZoomIn } from 'lucide-react';
 
 interface ReviewImage {
@@ -155,12 +156,19 @@ export default function ReviewsList({ productId }: ReviewsListProps) {
         >
           <X className="w-8 h-8" />
         </button>
-        <img
-          src={lightboxImage}
-          alt="Powiększone zdjęcie"
-          className="max-w-full max-h-full object-contain"
+        <div
+          className="relative w-full h-full max-w-full max-h-full"
           onClick={(e) => e.stopPropagation()}
-        />
+        >
+          <Image
+            src={lightboxImage}
+            alt="Powiększone zdjęcie"
+            fill
+            className="object-contain"
+            sizes="(min-width: 1024px) 800px, 100vw"
+            unoptimized
+          />
+        </div>
       </div>
     )}
     
@@ -202,12 +210,17 @@ export default function ReviewsList({ productId }: ReviewsListProps) {
                         onClick={() => setLightboxImage(image.url)}
                         className="relative group aspect-square overflow-hidden rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
                       >
-                        <img
-                          src={image.thumbnail || image.medium || image.url}
-                          alt={`Zdjęcie ${imgIndex + 1} od ${review.reviewer}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={image.thumbnail || image.medium || image.url}
+                            alt={`Zdjęcie ${imgIndex + 1} od ${review.reviewer}`}
+                            fill
+                            className="object-cover"
+                            loading="lazy"
+                            sizes="150px"
+                            unoptimized
+                          />
+                        </div>
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
                           <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>

@@ -5,10 +5,21 @@
 
 import { logger } from './logger';
 
+type ImageFormat = 'avif' | 'webp' | 'jpeg' | 'png';
+type DeviceType = keyof typeof IMAGE_OPTIMIZATION_CONFIG.breakpoints;
+
+type OptimizeOptions = {
+  width?: number;
+  height?: number;
+  quality?: number;
+  format?: ImageFormat;
+  device?: DeviceType;
+};
+
 // Image optimization configuration
 export const IMAGE_OPTIMIZATION_CONFIG = {
   // Supported formats
-  formats: ['avif', 'webp', 'jpeg', 'png'],
+  formats: ['avif', 'webp', 'jpeg', 'png'] as ImageFormat[],
   
   // Quality settings
   quality: {
@@ -92,13 +103,7 @@ export class ImageOptimizer {
   // Optimize image URL
   optimizeImageUrl(
     originalUrl: string,
-    options: {
-      width?: number;
-      height?: number;
-      quality?: number;
-      format?: 'avif' | 'webp' | 'jpeg' | 'png';
-      device?: 'mobile' | 'tablet' | 'desktop' | 'large';
-    } = {}
+    options: OptimizeOptions = {}
   ): string {
     if (!originalUrl) return IMAGE_OPTIMIZATION_CONFIG.placeholder;
 
@@ -117,7 +122,7 @@ export class ImageOptimizer {
   }
 
   // Optimize WordPress images
-  private optimizeWordPressImage(url: string, options: any): string {
+  private optimizeWordPressImage(url: string, options: OptimizeOptions): string {
     const { width, height, quality, format, device } = options;
     
     // Determine optimal format
@@ -143,7 +148,7 @@ export class ImageOptimizer {
   }
 
   // Optimize Next.js images
-  private optimizeNextJsImage(url: string, options: any): string {
+  private optimizeNextJsImage(url: string, options: OptimizeOptions): string {
     const { width, height, quality, format, device } = options;
     
     const optimalFormat = this.getOptimalFormat(format);
@@ -160,14 +165,14 @@ export class ImageOptimizer {
   }
 
   // Optimize external images
-  private optimizeExternalImage(url: string, _options: any): string {
+  private optimizeExternalImage(url: string, _options: OptimizeOptions): string {
     // For external images, we can use a proxy service or return original
     // In production, you might want to use a service like Cloudinary or ImageKit
     return url;
   }
 
   // Get optimal format based on browser support
-  private getOptimalFormat(preferredFormat?: string): string {
+  private getOptimalFormat(preferredFormat?: ImageFormat): ImageFormat {
     if (preferredFormat && IMAGE_OPTIMIZATION_CONFIG.formats.includes(preferredFormat)) {
       return preferredFormat;
     }
@@ -182,14 +187,14 @@ export class ImageOptimizer {
   private getOptimalSize(
     width?: number,
     height?: number,
-    device?: string
+    device?: DeviceType
   ): { width?: number; height?: number } {
     if (width && height) {
       return { width, height };
     }
 
     if (device && device in IMAGE_OPTIMIZATION_CONFIG.breakpoints) {
-      const deviceWidth = IMAGE_OPTIMIZATION_CONFIG.breakpoints[device as keyof typeof IMAGE_OPTIMIZATION_CONFIG.breakpoints];
+      const deviceWidth = IMAGE_OPTIMIZATION_CONFIG.breakpoints[device];
       return { width: deviceWidth };
     }
 
@@ -215,7 +220,7 @@ export class ImageOptimizer {
       width: parseInt(img.dataset.width || '0') || undefined,
       height: parseInt(img.dataset.height || '0') || undefined,
       quality: parseInt(img.dataset.quality || '0') || undefined,
-      format: img.dataset.format as any
+      format: this.parseFormat(img.dataset.format)
     });
 
     img.src = optimizedSrc;
@@ -251,7 +256,7 @@ export class ImageOptimizer {
   }
 
   // Preload critical images
-  preloadImages(urls: string[], options: any = {}) {
+  preloadImages(urls: string[], options: OptimizeOptions = {}) {
     urls.forEach(url => {
       const optimizedUrl = this.optimizeImageUrl(url, options);
       const link = document.createElement('link');
@@ -278,7 +283,7 @@ export class ImageOptimizer {
         const optimizedUrl = this.optimizeImageUrl(baseUrl, {
           width: size,
           quality,
-          format: format as any
+          format: this.parseFormat(format)
         });
         return `${optimizedUrl} ${size}w`;
       })
@@ -344,7 +349,7 @@ export class ImageOptimizer {
       
       this.setupLazyLoading(img);
     } else {
-      img.src = this.optimizeImageUrl(src, { width, height, quality, format: format as any });
+      img.src = this.optimizeImageUrl(src, { width, height, quality, format: this.parseFormat(format) });
     }
 
     return img;
@@ -355,6 +360,12 @@ export class ImageOptimizer {
     if (this.observer) {
       this.observer.disconnect();
     }
+  }
+
+  private parseFormat(format?: string | null): ImageFormat | undefined {
+    if (!format) return undefined;
+    const normalized = format.toLowerCase();
+    return IMAGE_OPTIMIZATION_CONFIG.formats.find(item => item === normalized) as ImageFormat | undefined;
   }
 }
 

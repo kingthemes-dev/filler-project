@@ -43,7 +43,7 @@ export interface UniversalFilters {
 class UniversalFilterService {
   private config: FilterConfig;
   private preset: 'woocommerce' | 'shopify' | 'custom';
-  private cache: Map<string, any> = new Map();
+  private cache: Map<string, unknown> = new Map();
   private cacheTimestamps: Map<string, number> = new Map();
 
   constructor(config?: Partial<FilterConfig>, preset: 'woocommerce' | 'shopify' | 'custom' = 'woocommerce') {
@@ -93,12 +93,12 @@ class UniversalFilterService {
    * Fetch data with caching and error handling
    */
   private async fetchWithCache<T>(
-    cacheKey: string, 
-    url: string, 
-    transformer: (data: any) => T
+    cacheKey: string,
+    url: string,
+    transformer: (data: unknown) => T
   ): Promise<T> {
     const now = Date.now();
-    const cachedData = this.cache.get(cacheKey);
+    const cachedData = this.cache.get(cacheKey) as T | undefined;
     const cacheTime = this.cacheTimestamps.get(cacheKey) || 0;
     
     // Check if cache is still valid
@@ -203,96 +203,93 @@ class UniversalFilterService {
   /**
    * Transform raw API data to universal category format
    */
-  private transformCategories(rawData: any): UniversalCategory[] {
-    let categories: any[] = [];
-    
-    // Handle different API response formats
-    if (Array.isArray(rawData)) {
-      categories = rawData;
-    } else if (rawData.categories) {
-      categories = rawData.categories;
-    } else if (rawData.data) {
-      categories = rawData.data;
-    } else if (rawData.collections) { // Shopify
-      categories = rawData.collections;
-    }
-    
-    // Filter categories based on config
-    const filteredCategories = categories.filter(cat => {
-      if (this.config.categories.excludeSlugs?.includes(cat.slug)) return false;
-      if (this.config.categories.includeSlugs?.length && !this.config.categories.includeSlugs.includes(cat.slug)) return false;
-      return true;
+  private transformCategories(rawData: unknown): UniversalCategory[] {
+    const categoriesRaw = this.normalizeToArray(rawData, ['categories', 'data', 'collections']);
+
+    const filteredCategories = categoriesRaw
+      .map((item) => this.toRecord(item))
+      .filter((cat): cat is Record<string, unknown> => Boolean(cat))
+      .filter((cat) => {
+        const slug = this.toString(cat.slug);
+        if (!slug) return false;
+        if (this.config.categories.excludeSlugs?.includes(slug)) return false;
+        if (this.config.categories.includeSlugs?.length && !this.config.categories.includeSlugs.includes(slug)) return false;
+        return true;
+      });
+
+    const universalCategories: UniversalCategory[] = filteredCategories.map((cat) => {
+      const id = this.toId(cat.id);
+      const parent = this.toId(cat.parent, true);
+      const imageRecord = this.toRecord(cat.image);
+      const imageSrc = imageRecord ? this.toString(imageRecord.src) || this.toString(imageRecord.url) : undefined;
+      const imageAlt = imageRecord ? this.toString(imageRecord.alt) || this.toString(cat.name) : undefined;
+
+      return {
+        id,
+        name: this.toString(cat.name),
+        slug: this.toString(cat.slug),
+        count: this.toNumber(cat.count),
+        parent,
+        level: 0,
+        subcategories: [],
+        image: imageSrc ? { src: imageSrc, alt: imageAlt || this.toString(cat.name) } : undefined
+      };
     });
-    
-    // Transform to universal format
-    const universalCategories: UniversalCategory[] = filteredCategories.map(cat => ({
-      id: String(cat.id),
-      name: cat.name,
-      slug: cat.slug,
-      count: cat.count || 0,
-      parent: cat.parent ? String(cat.parent) : undefined,
-      level: 0,
-      subcategories: [],
-      image: cat.image ? {
-        src: cat.image.src || cat.image.url,
-        alt: cat.image.alt || cat.name
-      } : undefined
-    }));
-    
-    // Build hierarchy
+
     return this.buildCategoryHierarchy(universalCategories);
   }
 
   /**
    * Transform raw API data to universal attribute format
    */
-  private transformAttributes(rawData: any): Record<string, UniversalAttribute> {
-    let attributes: any[] = [];
-    
-    // Handle different API response formats
-    if (Array.isArray(rawData)) {
-      attributes = rawData;
-    } else if (rawData.attributes) {
-      attributes = rawData.attributes;
-    } else if (rawData.data) {
-      attributes = rawData.data;
-    } else if (rawData.product_options) { // Shopify
-      attributes = rawData.product_options;
-    }
-    
+  private transformAttributes(rawData: unknown): Record<string, UniversalAttribute> {
+    const attributesRaw = this.normalizeToArray(rawData, ['attributes', 'data', 'product_options']);
+
     const result: Record<string, UniversalAttribute> = {};
-    
-    attributes.forEach(attr => {
-      // Filter based on config
-      if (this.config.attributes.excludeSlugs?.includes(attr.slug)) return;
-      if (this.config.attributes.includeSlugs?.length && !this.config.attributes.includeSlugs.includes(attr.slug)) return;
-      
-      const attributeName = this.config.attributes.customNames?.[attr.slug] || attr.name || attr.slug;
-      
-      result[attr.slug] = {
-        id: String(attr.id),
-        name: attributeName,
-        slug: attr.slug,
-        type: this.detectAttributeType(attr),
-        terms: (attr.terms || []).map((term: any) => ({
-          id: String(term.id),
-          name: term.name,
-          slug: term.slug,
-          count: term.count || 0
-        })),
-        order: attr.order || 0
-      };
-    });
-    
+
+    attributesRaw
+      .map((item) => this.toRecord(item))
+      .filter((attr): attr is Record<string, unknown> => Boolean(attr))
+      .forEach(attr => {
+        const slug = this.toString(attr.slug);
+        if (!slug) return;
+
+        if (this.config.attributes.excludeSlugs?.includes(slug)) return;
+        if (this.config.attributes.includeSlugs?.length && !this.config.attributes.includeSlugs.includes(slug)) return;
+
+        const attributeName = this.config.attributes.customNames?.[slug] || this.toString(attr.name) || slug;
+        const termsRaw = this.normalizeToArray(attr.terms, []);
+
+        const rawOrder = attr.order;
+
+        result[slug] = {
+          id: this.toId(attr.id),
+          name: attributeName,
+          slug,
+          type: this.detectAttributeType(attr),
+          terms: termsRaw
+            .map((term) => this.toRecord(term))
+            .filter((termRecord): termRecord is Record<string, unknown> => Boolean(termRecord))
+            .map(term => ({
+              id: this.toId(term.id),
+              name: this.toString(term.name),
+              slug: this.toString(term.slug),
+              count: this.toNumber(term.count)
+            })),
+          order: typeof rawOrder === 'number' ? rawOrder : undefined
+        };
+      });
+
     return result;
   }
 
   /**
    * Detect attribute type based on data
    */
-  private detectAttributeType(attr: any): 'select' | 'multiselect' | 'range' | 'boolean' {
-    if (attr.type) {
-      switch (attr.type.toLowerCase()) {
+  private detectAttributeType(attr: Record<string, unknown>): 'select' | 'multiselect' | 'range' | 'boolean' {
+    const rawType = this.toString(attr.type).toLowerCase();
+    if (rawType) {
+      switch (rawType) {
         case 'boolean':
         case 'checkbox':
           return 'boolean';
@@ -306,14 +303,21 @@ class UniversalFilterService {
           return 'select';
       }
     }
-    
-    // Auto-detect based on terms
-    const terms = attr.terms || [];
+
+    const terms = this.normalizeToArray(attr.terms, [])
+      .map((term) => this.toRecord(term))
+      .filter((termRecord): termRecord is Record<string, unknown> => Boolean(termRecord));
+
     if (terms.length === 0) return 'select';
-    if (terms.length === 2 && terms.every((t: any) => ['tak', 'nie', 'yes', 'no', 'true', 'false'].includes(t.name.toLowerCase()))) {
+
+    const booleanTerms = ['tak', 'nie', 'yes', 'no', 'true', 'false'];
+    if (
+      terms.length === 2 &&
+      terms.every((term) => booleanTerms.includes(this.toString(term.name).toLowerCase()))
+    ) {
       return 'boolean';
     }
-    
+
     return 'select';
   }
 
@@ -344,6 +348,63 @@ class UniversalFilterService {
     });
     
     return rootCategories;
+  }
+
+  private normalizeToArray(rawData: unknown, keys: string[]): unknown[] {
+    if (Array.isArray(rawData)) {
+      return rawData;
+    }
+
+    if (typeof rawData === 'object' && rawData !== null) {
+      const record = rawData as Record<string, unknown>;
+      for (const key of keys) {
+        const value = record[key];
+        if (Array.isArray(value)) {
+          return value;
+        }
+      }
+    }
+
+    return [];
+  }
+
+  private toRecord(value: unknown): Record<string, unknown> | null {
+    if (typeof value === 'object' && value !== null) {
+      return value as Record<string, unknown>;
+    }
+    return null;
+  }
+
+  private toString(value: unknown, fallback = ''): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    return fallback;
+  }
+
+  private toNumber(value: unknown, fallback = 0): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+    return fallback;
+  }
+
+  private toId(value: unknown): string;
+  private toId(value: unknown, allowUndefined: false): string;
+  private toId(value: unknown, allowUndefined: true): string | undefined;
+  private toId(value: unknown, allowUndefined = false): string | undefined {
+    const stringValue = this.toString(value);
+    if (!stringValue) {
+      return allowUndefined ? undefined : '';
+    }
+    return stringValue;
   }
 
   /**

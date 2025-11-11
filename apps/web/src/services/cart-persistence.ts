@@ -10,7 +10,7 @@ interface CartItem {
   id: string;
   productId: number;
   quantity: number;
-  variation?: Record<string, any>;
+  variation?: Record<string, unknown>;
   price: number;
   total: number;
   image?: string;
@@ -138,27 +138,23 @@ class CartPersistenceService {
     try {
       // Get current cart from Store API
       const storeCart = await storeApiService.getCart();
-      
+
+      const items = Array.isArray(storeCart.items)
+        ? storeCart.items
+            .map((item) => this.transformStoreCartItem(item))
+            .filter((item): item is CartItem => item !== null)
+        : [];
+
       // Convert Store API format to our format
       const cartData: CartData = {
         sessionId,
-        items: storeCart.items.map((item: any) => ({
-          id: item.key,
-          productId: item.id,
-          quantity: item.quantity,
-          variation: item.variation || {},
-          price: parseFloat(item.prices.price),
-          total: parseFloat(item.prices.total),
-          image: item.image?.src || '',
-          name: item.name,
-          sku: item.sku || '',
-        })),
+        items,
         totals: {
-          subtotal: parseFloat(storeCart.totals.total_items),
-          tax: parseFloat(storeCart.totals.total_tax),
-          shipping: parseFloat(storeCart.totals.total_shipping),
-          total: parseFloat(storeCart.totals.total_price),
-          currency: storeCart.totals.currency_code,
+          subtotal: this.toNumber(storeCart.totals?.total_items),
+          tax: this.toNumber(storeCart.totals?.total_tax),
+          shipping: this.toNumber(storeCart.totals?.total_shipping),
+          total: this.toNumber(storeCart.totals?.total_price),
+          currency: this.toString(storeCart.totals?.currency_code, 'PLN'),
         },
         lastUpdated: new Date(),
         createdAt: new Date(),
@@ -173,6 +169,77 @@ class CartPersistenceService {
       console.error('Failed to sync cart with Store API:', error);
       return null;
     }
+  }
+
+  private transformStoreCartItem(item: unknown): CartItem | null {
+    const record = this.toRecord(item);
+    if (!record) {
+      return null;
+    }
+
+    const prices = this.toRecord(record.prices);
+    const image = this.toRecord(record.image);
+    const variation = this.toRecord(record.variation) || undefined;
+
+    const productIdValue = record.id;
+    const quantityValue = record.quantity;
+    const keyValue = record.key;
+
+    if (typeof productIdValue !== 'number' || typeof quantityValue !== 'number') {
+      return null;
+    }
+
+    const id = typeof keyValue === 'string' ? keyValue : `${productIdValue}`;
+
+    return {
+      id,
+      productId: productIdValue,
+      quantity: quantityValue,
+      variation,
+      price: this.toNumber(prices?.price),
+      total: this.toNumber(prices?.total),
+      image: this.toString(image?.src, ''),
+      name: this.toString(record.name),
+      sku: this.toOptionalString(record.sku),
+    };
+  }
+
+  private toRecord(value: unknown): Record<string, unknown> | null {
+    if (typeof value === 'object' && value !== null) {
+      return value as Record<string, unknown>;
+    }
+    return null;
+  }
+
+  private toNumber(value: unknown, fallback = 0): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+    return fallback;
+  }
+
+  private toString(value: unknown, fallback = ''): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    return fallback;
+  }
+
+  private toOptionalString(value: unknown): string | undefined {
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    return undefined;
   }
 
   /**

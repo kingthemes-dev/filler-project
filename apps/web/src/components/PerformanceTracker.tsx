@@ -1,7 +1,35 @@
 'use client';
 
 import { useEffect } from 'react';
-// removed unused performanceMonitor import
+
+interface PerformanceMetric {
+  name: string;
+  value: number;
+  timestamp: string;
+  url: string;
+  metadata?: Record<string, unknown>;
+}
+
+type LayoutShiftEntry = PerformanceEntry & {
+  value: number;
+  hadRecentInput: boolean;
+  sources?: Array<{
+    node?: Node;
+    previousRect?: DOMRectReadOnly;
+    currentRect?: DOMRectReadOnly;
+  }>;
+};
+
+type PaintEntry = PerformanceEntry & {
+  name: string;
+  startTime: number;
+};
+
+type LargestContentfulPaintEntry = PerformanceEntry & {
+  url?: string;
+  size?: number;
+  element?: Element;
+};
 
 /**
  * Client-side Performance Tracker Component
@@ -13,7 +41,7 @@ export default function PerformanceTracker() {
     if (typeof window === 'undefined') return;
 
     // Function to send metrics to server
-    const sendMetricToServer = async (metric: any) => {
+    const sendMetricToServer = async (metric: PerformanceMetric) => {
       try {
         await fetch('/api/performance/metrics', {
           method: 'POST',
@@ -34,14 +62,18 @@ export default function PerformanceTracker() {
       // Track page load performance
       const trackPageLoad = () => {
         const loadTime = performance.now();
-        const metric = {
+        const metric: PerformanceMetric = {
           name: 'PageLoad',
           value: loadTime,
           timestamp: Date.now().toString(),
           url: window.location.href,
           metadata: {
-            domContentLoaded: performance.timing?.domContentLoadedEventEnd - performance.timing?.domContentLoadedEventStart,
-            loadComplete: performance.timing?.loadEventEnd - performance.timing?.loadEventStart,
+            domContentLoaded: performance.timing?.domContentLoadedEventEnd && performance.timing?.domContentLoadedEventStart
+              ? performance.timing.domContentLoadedEventEnd - performance.timing.domContentLoadedEventStart
+              : undefined,
+            loadComplete: performance.timing?.loadEventEnd && performance.timing?.loadEventStart
+              ? performance.timing.loadEventEnd - performance.timing.loadEventStart
+              : undefined,
           },
         };
         
@@ -55,14 +87,15 @@ export default function PerformanceTracker() {
           try {
             const observer = new PerformanceObserver((list) => {
               for (const entry of list.getEntries()) {
-                if (entry.name === 'first-contentful-paint') {
-                  const metric = {
+                if ((entry as PaintEntry).name === 'first-contentful-paint') {
+                  const paintEntry = entry as PaintEntry;
+                  const metric: PerformanceMetric = {
                     name: 'FCP',
-                    value: entry.startTime,
+                    value: paintEntry.startTime,
                     timestamp: Date.now().toString(),
                     url: window.location.href,
                     metadata: {
-                      entryType: entry.entryType,
+                      entryType: paintEntry.entryType,
                     },
                   };
                   sendMetricToServer(metric);
@@ -82,10 +115,10 @@ export default function PerformanceTracker() {
           try {
             const observer = new PerformanceObserver((list) => {
               for (const entry of list.getEntries()) {
-                const lcpEntry = entry as PerformanceEntry & { element?: Element; url?: string; size?: number };
-                const metric = {
+                const lcpEntry = entry as LargestContentfulPaintEntry;
+                const metric: PerformanceMetric = {
                   name: 'LCP',
-                  value: entry.startTime,
+                  value: lcpEntry.startTime,
                   timestamp: Date.now().toString(),
                   url: window.location.href,
                   metadata: {
@@ -112,7 +145,7 @@ export default function PerformanceTracker() {
               for (const entry of list.getEntries()) {
                 const fidEntry = entry as PerformanceEventTiming;
                 const fid = fidEntry.processingStart - fidEntry.startTime;
-                const metric = {
+                const metric: PerformanceMetric = {
                   name: 'FID',
                   value: fid,
                   timestamp: Date.now().toString(),
@@ -139,15 +172,16 @@ export default function PerformanceTracker() {
             let clsValue = 0;
             const observer = new PerformanceObserver((list) => {
               for (const entry of list.getEntries()) {
-                if (!(entry as any).hadRecentInput) {
-                  clsValue += (entry as any).value;
-                  const metric = {
+                const layoutShiftEntry = entry as LayoutShiftEntry;
+                if (!layoutShiftEntry.hadRecentInput) {
+                  clsValue += layoutShiftEntry.value;
+                  const metric: PerformanceMetric = {
                     name: 'CLS',
                     value: clsValue,
                     timestamp: Date.now().toString(),
                     url: window.location.href,
                     metadata: {
-                      sources: (entry as any).sources,
+                      sources: layoutShiftEntry.sources,
                     },
                   };
                   sendMetricToServer(metric);

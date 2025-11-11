@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide-react';
-import { useCartStore, type CartItem } from '@/stores/cart-store';
+import { useCartState, useCartActions, type CartItem } from '@/stores/cart-store';
 import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import Link from 'next/link';
 import PageContainer from '@/components/ui/page-container';
@@ -10,7 +10,8 @@ import Image from 'next/image';
 import PageHeader from '@/components/ui/page-header';
 
 export default function CartPage() {
-  const { items, total, itemCount, removeItem, updateQuantity, clearCart } = useCartStore();
+  const { items, total, itemCount } = useCartState();
+  const { removeItem, updateQuantity, clearCart } = useCartActions();
   
   const breadcrumbs = [
     { label: 'Strona główna', href: '/' },

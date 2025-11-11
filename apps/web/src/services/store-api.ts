@@ -9,10 +9,12 @@ interface StoreApiConfig {
   sessionToken?: string;
 }
 
+type UnknownRecord = Record<string, unknown>;
+
 interface CartItem {
   id: string;
   quantity: number;
-  variation?: Record<string, any>;
+  variation?: UnknownRecord;
 }
 
 interface CartResponse {
@@ -34,11 +36,11 @@ interface CartResponse {
   needs_payment: boolean;
   needs_shipping: boolean;
   has_calculated_shipping: boolean;
-  shipping_address: any;
-  billing_address: any;
+  shipping_address: UnknownRecord;
+  billing_address: UnknownRecord;
   payment_methods: string[];
   payment_requirements: string[];
-  extensions: Record<string, any>;
+  extensions: UnknownRecord;
 }
 
 class StoreApiService {
@@ -121,7 +123,8 @@ class StoreApiService {
         throw new Error(`Cart fetch failed: ${response.statusText}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as CartResponse;
     } catch (error) {
       console.error('Failed to get cart:', error);
       throw error;
@@ -131,7 +134,7 @@ class StoreApiService {
   /**
    * Add item to cart
    */
-  async addToCart(productId: number, quantity: number = 1, variation?: Record<string, any>): Promise<CartResponse> {
+  async addToCart(productId: number, quantity: number = 1, variation?: UnknownRecord): Promise<CartResponse> {
     try {
       const response = await this.makeRequest('/cart/add-item', {
         method: 'POST',
@@ -147,7 +150,8 @@ class StoreApiService {
         throw new Error(error.message || 'Failed to add item to cart');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as CartResponse;
     } catch (error) {
       console.error('Failed to add item to cart:', error);
       throw error;
@@ -172,7 +176,8 @@ class StoreApiService {
         throw new Error(error.message || 'Failed to update cart item');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as CartResponse;
     } catch (error) {
       console.error('Failed to update cart item:', error);
       throw error;
@@ -196,7 +201,8 @@ class StoreApiService {
         throw new Error(error.message || 'Failed to remove item from cart');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as CartResponse;
     } catch (error) {
       console.error('Failed to remove item from cart:', error);
       throw error;
@@ -217,7 +223,8 @@ class StoreApiService {
         throw new Error(error.message || 'Failed to clear cart');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as CartResponse;
     } catch (error) {
       console.error('Failed to clear cart:', error);
       throw error;
@@ -227,7 +234,7 @@ class StoreApiService {
   /**
    * Get shipping methods
    */
-  async getShippingMethods(): Promise<any[]> {
+  async getShippingMethods(): Promise<UnknownRecord[]> {
     try {
       const response = await this.makeRequest('/cart/shipping-methods');
       
@@ -235,7 +242,8 @@ class StoreApiService {
         throw new Error(`Shipping methods fetch failed: ${response.statusText}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as UnknownRecord[];
     } catch (error) {
       console.error('Failed to get shipping methods:', error);
       throw error;
@@ -245,7 +253,7 @@ class StoreApiService {
   /**
    * Get payment methods
    */
-  async getPaymentMethods(): Promise<any[]> {
+  async getPaymentMethods(): Promise<UnknownRecord[]> {
     try {
       const response = await this.makeRequest('/cart/payment-methods');
       
@@ -253,7 +261,8 @@ class StoreApiService {
         throw new Error(`Payment methods fetch failed: ${response.statusText}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as UnknownRecord[];
     } catch (error) {
       console.error('Failed to get payment methods:', error);
       throw error;
@@ -263,7 +272,7 @@ class StoreApiService {
   /**
    * Update shipping address
    */
-  async updateShippingAddress(address: any): Promise<CartResponse> {
+  async updateShippingAddress(address: UnknownRecord): Promise<CartResponse> {
     try {
       const response = await this.makeRequest('/cart/update-shipping-address', {
         method: 'POST',
@@ -275,7 +284,8 @@ class StoreApiService {
         throw new Error(error.message || 'Failed to update shipping address');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as CartResponse;
     } catch (error) {
       console.error('Failed to update shipping address:', error);
       throw error;
@@ -285,7 +295,7 @@ class StoreApiService {
   /**
    * Update billing address
    */
-  async updateBillingAddress(address: any): Promise<CartResponse> {
+  async updateBillingAddress(address: UnknownRecord): Promise<CartResponse> {
     try {
       const response = await this.makeRequest('/cart/update-billing-address', {
         method: 'POST',
@@ -297,7 +307,8 @@ class StoreApiService {
         throw new Error(error.message || 'Failed to update billing address');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as CartResponse;
     } catch (error) {
       console.error('Failed to update billing address:', error);
       throw error;
@@ -307,7 +318,7 @@ class StoreApiService {
   /**
    * Create order
    */
-  async createOrder(orderData: any): Promise<any> {
+  async createOrder(orderData: UnknownRecord): Promise<UnknownRecord> {
     try {
       const response = await this.makeRequest('/checkout', {
         method: 'POST',
@@ -319,7 +330,8 @@ class StoreApiService {
         throw new Error(error.message || 'Failed to create order');
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data as UnknownRecord;
     } catch (error) {
       console.error('Failed to create order:', error);
       throw error;
@@ -329,7 +341,7 @@ class StoreApiService {
   /**
    * Get session data
    */
-  async getSession(): Promise<any> {
+  async getSession(): Promise<UnknownRecord> {
     try {
       const response = await this.makeRequest('/session');
       
@@ -347,7 +359,7 @@ class StoreApiService {
   /**
    * Update session data
    */
-  async updateSession(sessionData: any): Promise<any> {
+  async updateSession(sessionData: UnknownRecord): Promise<UnknownRecord> {
     try {
       const response = await this.makeRequest('/session', {
         method: 'POST',
@@ -369,3 +381,4 @@ class StoreApiService {
 
 const storeApiService = new StoreApiService();
 export default storeApiService;
+export type { CartResponse, CartItem as StoreApiCartItem };

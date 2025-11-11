@@ -20,6 +20,8 @@ interface Category {
   count: number;
 }
 
+type FilterValue = string[] | string | number | boolean;
+
 interface UniversalShopFiltersProps {
   categories: Category[];
   filters: {
@@ -29,7 +31,7 @@ interface UniversalShopFiltersProps {
     maxPrice: number;
     inStock: boolean;
     onSale: boolean;
-    [key: string]: string[] | string | number | boolean; // Dynamiczne atrybuty
+    [key: string]: FilterValue; // Dynamiczne atrybuty
   };
   priceRange: { min: number; max: number };
   setPriceRange: (range: { min: number; max: number }) => void;
@@ -43,7 +45,7 @@ interface UniversalShopFiltersProps {
   filterConfig?: Partial<FilterConfig>;
   preset?: 'woocommerce' | 'shopify' | 'custom';
   wooCommerceCategories?: Array<{ id: number; name: string; slug: string; parent: number; count: number }>;
-  products?: any[];
+  products?: unknown[];
 }
 
 export default function UniversalShopFilters({
@@ -497,10 +499,10 @@ export default function UniversalShopFilters({
                             attributes: Object.keys(filters).filter(key => key.startsWith('pa_')),
                             attributeValues: Object.keys(filters)
                               .filter(key => key.startsWith('pa_'))
-                              .reduce((acc, key) => {
+                              .reduce<Record<string, FilterValue>>((acc, key) => {
                                 acc[key] = filters[key];
                                 return acc;
-                              }, {} as Record<string, any>)
+                              }, {})
                           }}
                         />
                       </motion.div>
@@ -742,10 +744,10 @@ export default function UniversalShopFilters({
                         attributes: Object.keys(filters).filter(key => key.startsWith('pa_')),
                         attributeValues: Object.keys(filters)
                           .filter(key => key.startsWith('pa_'))
-                          .reduce((acc, key) => {
+                          .reduce<Record<string, FilterValue>>((acc, key) => {
                             acc[key] = filters[key];
                             return acc;
-                          }, {} as Record<string, any>)
+                          }, {})
                       }}
                     />
                   </motion.div>

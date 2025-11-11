@@ -210,7 +210,7 @@ export function generateWebPageStructuredData(page: {
   url: string;
   isPartOf: string;
   breadcrumb?: BreadcrumbStructuredData;
-  mainEntity?: any;
+  mainEntity?: Record<string, unknown> | Array<Record<string, unknown>>;
 }): object {
   return {
     "@context": "https://schema.org",

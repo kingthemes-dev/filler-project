@@ -5,6 +5,7 @@
  * Zapewnia natychmiastowy dostęp do danych bez API calls przy każdym otwarciu modala.
  */
 
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import shopDataPrefetch, { ShopCategory, ShopAttribute, ShopAttributes } from '@/services/shop-data-prefetch';
@@ -243,53 +244,72 @@ useShopDataStore.subscribe(
   }
 );
 
-// Export hooks for specific data - uproszczone bez selektorów
+// Export hooks for specific data with optimized selectors
 export const useShopCategories = () => {
-  const store = useShopDataStore();
-  const mainCategories = store.categories.filter(c => (c.parent || 0) === 0);
-  const hierarchicalCategories = buildHierarchicalCategories(store.categories);
+  const categories = useShopDataStore((state) => state.categories);
+  const isLoading = useShopDataStore((state) => state.isLoading);
+  const getSubCategories = useShopDataStore((state) => state.getSubCategories);
+  
+  // Memoize derived values
+  const mainCategories = useMemo(
+    () => categories.filter(c => (c.parent || 0) === 0),
+    [categories]
+  );
+  const hierarchicalCategories = useMemo(
+    () => buildHierarchicalCategories(categories),
+    [categories]
+  );
   
   return {
-    categories: store.categories,
+    categories,
     mainCategories,
-    hierarchicalCategories, // Dodaj hierarchiczną strukturę
-    getSubCategories: store.getSubCategories,
-    isLoading: store.isLoading
+    hierarchicalCategories,
+    getSubCategories,
+    isLoading
   };
 };
 
 export const useShopAttributes = () => {
-  const store = useShopDataStore();
+  const attributes = useShopDataStore((state) => state.attributes);
+  const isLoading = useShopDataStore((state) => state.isLoading);
+  
+  // Memoize derived values
+  const brands = useMemo(() => attributes.brands, [attributes.brands]);
+  const brandsForModal = useMemo(() => attributes.brands.slice(0, 50), [attributes.brands]);
+  const capacities = useMemo(() => attributes.capacities, [attributes.capacities]);
+  const zastosowanie = useMemo(() => attributes.zastosowanie, [attributes.zastosowanie]);
   
   return {
-    attributes: store.attributes,
-    brands: store.attributes.brands,
-    brandsForModal: store.attributes.brands.slice(0, 50), // Zwiększono z 36 do 50
-    capacities: store.attributes.capacities,
-    zastosowanie: store.attributes.zastosowanie,
-    isLoading: store.isLoading
+    attributes,
+    brands,
+    brandsForModal,
+    capacities,
+    zastosowanie,
+    isLoading
   };
 };
 
 export const useShopStats = () => {
-  const store = useShopDataStore();
+  const totalProducts = useShopDataStore((state) => state.totalProducts);
+  const categories = useShopDataStore((state) => state.categories);
+  const attributes = useShopDataStore((state) => state.attributes);
+  const lastUpdated = useShopDataStore((state) => state.lastUpdated);
+  const isDataFresh = useShopDataStore((state) => state.isDataFresh);
   
-  return {
-    totalProducts: store.totalProducts,
-    totalCategories: store.categories.length,
-    totalBrands: store.attributes.brands.length,
-    totalCapacities: store.attributes.capacities.length,
-    lastUpdated: store.lastUpdated,
-    isDataFresh: store.isDataFresh()
-  };
+  return useMemo(() => ({
+    totalProducts,
+    totalCategories: categories.length,
+    totalBrands: attributes.brands.length,
+    totalCapacities: attributes.capacities.length,
+    lastUpdated,
+    isDataFresh: isDataFresh()
+  }), [totalProducts, categories, attributes, lastUpdated, isDataFresh]);
 };
 
 export const useShopDataActions = () => useShopDataStore((state) => ({
   initialize: state.initialize,
   refresh: state.refresh,
   clearError: state.clearError,
-  isLoading: state.isLoading,
-  error: state.error
 }));
 
 // Export default

@@ -3,12 +3,42 @@
 import jsPDF from 'jspdf';
 import { Invoice } from '@/app/moje-faktury/page';
 
-interface InvoicePDFGeneratorProps {
-  invoice: Invoice;
-  orderData?: any;
+interface InvoiceCustomerInfo {
+  name?: string;
+  company?: string;
+  nip?: string;
+  email?: string;
+  address?: string;
 }
 
-export const generateInvoicePDF = (invoice: Invoice, orderData?: any) => {
+interface InvoiceItem {
+  name?: string;
+  quantity?: number;
+  price?: string | number;
+}
+
+interface InvoiceOrderData {
+  customer?: InvoiceCustomerInfo;
+  items?: InvoiceItem[];
+}
+
+interface InvoicePDFGeneratorProps {
+  invoice: Invoice;
+  orderData?: InvoiceOrderData;
+}
+
+const formatItemPrice = (price: string | number | undefined, quantity: number): string => {
+  const numericPrice =
+    typeof price === 'number'
+      ? price
+      : price
+      ? parseFloat(price.replace(',', '.'))
+      : NaN;
+  const validPrice = Number.isFinite(numericPrice) ? numericPrice : 0;
+  return (validPrice * quantity).toFixed(2);
+};
+
+export const generateInvoicePDF = (invoice: Invoice, orderData?: InvoiceOrderData) => {
   const doc = new jsPDF();
   
   // Set up fonts and colors
@@ -106,7 +136,7 @@ export const generateInvoicePDF = (invoice: Invoice, orderData?: any) => {
   yPosition += 15;
   
   // Table rows (mock data for now)
-  const items = orderData?.items || [
+  const items: InvoiceItem[] = orderData?.items || [
     {
       name: 'Produkt KingBrand',
       quantity: 1,
@@ -114,15 +144,21 @@ export const generateInvoicePDF = (invoice: Invoice, orderData?: any) => {
     }
   ];
   
-  items.forEach((item: any) => {
+  items.forEach((item) => {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(secondaryColor);
     doc.text(item.name || 'Produkt', 25, yPosition);
-    doc.text(item.quantity?.toString() || '1', 120, yPosition);
-    doc.text(`${item.price || (invoice.total / 100).toFixed(2)} PLN`, 140, yPosition);
+    const quantity = item.quantity ?? 1;
+    doc.text(quantity.toString(), 120, yPosition);
+
+    const unitPrice =
+      typeof item.price === 'number'
+        ? item.price.toFixed(2)
+        : item.price ?? (invoice.total / 100).toFixed(2);
+    doc.text(`${unitPrice} PLN`, 140, yPosition);
     
-    const total = (parseFloat(item.price || (invoice.total / 100).toString()) * (item.quantity || 1)).toFixed(2);
-    doc.text(`${total} PLN`, 170, yPosition);
+    const lineTotal = formatItemPrice(item.price, quantity);
+    doc.text(`${lineTotal} PLN`, 170, yPosition);
     
     yPosition += 8;
   });

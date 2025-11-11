@@ -5,7 +5,11 @@ import { analytics } from '@headless-woo/shared/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Filter, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import HierarchicalCategoryFilters from './hierarchical-category-filters';
-import DynamicAttributeFilters from './dynamic-attribute-filters';
+import DynamicAttributeFilters, {
+  DynamicFiltersData,
+  ContextualAttributes,
+  FilterValue,
+} from './dynamic-attribute-filters';
 
 interface Category {
   id: number;
@@ -23,7 +27,7 @@ interface ShopFiltersProps {
     maxPrice: number;
     inStock: boolean;
     onSale: boolean;
-    [key: string]: string[] | string | number | boolean; // Dynamiczne atrybuty
+    [key: string]: FilterValue; // Dynamiczne atrybuty
   };
   priceRange: { min: number; max: number };
   setPriceRange: (range: { min: number; max: number }) => void;
@@ -34,11 +38,11 @@ interface ShopFiltersProps {
   onToggleFilters: () => void;
   totalProducts: number;
   attributesLoading: boolean;
-  dynamicFiltersData?: { categories: any[]; attributes: any };
-  contextualAttributes?: any; // Contextual attributes na podstawie wybranych kategorii
+  dynamicFiltersData?: DynamicFiltersData;
+  contextualAttributes?: ContextualAttributes; // Contextual attributes na podstawie wybranych kategorii
   contextualLoading?: boolean; // Loading state dla contextual attributes
   wooCommerceCategories?: Array<{ id: number; name: string; slug: string; parent: number; count: number }>;
-  products?: any[]; // Dodaj produkty jako prop
+  products?: unknown[]; // Dodaj produkty jako prop
 }
 
 export default function ShopFilters({
@@ -564,10 +568,10 @@ export default function ShopFilters({
                               // PRO: Pass actual attribute values for better tree-like filtering
                               attributeValues: Object.keys(filters)
                                 .filter(key => key.startsWith('pa_'))
-                                .reduce((acc, key) => {
+                                .reduce<Record<string, FilterValue>>((acc, key) => {
                                   acc[key] = filters[key];
                                   return acc;
-                                }, {} as Record<string, any>)
+                                }, {})
                             }}
                           />
                         </motion.div>
@@ -790,12 +794,12 @@ export default function ShopFilters({
                           minPrice: filters.minPrice,
                           maxPrice: filters.maxPrice,
                           attributes: Object.keys(filters).filter(key => key.startsWith('pa_')),
-                          attributeValues: Object.keys(filters)
+                              attributeValues: Object.keys(filters)
                             .filter(key => key.startsWith('pa_'))
-                            .reduce((acc, key) => {
+                                .reduce<Record<string, FilterValue>>((acc, key) => {
                               acc[key] = filters[key];
                               return acc;
-                            }, {} as Record<string, any>)
+                                }, {})
                         }}
                       />
                     </motion.div>

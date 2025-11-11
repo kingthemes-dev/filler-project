@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import ModalCloseButton from '../modal-close-button';
-import { useAuthStore } from '@/stores/auth-store';
+import { useAuthIsAuthenticated, useAuthIsLoading, useAuthError, useAuthActions } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { 
   validateEmail, 
@@ -20,11 +20,14 @@ interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToLogin: () => void;
-  onRegistrationSuccess?: (userData: any) => void;
+  onRegistrationSuccess?: (userData: unknown) => void;
 }
 
 export default function RegisterModal({ isOpen, onClose, onSwitchToLogin, onRegistrationSuccess }: RegisterModalProps) {
-  const { register, isLoading, error, isAuthenticated } = useAuthStore();
+  const { register } = useAuthActions();
+  const isLoading = useAuthIsLoading();
+  const error = useAuthError();
+  const isAuthenticated = useAuthIsAuthenticated();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',

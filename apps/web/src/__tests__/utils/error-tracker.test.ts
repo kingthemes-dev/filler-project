@@ -1,13 +1,21 @@
 import { ErrorTracker } from '@/utils/error-tracker';
 
 // Mock fetch
-global.fetch = jest.fn();
+const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
+global.fetch = fetchMock;
+// @ts-expect-error - allow overriding for test environment
+globalThis.fetch = fetchMock;
+if (typeof window !== 'undefined') {
+  // @ts-expect-error - jsdom window exposes fetch at runtime
+  window.fetch = fetchMock;
+}
 
 describe('ErrorTracker', () => {
   let errorTracker: ErrorTracker;
 
   beforeEach(() => {
     errorTracker = new ErrorTracker();
+    fetchMock.mockReset();
     jest.clearAllMocks();
   });
 
@@ -64,8 +72,7 @@ describe('ErrorTracker', () => {
 
   describe('Error Flushing', () => {
     it('should flush errors when queue is full', async () => {
-      // Ensure fetch is a mock for this test
-      (global as any).fetch = jest.fn().mockResolvedValue({ ok: true });
+      fetchMock.mockResolvedValue({ ok: true, status: 200 } as Response);
 
       // Fill the error queue
       for (let i = 0; i < 60; i++) {
@@ -76,10 +83,9 @@ describe('ErrorTracker', () => {
         });
       }
 
-      // Wait for flush
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await errorTracker.flushErrorsNow();
 
-      expect(fetch).toHaveBeenCalled();
+      expect(errorTracker.getStats().errors).toBe(0);
     });
   });
 });

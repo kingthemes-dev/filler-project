@@ -97,22 +97,24 @@
 
 | Plik | Eksporty |
 | --- | --- |
-| `stores/auth-modal-store.ts` | useAuthModalStore |
-| `stores/auth-store.ts` | useAuthStore |
-| `stores/cart-store.ts` | useCartStore |
-| `stores/favorites-store.ts` | useFavoritesStore |
-| `stores/quickview-store.ts` | useQuickViewStore |
+| `stores/auth-modal-store.ts` | useAuthModalStore, useAuthModalIsOpen, useAuthModalActions |
+| `stores/auth-store.ts` | useAuthStore, useAuthUser, useAuthToken, useAuthIsAuthenticated, useAuthIsLoading, useAuthError, useAuthActions, useAuthState |
+| `stores/cart-store.ts` | useCartStore, useCartItems, useCartIsOpen, useCartTotal, useCartItemCount, useCartActions, useCartState |
+| `stores/favorites-store.ts` | useFavoritesStore, useFavoritesItems, useFavoritesIsModalOpen, useFavoritesIsLoading, useFavoritesLastSyncTime, useFavoritesActions, useFavoritesCount |
+| `stores/quickview-store.ts` | useQuickViewStore, useQuickViewIsOpen, useQuickViewProduct, useQuickViewActions |
 | `stores/shop-data-store.ts` | useShopDataStore, useShopCategories, useShopAttributes, useShopStats, useShopDataActions |
-| `stores/wishlist-store.ts` | useWishlistStore |
+| `stores/wishlist-store.ts` | useWishlistStore, useWishlistItems, useWishlistIsLoading, useWishlistError, useWishlistActions, useWishlistItemCount |
 
 #### Store’y współdzielone (`packages/shared/stores`)
 
-| Plik | Eksporty |
-| --- | --- |
-| `auth-store.ts` | useAuthStore |
-| `cart-store.ts` | useCartStore |
-| `favorites-store.ts` | useFavoritesStore |
-| `wishlist-store.ts` | useWishlistStore |
+| Plik | Eksporty | Status |
+| --- | --- | --- |
+| `auth-store.ts` | useAuthStore | Nieużywane - przygotowane na przyszłość dla mobile app |
+| `cart-store.ts` | useCartStore | Nieużywane - przygotowane na przyszłość dla mobile app |
+| `favorites-store.ts` | useFavoritesStore | Nieużywane - przygotowane na przyszłość dla mobile app |
+| `wishlist-store.ts` | useWishlistStore | Nieużywane - przygotowane na przyszłość dla mobile app |
+
+**Uwaga**: Store'y w `packages/shared/stores` nie są obecnie używane. Aplikacja web korzysta wyłącznie z store'ów z `apps/web/src/stores/`. Store'y w `packages/shared/stores` są przygotowane na przyszłość dla aplikacji mobile i mogą być użyte, gdy aplikacja mobile będzie w pełni zaimplementowana.
 
 <!-- AUTO:COMP-END -->
 
@@ -148,6 +150,17 @@ Hooki rezydują w `apps/web/src/hooks/`, wszystkie są klientowe (`'use client'`
 | `useShopDataStore` | `shop-data-store.ts` | Cache zapytań dla list produktowych i filtrów. |
 
 Wszystkie store’y używają `persist` (localStorage) lub sesji; nie eksportują żadnych danych publicznych na serwer. Przy modyfikacjach zachowuj wzór: akcje typowane, pure functions, brak bezpośrednich wywołań fetch w setterach (poza obsługą optymistyczną).
+
+**Optymalizacja performance**: Wszystkie store'y eksportują selektory (np. `useCartItemCount`, `useAuthUser`) dla optymalnych subskrypcji. Komponenty powinny używać selektorów zamiast całego store'a, aby uniknąć niepotrzebnych re-renderów. Przykład:
+
+```typescript
+// ❌ NIEOPTYMALNE - subskrybuje cały store
+const cartStore = useCartStore();
+const itemCount = cartStore.itemCount;
+
+// ✅ OPTYMALNE - subskrybuje tylko itemCount
+const itemCount = useCartItemCount();
+```
 
 ## Konwencje propsów i stany ładowania
 - **Nazewnictwo**: `on*` dla handlerów, `is*` dla booleanów. Komponenty UI przyjmują `className` do rozszerzeń tailwindowych.

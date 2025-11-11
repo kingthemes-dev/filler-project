@@ -4,13 +4,60 @@ import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Truck, CheckCircle, Clock, Eye, Download, Calendar, User, FileText } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth-store';
+import { Package, Truck, CheckCircle, Clock, Eye, Calendar, User, FileText } from 'lucide-react';
+import { useAuthUser, useAuthIsAuthenticated } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatPrice } from '@/utils/format-price';
 import { httpErrorMessage } from '@/utils/error-messages';
 import Image from 'next/image';
+import { WooOrder, WooLineItem, WooMetaData } from '@/types/woocommerce';
+
+const PLACEHOLDER_IMAGE = 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
+
+const statusMap: Record<string, Order['status']> = {
+  pending: 'pending',
+  processing: 'processing',
+  'on-hold': 'processing',
+  completed: 'delivered',
+  cancelled: 'cancelled',
+  refunded: 'cancelled',
+  failed: 'cancelled',
+  shipped: 'shipped',
+};
+
+const paymentMap: Record<string, string> = {
+  cod: 'Za pobraniem',
+  google_pay: 'Google Pay',
+  apple_pay: 'Apple Pay',
+  card: 'Karta płatnicza',
+  transfer: 'Przelew bankowy',
+  cash: 'Płatność przy odbiorze',
+  bacs: 'Przelew bankowy',
+  cheque: 'Czek',
+  paypal: 'PayPal',
+  stripe: 'Karta płatnicza (Stripe)',
+  unknown: 'Nieznana metoda',
+};
+
+const eligibleStatuses = new Set(['completed', 'processing', 'on-hold']);
+
+const mapOrderStatus = (wcStatus: string): Order['status'] => statusMap[wcStatus] ?? 'pending';
+
+const mapPaymentMethod = (paymentMethod: string): string => paymentMap[paymentMethod] ?? paymentMethod;
+
+const isOrderEligibleForInvoiceWooCommerce = (status: string): boolean => eligibleStatuses.has(status);
+
+const getMetaValue = (metaData: WooMetaData[] | undefined, key: string): string | null => {
+  if (!metaData) return null;
+  const entry = metaData.find((meta) => meta.key === key);
+  return typeof entry?.value === 'string' ? entry.value : null;
+};
+
+const getLineItemImage = (item: WooLineItem): string => {
+  const withImage = item as WooLineItem & { image?: { src?: string }; product_image?: string };
+  return withImage.image?.src || withImage.product_image || PLACEHOLDER_IMAGE;
+};
 
 interface Order {
   id: string;
@@ -222,7 +269,8 @@ OrderItem.displayName = 'OrderItem';
 
 export default function MyOrdersPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const user = useAuthUser();
+  const isAuthenticated = useAuthIsAuthenticated();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -262,7 +310,7 @@ export default function MyOrdersPage() {
                 fetchOrders(true).catch(console.error);
               }
               return;
-            } catch (e) {
+            } catch {
               // Cache corrupted, fetch fresh data
               sessionStorage.removeItem(ORDERS_CACHE_KEY);
               sessionStorage.removeItem(ORDERS_CACHE_TIMESTAMP_KEY);
@@ -283,42 +331,47 @@ export default function MyOrdersPage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: unknown = await response.json();
 
       if (Array.isArray(data)) {
         // Transform WooCommerce orders to our format
-        const transformedOrders = data.map((order: any) => {
+        const transformedOrders = (data as WooOrder[]).map((order) => {
           const mappedStatus = mapOrderStatus(order.status);
           const isEligible = isOrderEligibleForInvoiceWooCommerce(order.status);
+          const trackingRaw = getMetaValue(order.meta_data, '_tracking_number');
+          const trackingNumber =
+            typeof trackingRaw === 'string' && trackingRaw.trim().length > 0
+              ? trackingRaw
+              : undefined;
           
           return {
             id: order.id.toString(),
             number: order.number,
             date: order.date_created.split('T')[0],
             status: mappedStatus,
-            total: parseFloat(order.total),
-            items: (order.line_items || []).map((item: any) => ({
+            total: Number.parseFloat(order.total),
+            items: (order.line_items ?? []).map((item: WooLineItem) => ({
               id: item.id,
               name: item.name,
               quantity: item.quantity,
-              price: parseFloat(item.price),
-              image: item.image?.src || item.product_image || 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp'
+              price: typeof item.price === 'number' ? item.price : Number.parseFloat(String(item.price)),
+              image: getLineItemImage(item),
             })),
             billing: {
               address: order.billing?.address_1 || '',
               city: order.billing?.city || '',
               postcode: order.billing?.postcode || '',
-              country: order.billing?.country || ''
+              country: order.billing?.country || '',
             },
             shipping: {
               address: order.shipping?.address_1 || '',
               city: order.shipping?.city || '',
               postcode: order.shipping?.postcode || '',
-              country: order.shipping?.country || ''
+              country: order.shipping?.country || '',
             },
             paymentMethod: mapPaymentMethod(order.payment_method_title || order.payment_method || 'unknown'),
-            trackingNumber: order.meta_data?.find((meta: any) => meta.key === '_tracking_number')?.value || null,
-            isEligibleForInvoice: isEligible
+            ...(trackingNumber ? { trackingNumber } : {}),
+            isEligibleForInvoice: isEligible,
           };
         });
         
@@ -332,15 +385,13 @@ export default function MyOrdersPage() {
         setOrders([]);
       }
     } catch (error) {
-      console.error('Error fetching orders:', (error as any)?.message || error);
-      if (!errorMessage) {
-        setErrorMessage('Nie udało się pobrać listy zamówień. Spróbuj ponownie.');
-      }
+      console.error('Error fetching orders:', error instanceof Error ? error.message : error);
+      setErrorMessage((prev) => prev ?? 'Nie udało się pobrać listy zamówień. Spróbuj ponownie.');
       setOrders([]);
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, orders.length]);
 
   useEffect(() => {
     // Check cache immediately on mount (before waiting for auth)
@@ -355,7 +406,7 @@ export default function MyOrdersPage() {
             const parsedData = JSON.parse(cachedData);
             setOrders(parsedData);
             setLoading(false);
-          } catch (e) {
+          } catch {
             // Cache corrupted
             sessionStorage.removeItem(ORDERS_CACHE_KEY);
             sessionStorage.removeItem(ORDERS_CACHE_TIMESTAMP_KEY);
@@ -370,40 +421,6 @@ export default function MyOrdersPage() {
     }
   }, [isAuthenticated, user?.id, fetchOrders]);
 
-  // Memoize status and payment mapping functions
-  const mapOrderStatus = useCallback((wcStatus: string): 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' => {
-    const statusMap: Record<string, 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'> = {
-      'pending': 'pending',
-      'processing': 'processing', 
-      'on-hold': 'processing',
-      'completed': 'delivered',
-      'cancelled': 'cancelled',
-      'refunded': 'cancelled',
-      'failed': 'cancelled',
-      'shipped': 'shipped'
-    };
-    
-    return statusMap[wcStatus] || 'pending';
-  }, []);
-
-  const mapPaymentMethod = useCallback((paymentMethod: string): string => {
-    const paymentMap: Record<string, string> = {
-      'cod': 'Za pobraniem',
-      'google_pay': 'Google Pay',
-      'apple_pay': 'Apple Pay',
-      'card': 'Karta płatnicza',
-      'transfer': 'Przelew bankowy',
-      'cash': 'Płatność przy odbiorze',
-      'bacs': 'Przelew bankowy',
-      'cheque': 'Czek',
-      'paypal': 'PayPal',
-      'stripe': 'Karta płatnicza (Stripe)',
-      'unknown': 'Nieznana metoda'
-    };
-    
-    return paymentMap[paymentMethod] || paymentMethod;
-  }, []);
-
   const handleViewDetails = useCallback((orderId: string) => {
     const order = orders.find(o => o.id === orderId);
     if (order) {
@@ -411,35 +428,10 @@ export default function MyOrdersPage() {
     }
   }, [orders]);
 
-  const isOrderEligibleForInvoiceWooCommerce = useCallback((status: string): boolean => {
-    const eligibleStatuses = ['completed', 'processing', 'on-hold'];
-    return eligibleStatuses.includes(status);
-  }, []);
-
   // Memoize filtered/sorted orders
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [orders]);
-
-  // Get tooltip message for disabled invoice buttons
-  const getInvoiceTooltip = (status: Order['status']): string => {
-    switch (status) {
-      case 'pending':
-        return 'Faktura będzie dostępna po opłaceniu zamówienia';
-      case 'cancelled':
-        return 'Faktura niedostępna - zamówienie anulowane';
-      default:
-        return 'Faktura niedostępna dla tego statusu zamówienia';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pl-PL', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
 
   if (!isAuthenticated || !user) {
     return (

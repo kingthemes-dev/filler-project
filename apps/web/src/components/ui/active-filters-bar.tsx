@@ -3,15 +3,18 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, RotateCcw } from 'lucide-react';
 
-interface FilterState {
+type FilterValue = string | number | boolean | string[];
+
+interface BaseFilters {
   search: string;
   categories: string[];
   minPrice: number | string;
   maxPrice: number | string;
   inStock: boolean;
   onSale: boolean;
-  [key: string]: any;
 }
+
+type FilterState = BaseFilters & Record<string, FilterValue | number | string | boolean>;
 
 interface Category {
   id: number;
@@ -25,7 +28,7 @@ interface ActiveFiltersBarProps {
   categories: Category[];
   totalProducts: number;
   activeFiltersCount: number;
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (key: string, value: FilterValue | string | number | boolean) => void;
   onClearFilters: () => void;
   onPriceRangeReset: () => void;
 }
@@ -49,8 +52,24 @@ export default function ActiveFiltersBar({
   };
 
   // Get active filter chips
-  const getActiveFilterChips = () => {
-    const chips = [];
+  type FilterChip = {
+    id: string;
+    label: string;
+    onRemove: () => void;
+  };
+
+  const asStringArray = (value: FilterValue | number | string | boolean | undefined): string[] => {
+    if (Array.isArray(value)) {
+      return value.map((item) => String(item));
+    }
+    if (typeof value === 'string' && value.length > 0) {
+      return value.split(',').map((item) => item.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
+  const getActiveFilterChips = (): FilterChip[] => {
+    const chips: FilterChip[] = [];
     
     // ActiveFiltersBar current filters debug removed
 
@@ -59,7 +78,6 @@ export default function ActiveFiltersBar({
       chips.push({
         id: 'search',
         label: `"${filters.search}"`,
-        type: 'search',
         onRemove: () => onFilterChange('search', '')
       });
     }
@@ -70,7 +88,6 @@ export default function ActiveFiltersBar({
         chips.push({
           id: `category-${index}`,
           label: getCategoryName(category),
-          type: 'category',
           onRemove: () => {
             // Removing category debug removed
             onFilterChange('categories', category);
@@ -80,16 +97,13 @@ export default function ActiveFiltersBar({
     }
 
     // Brands - handle both brands array and pa_marka attribute
-    const brandValues = filters.brands && (filters.brands as string[]).length > 0 
-      ? (filters.brands as string[])
-      : (filters['pa_marka'] && Array.isArray(filters['pa_marka']) ? filters['pa_marka'] : []);
+    const brandValues = asStringArray(filters.brands ?? filters['pa_marka']);
     
     if (brandValues.length > 0) {
       brandValues.forEach((brand, index) => {
         chips.push({
           id: `brand-${index}`,
           label: brand,
-          type: 'brand',
           onRemove: () => {
             // Remove brand - use brands key for backward compatibility
             // handleFilterChange will handle the toggle logic
@@ -109,7 +123,6 @@ export default function ActiveFiltersBar({
       chips.push({
         id: 'price',
         label: `${minPrice} - ${maxPrice} zł`,
-        type: 'price',
         onRemove: () => {
           onFilterChange('minPrice', '');
           onFilterChange('maxPrice', '');
@@ -123,7 +136,6 @@ export default function ActiveFiltersBar({
       chips.push({
         id: 'onSale',
         label: 'Promocje',
-        type: 'sale',
         onRemove: () => onFilterChange('onSale', false)
       });
     }
@@ -132,14 +144,13 @@ export default function ActiveFiltersBar({
     Object.keys(filters).forEach(key => {
       if (key.startsWith('pa_') && Array.isArray(filters[key]) && filters[key].length > 0) {
         // Processing attribute debug removed
-        filters[key].forEach((value: string, index: number) => {
+        asStringArray(filters[key]).forEach((value, index) => {
           chips.push({
             id: `${key}-${index}`,
             label: value,
-            type: 'attribute',
             onRemove: () => {
               // Removing attribute value debug removed
-              const newValues = filters[key].filter((v: string) => v !== value);
+              const newValues = asStringArray(filters[key]).filter((v) => v !== value);
               onFilterChange(key, newValues);
             }
           });

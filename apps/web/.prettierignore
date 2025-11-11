@@ -1,0 +1,6 @@
+.next/
+.cache/
+.turbo/
+coverage/
+test-results/
+

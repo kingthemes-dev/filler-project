@@ -60,14 +60,21 @@ export const ADVANCED_EVENT_TYPES = {
 } as const;
 
 // Advanced Analytics class
+export interface AnalyticsEvent {
+  event_type: string;
+  properties: Record<string, unknown>;
+}
+
+type FlexibleValue = string | number | boolean | null | Record<string, unknown> | Array<unknown>;
+
 export class AdvancedAnalytics {
-  private events: any[] = [];
+  private events: AnalyticsEvent[] = [];
   private sessionId: string;
   private sessionStart: number;
   private lastActivity: number;
   private userId?: string;
-  private userProperties: Record<string, any> = {};
-  private customDimensions: Record<string, any> = {};
+  private userProperties: Record<string, unknown> = {};
+  private customDimensions: Record<string, FlexibleValue> = {};
   private isInitialized: boolean = false;
 
   constructor() {
@@ -105,7 +112,7 @@ export class AdvancedAnalytics {
   }
 
   // Track custom event
-  trackEvent(eventType: string, properties: Record<string, any> = {}) {
+  trackEvent(eventType: string, properties: Record<string, unknown> = {}) {
     if (!this.isInitialized) return;
 
     const event = {
@@ -197,12 +204,16 @@ export class AdvancedAnalytics {
   }
 
   // Backwards-compatible signatures for tests using positional args
-  trackPurchase(orderId: string | any, value?: number, items?: any[]) {
-    if (typeof orderId === 'object') {
-      return this.trackEvent(ADVANCED_EVENT_TYPES.CHECKOUT_COMPLETE, orderId);
+  trackPurchase(
+    order: string | Record<string, unknown>,
+    value?: number,
+    items?: Array<Record<string, unknown>>
+  ) {
+    if (typeof order === 'object') {
+      return this.trackEvent(ADVANCED_EVENT_TYPES.CHECKOUT_COMPLETE, order);
     }
     this.trackEvent(ADVANCED_EVENT_TYPES.CHECKOUT_COMPLETE, {
-      transaction_id: orderId,
+      transaction_id: order,
       value,
       items,
     });
@@ -230,7 +241,7 @@ export class AdvancedAnalytics {
   // removed duplicate trackPurchase definition (handled earlier with union signature)
 
   // User behavior tracking
-  trackSearch(query: string, resultsCount: number, filters?: Record<string, any>) {
+  trackSearch(query: string, resultsCount: number, filters?: Record<string, unknown>) {
     this.trackEvent(ADVANCED_EVENT_TYPES.SEARCH_PERFORMED, {
       search_query: query,
       results_count: resultsCount,
@@ -238,7 +249,7 @@ export class AdvancedAnalytics {
     });
   }
 
-  trackFilterApplied(filterType: string, filterValue: any, resultsCount: number) {
+  trackFilterApplied(filterType: string, filterValue: FlexibleValue, resultsCount: number) {
     this.trackEvent(ADVANCED_EVENT_TYPES.FILTER_APPLIED, {
       filter_type: filterType,
       filter_value: filterValue,
@@ -278,7 +289,7 @@ export class AdvancedAnalytics {
   }
 
   // Error tracking
-  trackError(error: Error, context: Record<string, any> = {}) {
+  trackError(error: Error, context: Record<string, unknown> = {}) {
     this.trackEvent(ADVANCED_EVENT_TYPES.JAVASCRIPT_ERROR, {
       error_message: error.message,
       error_stack: error.stack,
@@ -303,14 +314,14 @@ export class AdvancedAnalytics {
     });
   }
 
-  setUserProperties(properties: Record<string, any>) {
+  setUserProperties(properties: Record<string, unknown>) {
     this.userProperties = { ...this.userProperties, ...properties };
     this.trackEvent('user_properties_updated', {
       properties: properties
     });
   }
 
-  setCustomDimension(key: string, value: any) {
+  setCustomDimension(key: string, value: FlexibleValue) {
     this.customDimensions[key] = value;
   }
 
@@ -424,7 +435,7 @@ export class AdvancedAnalytics {
     this.sendEvents(eventsToFlush);
   }
 
-  private async sendEvents(events: any[]) {
+  private async sendEvents(events: AnalyticsEvent[]) {
     try {
       await fetch('/api/analytics', {
         method: 'POST',
@@ -472,7 +483,7 @@ export class AdvancedAnalytics {
     });
   }
 
-  trackPerformance(payload: { event_name: string; metrics: Record<string, any> }) {
+  trackPerformance(payload: { event_name: string; metrics: Record<string, unknown> }) {
     this.trackEvent(payload.event_name || 'web_vitals', payload.metrics || {});
   }
 
@@ -500,25 +511,43 @@ export class AdvancedAnalytics {
 }
 
 // Create singleton instance
-export const advancedAnalytics = typeof window !== 'undefined' ? new AdvancedAnalytics() : (null as unknown as AdvancedAnalytics);
+export const advancedAnalytics: AdvancedAnalytics | null = typeof window !== 'undefined' ? new AdvancedAnalytics() : null;
 
 // React hooks for analytics
 export function useAnalytics() {
-  const safeCall = (fn: ((...a: any[]) => any) | undefined, args: any[]) => {
-    if (fn) {
-      try { fn.apply(advancedAnalytics, args); } catch {}
+  const instance = advancedAnalytics;
+
+  const safeCall = <Args extends unknown[]>(
+    fn: ((...args: Args) => unknown) | undefined,
+    args: Args
+  ) => {
+    if (!fn) return;
+    try {
+      fn(...args);
+    } catch (error) {
+      logger.warn('Analytics call failed', { error });
     }
   };
+
   return {
-    trackEvent: (...args: any[]) => safeCall(advancedAnalytics?.trackEvent, args),
-    trackProductView: (...args: any[]) => safeCall(advancedAnalytics?.trackProductView, args),
-    trackAddToCart: (...args: any[]) => safeCall(advancedAnalytics?.trackAddToCart, args),
-    trackSearch: (...args: any[]) => safeCall(advancedAnalytics?.trackSearch, args),
-    trackFilterApplied: (...args: any[]) => safeCall(advancedAnalytics?.trackFilterApplied, args),
-    trackError: (...args: any[]) => safeCall(advancedAnalytics?.trackError, args),
-    setUserId: (...args: any[]) => safeCall(advancedAnalytics?.setUserId, args),
-    setUserProperties: (...args: any[]) => safeCall(advancedAnalytics?.setUserProperties, args),
-    setCustomDimension: (...args: any[]) => safeCall(advancedAnalytics?.setCustomDimension, args)
+    trackEvent: (...args: Parameters<AdvancedAnalytics['trackEvent']>) =>
+      safeCall(instance ? instance.trackEvent.bind(instance) : undefined, args),
+    trackProductView: (...args: Parameters<AdvancedAnalytics['trackProductView']>) =>
+      safeCall(instance ? instance.trackProductView.bind(instance) : undefined, args),
+    trackAddToCart: (...args: Parameters<AdvancedAnalytics['trackAddToCart']>) =>
+      safeCall(instance ? instance.trackAddToCart.bind(instance) : undefined, args),
+    trackSearch: (...args: Parameters<AdvancedAnalytics['trackSearch']>) =>
+      safeCall(instance ? instance.trackSearch.bind(instance) : undefined, args),
+    trackFilterApplied: (...args: Parameters<AdvancedAnalytics['trackFilterApplied']>) =>
+      safeCall(instance ? instance.trackFilterApplied.bind(instance) : undefined, args),
+    trackError: (...args: Parameters<AdvancedAnalytics['trackError']>) =>
+      safeCall(instance ? instance.trackError.bind(instance) : undefined, args),
+    setUserId: (...args: Parameters<AdvancedAnalytics['setUserId']>) =>
+      safeCall(instance ? instance.setUserId.bind(instance) : undefined, args),
+    setUserProperties: (...args: Parameters<AdvancedAnalytics['setUserProperties']>) =>
+      safeCall(instance ? instance.setUserProperties.bind(instance) : undefined, args),
+    setCustomDimension: (...args: Parameters<AdvancedAnalytics['setCustomDimension']>) =>
+      safeCall(instance ? instance.setCustomDimension.bind(instance) : undefined, args)
   };
 }
 

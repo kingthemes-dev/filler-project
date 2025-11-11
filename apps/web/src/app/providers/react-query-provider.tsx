@@ -5,13 +5,14 @@ import React from 'react';
 // import { analytics } from '@headless-woo/shared';
 
 // 🚀 Bundle Optimization: Dynamic import dla devtools (tylko w development)
-const ReactQueryDevtools = 
+type DevtoolsComponent = React.ComponentType<Record<string, unknown>>;
+
+const ReactQueryDevtools: DevtoolsComponent =
   process.env.NODE_ENV === 'development'
-    ? React.lazy(() => 
-        import('@tanstack/react-query-devtools').then((mod) => ({
-          default: mod.ReactQueryDevtools as React.ComponentType<any>,
-        }))
-      )
+    ? React.lazy(async () => {
+        const mod = await import('@tanstack/react-query-devtools');
+        return { default: mod.ReactQueryDevtools as DevtoolsComponent };
+      })
     : () => null;
 
 export default function ReactQueryProvider({ children }: { children: React.ReactNode }) {
@@ -36,7 +37,7 @@ export default function ReactQueryProvider({ children }: { children: React.React
         refetchOnReconnect: true,
         networkMode: 'online',
         retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 5000),
-        placeholderData: (previousData: any) => previousData,
+        placeholderData: (previousData: unknown) => previousData,
       },
     },
   }));

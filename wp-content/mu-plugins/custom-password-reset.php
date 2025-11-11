@@ -199,8 +199,16 @@ function custom_password_reset_confirm_handler($request) {
         ], 400);
     }
 
-    // Zresetuj hasło
+    // Zresetuj hasło (this will trigger 'password_reset' action which blacklists tokens)
     wp_set_password($password, $user->ID);
+    
+    // Explicitly blacklist tokens if JWT auth is available
+    if (isset($GLOBALS['king_jwt_auth']) && is_object($GLOBALS['king_jwt_auth'])) {
+        if (method_exists($GLOBALS['king_jwt_auth'], 'blacklist_user_tokens')) {
+            $GLOBALS['king_jwt_auth']->blacklist_user_tokens($user->ID);
+            error_log("JWT tokens blacklisted for user after password reset: " . $user->ID);
+        }
+    }
     
     error_log("Password reset successful for: " . $login);
     

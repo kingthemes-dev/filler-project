@@ -52,18 +52,28 @@ function SearchResultsContent() {
     
     try {
       // Use advanced search service with filters
-      const searchParams = {
+      const searchParams: Parameters<typeof wooSearchService.advancedSearch>[0] = {
         query,
         page: currentPage,
         limit: 20,
-        sortBy: sortBy as any,
-        // Add filters from state
-        ...(filters.category && { category: filters.category as string }),
-        ...(filters.price_min && { minPrice: filters.price_min as number }),
-        ...(filters.price_max && { maxPrice: filters.price_max as number }),
-        ...(filters.in_stock !== undefined && { inStock: filters.in_stock as boolean }),
-        ...(filters.rating_min && { minRating: filters.rating_min as number })
+        sortBy,
       };
+
+      if (typeof filters.category === 'string' && filters.category) {
+        searchParams.category = filters.category;
+      }
+      if (typeof filters.price_min === 'number') {
+        searchParams.minPrice = filters.price_min;
+      }
+      if (typeof filters.price_max === 'number') {
+        searchParams.maxPrice = filters.price_max;
+      }
+      if (typeof filters.in_stock === 'boolean') {
+        searchParams.inStock = filters.in_stock;
+      }
+      if (typeof filters.on_sale === 'boolean') {
+        searchParams.onSale = filters.on_sale;
+      }
 
       const response = await wooSearchService.advancedSearch(searchParams);
       
@@ -82,7 +92,7 @@ function SearchResultsContent() {
       });
       
     } catch (error) {
-      logger.error('Search error:', error);
+      logger.error('Search error:', { error });
       setSearchResults([]);
       setTotalResults(0);
       setProcessingTime(0);

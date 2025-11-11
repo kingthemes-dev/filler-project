@@ -14,10 +14,31 @@ if (!defined('ABSPATH')) {
 
 class KingJWTAuthentication {
     
+    private static $instance = null;
+    
+    public static function get_instance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+    
     public function __construct() {
         add_action('rest_api_init', array($this, 'register_routes'));
         add_action('wp_ajax_nopriv_king_jwt_login', array($this, 'handle_ajax_login'));
         add_action('wp_ajax_king_jwt_login', array($this, 'handle_ajax_login'));
+        
+        // Hook into password reset to blacklist tokens
+        add_action('password_reset', array($this, 'on_password_reset'), 10, 2);
+    }
+    
+    /**
+     * Hook into WordPress password reset action
+     */
+    public function on_password_reset($user, $new_password) {
+        if ($user && isset($user->ID)) {
+            $this->blacklist_user_tokens($user->ID);
+        }
     }
     
     /**
@@ -51,6 +72,12 @@ class KingJWTAuthentication {
         register_rest_route('king-jwt/v1', '/refresh', array(
             'methods' => 'POST',
             'callback' => array($this, 'refresh_token'),
+            'permission_callback' => '__return_true',
+        ));
+        
+        register_rest_route('king-jwt/v1', '/logout', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'handle_logout'),
             'permission_callback' => '__return_true',
         ));
     }
@@ -147,8 +174,56 @@ class KingJWTAuthentication {
         } catch (Exception $e) {
             return new WP_Error(
                 'invalid_token',
-                'Nieprawidłowy token',
+                'Nieprawidłowy token: ' . $e->getMessage(),
                 array('status' => 401)
+            );
+        }
+    }
+    
+    /**
+     * Handle logout - blacklist token
+     */
+    public function handle_logout($request) {
+        $token = $request->get_param('token');
+        
+        if (empty($token)) {
+            return new WP_Error(
+                'missing_token',
+                'Token jest wymagany',
+                array('status' => 400)
+            );
+        }
+        
+        try {
+            // Verify token before blacklisting (to ensure it's valid)
+            $payload = $this->verify_jwt_token($token);
+            $user_id = $payload->user_id;
+            
+            // Blacklist the token
+            $this->blacklist_token($token);
+            
+            // Remove token from whitelist if present
+            $whitelist_key = "jwt_refresh_whitelist_{$user_id}";
+            $whitelist = get_transient($whitelist_key);
+            if (is_array($whitelist) && in_array($token, $whitelist)) {
+                $whitelist = array_diff($whitelist, array($token));
+                if (empty($whitelist)) {
+                    delete_transient($whitelist_key);
+                } else {
+                    set_transient($whitelist_key, $whitelist, 7 * 24 * 60 * 60);
+                }
+            }
+            
+            return array(
+                'success' => true,
+                'message' => 'Token unieważniony'
+            );
+            
+        } catch (Exception $e) {
+            // Even if token is invalid, return success (security: don't reveal token status)
+            return array(
+                'success' => true,
+                'message' => 'Token unieważniony'
             );
         }
     }
@@ -286,6 +361,43 @@ class KingJWTAuthentication {
     }
     
     /**
+     * Check if token is blacklisted
+     */
+    private function is_token_blacklisted($token) {
+        $token_hash = md5($token);
+        $blacklist_key = "jwt_blacklist_{$token_hash}";
+        return get_transient($blacklist_key) !== false;
+    }
+    
+    /**
+     * Blacklist a token (invalidate it)
+     */
+    public function blacklist_token($token, $ttl = 7 * 24 * 60 * 60) {
+        $token_hash = md5($token);
+        $blacklist_key = "jwt_blacklist_{$token_hash}";
+        set_transient($blacklist_key, '1', $ttl);
+    }
+    
+    /**
+     * Blacklist all tokens for a user (e.g., after password reset or ban)
+     */
+    public function blacklist_user_tokens($user_id) {
+        // Get whitelist before clearing
+        $whitelist_key = "jwt_refresh_whitelist_{$user_id}";
+        $whitelist = get_transient($whitelist_key);
+        
+        // Blacklist all tokens in whitelist before clearing
+        if (is_array($whitelist) && !empty($whitelist)) {
+            foreach ($whitelist as $token) {
+                $this->blacklist_token($token);
+            }
+        }
+        
+        // Remove user from whitelist (invalidates all refresh tokens)
+        delete_transient($whitelist_key);
+    }
+    
+    /**
      * Verify JWT token
      */
     private function verify_jwt_token($token) {
@@ -296,6 +408,11 @@ class KingJWTAuthentication {
         }
         
         list($header, $payload, $signature) = $parts;
+        
+        // Check if token is blacklisted (before signature verification to save resources)
+        if ($this->is_token_blacklisted($token)) {
+            throw new Exception('Token is blacklisted');
+        }
         
         // Verify signature
         $secret = $this->get_jwt_secret();
@@ -403,8 +520,8 @@ class KingJWTAuthentication {
     }
 }
 
-// Initialize plugin
-new KingJWTAuthentication();
+// Initialize plugin (singleton pattern for access from other plugins)
+$GLOBALS['king_jwt_auth'] = KingJWTAuthentication::get_instance();
 
 // Add activation hook
 register_activation_hook(__FILE__, function() {

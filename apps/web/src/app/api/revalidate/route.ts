@@ -7,6 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { env } from '@/config/env';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidateSchema } from '@/lib/schemas/internal';
+import { validateApiInput } from '@/utils/request-validation';
+import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -15,51 +19,67 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const expectedToken = env.REVALIDATE_SECRET;
     
     if (!authHeader || !expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+      logger.warn('Revalidate: Unauthorized attempt', {
+        hasAuthHeader: !!authHeader,
+        hasExpectedToken: !!expectedToken,
+      });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const body = await request.json();
-    const { paths, tags } = body;
+    // Parse and validate body
+    const rawBody = await request.json().catch(() => ({}));
+    const sanitizedBody = validateApiInput(rawBody);
+    const validationResult = revalidateSchema.safeParse(sanitizedBody);
 
-    if (!paths && !tags) {
-      return NextResponse.json(
-        { error: 'No paths or tags provided' },
-        { status: 400 }
+    if (!validationResult.success) {
+      return createErrorResponse(
+        new ValidationError('Invalid revalidation data', validationResult.error.errors),
+        { endpoint: 'revalidate', method: 'POST' }
       );
     }
 
+    const { paths, tags } = validationResult.data;
+
     const results = [];
 
-    // Revalidate paths
-    if (paths && Array.isArray(paths)) {
+    // Revalidate paths (already validated by schema)
+    if (paths && paths.length > 0) {
       for (const path of paths) {
         try {
           revalidatePath(path);
           results.push({ path, status: 'revalidated' });
-          console.log(`✅ Path revalidated: ${path}`);
+          logger.info('Path revalidated', { path });
         } catch (error) {
-          results.push({ path, status: 'error', error: error instanceof Error ? error.message : String(error) });
-          console.error(`❌ Path revalidation failed: ${path}`, error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          results.push({ path, status: 'error', error: errorMessage });
+          logger.error('Path revalidation failed', { path, error: errorMessage });
         }
       }
     }
 
-    // Revalidate tags
-    if (tags && Array.isArray(tags)) {
+    // Revalidate tags (already validated by schema)
+    if (tags && tags.length > 0) {
       for (const tag of tags) {
         try {
           revalidateTag(tag);
           results.push({ tag, status: 'revalidated' });
-          console.log(`✅ Tag revalidated: ${tag}`);
+          logger.info('Tag revalidated', { tag });
         } catch (error) {
-          results.push({ tag, status: 'error', error: error instanceof Error ? error.message : String(error) });
-          console.error(`❌ Tag revalidation failed: ${tag}`, error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          results.push({ tag, status: 'error', error: errorMessage });
+          logger.error('Tag revalidation failed', { tag, error: errorMessage });
         }
       }
     }
+
+    logger.info('Revalidation completed', {
+      pathsCount: paths?.length || 0,
+      tagsCount: tags?.length || 0,
+      resultsCount: results.length,
+    });
 
     return NextResponse.json({
       success: true,
@@ -68,9 +88,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Revalidation failed:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Revalidation failed', { error: errorMessage });
     return NextResponse.json(
-      { error: 'Revalidation failed', message: error instanceof Error ? error.message : String(error) },
+      { error: 'Revalidation failed', message: errorMessage },
       { status: 500 }
     );
   }

@@ -4,6 +4,23 @@
 
 import React from 'react';
 import { Metadata } from 'next';
+
+type OpenGraphType =
+  | 'website'
+  | 'article'
+  | 'book'
+  | 'profile'
+  | 'music.song'
+  | 'music.album'
+  | 'music.playlist'
+  | 'music.radio_station'
+  | 'video.movie'
+  | 'video.episode'
+  | 'video.tv_show'
+  | 'video.other';
+
+type StructuredData = Record<string, unknown>;
+type LayoutShiftEntry = PerformanceEntry & { value?: number; hadRecentInput?: boolean };
 import { env } from '@/config/env';
 
 // Base SEO configuration
@@ -30,7 +47,7 @@ export function generateMetadata({
   description?: string;
   image?: string;
   url?: string;
-  type?: string;
+  type?: OpenGraphType;
   noindex?: boolean;
 }): Metadata {
   const fullTitle = title ? `${title} | ${SEO_CONFIG.siteName}` : SEO_CONFIG.siteName;
@@ -56,7 +73,7 @@ export function generateMetadata({
         }
       ],
       locale: SEO_CONFIG.locale,
-      type: type as any
+      type
     },
     twitter: {
       card: 'summary_large_image',
@@ -306,14 +323,18 @@ export function trackSEOMetrics() {
       // First Input Delay
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          console.log('FID:', (entry as any).processingStart - entry.startTime);
+          const eventTiming = entry as PerformanceEventTiming;
+          console.log('FID:', eventTiming.processingStart - eventTiming.startTime);
         }
       }).observe({ entryTypes: ['first-input'] });
 
       // Cumulative Layout Shift
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          console.log('CLS:', (entry as any).value);
+          const layoutShift = entry as LayoutShiftEntry;
+          if (!layoutShift.hadRecentInput) {
+            console.log('CLS:', layoutShift.value);
+          }
         }
       }).observe({ entryTypes: ['layout-shift'] });
     };
@@ -328,7 +349,7 @@ export function trackSEOMetrics() {
 }
 
 // SEO component for structured data
-export function SEOStructuredData({ data }: { data: any }) {
+export function SEOStructuredData({ data }: { data: StructuredData }) {
   return (
     <script
       type="application/ld+json"

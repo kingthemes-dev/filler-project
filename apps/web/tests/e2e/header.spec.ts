@@ -8,7 +8,7 @@ test.describe('Header i menu (smoke)', () => {
     await expect(banner).toBeVisible();
   });
 
-  test('mobilne menu nie powoduje błędów (otwórz/zamknij)', async ({ page, baseURL, isMobile }) => {
+  test('mobilne menu nie powoduje błędów (otwórz/zamknij)', async ({ page, baseURL, isMobile: _isMobile }) => {
     await page.goto(`${baseURL || ''}/`, { waitUntil: 'domcontentloaded' });
     // Próba kliknięcia w przycisk menu jeśli istnieje
     const menuBtn = page.locator('button:has-text("Menu")');

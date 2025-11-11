@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { WooProduct } from '@/types/woocommerce';
@@ -31,7 +32,7 @@ const safeStorage = {
   }
 };
 
-interface WishlistItem {
+export interface WishlistItem {
   id: number;
   name: string;
   price: string;
@@ -243,3 +244,32 @@ export const useWishlistStore = create<WishlistStore>()(
     }
   )
 );
+
+// Selectors for optimized subscriptions
+export const useWishlistItems = () => useWishlistStore((state) => state.items);
+export const useWishlistIsLoading = () => useWishlistStore((state) => state.isLoading);
+export const useWishlistError = () => useWishlistStore((state) => state.error);
+export const useWishlistItemCount = () => useWishlistStore((state) => state.items.length);
+
+// Memoized selectors for actions to prevent re-renders
+export const useWishlistActions = () => {
+  const addItem = useWishlistStore((state) => state.addItem);
+  const removeItem = useWishlistStore((state) => state.removeItem);
+  const toggleItem = useWishlistStore((state) => state.toggleItem);
+  const clearWishlist = useWishlistStore((state) => state.clearWishlist);
+  const isInWishlist = useWishlistStore((state) => state.isInWishlist);
+  const getItemCount = useWishlistStore((state) => state.getItemCount);
+  const syncWithServer = useWishlistStore((state) => state.syncWithServer);
+  const loadFromServer = useWishlistStore((state) => state.loadFromServer);
+  
+  return useMemo(() => ({
+    addItem,
+    removeItem,
+    toggleItem,
+    clearWishlist,
+    isInWishlist,
+    getItemCount,
+    syncWithServer,
+    loadFromServer,
+  }), [addItem, removeItem, toggleItem, clearWishlist, isInWishlist, getItemCount, syncWithServer, loadFromServer]);
+};

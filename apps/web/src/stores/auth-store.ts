@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useMemo } from 'react';
 import wooCommerceService from '@/services/woocommerce-optimized';
 import { logger } from '@/utils/logger';
 import type { WooCustomer } from '@/types/woocommerce';
@@ -562,3 +563,55 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 );
+
+// Selectors for optimized subscriptions
+export const useAuthUser = () => useAuthStore((state) => state.user);
+export const useAuthToken = () => useAuthStore((state) => state.token);
+export const useAuthIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
+export const useAuthIsLoading = () => useAuthStore((state) => state.isLoading);
+export const useAuthError = () => useAuthStore((state) => state.error);
+
+// Memoized selectors for actions to prevent re-renders
+export const useAuthActions = () => {
+  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
+  const logout = useAuthStore((state) => state.logout);
+  const refreshToken = useAuthStore((state) => state.refreshToken);
+  const updateUser = useAuthStore((state) => state.updateUser);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
+  const changePassword = useAuthStore((state) => state.changePassword);
+  const clearError = useAuthStore((state) => state.clearError);
+  const setToken = useAuthStore((state) => state.setToken);
+  const clearToken = useAuthStore((state) => state.clearToken);
+  const fetchUserProfile = useAuthStore((state) => state.fetchUserProfile);
+  
+  return useMemo(() => ({
+    login,
+    register,
+    logout,
+    refreshToken,
+    updateUser,
+    updateProfile,
+    changePassword,
+    clearError,
+    setToken,
+    clearToken,
+    fetchUserProfile,
+  }), [login, register, logout, refreshToken, updateUser, updateProfile, changePassword, clearError, setToken, clearToken, fetchUserProfile]);
+};
+
+export const useAuthState = () => {
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const error = useAuthStore((state) => state.error);
+  
+  return useMemo(() => ({
+    user,
+    token,
+    isAuthenticated,
+    isLoading,
+    error,
+  }), [user, token, isAuthenticated, isLoading, error]);
+};

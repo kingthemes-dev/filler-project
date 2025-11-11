@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { env } from '@/config/env';
+import type { CircuitState } from '@/utils/circuit-breaker';
 import { Redis } from 'ioredis';
 
 interface HealthStatus {
@@ -27,8 +28,8 @@ interface HealthStatus {
       load: number;
     };
   };
-  circuitBreakers?: any;
-  cache?: any;
+  circuitBreakers?: CircuitBreakerHealth;
+  cache?: CacheHealth;
   version: string;
   environment: string;
 }
@@ -39,6 +40,28 @@ interface ServiceStatus {
   lastCheck: string;
   error?: string;
   message?: string;
+}
+
+interface CircuitBreakerStats {
+  state: CircuitState | 'UNKNOWN';
+  failureCount: number;
+  successCount: number;
+  totalRequests: number;
+  failureRate: number;
+  lastFailureTime: number;
+  nextAttempt: number;
+}
+
+interface CircuitBreakerHealth {
+  wordpress: CircuitBreakerStats;
+  api: CircuitBreakerStats;
+  external: CircuitBreakerStats;
+}
+
+interface CacheHealth {
+  status: 'ok' | 'error';
+  size: number;
+  entries: number;
 }
 
 class HealthChecker {
@@ -201,7 +224,7 @@ class HealthChecker {
   /**
    * Check Circuit Breakers
    */
-  private async checkCircuitBreakers(): Promise<any> {
+  private async checkCircuitBreakers(): Promise<CircuitBreakerHealth> {
     try {
       const { circuitBreakers } = await import('@/utils/circuit-breaker');
       return {
@@ -212,9 +235,9 @@ class HealthChecker {
     } catch (error) {
       console.warn('Circuit breaker stats not available:', error);
       return {
-        wordpress: { state: 'UNKNOWN', failureRate: 0 },
-        api: { state: 'UNKNOWN', failureRate: 0 },
-        external: { state: 'UNKNOWN', failureRate: 0 }
+        wordpress: { state: 'UNKNOWN', failureCount: 0, successCount: 0, totalRequests: 0, failureRate: 0, lastFailureTime: 0, nextAttempt: 0 },
+        api: { state: 'UNKNOWN', failureCount: 0, successCount: 0, totalRequests: 0, failureRate: 0, lastFailureTime: 0, nextAttempt: 0 },
+        external: { state: 'UNKNOWN', failureCount: 0, successCount: 0, totalRequests: 0, failureRate: 0, lastFailureTime: 0, nextAttempt: 0 }
       };
     }
   }
@@ -222,20 +245,20 @@ class HealthChecker {
   /**
    * Check Cache Status
    */
-  private async checkCache(): Promise<any> {
+  private async checkCache(): Promise<CacheHealth> {
     try {
       const { cache } = await import('@/lib/cache');
       const stats = cache.getStats();
       return {
         status: 'ok',
-        ...stats
+        ...stats,
       };
     } catch (error) {
       console.warn('Cache stats not available:', error);
       return {
         status: 'error',
         size: 0,
-        entries: 0
+        entries: 0,
       };
     }
   }

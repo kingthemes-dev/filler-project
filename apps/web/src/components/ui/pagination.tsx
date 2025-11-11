@@ -139,14 +139,14 @@ export default function Pagination({
 }
 
 // Hook do zarządzania stanem paginacji
-export function usePagination(totalItems: number, itemsPerPage: number) {
+export function usePagination<T>(totalItems: number, itemsPerPage: number) {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   
   return {
     totalPages,
     hasNextPage: (currentPage: number) => currentPage < totalPages,
     hasPrevPage: (currentPage: number) => currentPage > 1,
-    getPageItems: (currentPage: number, allItems: any[]) => {
+    getPageItems: (currentPage: number, allItems: T[]) => {
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       return allItems.slice(startIndex, endIndex);

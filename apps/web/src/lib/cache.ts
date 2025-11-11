@@ -1,5 +1,6 @@
 // Production-grade cache layer with Redis fallback
 import crypto from 'crypto';
+import type { Redis } from 'ioredis';
 // FIX: Rate limiting moved to centralized rate-limiter.ts
 import { checkRateLimit, DEFAULT_RATE_LIMITS } from '@/utils/rate-limiter';
 
@@ -16,7 +17,7 @@ const DEFAULT_TTL_MS = 60 * 1000; // 60s
 const MAX_MEMORY_ENTRIES = 1000;
 
 // Optional Redis client (lazy)
-let redisClient: any = null;
+let redisClient: Redis | null = null;
 let redisInitialized = false;
 
 async function initializeRedis(): Promise<void> {
@@ -29,8 +30,8 @@ async function initializeRedis(): Promise<void> {
   try {
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) return;
-    const Redis = (await import('ioredis')).default;
-    redisClient = new Redis(redisUrl, {
+    const RedisModule = await import('ioredis');
+    redisClient = new RedisModule.default(redisUrl, {
       maxRetriesPerRequest: 3,
       lazyConnect: true,
       connectTimeout: 5000,

@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+# Check PHP syntax on server
+set timeout 30
+set ssh_user "qvwltjhdjw"
+set ssh_host "s62.cyber-folks.pl"
+set ssh_port "222"
+set ssh_pass "Haslo963!@#"
+set remote_path "~/domains/qvwltjhdjw.cfolks.pl/public_html/wp-content/mu-plugins"
+
+set plugin_file [lindex $argv 0]
+
+if {$plugin_file == ""} {
+    puts "Usage: ./scripts/check-php-syntax.exp <plugin-file>"
+    exit 1
+}
+
+puts "🔍 Checking PHP syntax for $plugin_file..."
+
+spawn ssh -p $ssh_port -o StrictHostKeyChecking=no $ssh_user@$ssh_host "php -l $remote_path/$plugin_file"
+
+expect {
+    "password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$ssh_pass\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+        set exit_code [lindex $result 3]
+        exit $exit_code
+    }
+    timeout {
+        puts "⚠️  Connection timeout"
+        exit 1
+    }
+}
+
