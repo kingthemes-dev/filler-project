@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { analytics } from '@headless-woo/shared/utils/analytics';
+import { analytics } from '@headless-woo/shared';
 import PageContainer from '@/components/ui/page-container';
 import { Search } from 'lucide-react';
 // 🚀 LCP Optimization: ShopProductsGrid z Suspense dla streaming rendering

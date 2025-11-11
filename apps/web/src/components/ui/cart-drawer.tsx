@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Trash2, Plus, Minus, Truck, ArrowRight } from 'lucide-react';
 import { useCartState, useCartActions, type CartItem } from '@/stores/cart-store';
 import { useAuthIsAuthenticated, useAuthUser, useAuthActions } from '@/stores/auth-store';
-import { analytics } from '@headless-woo/shared/utils/analytics';
+import { analytics } from '@headless-woo/shared';
 import { formatPrice } from '@/utils/format-price';
 import { SHIPPING_CONFIG } from '@/config/constants';
 import Link from 'next/link';
