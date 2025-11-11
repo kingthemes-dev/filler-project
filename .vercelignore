@@ -1,0 +1,17 @@
+# Vercel ignore file - exclude non-web app files from deployment
+apps/mobile/
+packages/
+wp-content/
+scripts/
+docs/
+*.md
+!README.md
+.gitignore
+.eslintrc*
+.prettierrc*
+jest.config.js
+playwright.config.ts
+docker-compose.yml
+nginx.conf
+vercel.env.example
+

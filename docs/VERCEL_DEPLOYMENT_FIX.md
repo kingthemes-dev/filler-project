@@ -1,23 +1,38 @@
 # Vercel Deployment Fix - Monorepo Configuration
 
+## ⚠️ KRYTYCZNE: Wymagane ustawienie w Vercel Dashboard
+
+**Vercel NIE WYKRYJE Next.js bez ustawienia Root Directory w dashboardzie!**
+
 ## Problem
 Vercel nie wykrywa Next.js w monorepo podczas build:
 ```
 Error: No Next.js version detected. Make sure your package.json has "next" in either "dependencies" or "devDependencies".
 ```
 
-## Rozwiązanie
+**Przyczyna:** Vercel domyślnie szuka Next.js w root `package.json`, ale w monorepo Next.js jest w `apps/web/package.json`.
 
-### 1. Ustawienia w Vercel Dashboard
+## ✅ Rozwiązanie (WYMAGANE)
 
-**Wymagane ustawienia w Vercel Dashboard:**
+### 1. Ustawienia w Vercel Dashboard (OBOWIĄZKOWE)
 
-1. Przejdź do **Settings → General**
-2. Ustaw **Root Directory** na: `apps/web`
-3. **Build Command**: (zostaw puste - Vercel automatycznie wykryje)
-4. **Output Directory**: (zostaw puste - Vercel automatycznie wykryje `.next`)
-5. **Install Command**: `pnpm install` (lub zostaw puste)
-6. **Framework Preset**: Next.js (lub zostaw auto-detect)
+**⚠️ Tego NIE MOŻNA zrobić w `vercel.json` - musi być w dashboardzie Vercel!**
+
+**Kroki:**
+1. Otwórz projekt w Vercel: https://vercel.com/dashboard
+2. Przejdź do **Settings → General**
+3. W sekcji **Root Directory** ustaw: `apps/web`
+4. **Zapisz zmiany**
+5. **Build Command**: (zostaw puste - Vercel automatycznie wykryje)
+6. **Output Directory**: (zostaw puste - Vercel automatycznie wykryje `.next`)
+7. **Install Command**: `pnpm install` (lub zostaw puste)
+8. **Framework Preset**: Next.js (lub zostaw auto-detect)
+
+**Po ustawieniu Root Directory:**
+- Vercel automatycznie przeszuka `apps/web/package.json`
+- Znajdzie `next` w dependencies
+- Automatycznie wykryje Next.js framework
+- Uruchomi build z właściwego katalogu
 
 ### 2. Weryfikacja konfiguracji
 
