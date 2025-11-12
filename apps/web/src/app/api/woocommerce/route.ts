@@ -3,7 +3,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { ZodIssue } from 'zod';
-import type { Span } from '@sentry/types';
 import { 
   orderSchema,
   passwordResetSchema,
@@ -2458,7 +2457,9 @@ export async function GET(req: NextRequest) {
   const requestId = getRequestId(req);
   
   // Start Sentry span for performance monitoring (optional)
-  let span: Span | null = null;
+  // Using any type since @sentry/types is not available in build
+  // Span is checked for null before use
+  let span: any = null;
   try {
     span = Sentry.startSpan(
       {
@@ -2470,7 +2471,7 @@ export async function GET(req: NextRequest) {
           request_id: requestId,
         },
       },
-      (span) => {
+      (span: any) => {
         Sentry.getCurrentScope().setTag('request_id', requestId);
         Sentry.getCurrentScope().setContext('request', {
           url: req.url,
