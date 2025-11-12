@@ -72,7 +72,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-      webpack: (config, { isServer, dev }) => {
+      webpack: (config, { isServer, dev, dir }) => {
         // Fix for Next.js 15.5.2 compatibility issues
         if (!isServer) {
           config.resolve.fallback = {
@@ -103,14 +103,27 @@ const nextConfig: NextConfig = {
         }
         
         // Resolve workspace packages from monorepo
-        // Use process.cwd() to get the current working directory (apps/web)
-        const appDir = process.cwd();
-        const sharedPath = path.resolve(appDir, '../../packages/shared/index.ts');
+        // Use dir parameter from Next.js webpack config (points to apps/web directory)
+        // This is more reliable than process.cwd() which may point to root during build
+        const sharedPath = path.resolve(dir, '../../packages/shared/index.ts');
         
-        config.resolve.alias = {
-          ...config.resolve.alias,
-          '@headless-woo/shared': sharedPath,
-        };
+        // Ensure alias is set for both client and server
+        if (!config.resolve.alias) {
+          config.resolve.alias = {};
+        }
+        config.resolve.alias['@headless-woo/shared'] = sharedPath;
+        
+        // Also add packages directory to modules resolution
+        // This helps webpack find workspace packages during build
+        if (!config.resolve.modules) {
+          config.resolve.modules = [];
+        }
+        if (Array.isArray(config.resolve.modules)) {
+          const packagesPath = path.resolve(dir, '../../packages');
+          if (!config.resolve.modules.includes(packagesPath)) {
+            config.resolve.modules.push(packagesPath);
+          }
+        }
     
     config.module.rules.push({
       test: /\.svg$/,
