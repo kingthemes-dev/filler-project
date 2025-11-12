@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from 'path';
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
@@ -100,6 +101,16 @@ const nextConfig: NextConfig = {
             zlib: false,
           };
         }
+        
+        // Resolve workspace packages from monorepo
+        // Use process.cwd() to get the current working directory (apps/web)
+        const appDir = process.cwd();
+        const sharedPath = path.resolve(appDir, '../../packages/shared/index.ts');
+        
+        config.resolve.alias = {
+          ...config.resolve.alias,
+          '@headless-woo/shared': sharedPath,
+        };
     
     config.module.rules.push({
       test: /\.svg$/,
@@ -158,7 +169,7 @@ const nextConfig: NextConfig = {
     // Performance optimizations for all environments
     return config;
   },
-  transpilePackages: ['@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+  transpilePackages: ['@headless-woo/shared', '@radix-ui/react-slot', 'class-variance-authority', 'clsx', 'tailwind-merge'],
   
   // Output configuration for Vercel
   // output: 'standalone', // Temporarily disabled for Vercel compatibility
