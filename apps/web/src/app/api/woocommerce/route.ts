@@ -1303,6 +1303,9 @@ async function _handleOrderCreation(body: unknown) {
     console.log('🔄 Creating order in WooCommerce');
     console.log('🎫 Coupon lines received:', coupon_lines);
     
+    // Use billing.country if available, otherwise default to 'PL'
+    const defaultCountry = billing.country ?? 'PL';
+    
     const shippingSource: RawOrderShippingAddress = shipping ?? {
       firstName: billing.firstName,
       lastName: billing.lastName,
@@ -1310,7 +1313,7 @@ async function _handleOrderCreation(body: unknown) {
       address: billing.address,
       city: billing.city,
       postcode: billing.postcode,
-      country: fallbackCountry,
+      country: defaultCountry,
     };
 
     const wooLineItems: WooOrderCreateLineItem[] = line_items.map((item) => ({
@@ -1344,7 +1347,7 @@ async function _handleOrderCreation(body: unknown) {
         city: billing.city,
         state: '',
         postcode: billing.postcode,
-        country: fallbackCountry,
+        country: defaultCountry,
       },
       shipping: {
         first_name: shippingSource.firstName,
@@ -1354,7 +1357,7 @@ async function _handleOrderCreation(body: unknown) {
         city: shippingSource.city,
         state: '',
         postcode: shippingSource.postcode,
-        country: shippingSource.country ?? fallbackCountry,
+        country: shippingSource.country ?? defaultCountry,
       },
       line_items: wooLineItems,
       shipping_lines: shipping_lines ?? [],
