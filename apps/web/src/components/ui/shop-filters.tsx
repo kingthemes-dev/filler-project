@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { analytics } from '@headless-woo/shared';
+import { analytics } from '@/utils/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Filter, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import HierarchicalCategoryFilters from './hierarchical-category-filters';
