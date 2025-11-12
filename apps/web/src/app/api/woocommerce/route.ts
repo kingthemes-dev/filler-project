@@ -2188,7 +2188,8 @@ async function handleShippingMethods(req: NextRequest) {
       }
       // Handle Flat Rate methods
       else if (method.method_id === 'flat_rate') {
-        const costSetting = getSettingValue(method.settings, 'cost');
+        const settings = method.settings || {};
+        const costSetting = getSettingValue(settings, 'cost');
         if (costSetting) {
           cost = parseFloat(costSetting);
         }
@@ -2209,18 +2210,21 @@ async function handleShippingMethods(req: NextRequest) {
           .trim();
       };
 
+      // Use settings with fallback to empty object
+      const settings = method.settings || {};
+
       return {
         id: method.id,
         method_id: method.method_id,
-        method_title: getSettingValue(method.settings, 'method_title') ?? method.method_title,
+        method_title: getSettingValue(settings, 'method_title') ?? method.method_title,
         method_description: cleanDescription(
-          getSettingValue(method.settings, 'method_description') ?? method.method_description ?? '',
+          getSettingValue(settings, 'method_description') ?? method.method_description ?? '',
         ),
         cost,
         free_shipping_threshold: freeShippingThreshold,
         zone_id: method.zone_id,
         zone_name: method.zone_name,
-        settings: method.settings
+        settings: settings
       };
     });
 
