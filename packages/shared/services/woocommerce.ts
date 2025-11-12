@@ -17,22 +17,11 @@ class WooCommerceService {
     this.consumerKey = process.env.WC_CONSUMER_KEY || '';
     this.consumerSecret = process.env.WC_CONSUMER_SECRET || '';
     
-    // Debug logging (server-side only)
-    if (typeof window === 'undefined') {
-      console.log('🔍 WooCommerce Service Constructor (Server-side):');
-      console.log('Base URL:', this.baseUrl);
-      console.log('Consumer Key:', this.consumerKey ? 'SET' : 'NOT SET');
-      console.log('Consumer Secret:', this.consumerSecret ? 'SET' : 'NOT SET');
-    }
-  
-  // Check if variables are loaded
-  if (!this.consumerKey || !this.consumerSecret) {
-    console.error('❌ ERROR: WooCommerce API keys are missing!');
-    console.error('Consumer Key length:', this.consumerKey?.length || 0);
-    console.error('Consumer Secret length:', this.consumerSecret?.length || 0);
-  } else {
-    console.log('✅ WooCommerce API keys loaded successfully!');
-  }
+    // Silent constructor - don't log errors for missing keys
+    // On client-side, empty keys are EXPECTED (server env vars are not available)
+    // On server-side, keys should be set, but we don't log errors here to avoid
+    // client-side console noise during SSR/hydration
+    // If keys are actually missing on server, errors will occur when making API calls
   }
 
   // =========================================
