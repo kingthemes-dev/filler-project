@@ -170,7 +170,9 @@ class RequestBatcher {
         timestamp: Date.now(),
       };
 
-      batch.push(batchedRequest);
+      // Type assertion needed because batch stores BatchedRequest<unknown>[] but we have BatchedRequest<T>
+      // This is safe because each request resolves with its own expected type via the resolve callback
+      batch.push(batchedRequest as BatchedRequest<unknown>);
 
       // Check if batch is full
       const maxSize = batchConfig.maxBatchSize || this.config.maxBatchSize;
