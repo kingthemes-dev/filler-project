@@ -15,35 +15,14 @@ class WooCommerceService {
     // SECURITY FIX: Remove NEXT_PUBLIC_ prefixes for secrets
     // These should only be used server-side via API routes
     this.baseUrl = env.NEXT_PUBLIC_WC_URL;
-    this.consumerKey = env.WC_CONSUMER_KEY;
-    this.consumerSecret = env.WC_CONSUMER_SECRET;
+    this.consumerKey = env.WC_CONSUMER_KEY || '';
+    this.consumerSecret = env.WC_CONSUMER_SECRET || '';
     
-    // Only log errors on server-side (client-side doesn't have access to server env vars)
-    // Client-side code should use API routes instead of direct WooCommerce API access
-    if (typeof window === 'undefined') {
-      // Server-side logging
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 WooCommerce Service Constructor (Server-side):');
-        console.log('Base URL:', this.baseUrl);
-        console.log('Consumer Key:', this.consumerKey ? 'SET' : 'NOT SET');
-        console.log('Consumer Secret:', this.consumerSecret ? 'SET' : 'NOT SET');
-      }
-      
-      // Check if variables are loaded (server-side only)
-      if (!this.consumerKey || !this.consumerSecret) {
-        if (process.env.NODE_ENV === 'production') {
-          console.error('❌ ERROR: WooCommerce API keys are missing!');
-          console.error('Consumer Key length:', this.consumerKey?.length || 0);
-          console.error('Consumer Secret length:', this.consumerSecret?.length || 0);
-        } else {
-          console.warn('⚠️ WARNING: WooCommerce API keys are missing (development mode)');
-        }
-      } else if (process.env.NODE_ENV === 'development') {
-        console.log('✅ WooCommerce API keys loaded successfully!');
-      }
-    }
-    // Client-side: Don't log errors for server-only env vars
-    // Client code should use /api/woocommerce routes instead
+    // Silent constructor - don't log errors for missing keys
+    // On client-side, empty keys are EXPECTED (server env vars are not available)
+    // On server-side, keys should be set, but we don't log errors here to avoid
+    // client-side console noise during SSR/hydration
+    // If keys are actually missing on server, errors will occur when making API calls
   }
 
   // =========================================
