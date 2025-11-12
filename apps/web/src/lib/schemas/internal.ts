@@ -298,14 +298,14 @@ export const revalidateSchema = z
       .max(100, 'Maximum 100 tags allowed')
       .optional(),
   })
+  .strict()
   .refine(
     (data) => (data.paths && data.paths.length > 0) || (data.tags && data.tags.length > 0),
     {
       message: 'At least one path or tag is required',
       path: ['paths'],
     }
-  )
-  .strict();
+  );
 
 export const customerUpdateProfileSchema = z
   .object({

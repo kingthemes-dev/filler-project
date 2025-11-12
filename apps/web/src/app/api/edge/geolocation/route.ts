@@ -2,16 +2,52 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+// Extended NextRequest type for Edge Runtime with geo and ip properties
+type NextRequestWithGeo = NextRequest & {
+  geo?: {
+    country?: string;
+    city?: string;
+    region?: string;
+    timezone?: string;
+  };
+  ip?: string;
+};
+
 export async function GET(request: NextRequest) {
   try {
-    // Get user's country from Cloudflare headers
-    const country = request.geo?.country ?? 'US';
-    const city = request.geo?.city ?? 'Unknown';
-    const region = request.geo?.region ?? 'Unknown';
-    const timezone = request.geo?.timezone ?? 'UTC';
+    // Type assertion for Edge Runtime properties
+    const requestWithGeo = request as NextRequestWithGeo;
+    
+    // Get user's country from Cloudflare/Vercel headers
+    const country = 
+      requestWithGeo.geo?.country ?? 
+      request.headers.get('x-vercel-ip-country') ?? 
+      request.headers.get('cf-ipcountry') ?? 
+      'US';
+    
+    const city = 
+      requestWithGeo.geo?.city ?? 
+      request.headers.get('x-vercel-ip-city') ?? 
+      'Unknown';
+    
+    const region = 
+      requestWithGeo.geo?.region ?? 
+      request.headers.get('x-vercel-ip-region') ?? 
+      'Unknown';
+    
+    const timezone = 
+      requestWithGeo.geo?.timezone ?? 
+      request.headers.get('x-vercel-ip-timezone') ?? 
+      'UTC';
 
     // Get user's IP
-    const ip = request.ip ?? request.headers.get('x-forwarded-for') ?? 'Unknown';
+    const ip = 
+      requestWithGeo.ip ?? 
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 
+      request.headers.get('x-real-ip') ?? 
+      request.headers.get('x-vercel-ip') ?? 
+      request.headers.get('cf-connecting-ip') ?? 
+      'Unknown';
 
     // Get user agent
     const userAgent = request.headers.get('user-agent') || 'Unknown';

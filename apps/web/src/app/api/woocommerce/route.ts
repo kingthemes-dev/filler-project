@@ -2087,14 +2087,7 @@ async function handleShippingMethods(req: NextRequest) {
     const zones = zonesParsed;
     
     // Get methods for each zone
-    const shippingMethods: Array<{
-      id: string;
-      method_id: string;
-      title: string;
-      cost: string;
-      zone_id: number;
-      zone_name: string;
-    }> = [];
+    const shippingMethods: WooShippingMethod[] = [];
     
     for (const zone of zones) {
       const methodsUrl = `${WC_URL}/shipping/zones/${zone.id}/methods?consumer_key=${CK}&consumer_secret=${CS}`;
@@ -2204,7 +2197,7 @@ async function handleShippingMethods(req: NextRequest) {
         method_id: method.method_id,
         method_title: getSettingValue(method.settings, 'method_title') ?? method.method_title,
         method_description: cleanDescription(
-          getSettingValue(method.settings, 'method_description') ?? method.method_description,
+          getSettingValue(method.settings, 'method_description') ?? method.method_description ?? '',
         ),
         cost,
         free_shipping_threshold: freeShippingThreshold,
