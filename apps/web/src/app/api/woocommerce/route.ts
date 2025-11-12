@@ -899,9 +899,24 @@ async function generateImprovedInvoicePdf(orderId: string): Promise<InvoicePdfRe
         number: sanitizePdfText(typeof order.number === 'string' ? order.number : String(order.number ?? '')),
         date_created: typeof order.date_created === 'string' ? order.date_created : '',
         billing: {
-          first_name: sanitizePdfText(isRecord(order.billing) ? order.billing.first_name ?? null : null, 100),
-          last_name: sanitizePdfText(isRecord(order.billing) ? order.billing.last_name ?? null : null, 100),
-          address_1: sanitizePdfText(isRecord(order.billing) ? order.billing.address_1 ?? null : null, 200),
+          first_name: sanitizePdfText(
+            isRecord(order.billing) && typeof order.billing.first_name === 'string' 
+              ? order.billing.first_name 
+              : null, 
+            100
+          ),
+          last_name: sanitizePdfText(
+            isRecord(order.billing) && typeof order.billing.last_name === 'string' 
+              ? order.billing.last_name 
+              : null, 
+            100
+          ),
+          address_1: sanitizePdfText(
+            isRecord(order.billing) && typeof order.billing.address_1 === 'string' 
+              ? order.billing.address_1 
+              : null, 
+            200
+          ),
         },
         total: sanitizePdfText(typeof order.total === 'string' ? order.total : String(order.total ?? '')),
       };
