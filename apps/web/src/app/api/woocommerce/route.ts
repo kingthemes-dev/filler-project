@@ -377,7 +377,7 @@ if (!WC_URL || !CK || !CS) {
 }
 
 // Handle password reset using WordPress REST API
-async function handlePasswordReset(body: { email: string }) {
+async function handlePasswordReset(body: unknown) {
   const parsed = passwordResetSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -467,7 +467,7 @@ async function handlePasswordReset(body: { email: string }) {
   }
 }
 
-async function handlePasswordResetConfirm(body: { key: string; login: string; password: string }) {
+async function handlePasswordResetConfirm(body: unknown) {
   const parsed = resetPasswordSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
