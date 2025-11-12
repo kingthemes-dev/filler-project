@@ -172,13 +172,16 @@ export function preloadImage(src: string): Promise<void> {
 }
 
 export function preloadRoute(route: string) {
+  // Next.js handles route prefetching automatically via Link components
+  // This function is kept for API compatibility but doesn't perform dynamic imports
+  // as Next.js/Turbopack requires static analysis of all imports during build
   if (typeof window !== 'undefined') {
-    // Preload route with low priority
-    startTransition(() => {
-      import(/* @vite-ignore */ route).catch(() => {
-        // Ignore preload errors
-      });
-    });
+    // Optionally use Next.js router for prefetching if available
+    // Note: This requires Next.js router to be passed as a parameter
+    // For now, we'll just log that prefetching should be handled via Link components
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Route prefetching should be handled via Next.js Link components', { route });
+    }
   }
 }
 
