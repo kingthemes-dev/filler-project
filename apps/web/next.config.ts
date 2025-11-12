@@ -103,27 +103,37 @@ const nextConfig: NextConfig = {
         }
         
         // Resolve workspace packages from monorepo
+        // Next.js/Turbopack should resolve workspace packages via pnpm hoisting
+        // But we need to ensure webpack can find them during build
         // Use dir parameter from Next.js webpack config (points to apps/web directory)
-        // This is more reliable than process.cwd() which may point to root during build
-        const sharedPath = path.resolve(dir, '../../packages/shared/index.ts');
+        const appDir = dir || process.cwd();
+        const rootDir = path.resolve(appDir, '../..');
+        const sharedPackagePath = path.resolve(rootDir, 'packages/shared');
         
         // Ensure alias is set for both client and server
         if (!config.resolve.alias) {
           config.resolve.alias = {};
         }
-        config.resolve.alias['@headless-woo/shared'] = sharedPath;
         
-        // Also add packages directory to modules resolution
+        // Set alias to the package directory (not the index.ts file)
+        // This allows webpack to resolve subpaths correctly
+        config.resolve.alias['@headless-woo/shared'] = sharedPackagePath;
+        
+        // Also add root packages directory to modules resolution
         // This helps webpack find workspace packages during build
         if (!config.resolve.modules) {
-          config.resolve.modules = [];
+          config.resolve.modules = ['node_modules'];
         }
         if (Array.isArray(config.resolve.modules)) {
-          const packagesPath = path.resolve(dir, '../../packages');
-          if (!config.resolve.modules.includes(packagesPath)) {
-            config.resolve.modules.push(packagesPath);
+          const packagesDir = path.resolve(rootDir, 'packages');
+          // Insert packages directory before node_modules for priority
+          if (!config.resolve.modules.includes(packagesDir)) {
+            config.resolve.modules = [packagesDir, ...config.resolve.modules];
           }
         }
+        
+        // Ensure symlinks are resolved correctly
+        config.resolve.symlinks = true;
     
     config.module.rules.push({
       test: /\.svg$/,
