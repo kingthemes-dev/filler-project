@@ -306,7 +306,9 @@ class RequestBatcher {
         const matchingResult = values.find((v) => resultsMap.has(v));
         
         if (matchingResult && resultsMap.has(matchingResult)) {
-          req.resolve(resultsMap.get(matchingResult) as T);
+          // Type assertion needed because batch contains requests with different generic types
+          // Each request resolves with its own expected type
+          req.resolve(resultsMap.get(matchingResult) as unknown);
         } else {
           // Result not found, reject request
           req.reject(new Error(`Result not found for batch parameter: ${batchParamValue}`));

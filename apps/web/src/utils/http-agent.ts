@@ -146,11 +146,12 @@ class HttpAgent {
           // Use undici.fetch with dispatcher for connection pooling
           // Remove 'next' property as it's not supported by undici.fetch
           const { next, ...undiciOptions } = options as RequestInit & { next?: unknown };
+          // Type assertion needed because undici.fetch has different types than standard fetch
           const response = await undici.fetch(urlString, {
             ...undiciOptions,
             headers: Object.fromEntries(headers.entries()),
             dispatcher,
-          });
+          } as any);
           return response as Response;
         } catch (error) {
           logger.warn('HTTP Agent: undici fetch failed, falling back to native fetch', { 
