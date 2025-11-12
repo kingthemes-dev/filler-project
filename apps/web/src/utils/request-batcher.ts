@@ -69,7 +69,7 @@ const BATCH_ENDPOINTS: BatchEndpointConfig[] = [
 class RequestBatcher {
   private static instance: RequestBatcher | null = null;
   private config: Required<BatchConfig>;
-  private batches: Map<string, BatchedRequest[]> = new Map();
+  private batches: Map<string, BatchedRequest<unknown>[]> = new Map();
   private timers: Map<string, NodeJS.Timeout> = new Map();
   private baseUrl: string;
 

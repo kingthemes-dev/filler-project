@@ -152,7 +152,8 @@ class HttpAgent {
             headers: Object.fromEntries(headers.entries()),
             dispatcher,
           } as any);
-          return response as Response;
+          // Convert undici.Response to standard Response via unknown
+          return response as unknown as Response;
         } catch (error) {
           logger.warn('HTTP Agent: undici fetch failed, falling back to native fetch', { 
             error: error instanceof Error ? error.message : String(error),
