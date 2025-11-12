@@ -2,7 +2,7 @@
  * Performance optimization utilities
  */
 
-import { memo, useMemo, useCallback, startTransition } from 'react';
+import { memo, useMemo, useCallback } from 'react';
 import { logger } from './logger';
 
 // Debounce function for search and input

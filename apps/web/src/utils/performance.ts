@@ -2,7 +2,7 @@
  * Performance optimization utilities
  */
 
-import { memo, useMemo, startTransition } from 'react';
+import { memo, useMemo } from 'react';
 import { logger } from './logger';
 
 type GenericCallback<T extends unknown[]> = (...args: T) => void;
