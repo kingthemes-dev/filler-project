@@ -3653,20 +3653,23 @@ export async function POST(req: NextRequest) {
         // Record failed order creation
         hposPerformanceMonitor.recordOrderFailed();
         
+        // Get error message safely
+        const errorMessage = error instanceof Error ? error.message : 'Failed to create order';
+        
         // Record failed order creation
         sentryMetrics.recordWooCommerceOperation(
           'orders/create',
           Date.now(),
           false,
-          { error: error.message, hpos_enabled: 'true' }
+          { error: errorMessage, hpos_enabled: 'true' }
         );
         
         // Return in expected format for frontend
         return NextResponse.json(
           { 
             success: false,
-            error: error.message || 'Failed to create order',
-            details: error.message 
+            error: errorMessage,
+            details: errorMessage
           },
           { status: 500 }
         );
