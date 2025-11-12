@@ -18,22 +18,32 @@ class WooCommerceService {
     this.consumerKey = env.WC_CONSUMER_KEY;
     this.consumerSecret = env.WC_CONSUMER_SECRET;
     
-    // Debug logging (server-side only)
+    // Only log errors on server-side (client-side doesn't have access to server env vars)
+    // Client-side code should use API routes instead of direct WooCommerce API access
     if (typeof window === 'undefined') {
-      console.log('🔍 WooCommerce Service Constructor (Server-side):');
-      console.log('Base URL:', this.baseUrl);
-      console.log('Consumer Key:', this.consumerKey ? 'SET' : 'NOT SET');
-      console.log('Consumer Secret:', this.consumerSecret ? 'SET' : 'NOT SET');
+      // Server-side logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 WooCommerce Service Constructor (Server-side):');
+        console.log('Base URL:', this.baseUrl);
+        console.log('Consumer Key:', this.consumerKey ? 'SET' : 'NOT SET');
+        console.log('Consumer Secret:', this.consumerSecret ? 'SET' : 'NOT SET');
+      }
+      
+      // Check if variables are loaded (server-side only)
+      if (!this.consumerKey || !this.consumerSecret) {
+        if (process.env.NODE_ENV === 'production') {
+          console.error('❌ ERROR: WooCommerce API keys are missing!');
+          console.error('Consumer Key length:', this.consumerKey?.length || 0);
+          console.error('Consumer Secret length:', this.consumerSecret?.length || 0);
+        } else {
+          console.warn('⚠️ WARNING: WooCommerce API keys are missing (development mode)');
+        }
+      } else if (process.env.NODE_ENV === 'development') {
+        console.log('✅ WooCommerce API keys loaded successfully!');
+      }
     }
-  
-  // Check if variables are loaded
-  if (!this.consumerKey || !this.consumerSecret) {
-    console.error('❌ ERROR: WooCommerce API keys are missing!');
-    console.error('Consumer Key length:', this.consumerKey?.length || 0);
-    console.error('Consumer Secret length:', this.consumerSecret?.length || 0);
-  } else {
-    console.log('✅ WooCommerce API keys loaded successfully!');
-  }
+    // Client-side: Don't log errors for server-only env vars
+    // Client code should use /api/woocommerce routes instead
   }
 
   // =========================================
