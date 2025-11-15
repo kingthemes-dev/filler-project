@@ -97,7 +97,7 @@ export default function SettingsPage() {
           });
         } else {
           // Fallback: use public env vars only (secrets will be empty)
-          logger.warn('Settings status: Failed to fetch, using fallback');
+          console.warn('Settings status: Failed to fetch, using fallback');
           setSettings({
             woocommerce: {
               url: (process.env.NEXT_PUBLIC_WORDPRESS_URL || '') + '/wp-json/wc/v3',
