@@ -160,7 +160,8 @@ const nextConfig: NextConfig = {
           https: false,
           vm: false,
           zlib: false,
-      };
+        };
+      }
     }
 
     // Resolve workspace packages from monorepo
