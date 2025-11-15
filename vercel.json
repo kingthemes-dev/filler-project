@@ -31,6 +31,5 @@
         }
       ]
     }
-  ],
-  "_comment": "CORS: '*' is default for starter template compatibility. Next.js middleware (security.ts) will override these headers with CORS_ALLOWED_ORIGIN env var if set. For production, set CORS_ALLOWED_ORIGIN in Vercel Dashboard → Environment Variables."
+  ]
 }
