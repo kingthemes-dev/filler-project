@@ -114,9 +114,9 @@ export default function NewsletterForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Email Input + Button - In One Line */}
         <div className="flex gap-4">
-          {/* Email Input - Premium Design */}
+          {/* Email Input - Monochrome Design */}
           <div className="relative group flex-1">
-            <div className="h-16 rounded-2xl overflow-hidden border-2 border-white/20 bg-gradient-to-r from-black/40 via-purple-900/30 to-pink-900/30 backdrop-blur-sm shadow-2xl transition-all duration-300 group-hover:border-white/30 group-hover:shadow-purple-500/20">
+            <div className="h-16 rounded-2xl overflow-hidden border-2 border-white/20 bg-white/10 backdrop-blur-sm shadow-lg transition-all duration-200 group-hover:border-white/30 group-hover:bg-white/15">
               <div className="relative h-full">
                 <input
                   type="email"
@@ -128,22 +128,20 @@ export default function NewsletterForm() {
                     }
                   }}
                   placeholder="Twój adres email"
-                  className="w-full h-full pl-6 pr-4 border-0 bg-transparent text-white placeholder:text-white/50 focus:outline-none text-lg font-medium focus:placeholder:text-white/70 transition-colors"
+                  className="w-full h-full pl-6 pr-4 border-0 bg-transparent text-white placeholder:text-white/60 focus:outline-none text-lg font-medium focus:placeholder:text-white/80 transition-colors"
                   required
                   disabled={isLoading}
                 />
-                {/* Animated gradient overlay on focus */}
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
               </div>
             </div>
           </div>
 
-          {/* Premium Submit Button - In Line */}
+          {/* Monochrome Submit Button - In Line */}
           <div className="relative">
             <button
               type="submit"
               disabled={isLoading}
-              className="h-16 px-8 bg-purple-600 text-white border-0 font-bold text-base sm:text-lg hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors duration-200 shadow-md hover:shadow-lg rounded-2xl whitespace-nowrap"
+              className="h-16 px-8 bg-gray-700 text-white border-0 font-bold text-base sm:text-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors duration-200 shadow-md hover:shadow-lg rounded-2xl whitespace-nowrap"
             >
               {/* Content */}
               <span className="flex items-center gap-2 whitespace-nowrap">
@@ -206,7 +204,7 @@ export default function NewsletterForm() {
                   <span className="font-bold text-sm sm:text-base">
                     Zapisz się i zyskaj 10% rabatu na następne zamówienie
                   </span>
-                  <span className="px-2.5 py-1 bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white text-xs font-bold rounded-full border border-white/20 backdrop-blur-sm flex-shrink-0">
+                  <span className="px-2.5 py-1 bg-gray-600/50 text-white text-xs font-bold rounded-full border border-white/20 backdrop-blur-sm flex-shrink-0">
                     -10%
                   </span>
                 </div>

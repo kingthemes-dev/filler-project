@@ -100,24 +100,31 @@ export default async function HomePage() {
         {/* Product Tabs - Server Component with data */}
         <KingProductTabsServer data={homeFeedData} />
 
-        {/* Newsletter Section with Dark Gradient Background */}
+        {/* Newsletter Section with Silver Gradient Background */}
         <section className="mt-2 py-8 sm:py-12" id="newsletter-section">
           <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl min-h-[500px]">
-            {/* Dark Gradient Background - Senior Level Design */}
-            <div className="absolute inset-0 z-0 bg-gradient-to-br from-black via-purple-900/80 to-pink-900/80">
+            {/* Silver Gradient Background - Elegant Design */}
+            <div className="absolute inset-0 z-0 bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900">
               {/* Additional gradient layers for depth */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-pink-500/10" />
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-600/20 to-transparent" />
             </div>
 
+            {/* Silver metallic effect overlay */}
+            <div className="absolute inset-0 z-0 opacity-20" style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%)',
+              backgroundSize: '200% 200%',
+              animation: 'shimmer 3s ease-in-out infinite'
+            }} />
+
             {/* Subtle pattern overlay for texture */}
-            <div className="absolute inset-0 z-0 opacity-10" style={{
+            <div className="absolute inset-0 z-0 opacity-5" style={{
               backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
               backgroundSize: '40px 40px'
             }} />
 
             {/* Overlay for better text readability */}
-            <div className="absolute inset-0 z-10 bg-black/30 pointer-events-none" />
+            <div className="absolute inset-0 z-10 bg-black/10 pointer-events-none" />
 
             {/* Content */}
             <div className="relative z-10 flex items-center justify-center h-[500px] px-6 sm:px-8">
