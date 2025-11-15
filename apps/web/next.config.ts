@@ -134,20 +134,21 @@ const nextConfig: NextConfig = {
     
     // Fix for Next.js 15.5.2 compatibility issues
     if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        crypto: false,
-        dns: false,
-        stream: false,
-        child_process: false,
-        cluster: false,
-        os: false,
-        path: false,
-        stream: false,
-        util: false,
+      // Only set fallback if not already set by Edge Runtime config
+      if (!isEdgeBuild) {
+        config.resolve.fallback = {
+          ...config.resolve.fallback,
+          fs: false,
+          net: false,
+          tls: false,
+          crypto: false,
+          dns: false,
+          stream: false,
+          child_process: false,
+          cluster: false,
+          os: false,
+          path: false,
+          util: false,
         url: false,
         querystring: false,
         buffer: false,
