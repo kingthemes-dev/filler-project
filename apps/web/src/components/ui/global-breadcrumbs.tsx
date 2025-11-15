@@ -57,7 +57,7 @@ export default function GlobalBreadcrumbs() {
   const breadcrumbs = generateBreadcrumbs();
 
   return (
-    <div className="mt-16 sm:mt-20 pb-4 sm:pb-6 px-4 lg:px-8 bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-2xl p-6 text-white">
+    <div className="pt-14 sm:pt-16 mt-4 sm:mt-6 pb-4 sm:pb-6 px-4 lg:px-8 bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-2xl p-6 text-white">
       <div className="flex items-center justify-between gap-4 lg:gap-8">
         <h1 className="text-2xl font-bold text-white">
           {breadcrumbs[breadcrumbs.length - 1].label}
