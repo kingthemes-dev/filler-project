@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
-import { useFavoritesActions, useFavoritesLastSyncTime } from '@/stores/favorites-store';
+import {
+  useFavoritesActions,
+  useFavoritesLastSyncTime,
+} from '@/stores/favorites-store';
 import { useAuthIsAuthenticated, useAuthUser } from '@/stores/auth-store';
 
 export const useFavoritesSync = () => {
@@ -26,14 +29,17 @@ export const useFavoritesSync = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const interval = setInterval(async () => {
-      const now = Date.now();
-      const fiveMinutes = 5 * 60 * 1000;
-      
-      if (!lastSyncTime || now - lastSyncTime > fiveMinutes) {
-        await syncWithAPI();
-      }
-    }, 5 * 60 * 1000); // 5 minutes
+    const interval = setInterval(
+      async () => {
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+
+        if (!lastSyncTime || now - lastSyncTime > fiveMinutes) {
+          await syncWithAPI();
+        }
+      },
+      5 * 60 * 1000
+    ); // 5 minutes
 
     return () => clearInterval(interval);
   }, [isAuthenticated, lastSyncTime, syncWithAPI]);
@@ -47,7 +53,8 @@ export const useFavoritesSync = () => {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isAuthenticated, syncWithAPI]);
 };
 

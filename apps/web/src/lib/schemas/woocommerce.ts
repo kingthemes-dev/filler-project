@@ -8,78 +8,106 @@ import { z } from 'zod';
 // GET /api/woocommerce - Query Parameters
 // ============================================
 
-export const woocommerceQuerySchema = z.object({
-  endpoint: z.string().min(1, 'Endpoint is required').max(100, 'Endpoint name too long'),
-  page: z
-    .string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
-      message: 'Page must be a positive number',
-    })
-    .transform((val) => (val ? parseInt(val, 10) : undefined)),
-  per_page: z
-    .string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 100), {
-      message: 'Per page must be between 1 and 100',
-    })
-    .transform((val) => {
-      if (!val) return undefined;
-      const num = parseInt(val, 10);
-      // Cap at 100 even if validation passes (safety)
-      return num > 100 ? 100 : num;
-    }),
-  customer: z
-    .string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
-      message: 'Customer ID must be a positive number',
-    })
-    .transform((val) => (val ? parseInt(val, 10) : undefined)),
-  status: z.string().max(50, 'Status too long').optional(),
-  search: z.string().max(200, 'Search term too long').optional(),
-  category: z
-    .string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
-      message: 'Category ID must be a positive number',
-    })
-    .transform((val) => (val ? parseInt(val, 10) : undefined)),
-  orderby: z.enum(['date', 'id', 'title', 'price', 'popularity', 'rating']).optional(),
-  order: z.enum(['asc', 'desc']).optional(),
-  cache: z.enum(['on', 'off']).optional(),
-  // Product-specific
-  slug: z.string().max(200, 'Slug too long').optional(),
-  include: z.string().max(500, 'Include list too long').optional(), // Comma-separated IDs
-  exclude: z.string().max(500, 'Exclude list too long').optional(), // Comma-separated IDs
-  // Order-specific
-  after: z.string().max(50, 'After date too long').optional(),
-  before: z.string().max(50, 'Before date too long').optional(),
-  // Additional common params
-  featured: z
-    .string()
-    .optional()
-    .transform((val) => val === 'true' || val === '1'),
-  on_sale: z
-    .string()
-    .optional()
-    .transform((val) => val === 'true' || val === '1'),
-  min_price: z
-    .string()
-    .optional()
-    .refine((val) => !val || !isNaN(Number(val)) && Number(val) >= 0, {
-      message: 'Min price must be a non-negative number',
-    })
-    .transform((val) => (val ? parseFloat(val) : undefined)),
-  max_price: z
-    .string()
-    .optional()
-    .refine((val) => !val || !isNaN(Number(val)) && Number(val) >= 0, {
-      message: 'Max price must be a non-negative number',
-    })
-    .transform((val) => (val ? parseFloat(val) : undefined)),
-  // Allow unknown params (for WooCommerce-specific params)
-}).passthrough();
+export const woocommerceQuerySchema = z
+  .object({
+    endpoint: z
+      .string()
+      .min(1, 'Endpoint is required')
+      .max(100, 'Endpoint name too long'),
+    page: z
+      .string()
+      .optional()
+      .refine(val => !val || (!isNaN(Number(val)) && Number(val) > 0), {
+        message: 'Page must be a positive number',
+      })
+      .transform(val => (val ? parseInt(val, 10) : undefined)),
+    per_page: z
+      .string()
+      .optional()
+      .refine(
+        val =>
+          !val ||
+          (!isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 100),
+        {
+          message: 'Per page must be between 1 and 100',
+        }
+      )
+      .transform(val => {
+        if (!val) return undefined;
+        const num = parseInt(val, 10);
+        // Cap at 100 even if validation passes (safety)
+        return num > 100 ? 100 : num;
+      }),
+    customer: z
+      .string()
+      .optional()
+      .refine(val => !val || (!isNaN(Number(val)) && Number(val) > 0), {
+        message: 'Customer ID must be a positive number',
+      })
+      .transform(val => (val ? parseInt(val, 10) : undefined)),
+    status: z.string().max(50, 'Status too long').optional(),
+    search: z.string().max(200, 'Search term too long').optional(),
+    category: z
+      .string()
+      .max(500, 'Category value too long')
+      .optional()
+      .refine(
+        val => {
+          if (!val) return true;
+          const trimmed = val.trim();
+          if (trimmed.length === 0) return false;
+          // Allow both numeric ID and slug (string), or comma-separated slugs
+          // If it's a number, validate it's positive
+          if (!isNaN(Number(trimmed)) && Number(trimmed) > 0) return true;
+          // If it's a string (slug) or comma-separated slugs, validate it's not empty
+          if (trimmed.length > 0) return true;
+          return false;
+        },
+        {
+          message:
+            'Category must be a positive number (ID) or a non-empty string (slug)',
+        }
+      ),
+    // Don't transform - keep as string to support both ID and slug
+    // WooCommerce API accepts both formats
+    orderby: z
+      .enum(['date', 'id', 'title', 'price', 'popularity', 'rating'])
+      .optional(),
+    order: z.enum(['asc', 'desc']).optional(),
+    cache: z.enum(['on', 'off']).optional(),
+    // Product-specific
+    slug: z.string().max(200, 'Slug too long').optional(),
+    include: z.string().max(500, 'Include list too long').optional(), // Comma-separated IDs
+    exclude: z.string().max(500, 'Exclude list too long').optional(), // Comma-separated IDs
+    // Order-specific
+    after: z.string().max(50, 'After date too long').optional(),
+    before: z.string().max(50, 'Before date too long').optional(),
+    // Additional common params
+    featured: z
+      .string()
+      .optional()
+      .transform(val => val === 'true' || val === '1'),
+    on_sale: z
+      .string()
+      .optional()
+      .transform(val => val === 'true' || val === '1'),
+    min_price: z
+      .string()
+      .optional()
+      .refine(val => !val || (!isNaN(Number(val)) && Number(val) >= 0), {
+        message: 'Min price must be a non-negative number',
+      })
+      .transform(val => (val ? parseFloat(val) : undefined)),
+    max_price: z
+      .string()
+      .optional()
+      .refine(val => !val || (!isNaN(Number(val)) && Number(val) >= 0), {
+        message: 'Max price must be a non-negative number',
+      })
+      .transform(val => (val ? parseFloat(val) : undefined)),
+    // Allow unknown params (for WooCommerce-specific params)
+  })
+  .passthrough();
 
 // ============================================
 // POST /api/woocommerce?endpoint=orders
@@ -123,19 +151,29 @@ export const orderSchema = z.object({
   customer_id: z.number().int().positive().optional(),
   billing: billingAddressSchema,
   shipping: shippingAddressSchema.optional().nullable(),
-  line_items: z.array(orderLineItemSchema).min(1, 'At least one line item is required'),
+  line_items: z
+    .array(orderLineItemSchema)
+    .min(1, 'At least one line item is required'),
   payment_method: z.string().min(1, 'Payment method is required'),
   payment_method_title: z.string().optional(),
   set_paid: z.boolean().optional(),
   meta_data: z.array(z.any()).optional(),
-  coupon_lines: z.array(z.object({
-    code: z.string().min(1),
-  })).optional(),
-  shipping_lines: z.array(z.object({
-    method_id: z.string().min(1),
-    method_title: z.string().optional(),
-    total: z.string().optional(),
-  })).optional(),
+  coupon_lines: z
+    .array(
+      z.object({
+        code: z.string().min(1),
+      })
+    )
+    .optional(),
+  shipping_lines: z
+    .array(
+      z.object({
+        method_id: z.string().min(1),
+        method_title: z.string().optional(),
+        total: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 // ============================================
@@ -175,13 +213,16 @@ export const updateProfileSchema = z.object({
       country: z.string().length(2),
       phone: z.string().trim().min(5),
     }),
-    shipping: z.object({
-      company: z.string().trim().optional().default(''),
-      address: z.string().trim().min(1),
-      city: z.string().trim().min(1),
-      postcode: z.string().trim().min(2),
-      country: z.string().length(2),
-    }).nullable().optional(),
+    shipping: z
+      .object({
+        company: z.string().trim().optional().default(''),
+        address: z.string().trim().min(1),
+        city: z.string().trim().min(1),
+        postcode: z.string().trim().min(2),
+        country: z.string().length(2),
+      })
+      .nullable()
+      .optional(),
   }),
 });
 
@@ -208,4 +249,3 @@ export type PasswordReset = z.infer<typeof passwordResetSchema>;
 export type ResetPassword = z.infer<typeof resetPasswordSchema>;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type ChangePassword = z.infer<typeof changePasswordSchema>;
-

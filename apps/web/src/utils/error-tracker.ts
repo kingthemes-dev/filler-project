@@ -34,7 +34,6 @@ type LayoutShiftEntry = PerformanceEntry & {
   hadRecentInput?: boolean;
 };
 
-
 class ErrorTracker {
   private sessionId: string;
   private errorQueue: ErrorReport[] = [];
@@ -58,7 +57,7 @@ class ErrorTracker {
 
   private setupErrorHandlers(): void {
     // Global error handler
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', event => {
       this.captureError({
         message: event.message,
         stack: event.error?.stack,
@@ -73,7 +72,7 @@ class ErrorTracker {
     });
 
     // Unhandled promise rejection handler
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', event => {
       this.captureError({
         message: `Unhandled Promise Rejection: ${event.reason}`,
         stack: event.reason?.stack,
@@ -102,11 +101,11 @@ class ErrorTracker {
         requestInfo instanceof Request
           ? requestInfo.url
           : requestInfo instanceof URL
-          ? requestInfo.toString()
-          : requestInfo;
+            ? requestInfo.toString()
+            : requestInfo;
       try {
         const response = await originalFetch(...args);
-        
+
         if (!response.ok) {
           this.captureError({
             message: `Network Error: ${response.status} ${response.statusText}`,
@@ -120,7 +119,7 @@ class ErrorTracker {
             },
           });
         }
-        
+
         return response;
       } catch (error) {
         this.captureError({
@@ -140,7 +139,7 @@ class ErrorTracker {
   private setupPerformanceMonitoring(): void {
     // Web Vitals monitoring
     this.observeWebVitals();
-    
+
     // Custom performance metrics
     this.observeCustomMetrics();
   }
@@ -149,10 +148,13 @@ class ErrorTracker {
     // Largest Contentful Paint
     if ('PerformanceObserver' in window) {
       try {
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
             if (entry.entryType === 'largest-contentful-paint') {
-              const lcpEntry = entry as PerformanceEntry & { element?: Element; url?: string };
+              const lcpEntry = entry as PerformanceEntry & {
+                element?: Element;
+                url?: string;
+              };
               this.capturePerformance({
                 name: 'LCP',
                 value: entry.startTime,
@@ -171,7 +173,7 @@ class ErrorTracker {
 
       // First Input Delay
       try {
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
             const fidEntry = entry as PerformanceEventTiming;
             this.capturePerformance({
@@ -191,7 +193,7 @@ class ErrorTracker {
       // Cumulative Layout Shift
       try {
         let clsValue = 0;
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
             const layoutShift = entry as LayoutShiftEntry;
             if (layoutShift.hadRecentInput) continue;
@@ -232,22 +234,24 @@ class ErrorTracker {
         requestInfo instanceof Request
           ? requestInfo.url
           : requestInfo instanceof URL
-          ? requestInfo.toString()
-          : requestInfo;
+            ? requestInfo.toString()
+            : requestInfo;
       try {
         const response = await originalFetch(...args);
         const endTime = performance.now();
-        
+
         this.capturePerformance({
           name: 'APIResponse',
           value: endTime - startTime,
           metadata: {
             url: requestUrl,
             status: response.status,
-            method: init?.method || (requestInfo instanceof Request ? requestInfo.method : 'GET'),
+            method:
+              init?.method ||
+              (requestInfo instanceof Request ? requestInfo.method : 'GET'),
           },
         });
-        
+
         return response;
       } catch (error) {
         const endTime = performance.now();
@@ -314,11 +318,12 @@ class ErrorTracker {
   }
 
   private logError(error: ErrorReport): void {
-    const logFn = error.level === 'error'
-      ? logger.error.bind(logger)
-      : error.level === 'warning'
-        ? logger.warn.bind(logger)
-        : logger.info.bind(logger);
+    const logFn =
+      error.level === 'error'
+        ? logger.error.bind(logger)
+        : error.level === 'warning'
+          ? logger.warn.bind(logger)
+          : logger.info.bind(logger);
 
     logFn('Error captured', {
       message: error.message,
@@ -344,7 +349,10 @@ class ErrorTracker {
       const errors = [...this.errorQueue];
       this.errorQueue = [];
 
-      const fetchFn = typeof window !== 'undefined' && window.fetch ? window.fetch : globalThis.fetch;
+      const fetchFn =
+        typeof window !== 'undefined' && window.fetch
+          ? window.fetch
+          : globalThis.fetch;
 
       if (!fetchFn) {
         logger.warn('Fetch API not available, re-queuing errors for retry');
@@ -392,10 +400,15 @@ class ErrorTracker {
       const metrics = [...this.performanceQueue];
       this.performanceQueue = [];
 
-      const fetchFn = typeof window !== 'undefined' && window.fetch ? window.fetch : globalThis.fetch;
+      const fetchFn =
+        typeof window !== 'undefined' && window.fetch
+          ? window.fetch
+          : globalThis.fetch;
 
       if (!fetchFn) {
-        logger.warn('Fetch API not available, re-queuing performance metrics for retry');
+        logger.warn(
+          'Fetch API not available, re-queuing performance metrics for retry'
+        );
         this.performanceQueue.unshift(...metrics);
         this.pendingPerformanceFlush = null;
         return;

@@ -25,7 +25,7 @@ class CDNCacheStrategy {
       noStore: false,
       private: false,
     },
-    
+
     // API responses - short cache
     api: {
       maxAge: 300, // 5 minutes
@@ -35,7 +35,7 @@ class CDNCacheStrategy {
       noStore: false,
       private: false,
     },
-    
+
     // HTML pages - medium cache with revalidation
     html: {
       maxAge: 0,
@@ -45,7 +45,7 @@ class CDNCacheStrategy {
       noStore: false,
       private: false,
     },
-    
+
     // User-specific content - no cache
     private: {
       maxAge: 0,
@@ -65,9 +65,11 @@ class CDNCacheStrategy {
     const pathname = url.pathname;
 
     // Static assets
-    if (pathname.startsWith('/_next/static/') || 
-        pathname.startsWith('/_next/image/') ||
-        pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+    if (
+      pathname.startsWith('/_next/static/') ||
+      pathname.startsWith('/_next/image/') ||
+      pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)
+    ) {
       return CDNCacheStrategy.CACHE_CONFIGS.static;
     }
 
@@ -77,22 +79,26 @@ class CDNCacheStrategy {
       if (pathname === '/api/health') {
         return CDNCacheStrategy.CACHE_CONFIGS.private;
       }
-      
+
       // User-specific API routes - no cache
-      if (pathname.includes('/user/') || 
-          pathname.includes('/cart/') || 
-          pathname.includes('/favorites/')) {
+      if (
+        pathname.includes('/user/') ||
+        pathname.includes('/cart/') ||
+        pathname.includes('/favorites/')
+      ) {
         return CDNCacheStrategy.CACHE_CONFIGS.private;
       }
-      
+
       // Public API routes - short cache
       return CDNCacheStrategy.CACHE_CONFIGS.api;
     }
 
     // User-specific pages - no cache
-    if (pathname.includes('/moje-') || 
-        pathname.includes('/koszyk') || 
-        pathname.includes('/checkout')) {
+    if (
+      pathname.includes('/moje-') ||
+      pathname.includes('/koszyk') ||
+      pathname.includes('/checkout')
+    ) {
       return CDNCacheStrategy.CACHE_CONFIGS.private;
     }
 
@@ -103,9 +109,12 @@ class CDNCacheStrategy {
   /**
    * Apply cache headers to response
    */
-  applyCacheHeaders(request: NextRequest, response: NextResponse): NextResponse {
+  applyCacheHeaders(
+    request: NextRequest,
+    response: NextResponse
+  ): NextResponse {
     const config = this.getCacheStrategy(request);
-    
+
     // Set Cache-Control header
     const cacheControl = this.buildCacheControlHeader(config);
     response.headers.set('Cache-Control', cacheControl);
@@ -185,15 +194,15 @@ class CDNCacheStrategy {
   private generateETag(request: NextRequest): string {
     const url = new URL(request.url);
     const content = `${url.pathname}${url.search}`;
-    
+
     // Simple hash function for ETag
     let hash = 0;
     for (let i = 0; i < content.length; i++) {
       const char = content.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
-    
+
     return `"${Math.abs(hash).toString(36)}"`;
   }
 
@@ -205,8 +214,10 @@ class CDNCacheStrategy {
     const pathname = url.pathname;
 
     // API routes that depend on user authentication
-    if (pathname.startsWith('/api/') && 
-        (pathname.includes('/user/') || pathname.includes('/cart/'))) {
+    if (
+      pathname.startsWith('/api/') &&
+      (pathname.includes('/user/') || pathname.includes('/cart/'))
+    ) {
       return 'Authorization, Cookie';
     }
 
@@ -236,9 +247,11 @@ class CDNCacheStrategy {
     }
 
     // Bypass cache for user-specific content
-    if (pathname.includes('/moje-') || 
-        pathname.includes('/koszyk') || 
-        pathname.includes('/checkout')) {
+    if (
+      pathname.includes('/moje-') ||
+      pathname.includes('/koszyk') ||
+      pathname.includes('/checkout')
+    ) {
       return true;
     }
 
@@ -259,7 +272,10 @@ class CDNCacheStrategy {
 
 const cdnCacheStrategy = new CDNCacheStrategy();
 
-export function applyCDNCache(request: NextRequest, response: NextResponse): NextResponse {
+export function applyCDNCache(
+  request: NextRequest,
+  response: NextResponse
+): NextResponse {
   return cdnCacheStrategy.applyCacheHeaders(request, response);
 }
 

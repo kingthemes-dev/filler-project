@@ -19,12 +19,7 @@
     "emulatedFormFactor": "mobile",
     "formFactor": "mobile",
     "locale": "pl",
-    "onlyCategories": [
-      "performance",
-      "accessibility",
-      "best-practices",
-      "seo"
-    ],
+    "onlyCategories": ["performance", "accessibility", "best-practices", "seo"],
     "channel": "lr"
   },
   "audits": {
@@ -96,9 +91,7 @@
           }
         ],
         "type": "table",
-        "sortedBy": [
-          "total"
-        ],
+        "sortedBy": ["total"],
         "summary": {
           "wastedMs": 273.44640000000004
         },
@@ -659,9 +652,7 @@
           },
           "type": "debugdata"
         },
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "headings": [
           {
             "valueType": "node",
@@ -788,9 +779,7 @@
             "LCP": 0
           }
         },
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "overallSavingsMs": 0,
         "items": [],
         "headings": [],
@@ -873,9 +862,7 @@
       },
       "details": {
         "overallSavingsMs": 150,
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "overallSavingsBytes": 11594,
         "debugData": {
           "metricSavings": {
@@ -1204,9 +1191,7 @@
         "items": [],
         "type": "opportunity",
         "headings": [],
-        "sortedBy": [
-          "wastedMs"
-        ]
+        "sortedBy": ["wastedMs"]
       },
       "warnings": [],
       "numericValue": 0,
@@ -1230,9 +1215,7 @@
             "LCP": 0
           }
         },
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "overallSavingsBytes": 0,
         "overallSavingsMs": 0,
         "items": [],
@@ -1417,9 +1400,7 @@
         "FCP": 0
       },
       "details": {
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "items": [],
         "headings": [],
         "type": "opportunity",
@@ -1694,9 +1675,7 @@
           },
           "type": "debugdata"
         },
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "items": [
           {
             "wastedBytes": 54825,
@@ -2024,9 +2003,7 @@
             "label": "Szacunkowe zmniejszenie rozmiaru"
           }
         ],
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "overallSavingsMs": 150,
         "items": [
           {
@@ -2108,9 +2085,7 @@
         },
         "overallSavingsBytes": 0,
         "headings": [],
-        "sortedBy": [
-          "wastedBytes"
-        ]
+        "sortedBy": ["wastedBytes"]
       },
       "warnings": [],
       "numericValue": 0,
@@ -2349,9 +2324,7 @@
           }
         },
         "overallSavingsBytes": 0,
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "items": [],
         "type": "opportunity",
         "headings": []
@@ -2450,9 +2423,7 @@
         "overallSavingsBytes": 0,
         "headings": [],
         "type": "opportunity",
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "debugData": {
           "type": "debugdata",
           "metricSavings": {
@@ -3357,9 +3328,7 @@
             "totalBytes": 31856
           }
         ],
-        "sortedBy": [
-          "totalBytes"
-        ],
+        "sortedBy": ["totalBytes"],
         "type": "table"
       },
       "numericValue": 2525295,
@@ -3523,13 +3492,9 @@
             "valueType": "ms"
           }
         ],
-        "sortedBy": [
-          "duration"
-        ],
+        "sortedBy": ["duration"],
         "type": "table",
-        "skipSumming": [
-          "startTime"
-        ]
+        "skipSumming": ["startTime"]
       }
     },
     "server-response-time": {
@@ -3717,9 +3682,7 @@
             "origin": "https://www.filler.pl"
           }
         ],
-        "sortedBy": [
-          "serverResponseTime"
-        ],
+        "sortedBy": ["serverResponseTime"],
         "headings": [
           {
             "key": "origin",
@@ -3758,9 +3721,7 @@
         "FCP": 0
       },
       "details": {
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "headings": [],
         "debugData": {
           "type": "debugdata",
@@ -3843,9 +3804,7 @@
       "scoreDisplayMode": "informative",
       "displayValue": "0 ms",
       "details": {
-        "sortedBy": [
-          "rtt"
-        ],
+        "sortedBy": ["rtt"],
         "headings": [
           {
             "label": "URL",
@@ -4029,9 +3988,7 @@
         "type": "opportunity",
         "headings": [],
         "overallSavingsMs": 0,
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "debugData": {
           "metricSavings": {
             "LCP": 0,
@@ -4850,9 +4807,7 @@
         "TBT": 0
       },
       "details": {
-        "sortedBy": [
-          "duration"
-        ],
+        "sortedBy": ["duration"],
         "type": "table",
         "items": [
           {
@@ -5138,10 +5093,7 @@
       "scoreDisplayMode": "binary",
       "details": {
         "debugData": {
-          "tags": [
-            "cat.semantics",
-            "best-practice"
-          ],
+          "tags": ["cat.semantics", "best-practice"],
           "type": "debugdata",
           "impact": "moderate"
         },
@@ -6809,16 +6761,12 @@
       "name": "filler.pl",
       "isFirstParty": true,
       "isUnrecognized": true,
-      "origins": [
-        "https://www.filler.pl"
-      ]
+      "origins": ["https://www.filler.pl"]
     },
     {
       "name": "cfolks.pl",
       "isUnrecognized": true,
-      "origins": [
-        "https://qvwltjhdjw.cfolks.pl"
-      ]
+      "origins": ["https://qvwltjhdjw.cfolks.pl"]
     }
   ],
   "fullPageScreenshot": {

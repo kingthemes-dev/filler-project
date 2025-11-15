@@ -24,6 +24,9 @@
     "analyze": "ANALYZE=true npm run build",
     "analyze:server": "ANALYZE=true npm run build && next start",
     "lighthouse": "lighthouse http://localhost:3000 --output html --output-path ./lighthouse-report.html",
+    "lighthouse:ci": "lhci autorun --config=.lighthouserc.js",
+    "lighthouse:ci:mobile": "lhci autorun --config=.lighthouserc.js --collect.settings.preset=perf",
+    "lighthouse:ci:desktop": "lhci autorun --config=.lighthouserc.js --collect.settings.preset=desktop",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "dev:debug": "NODE_OPTIONS='--inspect' npm run dev",
@@ -35,7 +38,8 @@
     "perf:autocannon:warm": "node scripts/perf-autocannon.mjs --warm",
     "perf:autocannon:cold": "node scripts/perf-autocannon.mjs --cold",
     "perf:k6": "k6 run scripts/perf-k6.js",
-    "perf:wp-profile": "bash scripts/wp-profile.sh"
+    "perf:wp-profile": "bash scripts/wp-profile.sh",
+    "build:report": "node scripts/generate-build-report.mjs"
   },
   "dependencies": {
     "@headless-woo/shared": "workspace:*",
@@ -99,6 +103,7 @@
     "jest": "^30.1.2",
     "jest-environment-jsdom": "^30.2.0",
     "lighthouse": "^12.8.2",
+    "@lhci/cli": "^0.12.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2",
     "puppeteer": "^24.26.0",

@@ -1,6 +1,6 @@
 /**
  * Shop Data Store
- * 
+ *
  * Globalny store Zustand dla danych sklepu z automatycznym prefetchowaniem.
  * Zapewnia natychmiastowy dostęp do danych bez API calls przy każdym otwarciu modala.
  */
@@ -8,7 +8,11 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import shopDataPrefetch, { ShopCategory, ShopAttribute, ShopAttributes } from '@/services/shop-data-prefetch';
+import shopDataPrefetch, {
+  ShopCategory,
+  ShopAttribute,
+  ShopAttributes,
+} from '@/services/shop-data-prefetch';
 import { logger } from '@/utils/logger';
 
 // Types
@@ -17,18 +21,18 @@ export interface ShopDataState {
   categories: ShopCategory[];
   attributes: ShopAttributes;
   totalProducts: number;
-  
+
   // State
   isLoading: boolean;
   isInitialized: boolean;
   lastUpdated: number | null;
   error: string | null;
-  
+
   // Actions
   initialize: () => Promise<void>;
   refresh: () => Promise<void>;
   clearError: () => void;
-  
+
   // Getters
   getMainCategories: () => ShopCategory[];
   getSubCategories: (parentId: number) => ShopCategory[];
@@ -36,7 +40,7 @@ export interface ShopDataState {
   getAllBrands: () => ShopAttribute[];
   getCapacities: () => ShopAttribute[];
   getZastosowanie: () => ShopAttribute[];
-  
+
   // Computed
   hasData: boolean;
   isDataFresh: (timeout?: number) => boolean;
@@ -47,7 +51,10 @@ const getMainCategories = (categories: ShopCategory[]): ShopCategory[] => {
   return categories.filter(cat => cat.parent === 0);
 };
 
-const getSubCategories = (categories: ShopCategory[], parentId: number): ShopCategory[] => {
+const getSubCategories = (
+  categories: ShopCategory[],
+  parentId: number
+): ShopCategory[] => {
   return categories.filter(cat => cat.parent === parentId);
 };
 
@@ -56,16 +63,21 @@ interface HierarchicalCategory extends ShopCategory {
   subcategories: ShopCategory[];
 }
 
-const buildHierarchicalCategories = (categories: ShopCategory[]): HierarchicalCategory[] => {
+const buildHierarchicalCategories = (
+  categories: ShopCategory[]
+): HierarchicalCategory[] => {
   const mainCategories = categories.filter(cat => cat.parent === 0);
-  
+
   return mainCategories.map(mainCat => ({
     ...mainCat,
     subcategories: categories.filter(cat => cat.parent === mainCat.id),
   }));
 };
 
-const getBrandsForModal = (attributes: ShopAttributes, limit: number = 36): ShopAttribute[] => {
+const getBrandsForModal = (
+  attributes: ShopAttributes,
+  limit: number = 36
+): ShopAttribute[] => {
   return attributes.brands.slice(0, limit);
 };
 
@@ -96,7 +108,7 @@ export const useShopDataStore = create<ShopDataState>()(
     // Actions
     initialize: async () => {
       const state = get();
-      
+
       // Jeśli już zainicjalizowane i dane są świeże, nie rób nic
       if (state.isInitialized && state.isDataFresh()) {
         logger.debug('ShopDataStore: Data already initialized and fresh');
@@ -107,10 +119,10 @@ export const useShopDataStore = create<ShopDataState>()(
 
       try {
         logger.debug('ShopDataStore: Initializing');
-        
+
         const shopData = await shopDataPrefetch.getShopData({
           forceRefresh: false,
-          cacheTimeout: 5 * 60 * 1000 // 5 minut
+          cacheTimeout: 5 * 60 * 1000, // 5 minut
         });
 
         set({
@@ -120,7 +132,7 @@ export const useShopDataStore = create<ShopDataState>()(
           isLoading: false,
           isInitialized: true,
           lastUpdated: shopData.lastUpdated,
-          error: null
+          error: null,
         });
 
         logger.info('ShopDataStore: Initialized', {
@@ -128,14 +140,18 @@ export const useShopDataStore = create<ShopDataState>()(
           brands: shopData.attributes.brands.length,
           totalProducts: shopData.totalProducts,
         });
-
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Nie udało się załadować danych sklepu';
-        logger.error('ShopDataStore: Error during initialization', { error: message });
-        
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Nie udało się załadować danych sklepu';
+        logger.error('ShopDataStore: Error during initialization', {
+          error: message,
+        });
+
         set({
           isLoading: false,
-          error: message
+          error: message,
         });
       }
     },
@@ -145,10 +161,10 @@ export const useShopDataStore = create<ShopDataState>()(
 
       try {
         logger.debug('ShopDataStore: Refreshing data');
-        
+
         const shopData = await shopDataPrefetch.getShopData({
           forceRefresh: true,
-          cacheTimeout: 5 * 60 * 1000
+          cacheTimeout: 5 * 60 * 1000,
         });
 
         set({
@@ -158,7 +174,7 @@ export const useShopDataStore = create<ShopDataState>()(
           isLoading: false,
           isInitialized: true,
           lastUpdated: shopData.lastUpdated,
-          error: null
+          error: null,
         });
 
         logger.info('ShopDataStore: Data refreshed', {
@@ -166,14 +182,18 @@ export const useShopDataStore = create<ShopDataState>()(
           brands: shopData.attributes.brands.length,
           totalProducts: shopData.totalProducts,
         });
-
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Nie udało się odświeżyć danych sklepu';
-        logger.error('ShopDataStore: Error refreshing data', { error: message });
-        
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Nie udało się odświeżyć danych sklepu';
+        logger.error('ShopDataStore: Error refreshing data', {
+          error: message,
+        });
+
         set({
           isLoading: false,
-          error: message
+          error: message,
         });
       }
     },
@@ -223,11 +243,11 @@ export const useShopDataStore = create<ShopDataState>()(
       return (timeout: number = 5 * 60 * 1000) => {
         const { lastUpdated } = get();
         if (!lastUpdated) return false;
-        
+
         const now = Date.now();
-        return (now - lastUpdated) < timeout;
+        return now - lastUpdated < timeout;
       };
-    }
+    },
   }))
 );
 
@@ -235,8 +255,8 @@ export const useShopDataStore = create<ShopDataState>()(
 let isAutoInitialized = false;
 
 useShopDataStore.subscribe(
-  (state) => state.isInitialized,
-  (isInitialized) => {
+  state => state.isInitialized,
+  isInitialized => {
     if (isInitialized && !isAutoInitialized) {
       isAutoInitialized = true;
       logger.debug('ShopDataStore: Auto-initialized');
@@ -246,10 +266,10 @@ useShopDataStore.subscribe(
 
 // Export hooks for specific data with optimized selectors
 export const useShopCategories = () => {
-  const categories = useShopDataStore((state) => state.categories);
-  const isLoading = useShopDataStore((state) => state.isLoading);
-  const getSubCategories = useShopDataStore((state) => state.getSubCategories);
-  
+  const categories = useShopDataStore(state => state.categories);
+  const isLoading = useShopDataStore(state => state.isLoading);
+  const getSubCategories = useShopDataStore(state => state.getSubCategories);
+
   // Memoize derived values
   const mainCategories = useMemo(
     () => categories.filter(c => (c.parent || 0) === 0),
@@ -259,58 +279,71 @@ export const useShopCategories = () => {
     () => buildHierarchicalCategories(categories),
     [categories]
   );
-  
+
   return {
     categories,
     mainCategories,
     hierarchicalCategories,
     getSubCategories,
-    isLoading
+    isLoading,
   };
 };
 
 export const useShopAttributes = () => {
-  const attributes = useShopDataStore((state) => state.attributes);
-  const isLoading = useShopDataStore((state) => state.isLoading);
-  
+  const attributes = useShopDataStore(state => state.attributes);
+  const isLoading = useShopDataStore(state => state.isLoading);
+
   // Memoize derived values
   const brands = useMemo(() => attributes.brands, [attributes.brands]);
-  const brandsForModal = useMemo(() => attributes.brands.slice(0, 50), [attributes.brands]);
-  const capacities = useMemo(() => attributes.capacities, [attributes.capacities]);
-  const zastosowanie = useMemo(() => attributes.zastosowanie, [attributes.zastosowanie]);
-  
+  const brandsForModal = useMemo(
+    () => attributes.brands.slice(0, 50),
+    [attributes.brands]
+  );
+  const capacities = useMemo(
+    () => attributes.capacities,
+    [attributes.capacities]
+  );
+  const zastosowanie = useMemo(
+    () => attributes.zastosowanie,
+    [attributes.zastosowanie]
+  );
+
   return {
     attributes,
     brands,
     brandsForModal,
     capacities,
     zastosowanie,
-    isLoading
+    isLoading,
   };
 };
 
 export const useShopStats = () => {
-  const totalProducts = useShopDataStore((state) => state.totalProducts);
-  const categories = useShopDataStore((state) => state.categories);
-  const attributes = useShopDataStore((state) => state.attributes);
-  const lastUpdated = useShopDataStore((state) => state.lastUpdated);
-  const isDataFresh = useShopDataStore((state) => state.isDataFresh);
-  
-  return useMemo(() => ({
-    totalProducts,
-    totalCategories: categories.length,
-    totalBrands: attributes.brands.length,
-    totalCapacities: attributes.capacities.length,
-    lastUpdated,
-    isDataFresh: isDataFresh()
-  }), [totalProducts, categories, attributes, lastUpdated, isDataFresh]);
+  const totalProducts = useShopDataStore(state => state.totalProducts);
+  const categories = useShopDataStore(state => state.categories);
+  const attributes = useShopDataStore(state => state.attributes);
+  const lastUpdated = useShopDataStore(state => state.lastUpdated);
+  const isDataFresh = useShopDataStore(state => state.isDataFresh);
+
+  return useMemo(
+    () => ({
+      totalProducts,
+      totalCategories: categories.length,
+      totalBrands: attributes.brands.length,
+      totalCapacities: attributes.capacities.length,
+      lastUpdated,
+      isDataFresh: isDataFresh(),
+    }),
+    [totalProducts, categories, attributes, lastUpdated, isDataFresh]
+  );
 };
 
-export const useShopDataActions = () => useShopDataStore((state) => ({
-  initialize: state.initialize,
-  refresh: state.refresh,
-  clearError: state.clearError,
-}));
+export const useShopDataActions = () =>
+  useShopDataStore(state => ({
+    initialize: state.initialize,
+    refresh: state.refresh,
+    clearError: state.clearError,
+  }));
 
 // Export default
 export default useShopDataStore;

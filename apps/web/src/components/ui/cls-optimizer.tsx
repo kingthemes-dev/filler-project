@@ -15,15 +15,18 @@ interface CLSOptimizerProps {
   fallback?: React.ReactNode;
 }
 
-export function CLSOptimizer({ 
-  children, 
-  minHeight = 200, 
-  minWidth = 300, 
+export function CLSOptimizer({
+  children,
+  minHeight = 200,
+  minWidth = 300,
   className = '',
-  fallback 
+  fallback,
 }: CLSOptimizerProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [dimensions, setDimensions] = useState({ height: minHeight, width: minWidth });
+  const [dimensions, setDimensions] = useState({
+    height: minHeight,
+    width: minWidth,
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,12 +34,12 @@ export function CLSOptimizer({
     if (!container) return;
 
     // Reserve space to prevent CLS
-    const resizeObserver = new ResizeObserver((entries) => {
+    const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         const { height, width } = entry.contentRect;
-        setDimensions({ 
-          height: Math.max(height, minHeight), 
-          width: Math.max(width, minWidth) 
+        setDimensions({
+          height: Math.max(height, minHeight),
+          width: Math.max(width, minWidth),
         });
       }
     });
@@ -65,11 +68,7 @@ export function CLSOptimizer({
         opacity: isLoaded ? 1 : 0.8,
       }}
     >
-      {!isLoaded && fallback && (
-        <div className="cls-fallback">
-          {fallback}
-        </div>
-      )}
+      {!isLoaded && fallback && <div className="cls-fallback">{fallback}</div>}
       <div className={`cls-content ${isLoaded ? 'loaded' : 'loading'}`}>
         {children}
       </div>
@@ -100,12 +99,13 @@ export function ImageCLSOptimizer({
   className = '',
   priority = false,
   placeholder: _placeholder = 'blur',
-  blurDataURL
+  blurDataURL,
 }: ImageCLSOptimizerProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const defaultBlurDataURL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=';
+  const defaultBlurDataURL =
+    'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=';
 
   return (
     <div
@@ -193,7 +193,10 @@ interface ProductCardCLSOptimizerProps {
   className?: string;
 }
 
-export function ProductCardCLSOptimizer({ children, className = '' }: ProductCardCLSOptimizerProps) {
+export function ProductCardCLSOptimizer({
+  children,
+  className = '',
+}: ProductCardCLSOptimizerProps) {
   return (
     <CLSOptimizer
       minHeight={400}
@@ -225,11 +228,11 @@ interface SkeletonProps {
   rounded?: boolean;
 }
 
-export function Skeleton({ 
-  width = '100%', 
-  height = 20, 
-  className = '', 
-  rounded = false 
+export function Skeleton({
+  width = '100%',
+  height = 20,
+  className = '',
+  rounded = false,
 }: SkeletonProps) {
   return (
     <div

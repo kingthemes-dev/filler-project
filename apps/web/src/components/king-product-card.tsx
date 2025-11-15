@@ -3,7 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { WooProduct } from '@/types/woocommerce';
 import wooCommerceService from '@/services/woocommerce-optimized';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
@@ -11,12 +16,22 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCartActions } from '@/stores/cart-store';
 import type { CartItem } from '@/stores/cart-store';
-import { useFavoritesActions, useFavoritesItems } from '@/stores/favorites-store';
-import { useQuickViewActions, useQuickViewIsOpen, useQuickViewProduct } from '@/stores/quickview-store';
+import {
+  useFavoritesActions,
+  useFavoritesItems,
+} from '@/stores/favorites-store';
+import {
+  useQuickViewActions,
+  useQuickViewIsOpen,
+  useQuickViewProduct,
+} from '@/stores/quickview-store';
 // Wishlist tymczasowo wyłączony na kartach
 // import { useWishlist } from '@/hooks/use-wishlist';
 import dynamic from 'next/dynamic';
-const QuickViewModal = dynamic(() => import('@/components/ui/quick-view-modal'), { ssr: false });
+const QuickViewModal = dynamic(
+  () => import('@/components/ui/quick-view-modal'),
+  { ssr: false }
+);
 import { formatPrice } from '@/utils/format-price';
 
 interface KingProductCardProps {
@@ -42,7 +57,9 @@ interface ProductVariation {
   menu_order: number;
 }
 
-const variationAttributesToRecord = (attributes?: VariationAttribute[]): Record<string, string> => {
+const variationAttributesToRecord = (
+  attributes?: VariationAttribute[]
+): Record<string, string> => {
   if (!attributes) return {};
   return attributes.reduce<Record<string, string>>((acc, attr) => {
     if (attr.slug && attr.option) {
@@ -52,12 +69,12 @@ const variationAttributesToRecord = (attributes?: VariationAttribute[]): Record<
   }, {});
 };
 
-export default function KingProductCard({ 
-  product, 
-  showActions = true, 
+export default function KingProductCard({
+  product,
+  showActions = true,
   variant = 'default',
   tabType,
-  priority = false
+  priority = false,
 }: KingProductCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const isQuickViewOpen = useQuickViewIsOpen();
@@ -72,13 +89,14 @@ export default function KingProductCard({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   // Use selectors for optimized subscriptions
   const { addItem, openCart } = useCartActions();
   const { toggleFavorite } = useFavoritesActions();
   const favorites = useFavoritesItems();
-  const isFavorite = (productId: number) => favorites.some(fav => fav.id === productId);
-  
+  const isFavorite = (productId: number) =>
+    favorites.some(fav => fav.id === productId);
+
   // Handle hydration
   useEffect(() => {
     setIsClient(true);
@@ -87,7 +105,10 @@ export default function KingProductCard({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
@@ -115,17 +136,22 @@ export default function KingProductCard({
     setIsLoading(true);
     try {
       let cartItem: Omit<CartItem, 'quantity'> | null = null;
-      
+
       if (product.type === 'variable' && selectedVariant) {
-        const variationsResponse = await wooCommerceService.getProductVariations(product.id);
-        const selectedVariation = variationsResponse.variations?.find((variation) => 
-          variation.attributes?.some((attr) => 
-            attr.slug === 'pa_pojemnosc' && attr.option === selectedVariant
-          )
+        const variationsResponse =
+          await wooCommerceService.getProductVariations(product.id);
+        const selectedVariation = variationsResponse.variations?.find(
+          variation =>
+            variation.attributes?.some(
+              attr =>
+                attr.slug === 'pa_pojemnosc' && attr.option === selectedVariant
+            )
         );
-        
+
         if (selectedVariation) {
-          const variationAttributes = variationAttributesToRecord(selectedVariation.attributes);
+          const variationAttributes = variationAttributesToRecord(
+            selectedVariation.attributes
+          );
           cartItem = {
             id: selectedVariation.id,
             name: `${product.name} - ${selectedVariant}`,
@@ -193,15 +219,17 @@ export default function KingProductCard({
     if (process.env.NODE_ENV === 'development') {
       // handleShowVariants debug removed
     }
-    
+
     if (!variationsLoaded) {
       try {
-        const response = await wooCommerceService.getProductVariations(product.id);
+        const response = await wooCommerceService.getProductVariations(
+          product.id
+        );
         const variationsList = response.variations ?? [];
-        
+
         setVariations([...variationsList]);
         setVariationsLoaded(true);
-        
+
         if (process.env.NODE_ENV === 'development') {
           // Variations set debug removed
         }
@@ -220,9 +248,12 @@ export default function KingProductCard({
     await handleAddToCart();
   };
 
-  const handleAddToCartWithVariation = async (variation: ProductVariation, variantName: string) => {
+  const handleAddToCartWithVariation = async (
+    variation: ProductVariation,
+    variantName: string
+  ) => {
     // handleAddToCartWithVariation debug removed
-    
+
     setIsLoading(true);
     try {
       const cartItem: Omit<CartItem, 'quantity'> = {
@@ -254,30 +285,33 @@ export default function KingProductCard({
   // Get available variants from loaded variations
   const getAvailableVariants = () => {
     // getAvailableVariants debug removed
-    
+
     if (variations.length > 0) {
-      const variants = variations.map((variation) => {
+      const variants = variations.map(variation => {
         // Processing variation debug removed
         // Znajdź pierwszy dostępny atrybut (pojemność, kolor, rozmiar, etc.)
         const firstAttr = variation.attributes?.find(
-          (attribute) => attribute.slug && attribute.option
+          attribute => attribute.slug && attribute.option
         );
         // First attr found debug removed
-        const variantName = firstAttr?.option || variation.name || `Wariant ${variation.id}`;
+        const variantName =
+          firstAttr?.option || variation.name || `Wariant ${variation.id}`;
         // Variant name debug removed
         return variantName;
       });
       // Mapped variants debug removed
       return variants;
     }
-    
+
     // No variations debug removed
     // Fallback to product attributes - znajdź pierwszy atrybut z opcjami
     if (!product.attributes) {
       // No product attributes debug removed
       return [];
     }
-    const firstAttrWithOptions = product.attributes.find((attr) => Array.isArray(attr.options) && attr.options.length > 0);
+    const firstAttrWithOptions = product.attributes.find(
+      attr => Array.isArray(attr.options) && attr.options.length > 0
+    );
     if (!firstAttrWithOptions) {
       // No attributes with options debug removed
       return [];
@@ -295,10 +329,13 @@ export default function KingProductCard({
   // Handle both full WooProduct and simplified API data
   const imageUrl = (() => {
     // Check if product has images array (full WooProduct format)
-    if (Array.isArray((product as WooProduct).images) && (product as WooProduct).images.length > 0) {
+    if (
+      Array.isArray((product as WooProduct).images) &&
+      (product as WooProduct).images.length > 0
+    ) {
       return wooCommerceService.getProductImageUrl(product, 'medium');
     }
-    
+
     // Check if product has single image property (simplified API format)
     const rawImage = (product as { image?: string }).image;
     if (typeof rawImage === 'string' && rawImage) {
@@ -312,48 +349,78 @@ export default function KingProductCard({
       }
       return rawImage;
     }
-    
+
     return '/images/placeholder-product.jpg';
   })();
-  const primaryImage = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : undefined;
-  const primaryImageAlt = primaryImage?.alt || primaryImage?.name || product.name;
+  const primaryImage =
+    Array.isArray(product.images) && product.images.length > 0
+      ? product.images[0]
+      : undefined;
+  const primaryImageAlt =
+    primaryImage?.alt || primaryImage?.name || product.name;
   const price = wooCommerceService.formatPrice(product.price);
   const regularPrice = wooCommerceService.formatPrice(product.regular_price);
 
   // Helper function to get brand from attributes
   // removed unused getBrand helper
 
-  // Helper function to get main category (parent: 0)
+  // Helper function to get main category
   const getMainCategory = (): string | null => {
     try {
-      // WooProduct.categories is WooCategory[] where WooCategory = { id: number; name: string; slug: string; }
       const cats = product.categories;
-      
+
       // Ensure cats is an array before using array methods
       if (!cats || !Array.isArray(cats) || cats.length === 0) {
         return null;
       }
-      
-      // Main categories (parent: 0) are: Mezoterapia, Peelingi, Stymulatory, Wypełniacze
-      const mainCategories = ['Mezoterapia', 'Peelingi', 'Stymulatory', 'Wypełniacze'];
-      
-      // Find the first main category in the product's categories
-      // categories is WooCategory[] = { id: number; name: string; slug: string; }[]
-      const main = cats.find((c) => {
+
+      // Try to find a main category from a preferred list first
+      const mainCategories = [
+        'Mezoterapia',
+        'Peelingi',
+        'Stymulatory',
+        'Wypełniacze',
+      ];
+      const main = cats.find(c => {
         if (!c || typeof c !== 'object') return false;
-        const categoryName = c.name;
+        const categoryName = typeof c.name === 'string' ? c.name : null;
         return categoryName && mainCategories.includes(categoryName);
       });
-      
-      if (main && typeof main === 'object' && 'name' in main) {
+
+      // If found, return it
+      if (
+        main &&
+        typeof main === 'object' &&
+        'name' in main &&
+        typeof main.name === 'string'
+      ) {
         return main.name;
       }
-      
-      // Fallback: return first category name if no main category found
-      if (cats.length > 0 && cats[0] && typeof cats[0] === 'object' && 'name' in cats[0]) {
-        return cats[0].name;
+
+      // Fallback: return first category name (even if not in preferred list)
+      const firstCategory = cats[0];
+      if (
+        firstCategory &&
+        typeof firstCategory === 'object' &&
+        'name' in firstCategory
+      ) {
+        const categoryName = firstCategory.name;
+        // Handle both string and object types
+        if (typeof categoryName === 'string') {
+          return categoryName;
+        }
+        // If name is an object, try to get a string representation
+        if (categoryName && typeof categoryName === 'object') {
+          const categoryNameObj = categoryName as Record<string, unknown>;
+          if (
+            'name' in categoryNameObj &&
+            typeof categoryNameObj.name === 'string'
+          ) {
+            return categoryNameObj.name;
+          }
+        }
       }
-      
+
       return null;
     } catch (error) {
       // Safely handle any errors
@@ -365,20 +432,24 @@ export default function KingProductCard({
   const renderPrice = () => {
     if (isOnSale) {
       return (
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-baseline gap-1.5 flex-wrap">
-            <span className="text-lg sm:text-xl font-bold text-red-600">{price}</span>
-            <span className="text-xs text-gray-400 line-through">{regularPrice}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Badge className="bg-red-500 text-white text-[8px] font-semibold px-1 py-0.5 rounded-md">
-              -{discount}% TANIEJ
-            </Badge>
-          </div>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-lg sm:text-xl font-bold text-red-600">
+            {price}
+          </span>
+          <span className="text-xs text-gray-400 line-through">
+            {regularPrice}
+          </span>
+          <Badge className="bg-red-500 text-white text-[7px] font-semibold px-1 py-[2px] rounded-md leading-none">
+            -{discount}%
+          </Badge>
         </div>
       );
     }
-    return <span className="text-lg sm:text-xl font-bold text-foreground">{price}</span>;
+    return (
+      <span className="text-lg sm:text-xl font-bold text-foreground">
+        {price}
+      </span>
+    );
   };
 
   const renderRating = () => {
@@ -388,18 +459,30 @@ export default function KingProductCard({
     return (
       <div className="flex items-center gap-1">
         <Star className="w-4 h-4 fill-current text-foreground" />
-        <span className="text-sm text-muted-foreground">{rating.toFixed(1)}</span>
-        <span className="text-xs text-muted-foreground">({product.rating_count})</span>
+        <span className="text-sm text-muted-foreground">
+          {rating.toFixed(1)}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          ({product.rating_count})
+        </span>
       </div>
     );
   };
 
   const renderStockStatus = () => {
     if (product.stock_status === 'outofstock') {
-      return <Badge variant="secondary" className="text-xs">Brak w magazynie</Badge>;
+      return (
+        <Badge variant="secondary" className="text-xs">
+          Brak w magazynie
+        </Badge>
+      );
     }
     if (product.stock_status === 'onbackorder') {
-      return <Badge variant="secondary" className="text-xs">Na zamówienie</Badge>;
+      return (
+        <Badge variant="secondary" className="text-xs">
+          Na zamówienie
+        </Badge>
+      );
     }
     return null;
   };
@@ -422,7 +505,10 @@ export default function KingProductCard({
                 quality={85}
               />
               {isOnSale && (
-                <Badge variant="destructive" className="absolute top-0.5 sm:top-1 left-1 sm:left-2 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 whitespace-nowrap">
+                <Badge
+                  variant="destructive"
+                  className="absolute top-0.5 sm:top-1 left-1 sm:left-2 text-[7px] sm:text-[8px] lg:text-[7px] px-1 sm:px-1.5 lg:px-1 py-0.5 whitespace-nowrap"
+                >
                   PROMOCJA
                 </Badge>
               )}
@@ -458,7 +544,10 @@ export default function KingProductCard({
                 quality={85}
               />
               {isOnSale && (
-                <Badge variant="destructive" className="absolute top-2 sm:top-3 left-2 sm:left-3 text-xs sm:text-sm border-2 border-destructive/20 rounded-xl px-2 sm:px-3 py-0.5 sm:py-1">
+                <Badge
+                  variant="destructive"
+                  className="absolute top-2 sm:top-3 left-2 sm:left-3 text-xs sm:text-sm border-2 border-destructive/20 rounded-xl px-2 sm:px-3 py-0.5 sm:py-1"
+                >
                   PROMOCJA
                 </Badge>
               )}
@@ -491,7 +580,9 @@ export default function KingProductCard({
             <div className="flex gap-2 w-full">
               {product.type === 'variable' && isDropdownOpen ? (
                 <div className="flex-1 space-y-2">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Wybierz wariant:</div>
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Wybierz wariant:
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {getAvailableVariants().map((variant: string) => (
                       <button
@@ -510,20 +601,26 @@ export default function KingProductCard({
                     ))}
                   </div>
                   {selectedVariant && (
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={handleAddToCart}
-                      disabled={isLoading || product.stock_status === 'outofstock'}
+                      disabled={
+                        isLoading || product.stock_status === 'outofstock'
+                      }
                       className="w-full h-12 py-6 text-base product-add-to-cart-button"
                       size="sm"
                     >
                       <ShoppingCart className="w-4 h-4 -mr-1 sm:mr-2" />
-                      <span className="text-xs sm:text-base">{isLoading ? 'Dodawanie...' : `Dodaj ${selectedVariant} do koszyka`}</span>
+                      <span className="text-xs sm:text-base">
+                        {isLoading
+                          ? 'Dodawanie...'
+                          : `Dodaj ${selectedVariant} do koszyka`}
+                      </span>
                     </Button>
                   )}
                 </div>
               ) : (
-                <Button 
+                <Button
                   variant="outline"
                   onClick={handleAddToCartWithVariant}
                   disabled={isLoading || product.stock_status === 'outofstock'}
@@ -532,7 +629,13 @@ export default function KingProductCard({
                   data-testid="add-to-cart"
                 >
                   <ShoppingCart className="w-4 h-4 -mr-1 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">{isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}</span>
+                  <span className="text-xs sm:text-sm">
+                    {isLoading
+                      ? 'Dodawanie...'
+                      : product.type === 'variable'
+                        ? 'Wybierz wariant'
+                        : 'Dodaj do koszyka'}
+                  </span>
                 </Button>
               )}
               <Button
@@ -549,16 +652,22 @@ export default function KingProductCard({
                 size="sm"
                 onClick={handleToggleFavorite}
                 className={`px-3 h-10 hover:bg-black hover:text-white transition-colors ${isClient && isFavorite(product.id) ? 'text-destructive' : ''}`}
-                aria-label={isClient && isFavorite(product.id) ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+                aria-label={
+                  isClient && isFavorite(product.id)
+                    ? 'Usuń z ulubionych'
+                    : 'Dodaj do ulubionych'
+                }
                 data-testid="favorite-button"
               >
-                <Heart className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current' : ''}`} />
+                <Heart
+                  className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current' : ''}`}
+                />
               </Button>
               {/* Wishlist button removed */}
             </div>
           </CardFooter>
         )}
-        
+
         {/* Quick View Modal */}
         <QuickViewModal
           isOpen={isQuickViewOpen && quickViewProduct?.id === product.id}
@@ -572,7 +681,7 @@ export default function KingProductCard({
   // List variant - horizontal layout
   if (variant === 'list') {
     return (
-      <Card 
+      <Card
         className="group hover:shadow-lg transition-all duration-300 border border-gray-200 rounded-xl overflow-hidden relative"
         onMouseEnter={() => {
           setIsHovered(true);
@@ -597,7 +706,7 @@ export default function KingProductCard({
               loading={priority ? 'eager' : 'lazy'}
               priority={priority}
             />
-            
+
             {/* Badge - Mobile optimized, smaller on 4-column layout */}
             <div className="absolute top-0.5 sm:top-1 left-1 sm:left-2">
               {isOnSale ? (
@@ -611,32 +720,25 @@ export default function KingProductCard({
               ) : null}
             </div>
           </div>
-          
+
           <div className="flex-1 px-6 py-4 flex flex-col justify-between">
             <div>
               <h2 className="font-semibold text-lg text-gray-900 group-hover:text-black transition-colors line-clamp-2">
                 {product.name}
               </h2>
-              
-              
-              <div className="mt-1">
-                {renderPrice()}
-              </div>
-              
-              <div className="mt-1">
-                {renderRating()}
-              </div>
-              
-              <div className="mt-1">
-                {renderStockStatus()}
-              </div>
+
+              <div className="mt-1">{renderPrice()}</div>
+
+              <div className="mt-1">{renderRating()}</div>
+
+              <div className="mt-1">{renderStockStatus()}</div>
             </div>
-            
+
             {showActions && (
               <div className="flex items-center gap-4 mt-4">
                 {product.type === 'variable' ? (
                   <Button
-                    onClick={(e) => {
+                    onClick={e => {
                       e.preventDefault();
                       e.stopPropagation();
                       handleShowVariants();
@@ -649,23 +751,25 @@ export default function KingProductCard({
                 ) : (
                   <Button
                     variant="outline"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.preventDefault();
                       e.stopPropagation();
                       handleAddToCart();
                     }}
-                    disabled={product.stock_status === 'outofstock' || isLoading}
+                    disabled={
+                      product.stock_status === 'outofstock' || isLoading
+                    }
                     size="sm"
                     className="px-8 py-3 text-sm font-medium rounded-2xl product-add-to-cart-button"
                   >
                     {isLoading ? 'Dodawanie...' : 'Dodaj do koszyka'}
                   </Button>
                 )}
-                
+
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
                     handleQuickView();
@@ -674,50 +778,66 @@ export default function KingProductCard({
                 >
                   <Eye className="w-4 h-4" />
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
                     handleToggleFavorite();
                   }}
                   className={`px-4 py-3 h-10 w-10 rounded-2xl ${
-                    isClient && isFavorite(product.id) ? 'text-red-500 border-red-200 bg-red-50 hover:bg-red-100' : 'text-gray-500 border-gray-200 hover:border-gray-300'
+                    isClient && isFavorite(product.id)
+                      ? 'text-red-500 border-red-200 bg-red-50 hover:bg-red-100'
+                      : 'text-gray-500 border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <Heart className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current' : ''}`} />
+                  <Heart
+                    className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current' : ''}`}
+                  />
                 </Button>
                 {/* Wishlist icon removed */}
               </div>
             )}
           </div>
         </Link>
-        
+
         {/* Hover overlay with variants for variable products in list view */}
         {product.type === 'variable' && variations.length > 0 && (
-          <div className={`absolute inset-0 bg-white/50 backdrop-blur-sm transition-all duration-300 ${
-            isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}>
+          <div
+            className={`absolute inset-0 bg-white/50 backdrop-blur-sm transition-all duration-300 ${
+              isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
             <div className="flex flex-col justify-center items-center h-full p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">Wybierz wariant</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4 text-center">
+                Wybierz wariant
+              </h3>
               <div className="flex flex-wrap gap-3 justify-center">
                 {getAvailableVariants().map((variant: string) => {
-                  const variation = variations.find((v) => {
+                  const variation = variations.find(v => {
                     // Znajdź wariację która ma ten sam atrybut
-                    const firstAttr = v.attributes?.find((attr) => attr.slug && attr.option);
+                    const firstAttr = v.attributes?.find(
+                      attr => attr.slug && attr.option
+                    );
                     return firstAttr?.option === variant;
                   });
-                  
-                  const variantPrice = variation?.price || variation?.sale_price || variation?.regular_price;
-                  const isOnSale = variation?.sale_price && parseFloat(variation.sale_price) < parseFloat(variation.regular_price || '0');
+
+                  const variantPrice =
+                    variation?.price ||
+                    variation?.sale_price ||
+                    variation?.regular_price;
+                  const isOnSale =
+                    variation?.sale_price &&
+                    parseFloat(variation.sale_price) <
+                      parseFloat(variation.regular_price || '0');
                   const regularPrice = variation?.regular_price;
-                  
+
                   return (
                     <button
                       key={variant}
-                      onClick={(e) => {
+                      onClick={e => {
                         e.preventDefault();
                         e.stopPropagation();
                         if (variation) {
@@ -734,13 +854,19 @@ export default function KingProductCard({
                           <>
                             {isOnSale ? (
                               <>
-                                <span className="text-red-600">{formatPrice(parseFloat(variantPrice))}</span>
+                                <span className="text-red-600">
+                                  {formatPrice(parseFloat(variantPrice))}
+                                </span>
                                 {regularPrice && (
-                                  <span className="text-gray-400 line-through ml-1">{formatPrice(parseFloat(regularPrice))}</span>
+                                  <span className="text-gray-400 line-through ml-1">
+                                    {formatPrice(parseFloat(regularPrice))}
+                                  </span>
                                 )}
                               </>
                             ) : (
-                              <span>{formatPrice(parseFloat(variantPrice))}</span>
+                              <span>
+                                {formatPrice(parseFloat(variantPrice))}
+                              </span>
                             )}
                           </>
                         )}
@@ -752,7 +878,7 @@ export default function KingProductCard({
             </div>
           </div>
         )}
-        
+
         {/* Quick View Modal */}
         <QuickViewModal
           isOpen={isQuickViewOpen && quickViewProduct?.id === product.id}
@@ -765,7 +891,7 @@ export default function KingProductCard({
 
   // Default variant - matching the screenshot design
   return (
-    <Card 
+    <Card
       className="group flex flex-col h-full hover:shadow-lg transition-all duration-300 border border-gray-200 rounded-2xl sm:rounded-3xl overflow-hidden p-0 relative"
       onMouseEnter={() => {
         setIsHovered(true);
@@ -778,10 +904,10 @@ export default function KingProductCard({
         setIsHovered(false);
       }}
     >
-      <Link 
-        href={`/produkt/${product.slug}`} 
+      <Link
+        href={`/produkt/${product.slug}`}
         className="flex flex-col flex-grow"
-        onClick={(e) => {
+        onClick={e => {
           // Prevent navigation if clicking on action buttons
           if ((e.target as HTMLElement).closest('button')) {
             e.preventDefault();
@@ -800,7 +926,7 @@ export default function KingProductCard({
               loading={priority ? 'eager' : 'lazy'}
               priority={priority}
             />
-            
+
             {/* Badge - top left - Mobile optimized, smaller on 4-column layout */}
             <div className="absolute top-1 left-2">
               {tabType === 'promocje' || isOnSale ? (
@@ -825,7 +951,7 @@ export default function KingProductCard({
             {/* Icons - top right */}
             <div className="absolute top-2 right-2 flex flex-col gap-2">
               <button
-                onClick={(e) => {
+                onClick={e => {
                   e.preventDefault();
                   e.stopPropagation();
                   handleQuickView();
@@ -836,82 +962,115 @@ export default function KingProductCard({
                 <Eye className="w-4 h-4 text-gray-700" />
               </button>
               <button
-                onClick={(e) => {
+                onClick={e => {
                   e.preventDefault();
                   e.stopPropagation();
                   handleToggleFavorite();
                 }}
                 className="w-8 h-8 bg-white/80 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150"
-                aria-label={isClient && isFavorite(product.id) ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+                aria-label={
+                  isClient && isFavorite(product.id)
+                    ? 'Usuń z ulubionych'
+                    : 'Dodaj do ulubionych'
+                }
                 data-testid="favorite-button"
               >
-                <Heart className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current text-red-500' : 'text-gray-700'}`} />
+                <Heart
+                  className={`w-4 h-4 ${isClient && isFavorite(product.id) ? 'fill-current text-red-500' : 'text-gray-700'}`}
+                />
               </button>
               {/* Wishlist icon removed */}
             </div>
-
           </div>
         </CardHeader>
-        
-        <CardContent className="px-2.5 sm:px-3.5 py-0.5 flex-grow">
-          <div className="text-[6px] sm:text-[8px] text-gray-500 mb-0.5 flex items-center">
+
+        <CardContent className="px-2.5 sm:px-3 py-0 flex-grow flex flex-col">
+          <div className="text-[6px] sm:text-[8px] text-gray-500 mb-0 flex items-center min-h-[6px]">
             {getMainCategory() || 'Bez kategorii'}
           </div>
-          <p className="font-bold text-foreground text-sm sm:text-base mb-0 line-clamp-2">
+          <p className="font-bold text-foreground text-sm sm:text-base mb-0 line-clamp-2 min-h-[1.25rem]">
             {product.name}
           </p>
-          {renderPrice()}
-        {renderStockStatus()}
-          
-          {/* AUTO: Product Attributes - All attributes in gray badges */}
-          {product.attributes && product.attributes.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {product.attributes.map((attr, attrIndex: number) => {
-                if (!attr.options || !Array.isArray(attr.options)) return null;
-                
-                return attr.options.slice(0, 2).map((option, optionIndex) => {
-                  if (!option) return null;
-                  
-                  const optionValue = String(option);
-                  if (!optionValue) return null;
-                  
-                  return (
-                    <span
-                      key={`${attrIndex}-${optionIndex}`}
-                      className="bg-gray-100 text-gray-600 text-[8px] font-medium px-1 py-0.5 rounded-full"
-                    >
-                      {optionValue}
-                    </span>
-                  );
-                });
-              })}
-            </div>
-          )}
+          <div className="mb-0 min-h-[1rem]">{renderPrice()}</div>
+          <div className="mb-0 min-h-[0.5rem]">{renderStockStatus()}</div>
+
+          {/* AUTO: Product Attributes - All attributes in gray badges - Limit to max 4 badges */}
+          <div className="flex flex-wrap gap-0.5 mt-0 min-h-[14px] mb-0">
+            {product.attributes && product.attributes.length > 0 ? (
+              product.attributes
+                .filter(
+                  attr =>
+                    attr.options &&
+                    Array.isArray(attr.options) &&
+                    attr.options.length > 0
+                )
+                .flatMap((attr, attrIndex: number) =>
+                  attr.options
+                    .slice(0, 2)
+                    .filter(
+                      (option): option is string =>
+                        typeof option === 'string' && option.length > 0
+                    )
+                    .map((option, optionIndex) => ({
+                      key: `${attrIndex}-${optionIndex}`,
+                      originalOption: option,
+                      displayOption:
+                        option.length > 12
+                          ? `${option.slice(0, 12)}...`
+                          : option,
+                    }))
+                )
+                .slice(0, 4) // Limit to max 4 badges total
+                .map(({ key, originalOption, displayOption }) => (
+                  <span
+                    key={key}
+                    className="bg-gray-100 text-gray-600 text-[8px] font-medium px-1.5 py-[2px] rounded-full max-w-[75px] truncate inline-flex items-center justify-center leading-none"
+                    title={originalOption}
+                  >
+                    {displayOption}
+                  </span>
+                ))
+            ) : (
+              <span className="invisible text-[8px]">placeholder</span>
+            )}
+          </div>
         </CardContent>
       </Link>
-      
+
       {/* Hover overlay with variants for variable products */}
       {product.type === 'variable' && variations.length > 0 && (
-        <div className={`absolute inset-0 bg-white/50 backdrop-blur-sm transition-all duration-300 ${
-          isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
+        <div
+          className={`absolute inset-0 bg-white/50 backdrop-blur-sm transition-all duration-300 ${
+            isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
           <div className="flex flex-col justify-center items-center h-full p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">Wybierz wariant</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">
+              Wybierz wariant
+            </h2>
             <div className="flex flex-wrap gap-3 justify-center">
               {getAvailableVariants().map((variant: string) => {
-                const variation = variations.find((v) => {
-                  const firstAttr = v.attributes?.find((attr) => attr.slug && attr.option);
+                const variation = variations.find(v => {
+                  const firstAttr = v.attributes?.find(
+                    attr => attr.slug && attr.option
+                  );
                   return firstAttr?.option === variant;
                 });
-                
-                const variantPrice = variation?.price || variation?.sale_price || variation?.regular_price;
-                const isOnSale = variation?.sale_price && parseFloat(variation.sale_price) < parseFloat(variation.regular_price || '0');
+
+                const variantPrice =
+                  variation?.price ||
+                  variation?.sale_price ||
+                  variation?.regular_price;
+                const isOnSale =
+                  variation?.sale_price &&
+                  parseFloat(variation.sale_price) <
+                    parseFloat(variation.regular_price || '0');
                 const regularPrice = variation?.regular_price;
-                
+
                 return (
                   <button
                     key={variant}
-                    onClick={(e) => {
+                    onClick={e => {
                       e.preventDefault();
                       e.stopPropagation();
                       if (variation) {
@@ -929,9 +1088,13 @@ export default function KingProductCard({
                         <>
                           {isOnSale ? (
                             <>
-                              <span className="text-red-600">{formatPrice(parseFloat(variantPrice))}</span>
+                              <span className="text-red-600">
+                                {formatPrice(parseFloat(variantPrice))}
+                              </span>
                               {regularPrice && (
-                                <span className="text-gray-400 line-through ml-1">{formatPrice(parseFloat(regularPrice))}</span>
+                                <span className="text-gray-400 line-through ml-1">
+                                  {formatPrice(parseFloat(regularPrice))}
+                                </span>
                               )}
                             </>
                           ) : (
@@ -947,12 +1110,12 @@ export default function KingProductCard({
           </div>
         </div>
       )}
-      
+
       {showActions && (
-        <CardFooter className="px-2.5 sm:px-3.5 pb-3.5 pt-0.5 mt-0">
+        <CardFooter className="px-2.5 sm:px-3 pb-[10px] pt-0 mt-auto">
           <div className="w-full relative" ref={dropdownRef}>
-            <Button 
-              onClick={(e) => {
+            <Button
+              onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
                 if (product.type === 'variable') {
@@ -969,22 +1132,31 @@ export default function KingProductCard({
               }}
               variant="outline"
               disabled={isLoading || product.stock_status === 'outofstock'}
-              className="w-full rounded-2xl py-2.5 font-medium text-xs product-add-to-cart-button"
-              size="lg"
+              className="w-full h-auto rounded-2xl !py-[5px] px-3 font-medium text-xs product-add-to-cart-button"
               data-testid="add-to-cart"
             >
               <ShoppingCart className="w-3.5 h-3.5 -mr-1 sm:mr-2" />
-              <span className="text-[10px] sm:text-xs">{isLoading ? 'Dodawanie...' : (product.type === 'variable' ? 'Wybierz wariant' : 'Dodaj do koszyka')}</span>
+              <span className="text-[10px] sm:text-xs">
+                {isLoading
+                  ? 'Dodawanie...'
+                  : product.type === 'variable'
+                    ? 'Wybierz wariant'
+                    : 'Dodaj do koszyka'}
+              </span>
             </Button>
-            
+
             {/* Old dropdown removed - using hover overlay instead */}
             {false && product.type === 'variable' && isDropdownOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 z-10">
-                <div className="text-sm font-semibold text-gray-900 mb-3 text-center">Wybierz wariant</div>
+                <div className="text-sm font-semibold text-gray-900 mb-3 text-center">
+                  Wybierz wariant
+                </div>
                 {!variationsLoaded ? (
                   <div className="text-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto"></div>
-                    <div className="text-sm text-gray-500 mt-2">Ładowanie wariantów...</div>
+                    <div className="text-sm text-gray-500 mt-2">
+                      Ładowanie wariantów...
+                    </div>
                   </div>
                 ) : getAvailableVariants().length === 0 ? (
                   <div className="text-center py-4 text-gray-500">
@@ -993,44 +1165,48 @@ export default function KingProductCard({
                 ) : (
                   <div className="flex flex-wrap gap-2 justify-center">
                     {getAvailableVariants().map((variant: string) => {
-                    const variation = variations.find((v) => {
-                      const firstAttr = v.attributes?.find((attr) => attr.slug && attr.option);
-                      return firstAttr?.option === variant;
-                    });
-                    
-                    return (
-                      <button
-                        key={variant}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          // Variant clicked debug removed
-                          setSelectedVariant(variant);
-                          setIsDropdownOpen(false);
-                          if (variation) {
-                            // Calling handleAddToCartWithVariation debug removed
-                            handleAddToCartWithVariation(variation, variant);
-                          } else {
-                            // No variation found debug removed
-                          }
-                        }}
-                        className={`px-4 py-2 text-sm font-medium rounded-full border-2 transition-all duration-200 transform hover:scale-105 ${
-                          selectedVariant === variant
-                            ? 'bg-black text-white border-black shadow-lg'
-                            : 'bg-transparent text-gray-700 border-gray-300 hover:border-black hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="text-center">
-                          <div className="font-bold">{variant}</div>
-                          {variation && (
-                            <div className="text-xs opacity-70 mt-1">
-                              {wooCommerceService.formatPrice(variation.price)}
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                      const variation = variations.find(v => {
+                        const firstAttr = v.attributes?.find(
+                          attr => attr.slug && attr.option
+                        );
+                        return firstAttr?.option === variant;
+                      });
+
+                      return (
+                        <button
+                          key={variant}
+                          onClick={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Variant clicked debug removed
+                            setSelectedVariant(variant);
+                            setIsDropdownOpen(false);
+                            if (variation) {
+                              // Calling handleAddToCartWithVariation debug removed
+                              handleAddToCartWithVariation(variation, variant);
+                            } else {
+                              // No variation found debug removed
+                            }
+                          }}
+                          className={`px-4 py-2 text-sm font-medium rounded-full border-2 transition-all duration-200 transform hover:scale-105 ${
+                            selectedVariant === variant
+                              ? 'bg-black text-white border-black shadow-lg'
+                              : 'bg-transparent text-gray-700 border-gray-300 hover:border-black hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="font-bold">{variant}</div>
+                            {variation && (
+                              <div className="text-xs opacity-70 mt-1">
+                                {wooCommerceService.formatPrice(
+                                  variation.price
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1038,7 +1214,7 @@ export default function KingProductCard({
           </div>
         </CardFooter>
       )}
-      
+
       {/* Quick View Modal */}
       <QuickViewModal
         isOpen={isQuickViewOpen && quickViewProduct?.id === product.id}

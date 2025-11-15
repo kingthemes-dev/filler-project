@@ -5,11 +5,27 @@ import { validateApiInput } from '@/utils/request-validation';
 import { createErrorResponse, ValidationError } from '@/lib/errors';
 import { env } from '@/config/env';
 import { logger } from '@/utils/logger';
+import { checkApiSecurity, addSecurityHeaders } from '@/utils/api-security';
+import { getCorsHeaders } from '@/utils/cors';
 
-const WC_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
+const WC_URL =
+  process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
 const CART_API_SECRET = env.KING_CART_API_SECRET;
 
 export async function POST(req: NextRequest) {
+  // Security check: rate limiting and CSRF protection
+  const securityCheck = await checkApiSecurity(req, {
+    enforceRateLimit: true,
+    enforceCSRF: true,
+  });
+  
+  if (!securityCheck.allowed) {
+    return securityCheck.response || NextResponse.json(
+      { success: false, error: 'Security check failed' },
+      { status: 403 }
+    );
+  }
+  
   try {
     const rawBody = await req.json();
     const sanitizedBody = validateApiInput(rawBody);
@@ -17,7 +33,10 @@ export async function POST(req: NextRequest) {
 
     if (!validationResult.success) {
       return createErrorResponse(
-        new ValidationError('Nieprawidłowe dane koszyka', validationResult.error.errors),
+        new ValidationError(
+          'Nieprawidłowe dane koszyka',
+          validationResult.error.errors
+        ),
         { endpoint: 'cart-proxy', method: 'POST' }
       );
     }
@@ -40,7 +59,10 @@ export async function POST(req: NextRequest) {
     } else if (action === 'update') {
       if (!rest.key || typeof rest.quantity === 'undefined') {
         return NextResponse.json(
-          { success: false, error: 'Klucz pozycji i ilość są wymagane do aktualizacji koszyka' },
+          {
+            success: false,
+            error: 'Klucz pozycji i ilość są wymagane do aktualizacji koszyka',
+          },
           { status: 400 }
         );
       }
@@ -61,15 +83,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(getData, {
         status: getResp.status,
         headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          ...getCorsHeaders({
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }),
         },
       });
     } else {
       if (typeof rest.product_id === 'undefined') {
         return NextResponse.json(
-          { success: false, error: 'ID produktu jest wymagane do dodania do koszyka' },
+          {
+            success: false,
+            error: 'ID produktu jest wymagane do dodania do koszyka',
+          },
           { status: 400 }
         );
       }
@@ -104,26 +130,34 @@ export async function POST(req: NextRequest) {
     logger.debug('Cart proxy response', {
       status: cartResponse.status,
       payload: cartData?.data ? '[...payload]' : cartData,
-      action
+      action,
     });
 
-    return NextResponse.json(cartData, {
+    const response = NextResponse.json(cartData, {
       status: cartResponse.status,
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        ...getCorsHeaders({
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }),
       },
     });
+    
+    // Add security headers
+    return addSecurityHeaders(response);
   } catch (error) {
-    const err = error instanceof Error ? error : new Error('Unknown cart proxy error');
+    const err =
+      error instanceof Error ? error : new Error('Unknown cart proxy error');
     logger.error('Cart proxy error', {
       error: err.message,
       action: req.method,
       url: req.url,
       stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: err.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -131,9 +165,10 @@ export async function OPTIONS(_req: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      ...getCorsHeaders({
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      }),
     },
   });
 }

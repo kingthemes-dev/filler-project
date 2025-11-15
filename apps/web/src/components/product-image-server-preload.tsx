@@ -36,4 +36,3 @@ export function getFirstProductImageUrl(products: WooProduct[]): string | null {
 
   return imageUrl;
 }
-

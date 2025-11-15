@@ -126,31 +126,36 @@ class PerformanceMonitor {
   private setupMonitoring(): void {
     // Web Vitals monitoring
     this.setupWebVitalsMonitoring();
-    
+
     // Page load monitoring
     this.setupPageLoadMonitoring();
-    
+
     // API monitoring
     this.setupApiMonitoring();
-    
+
     // Bundle size monitoring
     this.setupBundleSizeMonitoring();
-    
+
     // Memory usage monitoring
     this.setupMemoryMonitoring();
-    
+
     // Network monitoring
     this.setupNetworkMonitoring();
   }
 
   private setupWebVitalsMonitoring(): void {
-    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window))
+      return;
 
     // Largest Contentful Paint
     try {
-      const observer = new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
-          const lcpEntry = entry as PerformanceEntry & { element?: Element; url?: string; size?: number };
+          const lcpEntry = entry as PerformanceEntry & {
+            element?: Element;
+            url?: string;
+            size?: number;
+          };
           this.recordMetric({
             name: 'LCP',
             value: entry.startTime,
@@ -171,7 +176,7 @@ class PerformanceMonitor {
 
     // First Input Delay
     try {
-      const observer = new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           const fidEntry = entry as PerformanceEventTiming;
           const fid = fidEntry.processingStart - fidEntry.startTime;
@@ -195,7 +200,7 @@ class PerformanceMonitor {
     // Cumulative Layout Shift
     try {
       let clsValue = 0;
-      const observer = new PerformanceObserver((list) => {
+      const observer = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           const layoutShift = entry as LayoutShiftEntry;
           if (layoutShift.hadRecentInput) continue;
@@ -220,7 +225,7 @@ class PerformanceMonitor {
 
   private setupPageLoadMonitoring(): void {
     if (typeof window === 'undefined') return;
-    
+
     // Page load time
     window.addEventListener('load', () => {
       const loadTime = performance.now();
@@ -230,8 +235,12 @@ class PerformanceMonitor {
         timestamp: Date.now().toString(),
         url: window.location.href,
         metadata: {
-          domContentLoaded: performance.timing?.domContentLoadedEventEnd - performance.timing?.domContentLoadedEventStart,
-          loadComplete: performance.timing?.loadEventEnd - performance.timing?.loadEventStart,
+          domContentLoaded:
+            performance.timing?.domContentLoadedEventEnd -
+            performance.timing?.domContentLoadedEventStart,
+          loadComplete:
+            performance.timing?.loadEventEnd -
+            performance.timing?.loadEventStart,
         },
       });
     });
@@ -249,7 +258,8 @@ class PerformanceMonitor {
 
     // Time to First Byte (TTFB)
     if (performance.timing) {
-      const ttfb = performance.timing.responseStart - performance.timing.navigationStart;
+      const ttfb =
+        performance.timing.responseStart - performance.timing.navigationStart;
       this.recordMetric({
         name: 'TTFB',
         value: ttfb,
@@ -261,7 +271,7 @@ class PerformanceMonitor {
 
   private setupApiMonitoring(): void {
     if (typeof window === 'undefined') return;
-    
+
     const originalFetch = window.fetch.bind(window);
     window.fetch = async (...args: Parameters<typeof originalFetch>) => {
       const startTime = performance.now();
@@ -270,8 +280,8 @@ class PerformanceMonitor {
         requestInfo instanceof Request
           ? requestInfo.url
           : requestInfo instanceof URL
-          ? requestInfo.toString()
-          : requestInfo;
+            ? requestInfo.toString()
+            : requestInfo;
       const method =
         init?.method ||
         (requestInfo instanceof Request ? requestInfo.method : 'GET');
@@ -279,7 +289,7 @@ class PerformanceMonitor {
       try {
         const response = await originalFetch(...args);
         const endTime = performance.now();
-        
+
         this.recordMetric({
           name: 'APIResponse',
           value: endTime - startTime,
@@ -292,7 +302,7 @@ class PerformanceMonitor {
             size: response.headers.get('content-length'),
           },
         });
-        
+
         return response;
       } catch (error) {
         const endTime = performance.now();
@@ -313,13 +323,16 @@ class PerformanceMonitor {
 
   private setupBundleSizeMonitoring(): void {
     if (typeof window === 'undefined') return;
-    
+
     // Monitor JavaScript bundle sizes
     if (performance.getEntriesByType) {
-      const scripts = performance.getEntriesByType('resource').filter(
-        entry => entry.name.includes('.js') && !entry.name.includes('node_modules')
-      );
-      
+      const scripts = performance
+        .getEntriesByType('resource')
+        .filter(
+          entry =>
+            entry.name.includes('.js') && !entry.name.includes('node_modules')
+        );
+
       scripts.forEach(script => {
         const resource = script as PerformanceResourceTiming;
         this.recordMetric({
@@ -338,7 +351,7 @@ class PerformanceMonitor {
 
   private setupMemoryMonitoring(): void {
     if (typeof window === 'undefined') return;
-    
+
     // Memory usage monitoring (if available)
     const perf = performance as PerformanceWithMemory;
     if (perf.memory) {
@@ -359,15 +372,20 @@ class PerformanceMonitor {
 
   private setupNetworkMonitoring(): void {
     if (typeof window === 'undefined') return;
-    
+
     // Network connection monitoring
     const navigatorConnection = navigator as NavigatorConnection;
     if (navigatorConnection.connection) {
       const connection = navigatorConnection.connection;
-      
+
       this.recordMetric({
         name: 'NetworkConnection',
-        value: connection.effectiveType === '4g' ? 1 : connection.effectiveType === '3g' ? 2 : 3,
+        value:
+          connection.effectiveType === '4g'
+            ? 1
+            : connection.effectiveType === '3g'
+              ? 2
+              : 3,
         timestamp: Date.now().toString(),
         url: window.location.href,
         metadata: {
@@ -382,7 +400,7 @@ class PerformanceMonitor {
     // Monitor resource loading times
     if ('PerformanceObserver' in window) {
       try {
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
             if (entry.entryType === 'resource') {
               const resource = entry as PerformanceResourceTiming;
@@ -409,7 +427,9 @@ class PerformanceMonitor {
 
   public recordMetric(metric: PerformanceMetric): void {
     // Add URL and timestamp if not provided
-    metric.url = metric.url || (typeof window !== 'undefined' ? window.location.href : 'server');
+    metric.url =
+      metric.url ||
+      (typeof window !== 'undefined' ? window.location.href : 'server');
     metric.timestamp = metric.timestamp || new Date().toISOString();
 
     // Add to metrics array
@@ -419,12 +439,19 @@ class PerformanceMonitor {
     this.checkBudget(metric);
 
     // Log to console only if explicitly enabled to reduce spam in dev
-    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_PERF_LOGS === 'true') {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      process.env.NEXT_PUBLIC_PERF_LOGS === 'true'
+    ) {
       const status = this.getBudgetStatus(metric.name, metric.value);
-      const statusEmoji = status === 'pass' ? '✅' : status === 'warning' ? '⚠️' : '❌';
-      logger.debug(`[Performance] ${statusEmoji} ${metric.name}: ${metric.value}ms`, {
-        metadata: metric.metadata,
-      });
+      const statusEmoji =
+        status === 'pass' ? '✅' : status === 'warning' ? '⚠️' : '❌';
+      logger.debug(
+        `[Performance] ${statusEmoji} ${metric.name}: ${metric.value}ms`,
+        {
+          metadata: metric.metadata,
+        }
+      );
     }
 
     // Remove old metrics if we have too many
@@ -438,7 +465,7 @@ class PerformanceMonitor {
     if (!budget) return;
 
     const status = this.getBudgetStatus(metric.name, metric.value);
-    
+
     if (status === 'fail') {
       logger.error('Performance budget failed', {
         message: budget.description,
@@ -457,7 +484,10 @@ class PerformanceMonitor {
     }
   }
 
-  private getBudgetStatus(metricName: string, value: number): 'pass' | 'warning' | 'fail' {
+  private getBudgetStatus(
+    metricName: string,
+    value: number
+  ): 'pass' | 'warning' | 'fail' {
     const budget = this.budgets.find(b => b.metric === metricName);
     if (!budget) return 'pass';
 
@@ -476,7 +506,7 @@ class PerformanceMonitor {
     try {
       // Check if we're in browser environment
       if (typeof window === 'undefined') return;
-      
+
       await fetch(window.location.origin + this.endpoint, {
         method: 'POST',
         headers: {
@@ -503,16 +533,16 @@ class PerformanceMonitor {
   public generateReport(): PerformanceReport {
     const timestamp = new Date().toISOString();
     const url = typeof window !== 'undefined' ? window.location.href : 'server';
-    
+
     // Check budgets against recent metrics
     const budgetResults = this.budgets.map(budget => {
       const recentMetric = this.metrics
         .filter(m => m.name === budget.metric && m.url === url)
         .slice(-1)[0];
-      
+
       const actual = recentMetric?.value || 0;
       const status = this.getBudgetStatus(budget.metric, actual);
-      
+
       return {
         budget,
         status,
@@ -540,51 +570,63 @@ class PerformanceMonitor {
     const report = this.generateReport();
     const { passed_budgets, total_metrics } = report.summary;
     const totalBudgets = report.budgets.length;
-    
+
     if (totalBudgets === 0) return 100;
-    
+
     const budgetScore = (passed_budgets / totalBudgets) * 70; // 70% weight for budgets
-    
+
     // If no client-side metrics, give bonus points for server-side performance
     let metricScore = Math.min(total_metrics, 10) * 3; // 30% weight for metrics (max 30 points)
-    
+
     // Server-side bonus: if no client metrics, assume good performance
     if (total_metrics === 0 && typeof window === 'undefined') {
       metricScore = 25; // Give 25/30 points for server-side (assume good client performance)
     }
-    
+
     return Math.round(budgetScore + metricScore);
   }
 
   public getRecommendations(): string[] {
     const recommendations: string[] = [];
     const report = this.generateReport();
-    
+
     report.budgets.forEach(budgetResult => {
       if (budgetResult.status === 'fail' || budgetResult.status === 'warning') {
         switch (budgetResult.budget.metric) {
           case 'LCP':
-            recommendations.push('Optimize Largest Contentful Paint: compress images, use WebP format, implement lazy loading');
+            recommendations.push(
+              'Optimize Largest Contentful Paint: compress images, use WebP format, implement lazy loading'
+            );
             break;
           case 'FID':
-            recommendations.push('Reduce First Input Delay: minimize JavaScript execution, use code splitting');
+            recommendations.push(
+              'Reduce First Input Delay: minimize JavaScript execution, use code splitting'
+            );
             break;
           case 'CLS':
-            recommendations.push('Fix Cumulative Layout Shift: set image dimensions, avoid dynamic content insertion');
+            recommendations.push(
+              'Fix Cumulative Layout Shift: set image dimensions, avoid dynamic content insertion'
+            );
             break;
           case 'PageLoad':
-            recommendations.push('Improve page load time: enable compression, optimize resources, use CDN');
+            recommendations.push(
+              'Improve page load time: enable compression, optimize resources, use CDN'
+            );
             break;
           case 'APIResponse':
-            recommendations.push('Optimize API responses: implement caching, optimize database queries');
+            recommendations.push(
+              'Optimize API responses: implement caching, optimize database queries'
+            );
             break;
           case 'BundleSize':
-            recommendations.push('Reduce bundle size: implement tree shaking, remove unused code, use dynamic imports');
+            recommendations.push(
+              'Reduce bundle size: implement tree shaking, remove unused code, use dynamic imports'
+            );
             break;
         }
       }
     });
-    
+
     return [...new Set(recommendations)]; // Remove duplicates
   }
 

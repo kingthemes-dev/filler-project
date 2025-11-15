@@ -40,7 +40,6 @@ interface SessionData {
   };
 }
 
-
 class SessionManager {
   private redis: Redis | null = null;
   private sessionExpiry = 30 * 24 * 60 * 60; // 30 days in seconds
@@ -63,7 +62,9 @@ class SessionManager {
         });
         console.log('✅ Session Manager: Redis connected');
       } else {
-        console.warn('⚠️ Session Manager: Redis not configured, using memory storage');
+        console.warn(
+          '⚠️ Session Manager: Redis not configured, using memory storage'
+        );
       }
     } catch (error) {
       console.error('❌ Session Manager: Redis connection failed', error);
@@ -93,7 +94,10 @@ class SessionManager {
 
     const userAgent = navigator.userAgent;
     const platform = navigator.platform;
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        userAgent
+      );
 
     return {
       userAgent,
@@ -109,9 +113,12 @@ class SessionManager {
     if (!this.autoCleanupEnabled) return;
 
     // Run cleanup every hour
-    this.cleanupInterval = setInterval(() => {
-      this.cleanupEmptySessions();
-    }, 60 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanupEmptySessions();
+      },
+      60 * 60 * 1000
+    );
 
     console.log('✅ Session auto-cleanup started');
   }
@@ -138,18 +145,18 @@ class SessionManager {
       if (this.redis) {
         // Get all session keys
         const sessionKeys = await this.redis.keys('session:*');
-        
+
         for (const key of sessionKeys) {
           try {
             const sessionData = await this.redis.get(key);
             if (sessionData) {
               const session: SessionData = JSON.parse(sessionData);
-              
+
               // Check if session is empty and old enough
               if (this.shouldCleanupSession(session, now)) {
                 await this.redis.del(key);
                 cleanedCount++;
-                
+
                 // Also clean from HPOS cache
                 await hposCache.invalidateByTag(`session:${session.sessionId}`);
               }
@@ -172,10 +179,11 @@ class SessionManager {
    * Check if session should be cleaned up
    */
   private shouldCleanupSession(session: SessionData, now: number): boolean {
-    const timeSinceLastActivity = now - new Date(session.lastActivity).getTime();
+    const timeSinceLastActivity =
+      now - new Date(session.lastActivity).getTime();
     const isEmpty = session.sessionFlags.isEmpty;
     const needsCleanup = session.sessionFlags.needsCleanup;
-    
+
     // Clean up if:
     // 1. Session is marked as empty and old enough
     // 2. Session is marked for cleanup
@@ -232,7 +240,9 @@ class SessionManager {
     }
 
     // Also store in HPOS cache
-    await hposCache.set('sessions', sessionId, sessionData, undefined, [`session:${sessionId}`]);
+    await hposCache.set('sessions', sessionId, sessionData, undefined, [
+      `session:${sessionId}`,
+    ]);
 
     console.log(`✅ Session created: ${sessionId}`);
     return sessionData;
@@ -256,7 +266,7 @@ class SessionManager {
       }
 
       const session = JSON.parse(sessionData) as SessionData;
-      
+
       // Check if session is expired
       if (new Date() > new Date(session.expiresAt)) {
         await this.deleteSession(sessionId);
@@ -286,7 +296,10 @@ class SessionManager {
           JSON.stringify(sessionData)
         );
       } else {
-        localStorage.setItem(`session:${sessionData.sessionId}`, JSON.stringify(sessionData));
+        localStorage.setItem(
+          `session:${sessionData.sessionId}`,
+          JSON.stringify(sessionData)
+        );
       }
     } catch (error) {
       console.error('Failed to update session:', error);
@@ -314,7 +327,10 @@ class SessionManager {
   /**
    * Get or create session
    */
-  async getOrCreateSession(sessionId?: string, userId?: string): Promise<SessionData> {
+  async getOrCreateSession(
+    sessionId?: string,
+    userId?: string
+  ): Promise<SessionData> {
     if (sessionId) {
       const existingSession = await this.getSession(sessionId);
       if (existingSession) {
@@ -328,7 +344,10 @@ class SessionManager {
   /**
    * Update user preferences
    */
-  async updatePreferences(sessionId: string, preferences: Partial<SessionData['preferences']>): Promise<void> {
+  async updatePreferences(
+    sessionId: string,
+    preferences: Partial<SessionData['preferences']>
+  ): Promise<void> {
     const session = await this.getSession(sessionId);
     if (!session) {
       throw new Error('Session not found');

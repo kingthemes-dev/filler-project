@@ -24,28 +24,34 @@ class RequestDeduplicator {
       retryDelay?: number;
     } = {}
   ): Promise<T> {
-    const { cacheDuration = this.CACHE_DURATION, maxRetries = 3, retryDelay = 1000 } = options;
+    const {
+      cacheDuration = this.CACHE_DURATION,
+      maxRetries = 3,
+      retryDelay = 1000,
+    } = options;
 
     // Clean expired requests
     this.cleanExpiredRequests();
 
     // Check if request is already pending
-    const existing = this.pendingRequests.get(key) as PendingRequest<T> | undefined;
+    const existing = this.pendingRequests.get(key) as
+      | PendingRequest<T>
+      | undefined;
     if (existing && Date.now() - existing.timestamp < cacheDuration) {
       return existing.promise;
     }
 
     // Create new request
     const promise = this.executeWithRetry(requestFn, maxRetries, retryDelay);
-    
+
     this.pendingRequests.set(key, {
       promise,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Clean up after completion
     promise.finally(() => {
-    this.pendingRequests.delete(key);
+      this.pendingRequests.delete(key);
     });
 
     return promise;
@@ -66,7 +72,7 @@ class RequestDeduplicator {
         return await requestFn();
       } catch (error) {
         lastError = error as Error;
-        
+
         if (attempt < maxRetries) {
           // Exponential backoff
           const delay = retryDelay * Math.pow(2, attempt);
@@ -83,7 +89,7 @@ class RequestDeduplicator {
    */
   private cleanExpiredRequests(): void {
     const now = Date.now();
-    
+
     for (const [key, request] of this.pendingRequests.entries()) {
       if (now - request.timestamp > this.CACHE_DURATION) {
         this.pendingRequests.delete(key);
@@ -94,7 +100,7 @@ class RequestDeduplicator {
     if (this.pendingRequests.size > this.MAX_CACHE_SIZE) {
       const entries = Array.from(this.pendingRequests.entries());
       entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
+
       const toDelete = entries.slice(0, entries.length - this.MAX_CACHE_SIZE);
       toDelete.forEach(([key]) => this.pendingRequests.delete(key));
     }
@@ -115,12 +121,14 @@ class RequestDeduplicator {
     cacheSize: number;
     oldestRequest: number | null;
   } {
-    const timestamps = Array.from(this.pendingRequests.values()).map(r => r.timestamp);
-    
+    const timestamps = Array.from(this.pendingRequests.values()).map(
+      r => r.timestamp
+    );
+
     return {
       pendingRequests: this.pendingRequests.size,
       cacheSize: this.MAX_CACHE_SIZE,
-      oldestRequest: timestamps.length > 0 ? Math.min(...timestamps) : null
+      oldestRequest: timestamps.length > 0 ? Math.min(...timestamps) : null,
     };
   }
 }
@@ -142,14 +150,18 @@ export async function deduplicateRequest<T>(
 }
 
 // Generate cache key from URL and params
-export function generateCacheKey(url: string, params?: Record<string, string | number | boolean>): string {
-  const sortedParams = params ? Object.keys(params)
-    .sort()
-    .map(key => `${key}=${encodeURIComponent(String(params[key]))}`)
-    .join('&') : '';
-  
+export function generateCacheKey(
+  url: string,
+  params?: Record<string, string | number | boolean>
+): string {
+  const sortedParams = params
+    ? Object.keys(params)
+        .sort()
+        .map(key => `${key}=${encodeURIComponent(String(params[key]))}`)
+        .join('&')
+    : '';
+
   return `${url}${sortedParams ? `?${sortedParams}` : ''}`;
 }
 
 export default requestDeduplicator;
-

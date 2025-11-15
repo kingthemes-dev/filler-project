@@ -13,17 +13,20 @@ export async function GET() {
       memory: process.memoryUsage(),
       cwd: process.cwd(),
       pid: process.pid,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     return NextResponse.json({
       success: true,
-      environment
+      environment,
     });
   } catch {
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to get environment info'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to get environment info',
+      },
+      { status: 500 }
+    );
   }
 }

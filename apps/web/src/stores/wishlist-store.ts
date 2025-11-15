@@ -29,7 +29,7 @@ const safeStorage = {
     } catch {
       // Ignore storage errors
     }
-  }
+  },
 };
 
 export interface WishlistItem {
@@ -48,7 +48,7 @@ interface WishlistStore {
   items: WishlistItem[];
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   addItem: (product: WooProduct) => void;
   removeItem: (productId: number) => void;
@@ -56,7 +56,7 @@ interface WishlistStore {
   clearWishlist: () => void;
   isInWishlist: (productId: number) => boolean;
   getItemCount: () => number;
-  
+
   // Sync with server
   syncWithServer: () => Promise<void>;
   loadFromServer: () => Promise<void>;
@@ -87,7 +87,7 @@ const mapServerItemToWishlist = (fav: ServerWishlistItem): WishlistItem => ({
   regular_price: fav.product_regular_price || '0',
   sale_price: fav.product_sale_price || '',
   images: Array.isArray(fav.product_images)
-    ? fav.product_images.map((image) => ({
+    ? fav.product_images.map(image => ({
         src: image.src,
         alt: image.alt || '',
       }))
@@ -108,7 +108,7 @@ export const useWishlistStore = create<WishlistStore>()(
 
       addItem: (product: WooProduct) => {
         const { items } = get();
-        
+
         // Check if already in wishlist
         if (items.find(item => item.id === product.id)) {
           return;
@@ -123,12 +123,12 @@ export const useWishlistStore = create<WishlistStore>()(
           images: product.images || [],
           slug: product.slug,
           stock_status: product.stock_status,
-          addedAt: Date.now()
+          addedAt: Date.now(),
         };
 
         set(state => ({
           items: [...state.items, wishlistItem],
-          error: null
+          error: null,
         }));
 
         // Sync with server in background
@@ -138,7 +138,7 @@ export const useWishlistStore = create<WishlistStore>()(
       removeItem: (productId: number) => {
         set(state => ({
           items: state.items.filter(item => item.id !== productId),
-          error: null
+          error: null,
         }));
 
         // Sync with server in background
@@ -147,7 +147,7 @@ export const useWishlistStore = create<WishlistStore>()(
 
       toggleItem: (product: WooProduct) => {
         const { items, addItem, removeItem } = get();
-        
+
         if (items.find(item => item.id === product.id)) {
           removeItem(product.id);
         } else {
@@ -172,7 +172,7 @@ export const useWishlistStore = create<WishlistStore>()(
 
       syncWithServer: async () => {
         const { items } = get();
-        
+
         try {
           set({ isLoading: true, error: null });
 
@@ -185,8 +185,8 @@ export const useWishlistStore = create<WishlistStore>()(
             body: JSON.stringify({
               items: items.map(item => ({
                 product_id: item.id,
-                added_at: item.addedAt
-              }))
+                added_at: item.addedAt,
+              })),
             }),
           });
 
@@ -197,11 +197,13 @@ export const useWishlistStore = create<WishlistStore>()(
           set({ isLoading: false });
         } catch (error) {
           const message =
-            error instanceof Error ? error.message : 'Błąd synchronizacji listy życzeń';
+            error instanceof Error
+              ? error.message
+              : 'Błąd synchronizacji listy życzeń';
           logger.error('WishlistStore: Sync error', { error: message });
-          set({ 
-            isLoading: false, 
-            error: message, 
+          set({
+            isLoading: false,
+            error: message,
           });
         }
       },
@@ -211,65 +213,81 @@ export const useWishlistStore = create<WishlistStore>()(
           set({ isLoading: true, error: null });
 
           const response = await fetch('/api/favorites');
-          
+
           if (!response.ok) {
             throw new Error('Nie udało się pobrać listy życzeń');
           }
 
           const data = (await response.json()) as WishlistApiResponse;
-          
+
           if (data.success && data.favorites) {
-            set({ 
+            set({
               items: data.favorites.map(mapServerItemToWishlist),
-              isLoading: false 
+              isLoading: false,
             });
           } else {
             set({ items: [], isLoading: false });
           }
         } catch (error) {
           const message =
-            error instanceof Error ? error.message : 'Błąd ładowania listy życzeń';
+            error instanceof Error
+              ? error.message
+              : 'Błąd ładowania listy życzeń';
           logger.error('WishlistStore: Load error', { error: message });
-          set({ 
-            isLoading: false, 
-            error: message, 
+          set({
+            isLoading: false,
+            error: message,
           });
         }
-      }
+      },
     }),
     {
       name: 'wishlist-storage',
       storage: createJSONStorage(() => safeStorage),
-      partialize: (state) => ({ items: state.items })
+      partialize: state => ({ items: state.items }),
     }
   )
 );
 
 // Selectors for optimized subscriptions
-export const useWishlistItems = () => useWishlistStore((state) => state.items);
-export const useWishlistIsLoading = () => useWishlistStore((state) => state.isLoading);
-export const useWishlistError = () => useWishlistStore((state) => state.error);
-export const useWishlistItemCount = () => useWishlistStore((state) => state.items.length);
+export const useWishlistItems = () => useWishlistStore(state => state.items);
+export const useWishlistIsLoading = () =>
+  useWishlistStore(state => state.isLoading);
+export const useWishlistError = () => useWishlistStore(state => state.error);
+export const useWishlistItemCount = () =>
+  useWishlistStore(state => state.items.length);
 
 // Memoized selectors for actions to prevent re-renders
 export const useWishlistActions = () => {
-  const addItem = useWishlistStore((state) => state.addItem);
-  const removeItem = useWishlistStore((state) => state.removeItem);
-  const toggleItem = useWishlistStore((state) => state.toggleItem);
-  const clearWishlist = useWishlistStore((state) => state.clearWishlist);
-  const isInWishlist = useWishlistStore((state) => state.isInWishlist);
-  const getItemCount = useWishlistStore((state) => state.getItemCount);
-  const syncWithServer = useWishlistStore((state) => state.syncWithServer);
-  const loadFromServer = useWishlistStore((state) => state.loadFromServer);
-  
-  return useMemo(() => ({
-    addItem,
-    removeItem,
-    toggleItem,
-    clearWishlist,
-    isInWishlist,
-    getItemCount,
-    syncWithServer,
-    loadFromServer,
-  }), [addItem, removeItem, toggleItem, clearWishlist, isInWishlist, getItemCount, syncWithServer, loadFromServer]);
+  const addItem = useWishlistStore(state => state.addItem);
+  const removeItem = useWishlistStore(state => state.removeItem);
+  const toggleItem = useWishlistStore(state => state.toggleItem);
+  const clearWishlist = useWishlistStore(state => state.clearWishlist);
+  const isInWishlist = useWishlistStore(state => state.isInWishlist);
+  const getItemCount = useWishlistStore(state => state.getItemCount);
+  const syncWithServer = useWishlistStore(state => state.syncWithServer);
+  const loadFromServer = useWishlistStore(state => state.loadFromServer);
+
+  return useMemo(
+    () => ({
+      addItem,
+      removeItem,
+      toggleItem,
+      clearWishlist,
+      isInWishlist,
+      getItemCount,
+      syncWithServer,
+      loadFromServer,
+    }),
+    [
+      addItem,
+      removeItem,
+      toggleItem,
+      clearWishlist,
+      isInWishlist,
+      getItemCount,
+      syncWithServer,
+      loadFromServer,
+    ]
+  );
 };

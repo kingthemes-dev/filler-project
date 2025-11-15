@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { 
-  BarChart3, 
-  Activity, 
-  Settings, 
-  Home, 
+import {
+  BarChart3,
+  Activity,
+  Settings,
+  Home,
   ShoppingCart,
   Users,
-  Package
+  Package,
 } from 'lucide-react';
 
 const adminNavItems = [
@@ -56,10 +56,10 @@ export function AdminNav() {
 
   return (
     <nav className="space-y-2">
-      {adminNavItems.map((item) => {
+      {adminNavItems.map(item => {
         const Icon = item.icon;
         const isActive = pathname === item.href;
-        
+
         return (
           <Link
             key={item.href}

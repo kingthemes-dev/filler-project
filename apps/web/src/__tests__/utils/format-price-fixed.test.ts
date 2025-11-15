@@ -1,4 +1,8 @@
-import { formatPrice, calculatePriceWithVAT, formatPriceWithDiscount } from '@/utils/format-price';
+import {
+  formatPrice,
+  calculatePriceWithVAT,
+  formatPriceWithDiscount,
+} from '@/utils/format-price';
 
 describe('formatPrice', () => {
   it('formats price with zł suffix', () => {

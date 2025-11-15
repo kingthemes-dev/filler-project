@@ -19,4 +19,3 @@ export function useDebouncedCallback<TArgs extends unknown[]>(
     [callback, delay]
   );
 }
-

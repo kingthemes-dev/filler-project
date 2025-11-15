@@ -143,6 +143,10 @@ test-results/
 playwright-report/
 playwright/.cache/
 
+# Lighthouse CI
+.lighthouseci/
+lighthouse-report.html
+
 # Bundle analyzer
 .bundle-analyzer/
 

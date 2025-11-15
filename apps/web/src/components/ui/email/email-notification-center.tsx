@@ -2,18 +2,33 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Eye, RefreshCw, CheckCircle, XCircle, Clock, Send } from 'lucide-react';
-import emailService, { EmailTemplate, EmailResponse } from '@/services/email-service';
+import {
+  Mail,
+  Eye,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Send,
+} from 'lucide-react';
+import emailService, {
+  EmailTemplate,
+  EmailResponse,
+} from '@/services/email-service';
 
 interface EmailNotificationCenterProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotificationCenterProps) {
+export default function EmailNotificationCenter({
+  isOpen,
+  onClose,
+}: EmailNotificationCenterProps) {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [sentEmails, setSentEmails] = useState<EmailResponse[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<EmailTemplate | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
@@ -29,7 +44,7 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
 
   const handleSendTestEmail = async (templateId: string) => {
     setIsSending(true);
-    
+
     try {
       const testData = {
         to: 'test@example.com',
@@ -41,17 +56,18 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
           customerEmail: 'jan@example.com',
           orderDate: new Date().toLocaleDateString('pl-PL'),
           total: '299.00 zł',
-          items: '<div class="item"><strong>Test Product</strong> x 1 = 299.00 zł</div>',
+          items:
+            '<div class="item"><strong>Test Product</strong> x 1 = 299.00 zł</div>',
           billingAddress: 'ul. Testowa 123, Warszawa 00-001, PL',
           shippingAddress: 'ul. Testowa 123, Warszawa 00-001, PL',
           paymentMethod: 'Karta kredytowa',
           trackingNumber: 'TRK123456789',
-          resetLink: 'https://example.com/reset-password'
-        }
+          resetLink: 'https://example.com/reset-password',
+        },
       };
 
       const response = await emailService.sendEmail(testData);
-      
+
       if (response.success) {
         console.log('📧 Test email wysłany:', response.messageId);
         // Refresh data
@@ -127,12 +143,12 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
                 Email Notification Center
               </h2>
             </div>
-                      <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XCircle className="w-6 h-6" />
-          </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XCircle className="w-6 h-6" />
+            </button>
           </div>
 
           <div className="p-6">
@@ -153,13 +169,15 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
                 </div>
 
                 <div className="space-y-3">
-                  {templates.map((template) => (
+                  {templates.map(template => (
                     <div
                       key={template.id}
                       className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{template.name}</h4>
+                        <h4 className="font-medium text-gray-900">
+                          {template.name}
+                        </h4>
                         <button
                           onClick={() => setSelectedTemplate(template)}
                           className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -167,7 +185,9 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
                           <Eye className="w-4 h-4" />
                         </button>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{template.subject}</p>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {template.subject}
+                      </p>
                       <button
                         onClick={() => handleSendTestEmail(template.id)}
                         disabled={isSending}
@@ -203,7 +223,7 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
                       <p>Brak wysłanych emaili</p>
                     </div>
                   ) : (
-                    sentEmails.map((email) => (
+                    sentEmails.map(email => (
                       <div
                         key={email.messageId}
                         className="border border-gray-200 rounded-lg p-4"
@@ -211,7 +231,9 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
                             {getStatusIcon(email.status)}
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(email.status)}`}>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(email.status)}`}
+                            >
                               {email.status}
                             </span>
                           </div>
@@ -219,8 +241,12 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
                             {email.sentAt.toLocaleString('pl-PL')}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">{email.message}</p>
-                        <p className="text-xs text-gray-500 font-mono">{email.messageId}</p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          {email.message}
+                        </p>
+                        <p className="text-xs text-gray-500 font-mono">
+                          {email.messageId}
+                        </p>
                       </div>
                     ))
                   )}
@@ -236,7 +262,10 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <div className="absolute inset-0 bg-black bg-opacity-75" onClick={() => setSelectedTemplate(null)} />
+                <div
+                  className="absolute inset-0 bg-black bg-opacity-75"
+                  onClick={() => setSelectedTemplate(null)}
+                />
                 <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl mx-auto max-h-[90vh] overflow-y-auto">
                   <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h3 className="text-xl font-semibold text-gray-900">
@@ -252,18 +281,24 @@ export default function EmailNotificationCenter({ isOpen, onClose }: EmailNotifi
                   <div className="p-6">
                     <div className="mb-4">
                       <h4 className="font-medium text-gray-900 mb-2">Temat:</h4>
-                      <p className="text-gray-600">{selectedTemplate.subject}</p>
+                      <p className="text-gray-600">
+                        {selectedTemplate.subject}
+                      </p>
                     </div>
                     <div className="mb-4">
                       <h4 className="font-medium text-gray-900 mb-2">HTML:</h4>
                       <div className="bg-gray-100 p-4 rounded-lg overflow-x-auto">
-                        <pre className="text-sm text-gray-800 whitespace-pre-wrap">{selectedTemplate.html}</pre>
+                        <pre className="text-sm text-gray-800 whitespace-pre-wrap">
+                          {selectedTemplate.html}
+                        </pre>
                       </div>
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">Text:</h4>
                       <div className="bg-gray-100 p-4 rounded-lg">
-                        <pre className="text-sm text-gray-800 whitespace-pre-wrap">{selectedTemplate.text}</pre>
+                        <pre className="text-sm text-gray-800 whitespace-pre-wrap">
+                          {selectedTemplate.text}
+                        </pre>
                       </div>
                     </div>
                   </div>

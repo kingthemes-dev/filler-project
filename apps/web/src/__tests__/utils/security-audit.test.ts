@@ -10,7 +10,7 @@ describe('SecurityAuditor', () => {
   describe('Security Audit', () => {
     it('should run security audit', () => {
       const result = securityAuditor.runAudit();
-      
+
       expect(result).toHaveProperty('timestamp');
       expect(result).toHaveProperty('overallStatus');
       expect(result).toHaveProperty('checks');
@@ -23,7 +23,7 @@ describe('SecurityAuditor', () => {
 
     it('should calculate security score', () => {
       const score = securityAuditor.getSecurityScore();
-      
+
       expect(typeof score).toBe('number');
       expect(score).toBeGreaterThanOrEqual(0);
       expect(score).toBeLessThanOrEqual(100);
@@ -31,7 +31,7 @@ describe('SecurityAuditor', () => {
 
     it('should identify critical issues', () => {
       const criticalIssues = securityAuditor.getCriticalIssues();
-      
+
       expect(Array.isArray(criticalIssues)).toBe(true);
       criticalIssues.forEach(issue => {
         expect(issue.status).toBe('fail');
@@ -41,7 +41,7 @@ describe('SecurityAuditor', () => {
 
     it('should provide recommendations', () => {
       const recommendations = securityAuditor.getRecommendations();
-      
+
       expect(Array.isArray(recommendations)).toBe(true);
       recommendations.forEach(rec => {
         expect(typeof rec).toBe('string');
@@ -53,9 +53,9 @@ describe('SecurityAuditor', () => {
   describe('Security Checks', () => {
     it('should have multiple security checks', () => {
       const result = securityAuditor.runAudit();
-      
+
       expect(result.checks.length).toBeGreaterThan(5);
-      
+
       const checkNames = result.checks.map(check => check.name);
       expect(checkNames).toContain('Content Security Policy');
       expect(checkNames).toContain('HTTPS Enforcement');
@@ -66,7 +66,7 @@ describe('SecurityAuditor', () => {
 
     it('should categorize checks by severity', () => {
       const result = securityAuditor.runAudit();
-      
+
       const severities = result.checks.map(check => check.severity);
       expect(severities).toContain('critical');
       expect(severities).toContain('high');

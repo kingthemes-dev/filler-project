@@ -8,21 +8,30 @@ import type { WooProduct } from '@/types/woocommerce';
 // Mock next/link
 jest.mock('next/link', () => {
   type MockNextLinkProps = { children: React.ReactNode; href: string };
-  type MockNextLinkComponent = React.FC<MockNextLinkProps> & { displayName?: string };
+  type MockNextLinkComponent = React.FC<MockNextLinkProps> & {
+    displayName?: string;
+  };
 
-  const MockLink: MockNextLinkComponent = ({ children, href }) => <a href={href}>{children}</a>;
+  const MockLink: MockNextLinkComponent = ({ children, href }) => (
+    <a href={href}>{children}</a>
+  );
   MockLink.displayName = 'MockNextLink';
   return MockLink;
 });
 
 // Mock next/image
 jest.mock('next/image', () => {
-  type MockImageProps = React.ImgHTMLAttributes<HTMLImageElement> & { priority?: boolean };
+  type MockImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+    priority?: boolean;
+  };
   type MockImageComponent = React.FC<MockImageProps> & { displayName?: string };
 
-  const MockImage: MockImageComponent = ({ src, alt, priority: _priority, ...props }) => (
-    <img src={src ?? ''} alt={alt ?? ''} {...props} />
-  );
+  const MockImage: MockImageComponent = ({
+    src,
+    alt,
+    priority: _priority,
+    ...props
+  }) => <img src={src ?? ''} alt={alt ?? ''} {...props} />;
   MockImage.displayName = 'MockNextImage';
   return MockImage;
 });
@@ -94,7 +103,7 @@ const mockProduct: Partial<WooProduct> = {
 describe('KingProductCard', () => {
   it('renders product information correctly', () => {
     render(<KingProductCard product={mockProduct as WooProduct} />);
-    
+
     expect(screen.getByText('Test Product')).toBeInTheDocument();
     expect(screen.getByText('99,99 zł')).toBeInTheDocument();
     expect(screen.getByText('129,99 zł')).toBeInTheDocument();
@@ -103,44 +112,54 @@ describe('KingProductCard', () => {
 
   it('shows sale badge when product is on sale', () => {
     render(<KingProductCard product={mockProduct as WooProduct} />);
-    
+
     expect(screen.getByText('PROMOCJA')).toBeInTheDocument();
   });
 
   it('handles add to cart click', () => {
-    const { container } = render(<KingProductCard product={mockProduct as WooProduct} />);
-    
-    const addToCartButton = container.querySelector('button[data-testid="add-to-cart"]');
+    const { container } = render(
+      <KingProductCard product={mockProduct as WooProduct} />
+    );
+
+    const addToCartButton = container.querySelector(
+      'button[data-testid="add-to-cart"]'
+    );
     expect(addToCartButton).toBeInTheDocument();
-    
+
     if (addToCartButton) {
       fireEvent.click(addToCartButton);
     }
   });
 
   it('handles favorite button click', () => {
-    const { container } = render(<KingProductCard product={mockProduct as WooProduct} />);
-    
-    const favoriteButton = container.querySelector('button[data-testid="favorite-button"]');
+    const { container } = render(
+      <KingProductCard product={mockProduct as WooProduct} />
+    );
+
+    const favoriteButton = container.querySelector(
+      'button[data-testid="favorite-button"]'
+    );
     expect(favoriteButton).toBeInTheDocument();
-    
+
     if (favoriteButton) {
       fireEvent.click(favoriteButton);
     }
   });
 
   it('shows out of stock when product is out of stock', () => {
-    const outOfStockProduct = { ...(mockProduct as WooProduct), stock_status: 'outofstock' } as WooProduct;
+    const outOfStockProduct = {
+      ...(mockProduct as WooProduct),
+      stock_status: 'outofstock',
+    } as WooProduct;
     render(<KingProductCard product={outOfStockProduct} />);
-    
+
     expect(screen.getByText('Brak w magazynie')).toBeInTheDocument();
   });
 
   it('renders product link correctly', () => {
     render(<KingProductCard product={mockProduct as WooProduct} />);
-    
+
     const productLink = screen.getByRole('link');
     expect(productLink).toHaveAttribute('href', '/produkt/test-product');
   });
 });
-

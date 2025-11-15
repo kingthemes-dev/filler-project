@@ -61,7 +61,7 @@ class SentryMetricsCollector {
       value,
       category,
       tags,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
@@ -80,7 +80,7 @@ class SentryMetricsCollector {
       value,
       category,
       tags,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
@@ -99,7 +99,7 @@ class SentryMetricsCollector {
       value,
       category,
       tags,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
@@ -113,17 +113,12 @@ class SentryMetricsCollector {
     statusCode: number,
     tags?: Record<string, string>
   ): void {
-    this.recordPerformance(
-      'api_response_time',
-      responseTime,
-      'api',
-      {
-        endpoint,
-        method,
-        status_code: statusCode.toString(),
-        ...tags
-      }
-    );
+    this.recordPerformance('api_response_time', responseTime, 'api', {
+      endpoint,
+      method,
+      status_code: statusCode.toString(),
+      ...tags,
+    });
   }
 
   /**
@@ -135,16 +130,11 @@ class SentryMetricsCollector {
     responseTime: number,
     tags?: Record<string, string>
   ): void {
-    this.recordPerformance(
-      'cache_operation',
-      responseTime,
-      'cache',
-      {
-        operation,
-        key: key.substring(0, 50), // Truncate long keys
-        ...tags
-      }
-    );
+    this.recordPerformance('cache_operation', responseTime, 'cache', {
+      operation,
+      key: key.substring(0, 50), // Truncate long keys
+      ...tags,
+    });
   }
 
   /**
@@ -156,16 +146,11 @@ class SentryMetricsCollector {
     rowsAffected: number,
     tags?: Record<string, string>
   ): void {
-    this.recordPerformance(
-      'database_query',
-      responseTime,
-      'database',
-      {
-        query: query.substring(0, 100), // Truncate long queries
-        rows_affected: rowsAffected.toString(),
-        ...tags
-      }
-    );
+    this.recordPerformance('database_query', responseTime, 'database', {
+      query: query.substring(0, 100), // Truncate long queries
+      rows_affected: rowsAffected.toString(),
+      ...tags,
+    });
   }
 
   /**
@@ -177,16 +162,11 @@ class SentryMetricsCollector {
     success: boolean,
     tags?: Record<string, string>
   ): void {
-    this.recordPerformance(
-      'woocommerce_operation',
-      responseTime,
-      'api',
-      {
-        operation,
-        success: success.toString(),
-        ...tags
-      }
-    );
+    this.recordPerformance('woocommerce_operation', responseTime, 'api', {
+      operation,
+      success: success.toString(),
+      ...tags,
+    });
   }
 
   /**
@@ -197,15 +177,10 @@ class SentryMetricsCollector {
     value: number = 1,
     tags?: Record<string, string>
   ): void {
-    this.recordBusiness(
-      'user_action',
-      value,
-      'users',
-      {
-        action,
-        ...tags
-      }
-    );
+    this.recordBusiness('user_action', value, 'users', {
+      action,
+      ...tags,
+    });
   }
 
   /**
@@ -217,17 +192,12 @@ class SentryMetricsCollector {
     category?: string,
     tags?: Record<string, string>
   ): void {
-    this.recordBusiness(
-      'product_view',
-      1,
-      'products',
-      {
-        product_id: productId,
-        product_name: productName.substring(0, 50),
-        category: category || 'unknown',
-        ...tags
-      }
-    );
+    this.recordBusiness('product_view', 1, 'products', {
+      product_id: productId,
+      product_name: productName.substring(0, 50),
+      category: category || 'unknown',
+      ...tags,
+    });
   }
 
   /**
@@ -239,16 +209,11 @@ class SentryMetricsCollector {
     value: number,
     tags?: Record<string, string>
   ): void {
-    this.recordBusiness(
-      'order_event',
-      value,
-      'orders',
-      {
-        event,
-        order_id: orderId,
-        ...tags
-      }
-    );
+    this.recordBusiness('order_event', value, 'orders', {
+      event,
+      order_id: orderId,
+      ...tags,
+    });
   }
 
   /**
@@ -260,16 +225,11 @@ class SentryMetricsCollector {
     failureRate: number,
     tags?: Record<string, string>
   ): void {
-    this.recordError(
-      'circuit_breaker_state',
-      failureRate,
-      'circuit_breaker',
-      {
-        service,
-        state,
-        ...tags
-      }
-    );
+    this.recordError('circuit_breaker_state', failureRate, 'circuit_breaker', {
+      service,
+      state,
+      ...tags,
+    });
   }
 
   /**
@@ -285,10 +245,13 @@ class SentryMetricsCollector {
 
     // Log in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📊 [Sentry Metrics] ${metric.type}.${metric.category}.${metric.name}:`, {
-        value: metric.value,
-        tags: metric.tags
-      });
+      console.log(
+        `📊 [Sentry Metrics] ${metric.type}.${metric.category}.${metric.name}:`,
+        {
+          value: metric.value,
+          tags: metric.tags,
+        }
+      );
     }
   }
 
@@ -323,7 +286,9 @@ class SentryMetricsCollector {
   /**
    * Group metrics by type and category
    */
-  private groupMetricsByType(metrics: CustomMetric[]): Record<string, Record<string, CustomMetric[]>> {
+  private groupMetricsByType(
+    metrics: CustomMetric[]
+  ): Record<string, Record<string, CustomMetric[]>> {
     const grouped: Record<string, Record<string, CustomMetric[]>> = {};
 
     for (const metric of metrics) {
@@ -355,11 +320,12 @@ class SentryMetricsCollector {
       category: `metrics.${type}.${category}`,
       message: `Collected ${metrics.length} metrics`,
       level: 'info',
-      data: aggregated
+      data: aggregated,
     });
 
     // Send individual metrics as breadcrumbs for detailed tracking
-    for (const metric of metrics.slice(0, 10)) { // Limit to 10 per batch
+    for (const metric of metrics.slice(0, 10)) {
+      // Limit to 10 per batch
       Sentry.addBreadcrumb({
         category: `metric.${type}.${category}`,
         message: `${metric.name}: ${metric.value}`,
@@ -367,8 +333,8 @@ class SentryMetricsCollector {
         data: {
           value: metric.value,
           tags: metric.tags,
-          timestamp: metric.timestamp
-        }
+          timestamp: metric.timestamp,
+        },
       });
     }
   }
@@ -376,7 +342,9 @@ class SentryMetricsCollector {
   /**
    * Aggregate metrics for summary
    */
-  private aggregateMetrics(metrics: CustomMetric[]): Record<string, number | string> {
+  private aggregateMetrics(
+    metrics: CustomMetric[]
+  ): Record<string, number | string> {
     if (metrics.length === 0) return {};
 
     const values = metrics.map(m => m.value);
@@ -391,7 +359,7 @@ class SentryMetricsCollector {
       avg: Math.round(avg * 100) / 100,
       min,
       max,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -423,15 +391,28 @@ class SentryMetricsCollector {
 export const sentryMetrics = SentryMetricsCollector.getInstance();
 
 // Export convenience functions
-export const recordApiResponse = (endpoint: string, method: string, responseTime: number, statusCode: number) => {
+export const recordApiResponse = (
+  endpoint: string,
+  method: string,
+  responseTime: number,
+  statusCode: number
+) => {
   sentryMetrics.recordApiResponse(endpoint, method, responseTime, statusCode);
 };
 
-export const recordCacheOperation = (operation: 'hit' | 'miss' | 'set' | 'delete', key: string, responseTime: number) => {
+export const recordCacheOperation = (
+  operation: 'hit' | 'miss' | 'set' | 'delete',
+  key: string,
+  responseTime: number
+) => {
   sentryMetrics.recordCacheOperation(operation, key, responseTime);
 };
 
-export const recordWooCommerceOperation = (operation: string, responseTime: number, success: boolean) => {
+export const recordWooCommerceOperation = (
+  operation: string,
+  responseTime: number,
+  success: boolean
+) => {
   sentryMetrics.recordWooCommerceOperation(operation, responseTime, success);
 };
 
@@ -439,11 +420,19 @@ export const recordUserAction = (action: string, value: number = 1) => {
   sentryMetrics.recordUserAction(action, value);
 };
 
-export const recordProductView = (productId: string, productName: string, category?: string) => {
+export const recordProductView = (
+  productId: string,
+  productName: string,
+  category?: string
+) => {
   sentryMetrics.recordProductView(productId, productName, category);
 };
 
-export const recordOrderEvent = (event: 'created' | 'completed' | 'cancelled' | 'refunded', orderId: string, value: number) => {
+export const recordOrderEvent = (
+  event: 'created' | 'completed' | 'cancelled' | 'refunded',
+  orderId: string,
+  value: number
+) => {
   sentryMetrics.recordOrderEvent(event, orderId, value);
 };
 

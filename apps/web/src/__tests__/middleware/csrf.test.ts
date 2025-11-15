@@ -35,4 +35,3 @@ describe('shouldEnforceCsrf', () => {
     expect(shouldEnforceCsrf()).toBe(false);
   });
 });
-

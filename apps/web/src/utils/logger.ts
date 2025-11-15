@@ -8,7 +8,7 @@ export enum LogLevel {
   ERROR = 0,
   WARN = 1,
   INFO = 2,
-  DEBUG = 3
+  DEBUG = 3,
 }
 
 type Primitive = string | number | boolean | null | undefined;
@@ -28,17 +28,22 @@ class Logger {
   private lastPerfLogTs = 0;
 
   constructor() {
-    this.logLevel = process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG;
+    this.logLevel =
+      process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG;
   }
 
-  private formatMessage(level: LogLevel, message: string, context?: LogContext): LogEntry {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    context?: LogContext
+  ): LogEntry {
     return {
       timestamp: new Date().toISOString(),
       level,
       message,
       context: context ? this.sanitizeContext(context) : undefined,
       userId: this.getCurrentUserId(),
-      sessionId: this.getSessionId()
+      sessionId: this.getSessionId(),
     };
   }
 
@@ -48,9 +53,11 @@ class Logger {
     }
 
     if (Array.isArray(context)) {
-      return context.map((item) => (typeof item === 'object' && item !== null
-        ? this.sanitizeContext(item as LogContext)
-        : item));
+      return context.map(item =>
+        typeof item === 'object' && item !== null
+          ? this.sanitizeContext(item as LogContext)
+          : item
+      );
     }
 
     if (typeof context !== 'object') {
@@ -61,9 +68,14 @@ class Logger {
     const sanitized: Record<string, unknown> = { ...context };
 
     for (const key of Object.keys(sanitized)) {
-      if (sensitiveKeys.some((sensitive) => key.toLowerCase().includes(sensitive))) {
+      if (
+        sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))
+      ) {
         sanitized[key] = '[REDACTED]';
-      } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      } else if (
+        typeof sanitized[key] === 'object' &&
+        sanitized[key] !== null
+      ) {
         sanitized[key] = this.sanitizeContext(sanitized[key] as LogContext);
       }
     }
@@ -101,7 +113,10 @@ class Logger {
   private log(level: LogLevel, message: string, context?: LogContext): void {
     // Always allow ERROR/WARN. Gate INFO/DEBUG behind NEXT_PUBLIC_DEBUG
     const isDebugEnabled = process.env.NEXT_PUBLIC_DEBUG === 'true';
-    if ((level === LogLevel.INFO || level === LogLevel.DEBUG) && !isDebugEnabled) {
+    if (
+      (level === LogLevel.INFO || level === LogLevel.DEBUG) &&
+      !isDebugEnabled
+    ) {
       return;
     }
     if (level > this.logLevel) return;
@@ -136,21 +151,31 @@ class Logger {
 
   private getLevelEmoji(level: LogLevel): string {
     switch (level) {
-      case LogLevel.ERROR: return '🚨';
-      case LogLevel.WARN: return '⚠️';
-      case LogLevel.INFO: return 'ℹ️';
-      case LogLevel.DEBUG: return '🐛';
-      default: return '📝';
+      case LogLevel.ERROR:
+        return '🚨';
+      case LogLevel.WARN:
+        return '⚠️';
+      case LogLevel.INFO:
+        return 'ℹ️';
+      case LogLevel.DEBUG:
+        return '🐛';
+      default:
+        return '📝';
     }
   }
 
   private getLevelColor(level: LogLevel): string {
     switch (level) {
-      case LogLevel.ERROR: return '#ef4444';
-      case LogLevel.WARN: return '#f59e0b';
-      case LogLevel.INFO: return '#3b82f6';
-      case LogLevel.DEBUG: return '#6b7280';
-      default: return '#000000';
+      case LogLevel.ERROR:
+        return '#ef4444';
+      case LogLevel.WARN:
+        return '#f59e0b';
+      case LogLevel.INFO:
+        return '#3b82f6';
+      case LogLevel.DEBUG:
+        return '#6b7280';
+      default:
+        return '#000000';
     }
   }
 
@@ -188,12 +213,17 @@ class Logger {
   }
 
   // Specialized logging methods
-  apiCall(method: string, url: string, status?: number, duration?: number): void {
+  apiCall(
+    method: string,
+    url: string,
+    status?: number,
+    duration?: number
+  ): void {
     this.info(`API ${method} ${url}`, {
       method,
       url,
       status,
-      duration: duration ? `${duration}ms` : undefined
+      duration: duration ? `${duration}ms` : undefined,
     });
   }
 
@@ -201,7 +231,11 @@ class Logger {
     this.info(`User action: ${action}`, details);
   }
 
-  performance(operation: string, duration: number, details?: Record<string, unknown>): void {
+  performance(
+    operation: string,
+    duration: number,
+    details?: Record<string, unknown>
+  ): void {
     // Reduce noise: only log when explicitly enabled via env and at most every 2s
     if (process.env.NEXT_PUBLIC_PERF_LOGS !== 'true') return;
     const now = Date.now();
@@ -210,7 +244,7 @@ class Logger {
     this.info(`Performance: ${operation}`, {
       operation,
       duration: `${duration}ms`,
-      ...details
+      ...details,
     });
   }
 
@@ -223,7 +257,16 @@ class Logger {
 export const logger = new Logger();
 
 // Convenience exports
-export const { error, warn, info, debug, apiCall, userAction, performance, security } = logger;
+export const {
+  error,
+  warn,
+  info,
+  debug,
+  apiCall,
+  userAction,
+  performance,
+  security,
+} = logger;
 
 // Performance measurement helper
 export function measurePerformance<T>(
@@ -231,16 +274,19 @@ export function measurePerformance<T>(
   fn: () => Promise<T>
 ): Promise<T> {
   const start = Date.now();
-  
+
   return fn().then(
-    (result) => {
+    result => {
       const duration = Date.now() - start;
       logger.performance(operation, duration);
       return result;
     },
-    (error) => {
+    error => {
       const duration = Date.now() - start;
-      logger.error(`Performance error: ${operation}`, { duration, error: error.message });
+      logger.error(`Performance error: ${operation}`, {
+        duration,
+        error: error.message,
+      });
       throw error;
     }
   );
@@ -253,7 +299,7 @@ export async function loggedApiCall<T>(
   fn: () => Promise<T>
 ): Promise<T> {
   const start = Date.now();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - start;
@@ -261,9 +307,12 @@ export async function loggedApiCall<T>(
     return result;
   } catch (error: unknown) {
     const duration = Date.now() - start;
-    const status = (typeof error === 'object' && error && 'status' in error)
-      ? (error as { status?: number; statusCode?: number }).status ?? (error as { statusCode?: number }).statusCode ?? 500
-      : 500;
+    const status =
+      typeof error === 'object' && error && 'status' in error
+        ? ((error as { status?: number; statusCode?: number }).status ??
+          (error as { statusCode?: number }).statusCode ??
+          500)
+        : 500;
     logger.apiCall(method, url, status, duration);
     throw error;
   }

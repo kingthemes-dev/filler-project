@@ -36,7 +36,10 @@ export async function GET(req: NextRequest) {
 
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Nieprawidłowe parametry zapytania', details: validationResult.error.format() },
+        {
+          error: 'Nieprawidłowe parametry zapytania',
+          details: validationResult.error.format(),
+        },
         { status: 400 }
       );
     }
@@ -57,7 +60,10 @@ export async function GET(req: NextRequest) {
         });
 
       case 'timeseries': {
-        const timeRange = start && end ? { start: parseInt(start, 10), end: parseInt(end, 10) } : undefined;
+        const timeRange =
+          start && end
+            ? { start: parseInt(start, 10), end: parseInt(end, 10) }
+            : undefined;
         return NextResponse.json({
           success: true,
           data: hposPerformanceMonitor.getTimeSeriesData(key!, timeRange),

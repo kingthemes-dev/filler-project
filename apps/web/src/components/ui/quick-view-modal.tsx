@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Star, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  ShoppingCart,
+  Star,
+  Plus,
+  Minus,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import ModalCloseButton from './modal-close-button';
 import { useCartActions } from '@/stores/cart-store';
 import { Button } from '@/components/ui/button';
@@ -20,10 +27,16 @@ interface QuickViewModalProps {
   product: WooProduct | null;
 }
 
-export default function QuickViewModal({ isOpen, onClose, product }: QuickViewModalProps) {
+export default function QuickViewModal({
+  isOpen,
+  onClose,
+  product,
+}: QuickViewModalProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const [selectedAttributes, setSelectedAttributes] = useState<
+    Record<string, string>
+  >({});
   const [isLoading, setIsLoading] = useState(false);
 
   interface VariationAttribute {
@@ -54,7 +67,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const { addItem, openCart } = useCartActions();
-  
+
   useViewportHeightVar();
 
   // removed unused helpers: getVariationPrice, getSortedCapacityOptions
@@ -67,9 +80,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
           // Dla produktów zmiennych zawsze próbujemy pobrać warianty
           if (product.type === 'variable') {
             // Quick View - Fetching variations debug removed
-            const variationsResponse = await wooCommerceService.getProductVariations(product.id);
+            const variationsResponse =
+              await wooCommerceService.getProductVariations(product.id);
             // Quick View - Variations response debug removed
-            const fetchedVariations = Array.isArray(variationsResponse) ? variationsResponse : (variationsResponse.variations || []);
+            const fetchedVariations = Array.isArray(variationsResponse)
+              ? variationsResponse
+              : variationsResponse.variations || [];
             // Quick View - Variations fetched debug removed
             setVariations(fetchedVariations);
           } else {
@@ -80,7 +96,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
           setVariations([]);
         }
       };
-      
+
       fetchVariations();
     }
   }, [isOpen, product]);
@@ -123,16 +139,17 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       let finalPrice = parseFloat(product.sale_price || product.price);
       let finalName = product.name;
       let finalId = product.id;
-      
+
       if (variations.length > 0 && selectedCapacity) {
         // Find the selected variation
-        const selectedVariation = variations.find((variation) =>
+        const selectedVariation = variations.find(variation =>
           variation.attributes?.some(
-            (attribute) =>
-              attribute.name?.toLowerCase().includes('pojemność') && attribute.option === selectedCapacity
+            attribute =>
+              attribute.name?.toLowerCase().includes('pojemność') &&
+              attribute.option === selectedCapacity
           )
         );
-        
+
         if (selectedVariation) {
           finalId = selectedVariation.id; // Use variation ID for unique cart items
           finalName = selectedVariation.name; // Use variation name
@@ -140,7 +157,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
           // Using variation debug removed
         }
       }
-      
+
       await addItem({
         id: finalId,
         name: finalName,
@@ -148,13 +165,16 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
         image: wooCommerceService.getProductImageUrl(product, 'medium'),
         quantity,
         attributes: selectedAttributes,
-        variant: variations.length > 0 && selectedCapacity ? {
-          id: finalId,
-          name: 'Pojemność',
-          value: selectedCapacity
-        } : undefined
+        variant:
+          variations.length > 0 && selectedCapacity
+            ? {
+                id: finalId,
+                name: 'Pojemność',
+                value: selectedCapacity,
+              }
+            : undefined,
       });
-      
+
       // Show success feedback and open cart
       setTimeout(() => {
         setIsLoading(false);
@@ -167,11 +187,17 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     }
   };
 
-
-  const isOnSale = product.sale_price && product.sale_price !== product.regular_price;
-  const discountPercentage = isOnSale && product.regular_price 
-    ? Math.round(((parseFloat(product.regular_price) - parseFloat(product.sale_price)) / parseFloat(product.regular_price)) * 100)
-    : 0;
+  const isOnSale =
+    product.sale_price && product.sale_price !== product.regular_price;
+  const discountPercentage =
+    isOnSale && product.regular_price
+      ? Math.round(
+          ((parseFloat(product.regular_price) -
+            parseFloat(product.sale_price)) /
+            parseFloat(product.regular_price)) *
+            100
+        )
+      : 0;
 
   // removed unused helper renderStars
 
@@ -180,17 +206,18 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
   // Safe image helper – uses original resolution, no resizing
   const getSafeImageSrc = (src?: string): string => {
-    const placeholder = 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
+    const placeholder =
+      'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
     if (!src || typeof src !== 'string') return placeholder;
     let trimmed = src.trim();
     if (!trimmed || trimmed === '/' || trimmed === '#') return placeholder;
-    
+
     // If it's already a placeholder, return it
     if (trimmed.includes('woocommerce-placeholder')) return trimmed;
-    
+
     // Use original URL without any modifications - no resizing
     // Quick View - Using original image URL debug removed
-    
+
     // Clean query params that may downscale
     try {
       const url = new URL(trimmed, 'https://dummy-base/');
@@ -201,7 +228,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       url.search = url.search.toString();
       trimmed = url.href.replace('https://dummy-base/', '');
     } catch {}
-    
+
     // Some APIs return relative paths – allow absolute http(s) only
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     return placeholder;
@@ -222,18 +249,22 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
       if (typeof firstImage === 'string') {
         return (images as string[])
-          .map((src) => ({ src, name: product.name, alt: product.name }))
-          .filter((image) => image.src && !isWooPlaceholder(image.src));
+          .map(src => ({ src, name: product.name, alt: product.name }))
+          .filter(image => image.src && !isWooPlaceholder(image.src));
       }
 
-      const imageObjects = images as Array<{ src?: string; name?: string; alt?: string }>;
+      const imageObjects = images as Array<{
+        src?: string;
+        name?: string;
+        alt?: string;
+      }>;
       const filtered = imageObjects.filter(
         (image): image is { src: string; name?: string; alt?: string } =>
           Boolean(image?.src) && !isWooPlaceholder(image.src)
       );
 
       if (filtered.length > 0) {
-        return filtered.map((image) => ({
+        return filtered.map(image => ({
           src: image.src,
           name: image.name || product.name,
           alt: image.alt || image.name || product.name,
@@ -241,7 +272,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       }
     }
 
-    if (product.images && product.images.length > 0 && product.images[0].src && !isWooPlaceholder(product.images[0].src)) {
+    if (
+      product.images &&
+      product.images.length > 0 &&
+      product.images[0].src &&
+      !isWooPlaceholder(product.images[0].src)
+    ) {
       return [
         {
           src: product.images[0].src,
@@ -265,29 +301,29 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       {isOpen && (
         <>
           {/* Backdrop with blur */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-md z-50"
-          onClick={onClose}
+            onClick={onClose}
           />
-          
+
           {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-            onClick={(e) => {
+            onClick={e => {
               if (e.target === e.currentTarget) onClose();
             }}
           >
             <div
-            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[80vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
               {/* Content */}
               <div className="flex flex-col lg:flex-row h-full relative">
                 {/* Close Button - Top Right of Content */}
@@ -307,35 +343,58 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                         className="absolute inset-0"
                       >
                         <Image
-                          src={getSafeImageSrc(galleryImages[selectedImageIndex]?.src)}
-                          alt={galleryImages[selectedImageIndex]?.alt || galleryImages[selectedImageIndex]?.name || product.name || 'Zdjęcie produktu'}
+                          src={getSafeImageSrc(
+                            galleryImages[selectedImageIndex]?.src
+                          )}
+                          alt={
+                            galleryImages[selectedImageIndex]?.alt ||
+                            galleryImages[selectedImageIndex]?.name ||
+                            product.name ||
+                            'Zdjęcie produktu'
+                          }
                           fill
                           sizes="(min-width: 1024px) 50vw, 100vw"
                           quality={90}
                           className="object-cover"
                           priority
-                          onError={(e) => {
-                            console.error('🖼️ Quick View - Image load error:', e);
-                            console.error('🖼️ Quick View - Failed src:', getSafeImageSrc(galleryImages[selectedImageIndex]?.src));
+                          onError={e => {
+                            console.error(
+                              '🖼️ Quick View - Image load error:',
+                              e
+                            );
+                            console.error(
+                              '🖼️ Quick View - Failed src:',
+                              getSafeImageSrc(
+                                galleryImages[selectedImageIndex]?.src
+                              )
+                            );
                             // Force fallback to placeholder
                             const img = e.target as HTMLImageElement;
-                            img.src = 'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
+                            img.src =
+                              'https://qvwltjhdjw.cfolks.pl/wp-content/uploads/woocommerce-placeholder.webp';
                           }}
                           onLoad={() => {
-                            console.log('🖼️ Quick View - Image loaded successfully:', getSafeImageSrc(galleryImages[selectedImageIndex]?.src));
+                            console.log(
+                              '🖼️ Quick View - Image loaded successfully:',
+                              getSafeImageSrc(
+                                galleryImages[selectedImageIndex]?.src
+                              )
+                            );
                           }}
                         />
                       </motion.div>
-                      
+
                       {/* Sale Badge */}
                       {isOnSale && (
-                        <Badge className="absolute top-4 left-4 text-white" style={{ backgroundColor: '#dc2626' }}>
+                        <Badge
+                          className="absolute top-4 left-4 text-white"
+                          style={{ backgroundColor: '#dc2626' }}
+                        >
                           -{discountPercentage}%
                         </Badge>
                       )}
-
                     </div>
-                    
+
                     {/* Thumbnails - only show if more than 1 image, positioned under main image */}
                     {galleryImages.length > 1 && (
                       <div className="flex gap-2 justify-center">
@@ -352,7 +411,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           >
                             <Image
                               src={getSafeImageSrc(image.src)}
-                              alt={image.alt || image.name || product.name || 'Zdjęcie produktu'}
+                              alt={
+                                image.alt ||
+                                image.name ||
+                                product.name ||
+                                'Zdjęcie produktu'
+                              }
                               width={64}
                               height={64}
                               className="w-full h-full object-cover"
@@ -372,7 +436,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
                         {product.name}
                       </h1>
-                      
+
                       {/* Rating */}
                       <div className="flex items-center space-x-2">
                         <div className="flex items-center space-x-1">
@@ -380,7 +444,10 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                             <Star
                               key={i}
                               className={`w-5 h-5 ${
-                                product.average_rating && parseFloat(product.average_rating) > 0 && i < Math.floor(parseFloat(product.average_rating))
+                                product.average_rating &&
+                                parseFloat(product.average_rating) > 0 &&
+                                i <
+                                  Math.floor(parseFloat(product.average_rating))
                                   ? 'text-yellow-400 fill-current'
                                   : 'text-gray-300'
                               }`}
@@ -388,13 +455,18 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           ))}
                         </div>
                         <div className="flex items-center space-x-1">
-                          {product.average_rating && parseFloat(product.average_rating) > 0 ? (
+                          {product.average_rating &&
+                          parseFloat(product.average_rating) > 0 ? (
                             <>
                               <span className="text-lg font-semibold text-gray-900">
                                 {parseFloat(product.average_rating).toFixed(1)}
                               </span>
                               <span className="text-sm text-gray-600">
-                                ({product.rating_count} {product.rating_count === 1 ? 'opinia' : 'opinii'})
+                                ({product.rating_count}{' '}
+                                {product.rating_count === 1
+                                  ? 'opinia'
+                                  : 'opinii'}
+                                )
                               </span>
                             </>
                           ) : (
@@ -404,7 +476,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Badges - Mobile optimized */}
                       <div className="flex items-start space-x-1 flex-wrap gap-y-1">
                         {isOnSale && (
@@ -436,26 +508,29 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                           </span>
                         )}
                       </div>
-                      
+
                       {/* AUTO: Product Attributes - All attributes in gray badges */}
                       {product.attributes && product.attributes.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {product.attributes.map((attribute, attrIndex) => {
                             if (!Array.isArray(attribute.options)) return null;
 
-                            return attribute.options.map((option, optionIndex) => {
-                              const value = typeof option === 'string' ? option : option;
-                              if (!value) return null;
+                            return attribute.options.map(
+                              (option, optionIndex) => {
+                                const value =
+                                  typeof option === 'string' ? option : option;
+                                if (!value) return null;
 
-                              return (
-                                <span
-                                  key={`${attrIndex}-${optionIndex}`}
-                                  className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full"
-                                >
-                                  {value}
-                                </span>
-                              );
-                            });
+                                return (
+                                  <span
+                                    key={`${attrIndex}-${optionIndex}`}
+                                    className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full"
+                                  >
+                                    {value}
+                                  </span>
+                                );
+                              }
+                            );
                           })}
                         </div>
                       )}
@@ -464,49 +539,62 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     {/* Product Attributes & Variants */}
                     <div className="space-y-2">
                       {/* Show variants if product has them */}
-                      {product?.type === 'variable' && variations.length > 0 && (
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                            Wybierz wariant
-                          </h3>
-                          <div className="flex flex-wrap gap-2">
-                            {variations.map((variation, index) => {
-                              const capacityAttr = variation.attributes?.find(
-                                (attribute) =>
-                                  attribute.slug === 'pa_pojemnosc' ||
-                                  attribute.name?.toLowerCase().includes('pojemność')
-                              );
-                              const capacity = capacityAttr?.option || `Wariant ${variation.id}`;
-                              const isSelected = selectedCapacity === capacity;
-                              
-                              return (
-                                <button
-                                  key={index}
-                                  onClick={() => {
-                                    setSelectedCapacity(capacity);
-                                    // Selected capacity debug removed
-                                  }}
-                                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                    isSelected
-                                      ? 'bg-black text-white border-2 border-black'
-                                      : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  <div className="text-center">
-                                    <div className="font-semibold">{capacity}</div>
-                                    <div className={`text-xs mt-1 ${
-                                      isSelected ? 'text-gray-200' : 'text-gray-500'
-                                    }`}>
-                                      {formatPrice(parseFloat(variation.price))}
-                                    </div>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                      {product?.type === 'variable' &&
+                        variations.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                              Wybierz wariant
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                              {variations.map((variation, index) => {
+                                const capacityAttr = variation.attributes?.find(
+                                  attribute =>
+                                    attribute.slug === 'pa_pojemnosc' ||
+                                    attribute.name
+                                      ?.toLowerCase()
+                                      .includes('pojemność')
+                                );
+                                const capacity =
+                                  capacityAttr?.option ||
+                                  `Wariant ${variation.id}`;
+                                const isSelected =
+                                  selectedCapacity === capacity;
 
+                                return (
+                                  <button
+                                    key={index}
+                                    onClick={() => {
+                                      setSelectedCapacity(capacity);
+                                      // Selected capacity debug removed
+                                    }}
+                                    className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                      isSelected
+                                        ? 'bg-black text-white border-2 border-black'
+                                        : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <div className="text-center">
+                                      <div className="font-semibold">
+                                        {capacity}
+                                      </div>
+                                      <div
+                                        className={`text-xs mt-1 ${
+                                          isSelected
+                                            ? 'text-gray-200'
+                                            : 'text-gray-500'
+                                        }`}
+                                      >
+                                        {formatPrice(
+                                          parseFloat(variation.price)
+                                        )}
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                     </div>
 
                     {/* Price - only show if no variations */}
@@ -555,67 +643,76 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       </div>
 
                       {/* Action Buttons */}
-                        <Button
-                          onClick={handleAddToCart}
-                          disabled={product.stock_status !== 'instock' || isLoading || (variations.length > 0 && !selectedCapacity)}
-                          className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white h-[56px] rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
-                        >
-                          {isLoading ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <>
-                              <ShoppingCart className="w-5 h-5 mr-2" />
-                              {variations.length > 0 && !selectedCapacity ? 'Wybierz wariant' : 'Dodaj do koszyka'}
-                            </>
-                          )}
-                        </Button>
-
-                      </div>
+                      <Button
+                        onClick={handleAddToCart}
+                        disabled={
+                          product.stock_status !== 'instock' ||
+                          isLoading ||
+                          (variations.length > 0 && !selectedCapacity)
+                        }
+                        className="flex-1 bg-gradient-to-r from-gray-800 to-black text-white h-[56px] rounded-lg font-medium hover:bg-gradient-to-l hover:from-gray-700 hover:to-gray-900 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
+                      >
+                        {isLoading ? (
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-5 h-5 mr-2" />
+                            {variations.length > 0 && !selectedCapacity
+                              ? 'Wybierz wariant'
+                              : 'Dodaj do koszyka'}
+                          </>
+                        )}
+                      </Button>
                     </div>
+                  </div>
 
-                    {/* Rozwijany krótki opis */}
-                    {product.short_description && (
-                      <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-                        <button
-                          onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                          className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-gray-100 transition-colors duration-200"
-                        >
-                          <span className="text-sm font-medium text-gray-700">
-                            Opis produktu
-                          </span>
-                          {isDescriptionExpanded ? (
-                            <ChevronUp className="h-4 w-4 text-gray-500" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
-                          )}
-                        </button>
-                        
-                        <AnimatePresence>
-                          {isDescriptionExpanded && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2, ease: 'easeInOut' }}
-                              className="overflow-hidden"
-                            >
-                              <div className="px-3 pb-3">
-                                <p className="text-gray-700 text-sm leading-relaxed">
-                                  {product.short_description.replace(/<[^>]*>/g, '')}
-                                </p>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    )}
-                  </div>
-                  </div>
+                  {/* Rozwijany krótki opis */}
+                  {product.short_description && (
+                    <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                      <button
+                        onClick={() =>
+                          setIsDescriptionExpanded(!isDescriptionExpanded)
+                        }
+                        className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-gray-100 transition-colors duration-200"
+                      >
+                        <span className="text-sm font-medium text-gray-700">
+                          Opis produktu
+                        </span>
+                        {isDescriptionExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                        )}
+                      </button>
+
+                      <AnimatePresence>
+                        {isDescriptionExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-3 pb-3">
+                              <p className="text-gray-700 text-sm leading-relaxed">
+                                {product.short_description.replace(
+                                  /<[^>]*>/g,
+                                  ''
+                                )}
+                              </p>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
           </motion.div>
         </>
       )}
     </AnimatePresence>
   );
 }
-

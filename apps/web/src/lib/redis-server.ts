@@ -25,15 +25,17 @@ class ServerRedisCache {
 
     try {
       const redisUrl = process.env.REDIS_URL;
-      
+
       if (!redisUrl) {
-        logger.info('🚀 Redis not configured - using optimized in-memory cache');
+        logger.info(
+          '🚀 Redis not configured - using optimized in-memory cache'
+        );
         return;
       }
 
       // Dynamic import with error handling
       const RedisModule = await import('ioredis');
-      
+
       this.redis = new RedisModule.default(redisUrl, {
         maxRetriesPerRequest: 3,
         lazyConnect: true,
@@ -49,9 +51,10 @@ class ServerRedisCache {
 
       this.redis.on('error', (error: unknown) => {
         this.isConnected = false;
-        logger.warn('Redis connection failed - using in-memory cache', { error });
+        logger.warn('Redis connection failed - using in-memory cache', {
+          error,
+        });
       });
-
     } catch (error) {
       logger.error('Failed to initialize Redis:', { error });
       this.redis = null;
@@ -82,18 +85,22 @@ class ServerRedisCache {
     return null;
   }
 
-  async set(key: string, value: unknown, ttlSeconds?: number): Promise<boolean> {
+  async set(
+    key: string,
+    value: unknown,
+    ttlSeconds?: number
+  ): Promise<boolean> {
     // Try Redis first if available
     if (this.redis && this.isConnected) {
       try {
         const serializedValue = JSON.stringify(value);
-        
+
         if (ttlSeconds) {
           await this.redis.setex(key, ttlSeconds, serializedValue);
         } else {
           await this.redis.set(key, serializedValue);
         }
-        
+
         return true;
       } catch (error) {
         logger.warn('Redis SET error, falling back to memory:', { error });
@@ -102,15 +109,17 @@ class ServerRedisCache {
 
     // Fallback to memory cache
     try {
-      const expires = ttlSeconds ? Date.now() + (ttlSeconds * 1000) : Date.now() + (24 * 60 * 60 * 1000);
-      
+      const expires = ttlSeconds
+        ? Date.now() + ttlSeconds * 1000
+        : Date.now() + 24 * 60 * 60 * 1000;
+
       if (this.memoryCache.size >= this.maxMemoryCacheSize) {
         const oldestKey = this.memoryCache.keys().next().value;
         if (oldestKey) {
           this.memoryCache.delete(oldestKey);
         }
       }
-      
+
       this.memoryCache.set(key, { value, expires });
       return true;
     } catch (error) {
@@ -119,7 +128,11 @@ class ServerRedisCache {
     }
   }
 
-  async setex(key: string, ttlSeconds: number, value: unknown): Promise<boolean> {
+  async setex(
+    key: string,
+    ttlSeconds: number,
+    value: unknown
+  ): Promise<boolean> {
     return this.set(key, value, ttlSeconds);
   }
 
@@ -152,7 +165,7 @@ class ServerRedisCache {
     if (pattern === '*') {
       return memoryKeys;
     }
-    
+
     const regex = new RegExp(pattern.replace(/\*/g, '.*'));
     return memoryKeys.filter(key => regex.test(key));
   }
@@ -189,11 +202,11 @@ export function getServerRedisCache(): ServerRedisCache {
   if (typeof window !== 'undefined') {
     throw new Error('ServerRedisCache can only be used on server-side');
   }
-  
+
   if (!serverRedisCache) {
     serverRedisCache = new ServerRedisCache();
   }
-  
+
   return serverRedisCache;
 }
 

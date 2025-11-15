@@ -27,7 +27,7 @@ export function debounce<T extends unknown[]>(
   wait: number
 ): (...args: T) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (...args: T) => {
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -58,11 +58,11 @@ export function useIntersectionObserver(
 ) {
   return useMemo(() => {
     if (typeof window === 'undefined') return null;
-    
+
     return new IntersectionObserver(callback, {
       rootMargin: '50px',
       threshold: 0.1,
-      ...options
+      ...options,
     });
   }, [callback, options]);
 }
@@ -77,12 +77,12 @@ export function calculateVirtualScroll(
   const visibleCount = Math.ceil(containerHeight / itemHeight);
   const startIndex = Math.floor(scrollTop / itemHeight);
   const endIndex = Math.min(startIndex + visibleCount + 1, totalItems);
-  
+
   return {
     startIndex,
     endIndex,
     visibleCount,
-    offsetY: startIndex * itemHeight
+    offsetY: startIndex * itemHeight,
   };
 }
 
@@ -94,17 +94,17 @@ export function getOptimizedImageUrl(
   quality: number = 80
 ): string {
   if (!url) return '';
-  
+
   // If it's already a WordPress image, add optimization params
   if (url.includes('wp-content/uploads')) {
     const params = new URLSearchParams();
     if (width) params.set('w', width.toString());
     if (height) params.set('h', height.toString());
     params.set('q', quality.toString());
-    
+
     return `${url}?${params.toString()}`;
   }
-  
+
   return url;
 }
 
@@ -115,7 +115,7 @@ export function analyzeBundleSize() {
     logger.info('Bundle analysis', {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      connection: (navigator as NavigatorConnection).connection?.effectiveType
+      connection: (navigator as NavigatorConnection).connection?.effectiveType,
     });
   }
 }
@@ -128,23 +128,20 @@ export function monitorMemoryUsage() {
       logger.info('Memory usage', {
         used: Math.round(perf.memory.usedJSHeapSize / 1024 / 1024),
         total: Math.round(perf.memory.totalJSHeapSize / 1024 / 1024),
-        limit: Math.round(perf.memory.jsHeapSizeLimit / 1024 / 1024)
+        limit: Math.round(perf.memory.jsHeapSizeLimit / 1024 / 1024),
       });
     }
   }
 }
 
 // Performance measurement utilities
-export function measurePerformance<T>(
-  name: string,
-  fn: () => T
-): T {
+export function measurePerformance<T>(name: string, fn: () => T): T {
   const start = performance.now();
   const result = fn();
   const end = performance.now();
-  
+
   logger.performance(name, end - start);
-  
+
   return result;
 }
 
@@ -155,9 +152,9 @@ export async function measureAsyncPerformance<T>(
   const start = performance.now();
   const result = await fn();
   const end = performance.now();
-  
+
   logger.performance(name, end - start);
-  
+
   return result;
 }
 
@@ -180,7 +177,10 @@ export function preloadRoute(route: string) {
     // Note: This requires Next.js router to be passed as a parameter
     // For now, we'll just log that prefetching should be handled via Link components
     if (process.env.NODE_ENV === 'development') {
-      console.log('Route prefetching should be handled via Next.js Link components', { route });
+      console.log(
+        'Route prefetching should be handled via Next.js Link components',
+        { route }
+      );
     }
   }
 }
@@ -192,9 +192,9 @@ export function addResourceHints() {
     const domains = [
       'https://qvwltjhdjw.cfolks.pl',
       'https://api.brevo.com',
-      'https://www.googletagmanager.com'
+      'https://www.googletagmanager.com',
     ];
-    
+
     domains.forEach(domain => {
       const link = document.createElement('link');
       link.rel = 'preconnect';
@@ -209,9 +209,12 @@ export function addResourceHints() {
 export function registerServiceWorker() {
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
+      navigator.serviceWorker
+        .register('/sw.js')
         .then(registration => {
-          logger.info('Service Worker registered', { scope: registration.scope });
+          logger.info('Service Worker registered', {
+            scope: registration.scope,
+          });
         })
         .catch(error => {
           logger.error('Service Worker registration failed', { error });
@@ -229,41 +232,47 @@ export const CACHE_STRATEGIES = {
   // Stale while revalidate for API data
   STALE_WHILE_REVALIDATE: 'stale-while-revalidate',
   // Network only for critical updates
-  NETWORK_ONLY: 'network-only'
+  NETWORK_ONLY: 'network-only',
 } as const;
 
 // Performance budgets
 export const PERFORMANCE_BUDGETS = {
   FCP: 1800, // First Contentful Paint
   LCP: 2500, // Largest Contentful Paint
-  FID: 100,  // First Input Delay
-  CLS: 0.1,  // Cumulative Layout Shift
-  TTFB: 600  // Time to First Byte
+  FID: 100, // First Input Delay
+  CLS: 0.1, // Cumulative Layout Shift
+  TTFB: 600, // Time to First Byte
 } as const;
 
 // Performance monitoring
 export function checkPerformanceBudget() {
   if (typeof window !== 'undefined' && 'performance' in window) {
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    
+    const navigation = performance.getEntriesByType(
+      'navigation'
+    )[0] as PerformanceNavigationTiming;
+
     const metrics = {
       TTFB: navigation.responseStart - navigation.requestStart,
       FCP: 0, // Would need PerformanceObserver
       LCP: 0, // Would need PerformanceObserver
-      FID: 0  // Would need PerformanceObserver
+      FID: 0, // Would need PerformanceObserver
     };
-    
+
     // Check against budgets
     Object.entries(metrics).forEach(([metric, value]) => {
-      const budget = PERFORMANCE_BUDGETS[metric as keyof typeof PERFORMANCE_BUDGETS];
+      const budget =
+        PERFORMANCE_BUDGETS[metric as keyof typeof PERFORMANCE_BUDGETS];
       if (budget && value > budget) {
-        logger.warn(`Performance budget exceeded: ${metric}`, { value, budget });
+        logger.warn(`Performance budget exceeded: ${metric}`, {
+          value,
+          budget,
+        });
       }
     });
-    
+
     return metrics;
   }
-  
+
   return null;
 }
 
@@ -274,7 +283,7 @@ export const optimizedComponents = {
   // Memoized product grid
   ProductGrid: memo,
   // Memoized filters
-  Filters: memo
+  Filters: memo,
 };
 
 // Export performance utilities
@@ -293,6 +302,6 @@ const performanceExports = {
   addResourceHints,
   registerServiceWorker,
   checkPerformanceBudget,
-  optimizedComponents
+  optimizedComponents,
 };
 export default performanceExports;

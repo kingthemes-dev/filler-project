@@ -10,23 +10,32 @@ import ShopProductsGrid from '@/components/shop-products-grid';
 
 // 🚀 Bundle Optimization: Dynamic imports dla below-the-fold components
 import dynamic from 'next/dynamic';
-const ShopFilters = dynamic(() => import('@/components/ui/shop-filters'), { 
+const ShopFilters = dynamic(() => import('@/components/ui/shop-filters'), {
   ssr: false,
-  loading: () => <div className="w-full h-64 bg-gray-50 animate-pulse rounded-lg" />
+  loading: () => (
+    <div className="w-full h-64 bg-gray-50 animate-pulse rounded-lg" />
+  ),
 });
-const ActiveFiltersBar = dynamic(() => import('@/components/ui/active-filters-bar'), { 
-  ssr: false 
+const ActiveFiltersBar = dynamic(
+  () => import('@/components/ui/active-filters-bar'),
+  {
+    ssr: false,
+  }
+);
+const Breadcrumbs = dynamic(() => import('@/components/ui/breadcrumbs'), {
+  ssr: false,
 });
-const Breadcrumbs = dynamic(() => import('@/components/ui/breadcrumbs'), { 
-  ssr: false 
-});
-const Pagination = dynamic(() => import('@/components/ui/pagination'), { 
-  ssr: false 
+const Pagination = dynamic(() => import('@/components/ui/pagination'), {
+  ssr: false,
 });
 
 import { WooProduct } from '@/types/woocommerce';
 import { useQuery } from '@tanstack/react-query';
-import { useShopDataStore, useShopCategories, useShopAttributes } from '@/stores/shop-data-store';
+import {
+  useShopDataStore,
+  useShopCategories,
+  useShopAttributes,
+} from '@/stores/shop-data-store';
 import { useDebouncedCallback } from 'use-debounce';
 // Removed ProductImagePreload - using server-side preload instead
 
@@ -57,8 +66,7 @@ interface ShopClientProps {
     products: WooProduct[];
     total: number;
     categories: Category[];
-        attributes: {
-        };
+    attributes: {};
   };
 }
 
@@ -76,7 +84,9 @@ const useContextualAttributes = (selectedCategories: string[]) => {
       const res = await fetch(`/api/woocommerce?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: unknown = await res.json();
-      return (json && typeof json === 'object') ? json as Record<string, unknown> : {};
+      return json && typeof json === 'object'
+        ? (json as Record<string, unknown>)
+        : {};
     },
     enabled: selectedCategories.length > 0,
     staleTime: 2 * 60_000, // 2 minuty cache
@@ -86,13 +96,26 @@ const useContextualAttributes = (selectedCategories: string[]) => {
 
 export default function ShopClient({ initialShopData }: ShopClientProps) {
   // Debug logs removed for cleaner console
-  
-  // Zawsze wywołuj hooks - dane są prefetchowane
-  const { categories, mainCategories: _mainCategories, hierarchicalCategories, getSubCategories: _getSubCategories, isLoading: _categoriesLoading } = useShopCategories();
-  const { brands, capacities, zastosowanie, isLoading: attributesLoading } = useShopAttributes();
 
-  const normalizeAttributeTerms = <T extends { count?: number }>(terms: T[]): (T & { count: number })[] =>
-    terms.map((term) => ({
+  // Zawsze wywołuj hooks - dane są prefetchowane
+  const {
+    categories,
+    mainCategories: _mainCategories,
+    hierarchicalCategories,
+    getSubCategories: _getSubCategories,
+    isLoading: _categoriesLoading,
+  } = useShopCategories();
+  const {
+    brands,
+    capacities,
+    zastosowanie,
+    isLoading: attributesLoading,
+  } = useShopAttributes();
+
+  const normalizeAttributeTerms = <T extends { count?: number }>(
+    terms: T[]
+  ): (T & { count: number })[] =>
+    terms.map(term => ({
       ...term,
       count: typeof term.count === 'number' ? term.count : 0,
     }));
@@ -101,12 +124,18 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   const normalizedCapacities = normalizeAttributeTerms(capacities);
   const normalizedZastosowanie = normalizeAttributeTerms(zastosowanie);
   const { totalProducts: storeTotalProducts, initialize } = useShopDataStore();
-  
-  const [products, setProducts] = useState<WooProduct[]>(initialShopData?.products || []);
-  const [allCategories, setAllCategories] = useState<Category[]>(initialShopData?.categories || []);
+
+  const [products, setProducts] = useState<WooProduct[]>(
+    initialShopData?.products || []
+  );
+  const [allCategories, setAllCategories] = useState<Category[]>(
+    initialShopData?.categories || []
+  );
   const [loading, setLoading] = useState(false);
-  const [totalProducts, setTotalProducts] = useState(initialShopData?.total || 0);
-  
+  const [totalProducts, setTotalProducts] = useState(
+    initialShopData?.total || 0
+  );
+
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(16); // 16 produktów na stronę
   const [showFilters, setShowFilters] = useState(false);
@@ -123,34 +152,35 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     inStock: false,
     onSale: false,
     sortBy: 'date',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
   });
-  
+
   // Contextual attributes na podstawie wybranych kategorii
-  const { data: contextualAttributes, isLoading: contextualLoading } = useContextualAttributes(filters.categories);
-  
+  const { data: contextualAttributes, isLoading: contextualLoading } =
+    useContextualAttributes(filters.categories);
+
   // Debug contextual attributes
   // Contextual attributes debug removed
-  
+
   // Inicjalizuj store przy pierwszym renderze
   useEffect(() => {
     initialize();
   }, [initialize]);
-  
+
   // Aktualizuj kategorie gdy store się załaduje
   useEffect(() => {
     if (categories.length > 0) {
       setAllCategories(categories);
     }
   }, [categories]);
-  
+
   // Aktualizuj total products gdy store się załaduje
   useEffect(() => {
     if (storeTotalProducts > 0) {
       setTotalProducts(storeTotalProducts);
     }
   }, [storeTotalProducts]);
-  
+
   // Filters state debug removed
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -159,20 +189,30 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     if (!searchParams) return;
     const categoryParam = searchParams.get('category') || '';
     // Brands are now in pa_marka parameter
-    const brandsParam = searchParams.get('pa_marka') || searchParams.get('brands') || '';
+    const brandsParam =
+      searchParams.get('pa_marka') || searchParams.get('brands') || '';
 
     const urlCategories = categoryParam
-      ? categoryParam.split(',').map((s) => s.trim()).filter(Boolean)
+      ? categoryParam
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean)
       : [];
     const urlBrands = brandsParam
-      ? brandsParam.split(',').map((s) => s.trim()).filter(Boolean)
+      ? brandsParam
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean)
       : [];
 
     // Collect any pa_* attribute filters from URL as well
     const newAttrs: Record<string, string[]> = {};
     searchParams.forEach((value, key) => {
       if (key.startsWith('pa_')) {
-        newAttrs[key] = value.split(',').map((s) => s.trim()).filter(Boolean);
+        newAttrs[key] = value
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
       }
     });
 
@@ -185,14 +225,18 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     }
 
     // Only update if URL params are different from current filters
-    setFilters((prev) => {
+    setFilters(prev => {
       const currentCategories = prev.categories;
       const currentBrands = prev.brands as string[];
-      
+
       // Check if URL categories are different from current
-      const categoriesChanged = JSON.stringify(currentCategories.sort()) !== JSON.stringify(urlCategories.sort());
-      const brandsChanged = JSON.stringify(currentBrands.sort()) !== JSON.stringify(urlBrands.sort());
-      
+      const categoriesChanged =
+        JSON.stringify(currentCategories.sort()) !==
+        JSON.stringify(urlCategories.sort());
+      const brandsChanged =
+        JSON.stringify(currentBrands.sort()) !==
+        JSON.stringify(urlBrands.sort());
+
       // Check if any pa_* attributes changed
       let attrsChanged = false;
       Object.keys(newAttrs).forEach(key => {
@@ -201,55 +245,66 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         if (Array.isArray(prev[key])) {
           currentValues = [...(prev[key] as string[])];
         } else if (typeof prev[key] === 'string' && prev[key]) {
-          currentValues = (prev[key] as string).split(',').map(v => v.trim()).filter(Boolean);
+          currentValues = (prev[key] as string)
+            .split(',')
+            .map(v => v.trim())
+            .filter(Boolean);
         }
-        
+
         const urlValues = newAttrs[key].sort();
-        if (JSON.stringify(currentValues.sort()) !== JSON.stringify(urlValues)) {
+        if (
+          JSON.stringify(currentValues.sort()) !== JSON.stringify(urlValues)
+        ) {
           attrsChanged = true;
         }
       });
-      
+
       // Also check if any pa_* attributes were removed from URL
       Object.keys(prev).forEach(key => {
         if (key.startsWith('pa_') && !newAttrs.hasOwnProperty(key)) {
           attrsChanged = true;
         }
       });
-      
+
       // URL comparison debug removed
-      
-      if (categoriesChanged || brandsChanged || attrsChanged || Object.keys(newAttrs).length > 0) {
+
+      if (
+        categoriesChanged ||
+        brandsChanged ||
+        attrsChanged ||
+        Object.keys(newAttrs).length > 0
+      ) {
         // URL params changed, updating filters
         // If pa_marka exists in URL, use it for brands
-        const finalBrands = newAttrs['pa_marka'] && newAttrs['pa_marka'].length > 0 
-          ? newAttrs['pa_marka'] 
-          : urlBrands;
-        
+        const finalBrands =
+          newAttrs['pa_marka'] && newAttrs['pa_marka'].length > 0
+            ? newAttrs['pa_marka']
+            : urlBrands;
+
         const updatedFilters: FilterState = {
           ...prev,
           categories: urlCategories,
           brands: finalBrands,
         };
-        
+
         // Remove pa_* attributes that are no longer in URL (but keep pa_marka if it exists)
         Object.keys(updatedFilters).forEach(key => {
           if (key.startsWith('pa_') && !newAttrs.hasOwnProperty(key)) {
             delete updatedFilters[key];
           }
         });
-        
+
         // Add/update pa_* attributes from URL (but sync pa_marka with brands)
         Object.assign(updatedFilters, newAttrs);
-        
+
         // Sync brands with pa_marka if pa_marka exists
         if (newAttrs['pa_marka'] && newAttrs['pa_marka'].length > 0) {
           updatedFilters.brands = newAttrs['pa_marka'];
         }
-        
+
         return updatedFilters;
       }
-      
+
       // URL params unchanged, keeping current filters
       return prev; // No change needed
     });
@@ -259,22 +314,24 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   useEffect(() => {
     const params = new URLSearchParams();
     if (filters.search) params.set('search', filters.search);
-    if (filters.categories.length) params.set('category', filters.categories.join(','));
+    if (filters.categories.length)
+      params.set('category', filters.categories.join(','));
     // Note: brands are handled via pa_marka in the pa_* loop below to avoid conflicts
     if (filters.minPrice > 0) params.set('min_price', String(filters.minPrice));
-    if (filters.maxPrice > 0 && filters.maxPrice < 10000) params.set('max_price', String(filters.maxPrice));
+    if (filters.maxPrice > 0 && filters.maxPrice < 10000)
+      params.set('max_price', String(filters.maxPrice));
     if (filters.inStock) params.set('in_stock', 'true');
     if (filters.onSale) params.set('on_sale', 'true');
     params.set('sort', filters.sortBy);
     params.set('order', filters.sortOrder);
-    
+
     // Handle brands - convert to pa_marka for URL consistency
     if (filters.brands && (filters.brands as string[]).length > 0) {
       params.set('pa_marka', (filters.brands as string[]).join(','));
     }
-    
+
     // Handle all other pa_* attributes (but skip pa_marka if brands is already set)
-    Object.keys(filters).forEach((key) => {
+    Object.keys(filters).forEach(key => {
       if (key.startsWith('pa_') && key !== 'pa_marka') {
         const v = filters[key];
         // Handle both array and string values - always preserve pa_* filters
@@ -282,9 +339,12 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
         if (Array.isArray(v)) {
           values = v;
         } else if (typeof v === 'string' && v) {
-          values = v.split(',').map(val => val.trim()).filter(Boolean);
+          values = v
+            .split(',')
+            .map(val => val.trim())
+            .filter(Boolean);
         }
-        
+
         if (values.length > 0) {
           params.set(key, values.join(','));
         }
@@ -292,30 +352,40 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     });
     const qs = params.toString();
     const url = qs ? `/sklep?${qs}` : '/sklep';
-    const current = typeof window !== 'undefined' ? window.location.search.replace(/^\?/, '') : '';
+    const current =
+      typeof window !== 'undefined'
+        ? window.location.search.replace(/^\?/, '')
+        : '';
     if (current !== qs) {
       router.replace(url, { scroll: false });
     }
   }, [filters, router]);
 
-
   // Debounced search
   const [searchInput, setSearchInput] = useState(filters.search);
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setFilters(prev => ({ ...prev, search: searchInput }));
     }, 300);
-    
+
     return () => clearTimeout(timer);
   }, [searchInput]);
 
   // Categories and attributes are now fetched together with products
 
   // React Query for products with SSR hydration
-  const queryKey = ['shop','products',{ page: currentPage, perPage: productsPerPage, filters: JSON.stringify(filters) }];
+  const queryKey = [
+    'shop',
+    'products',
+    {
+      page: currentPage,
+      perPage: productsPerPage,
+      filters: JSON.stringify(filters),
+    },
+  ];
   // Shop query debug removed
-  
+
   const shopQuery = useQuery({
     queryKey,
     queryFn: async () => {
@@ -324,20 +394,26 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       params.append('endpoint', 'shop');
       params.append('page', currentPage.toString());
       params.append('per_page', productsPerPage.toString());
-      if (filters.categories.length > 0) params.append('category', filters.categories.join(','));
+      if (filters.categories.length > 0)
+        params.append('category', filters.categories.join(','));
       // Note: brands are handled via pa_marka in the pa_* loop below to avoid conflicts
       if (filters.search) params.append('search', filters.search);
-      params.append('orderby', filters.sortBy === 'name' ? 'title' : filters.sortBy);
+      params.append(
+        'orderby',
+        filters.sortBy === 'name' ? 'title' : filters.sortBy
+      );
       params.append('order', filters.sortOrder);
       if (filters.onSale) params.append('on_sale', 'true');
-      if (filters.minPrice > 0) params.append('min_price', String(filters.minPrice));
-      if (filters.maxPrice > 0 && filters.maxPrice < 10000) params.append('max_price', String(filters.maxPrice));
+      if (filters.minPrice > 0)
+        params.append('min_price', String(filters.minPrice));
+      if (filters.maxPrice > 0 && filters.maxPrice < 10000)
+        params.append('max_price', String(filters.maxPrice));
       // Handle brands - convert to pa_marka for API consistency
       if (filters.brands && (filters.brands as string[]).length > 0) {
         const brandValues = (filters.brands as string[]).join(',');
         params.append('pa_marka', brandValues);
       }
-      
+
       // Handle all other pa_* attributes
       Object.keys(filters).forEach(key => {
         if (key.startsWith('pa_')) {
@@ -347,22 +423,25 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           if (Array.isArray(filterValue)) {
             values = filterValue;
           } else if (typeof filterValue === 'string' && filterValue) {
-            values = filterValue.split(',').map(v => v.trim()).filter(Boolean);
+            values = filterValue
+              .split(',')
+              .map(v => v.trim())
+              .filter(Boolean);
           }
-          
+
           if (values.length > 0) {
             params.append(key, values.join(','));
           }
         }
       });
-      
+
       const apiUrl = `/api/woocommerce?${params.toString()}`;
       const res = await fetch(apiUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      
+
       // Shop data received from WordPress
-      
+
       return data;
     },
     // Nie refetchuj od razu po hydracji – mamy dane z SSR
@@ -392,7 +471,6 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   // Dynamic filters query - zastąpione prefetched data z store
   // Używamy brands i capacities z store zamiast API call
 
-
   // useEffect dla categoriesQuery usunięty - używamy prefetched data z store
 
   // Reset to first page when filters change (React Query will auto fetch from key change)
@@ -403,7 +481,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   // Debounced filter update dla lepszej wydajności - tylko dla produktów
   const debouncedProductUpdate = useDebouncedCallback(
     (_newFilters: FilterState) => {
-  // Debounced product update triggered
+      // Debounced product update triggered
       // React Query automatycznie zaktualizuje produkty na podstawie zmiany queryKey
     },
     300 // 300ms debounce
@@ -411,14 +489,14 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   const handleFilterChange = (key: string, value: FilterChangeValue) => {
     // handleFilterChange debug removed
-    
+
     // Optimistic UI update - natychmiastowa zmiana w interfejsie
     let newFilters: FilterState;
-    
+
     if (key === 'categories' || key === 'brands') {
       // Handle array filters (checkboxes)
       const currentArray = filters[key] as string[];
-      const newArray = currentArray.includes(value as string) 
+      const newArray = currentArray.includes(value as string)
         ? currentArray.filter(item => item !== value)
         : [...currentArray, value as string];
       // Array filter change debug removed
@@ -428,24 +506,30 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       // Always merge with existing values, never replace
       const currentValue = filters[key];
       let currentArray: string[] = [];
-      
+
       // Get current values as array
       if (Array.isArray(currentValue)) {
         currentArray = [...currentValue];
       } else if (typeof currentValue === 'string' && currentValue) {
-        currentArray = currentValue.split(',').map(v => v.trim()).filter(Boolean);
+        currentArray = currentValue
+          .split(',')
+          .map(v => v.trim())
+          .filter(Boolean);
       }
-      
+
       // Parse new value(s)
       let newValues: string[];
       if (typeof value === 'string') {
-        newValues = value.split(',').map(v => v.trim()).filter(Boolean);
+        newValues = value
+          .split(',')
+          .map(v => v.trim())
+          .filter(Boolean);
       } else if (Array.isArray(value)) {
         newValues = value;
       } else {
         newValues = [String(value)];
       }
-      
+
       // For each new value, toggle it (add if not exists, remove if exists)
       let finalArray = [...currentArray];
       newValues.forEach(newVal => {
@@ -457,10 +541,10 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           finalArray.push(newVal);
         }
       });
-      
+
       // Remove duplicates and sort for consistency
       finalArray = [...new Set(finalArray)].sort();
-      
+
       // PRO: If no values, remove the attribute completely
       if (finalArray.length === 0) {
         newFilters = { ...filters };
@@ -473,10 +557,10 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       newFilters = { ...filters, [key]: value };
       // New filters state debug removed
     }
-    
+
     // Natychmiastowa aktualizacja UI
     setFilters(newFilters);
-    
+
     // Debounced update dla produktów (React Query automatycznie zaktualizuje na podstawie queryKey)
     debouncedProductUpdate(newFilters);
   };
@@ -485,13 +569,13 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
     // handleCategoryChange debug removed
     setFilters(prev => {
       const currentCategories = prev.categories;
-      
+
       if (subcategoryId) {
         // PRO: Podkategoria - filtruj tylko po podkategorii, nie po kategorii głównej
         const subcategoryExists = currentCategories.includes(subcategoryId);
-        
+
         let newCategories = [...currentCategories];
-        
+
         if (subcategoryExists) {
           // Usuń podkategorię
           newCategories = newCategories.filter(cat => cat !== subcategoryId);
@@ -499,9 +583,9 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           // Dodaj tylko podkategorię (nie kategorię główną)
           newCategories.push(subcategoryId);
         }
-        
+
         // Subcategory change debug removed
-        
+
         return { ...prev, categories: newCategories };
       } else {
         // PRO: Kategoria główna - toggle tylko tej kategorii
@@ -509,15 +593,18 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
           // "Wszystkie kategorie" - wyczyść wszystkie
           return { ...prev, categories: [] };
         }
-        
+
         const newCategories = currentCategories.includes(categoryId)
           ? currentCategories.filter(cat => cat !== categoryId)
           : [...currentCategories, categoryId];
-        
+
         // Main category change debug removed
-        
+
         const nextState = { ...prev, categories: newCategories };
-        analytics.track('filter_change', { key: 'categories', value: nextState.categories });
+        analytics.track('filter_change', {
+          key: 'categories',
+          value: nextState.categories,
+        });
         return nextState;
       }
     });
@@ -534,20 +621,20 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
       inStock: false,
       onSale: false,
       sortBy: 'date' as const,
-      sortOrder: 'desc' as const
+      sortOrder: 'desc' as const,
     };
-    
+
     // Usuń wszystkie dynamiczne atrybuty (pa_*)
     Object.keys(filters).forEach(key => {
       if (key.startsWith('pa_')) {
         delete clearedFilters[key];
       }
     });
-    
+
     setFilters(clearedFilters);
     analytics.track('filters_clear_all');
     setSearchInput(''); // PRO: Also clear search input
-    
+
     // PRO: Clear URL parameters
     router.replace('/sklep');
   };
@@ -555,18 +642,50 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
   // Helpers: active filters and clearing single filter
   const activeFilters = () => {
     const items: Array<{ key: string; value: string; label: string }> = [];
-    if (filters.search) items.push({ key: 'search', value: String(filters.search), label: `Szukaj: ${filters.search}` });
-    filters.categories.forEach((c) => items.push({ key: 'category', value: c, label: `Kategoria: ${c}` }));
-    if ((filters.brands as string[]).length) (filters.brands as string[]).forEach((b) => items.push({ key: 'brands', value: b, label: `Marka: ${b}` }));
-    if (filters.minPrice > 0) items.push({ key: 'minPrice', value: String(filters.minPrice), label: `Min: ${filters.minPrice} zł` });
-    if (filters.maxPrice > 0 && filters.maxPrice < 10000) items.push({ key: 'maxPrice', value: String(filters.maxPrice), label: `Max: ${filters.maxPrice} zł` });
-    if (filters.inStock) items.push({ key: 'inStock', value: 'true', label: 'W magazynie' });
-    if (filters.onSale) items.push({ key: 'onSale', value: 'true', label: 'Promocje' });
-    Object.keys(filters).forEach((key) => {
+    if (filters.search)
+      items.push({
+        key: 'search',
+        value: String(filters.search),
+        label: `Szukaj: ${filters.search}`,
+      });
+    filters.categories.forEach(c =>
+      items.push({ key: 'category', value: c, label: `Kategoria: ${c}` })
+    );
+    if ((filters.brands as string[]).length)
+      (filters.brands as string[]).forEach(b =>
+        items.push({ key: 'brands', value: b, label: `Marka: ${b}` })
+      );
+    if (filters.minPrice > 0)
+      items.push({
+        key: 'minPrice',
+        value: String(filters.minPrice),
+        label: `Min: ${filters.minPrice} zł`,
+      });
+    if (filters.maxPrice > 0 && filters.maxPrice < 10000)
+      items.push({
+        key: 'maxPrice',
+        value: String(filters.maxPrice),
+        label: `Max: ${filters.maxPrice} zł`,
+      });
+    if (filters.inStock)
+      items.push({ key: 'inStock', value: 'true', label: 'W magazynie' });
+    if (filters.onSale)
+      items.push({ key: 'onSale', value: 'true', label: 'Promocje' });
+    Object.keys(filters).forEach(key => {
       if (key.startsWith('pa_')) {
         const v = filters[key];
-        const values = Array.isArray(v) ? v : typeof v === 'string' ? v.split(',').filter(Boolean) : [];
-        values.forEach((val) => items.push({ key, value: val, label: `${key.replace('pa_', '')}: ${val}` }));
+        const values = Array.isArray(v)
+          ? v
+          : typeof v === 'string'
+            ? v.split(',').filter(Boolean)
+            : [];
+        values.forEach(val =>
+          items.push({
+            key,
+            value: val,
+            label: `${key.replace('pa_', '')}: ${val}`,
+          })
+        );
       }
     });
     return items;
@@ -578,7 +697,7 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
 
   const breadcrumbs = [
     { label: 'Strona główna', href: '/' },
-    { label: 'Sklep', href: '/sklep' }
+    { label: 'Sklep', href: '/sklep' },
   ];
 
   return (
@@ -591,9 +710,9 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
             <Breadcrumbs items={breadcrumbs} variant="minimal" size="sm" />
           </div>
         </div>
-        
+
         {/* Usunięto górną wyszukiwarkę – pozostaje ta w panelu filtrów */}
-        
+
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 lg:items-stretch">
           {/* Filters sidebar */}
           <ShopFilters
@@ -613,21 +732,21 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
               attributes: {
                 marka: { terms: normalizedBrands },
                 pojemnosc: { terms: normalizedCapacities },
-                zastosowanie: { terms: normalizedZastosowanie }
-              }
+                zastosowanie: { terms: normalizedZastosowanie },
+              },
             }}
             contextualAttributes={contextualAttributes}
             contextualLoading={contextualLoading}
-            wooCommerceCategories={allCategories.map(c => ({ 
-              id: c.id, 
-              name: c.name, 
-              slug: c.slug, 
+            wooCommerceCategories={allCategories.map(c => ({
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
               parent: 0, // For now, assume all are top-level
-              count: c.count || 0 
+              count: c.count || 0,
             }))}
             products={products}
           />
-          
+
           {/* Products grid */}
           <div className="flex-1">
             {/* Active filters bar */}
@@ -640,20 +759,33 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
               onClearFilters={clearFilters}
               onPriceRangeReset={() => setPriceRange({ min: 0, max: 10000 })}
             />
-            
+
             {/* Error State - Senior Level Error Handling */}
             {shopQuery.isError && (
               <div className="text-center py-12 px-4">
                 <div className="max-w-md mx-auto">
                   <div className="text-red-500 mb-4">
-                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    <svg
+                      className="w-16 h-16 mx-auto"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Wystąpił błąd podczas ładowania produktów</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Wystąpił błąd podczas ładowania produktów
+                  </h3>
                   <p className="text-gray-600 mb-6">
-                    {shopQuery.error instanceof Error 
-                      ? shopQuery.error.message 
+                    {shopQuery.error instanceof Error
+                      ? shopQuery.error.message
                       : 'Nie udało się załadować produktów. Spróbuj ponownie.'}
                   </p>
                   <div className="flex gap-3 justify-center">
@@ -675,39 +807,45 @@ export default function ShopClient({ initialShopData }: ShopClientProps) {
                 </div>
               </div>
             )}
-            
+
             {/* Loading State */}
-            {!shopQuery.isError && (loading || filterLoading) && products.length === 0 && (
-              <ShopProductsGrid products={[]} refreshing={false} />
-            )}
-            
+            {!shopQuery.isError &&
+              (loading || filterLoading) &&
+              products.length === 0 && (
+                <ShopProductsGrid products={[]} refreshing={false} />
+              )}
+
             {/* Products Grid */}
             {!shopQuery.isError && !loading && products.length > 0 && (
-              <ShopProductsGrid 
-                products={products} 
-                refreshing={refreshing}
-              />
+              <ShopProductsGrid products={products} refreshing={refreshing} />
             )}
-            
-        {/* Paginacja */}
-        {!shopQuery.isError && !filterLoading && products.length > 0 && totalProducts > productsPerPage && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={Math.ceil(totalProducts / productsPerPage)}
-            onPageChange={setCurrentPage}
-            showInfo={true}
-            className="border-t border-gray-200 mt-8"
-          />
-        )}
-            
+
+            {/* Paginacja */}
+            {!shopQuery.isError &&
+              !filterLoading &&
+              products.length > 0 &&
+              totalProducts > productsPerPage && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil(totalProducts / productsPerPage)}
+                  onPageChange={setCurrentPage}
+                  showInfo={true}
+                  className="border-t border-gray-200 mt-8"
+                />
+              )}
+
             {/* Empty State */}
             {!shopQuery.isError && !loading && products.length === 0 && (
               <div className="text-center py-12 px-4">
                 <div className="text-gray-400 mb-4">
                   <Search className="w-16 h-16 mx-auto" aria-hidden="true" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nie znaleziono produktów</h3>
-                <p className="text-gray-500 mb-4">Spróbuj zmienić kryteria wyszukiwania</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Nie znaleziono produktów
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Spróbuj zmienić kryteria wyszukiwania
+                </p>
                 <button
                   onClick={clearFilters}
                   className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"

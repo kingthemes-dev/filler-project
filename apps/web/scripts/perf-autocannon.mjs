@@ -3,7 +3,7 @@
 /**
  * Performance testing script using autocannon
  * Tests key API endpoints with warm/cold scenarios
- * 
+ *
  * Usage:
  *   node scripts/perf-autocannon.mjs --warm
  *   node scripts/perf-autocannon.mjs --cold
@@ -97,8 +97,13 @@ function log(message, color = 'reset') {
 function logResult(endpoint, result, scenario) {
   const { name, expectedP95, expectedP99 } = endpoint;
   // Autocannon uses p97_5 for 95th percentile and p99 for 99th percentile
-  const p95 = result.latency.p97_5 || result.latency.p95 || result.latency['p(95)'] || result.latency['97.5%'];
-  const p99 = result.latency.p99 || result.latency['p(99)'] || result.latency['99%'];
+  const p95 =
+    result.latency.p97_5 ||
+    result.latency.p95 ||
+    result.latency['p(95)'] ||
+    result.latency['97.5%'];
+  const p99 =
+    result.latency.p99 || result.latency['p(99)'] || result.latency['99%'];
   const rps = result.requests.average || result.requests.mean;
   const errors = result.errors || 0;
 
@@ -107,10 +112,19 @@ function logResult(endpoint, result, scenario) {
 
   log(`\n${name} (${scenario})`, 'cyan');
   log('─'.repeat(60), 'reset');
-  log(`  p95: ${p95}ms (expected: ${expectedP95}ms) ${p95Status}`, p95 <= expectedP95 ? 'green' : 'red');
-  log(`  p99: ${p99}ms (expected: ${expectedP99}ms) ${p99Status}`, p99 <= expectedP99 ? 'green' : 'red');
+  log(
+    `  p95: ${p95}ms (expected: ${expectedP95}ms) ${p95Status}`,
+    p95 <= expectedP95 ? 'green' : 'red'
+  );
+  log(
+    `  p99: ${p99}ms (expected: ${expectedP99}ms) ${p99Status}`,
+    p99 <= expectedP99 ? 'green' : 'red'
+  );
   log(`  RPS: ${rps.toFixed(2)}`, 'reset');
-  log(`  Throughput: ${(result.throughput.average / 1024 / 1024).toFixed(2)} MB/s`, 'reset');
+  log(
+    `  Throughput: ${(result.throughput.average / 1024 / 1024).toFixed(2)} MB/s`,
+    'reset'
+  );
   log(`  Errors: ${errors}`, errors > 0 ? 'red' : 'green');
   log(`  Status codes:`, 'reset');
   Object.entries(result.statusCodeStats).forEach(([code, count]) => {
@@ -130,7 +144,7 @@ function logResult(endpoint, result, scenario) {
 
 async function testEndpoint(endpoint, scenario = 'warm') {
   const url = `${BASE_URL}${endpoint.path}`;
-  
+
   log(`\n🧪 Testing ${endpoint.name} (${scenario})...`, 'blue');
   log(`   URL: ${url}`, 'reset');
 
@@ -146,7 +160,7 @@ async function testEndpoint(endpoint, scenario = 'warm') {
       const res = await fetch(url, {
         headers: {
           'User-Agent': 'autocannon/warmup',
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'X-Performance-Test': 'true',
         },
       });
@@ -164,25 +178,25 @@ async function testEndpoint(endpoint, scenario = 'warm') {
     duration: DURATION,
     headers: {
       'User-Agent': 'autocannon/performance-test',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'X-Performance-Test': 'true',
     },
   });
 
   return new Promise((resolve, reject) => {
     const results = [];
-    
+
     instance.on('tick', () => {
       // Optional: log progress
     });
 
-    instance.on('done', (result) => {
+    instance.on('done', result => {
       const testResult = logResult(endpoint, result, scenario);
       results.push(testResult);
       resolve(testResult);
     });
 
-    instance.on('error', (error) => {
+    instance.on('error', error => {
       log(`   ❌ Error: ${error.message}`, 'red');
       reject(error);
     });
@@ -200,12 +214,12 @@ async function runWarmTests() {
   log('='.repeat(60), 'reset');
 
   const results = [];
-  
+
   for (const endpoint of ENDPOINTS.filter(e => e.priority === 'P0')) {
     try {
       const result = await testEndpoint(endpoint, 'warm');
       results.push(result);
-      
+
       // Small delay between tests
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
@@ -227,12 +241,12 @@ async function runColdTests() {
   log('='.repeat(60), 'reset');
 
   const results = [];
-  
+
   for (const endpoint of ENDPOINTS.filter(e => e.priority === 'P0')) {
     try {
       const result = await testEndpoint(endpoint, 'cold');
       results.push(result);
-      
+
       // Longer delay for cold tests
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (error) {
@@ -259,35 +273,56 @@ function generateReport(allResults) {
   const passedWarm = warmResults.filter(r => r.passed).length;
   const passedCold = coldResults.filter(r => r.passed).length;
 
-  log(`\nWarm Tests: ${passedWarm}/${warmResults.length} passed`, passedWarm === warmResults.length ? 'green' : 'yellow');
-  log(`Cold Tests: ${passedCold}/${coldResults.length} passed`, passedCold === coldResults.length ? 'green' : 'yellow');
+  log(
+    `\nWarm Tests: ${passedWarm}/${warmResults.length} passed`,
+    passedWarm === warmResults.length ? 'green' : 'yellow'
+  );
+  log(
+    `Cold Tests: ${passedCold}/${coldResults.length} passed`,
+    passedCold === coldResults.length ? 'green' : 'yellow'
+  );
 
   // Find failures
   const failures = allResults.filter(r => !r.passed && !r.error);
   if (failures.length > 0) {
     log('\n❌ FAILURES:', 'red');
     failures.forEach(f => {
-      log(`  ${f.endpoint} (${f.scenario}): p95=${f.p95}ms, p99=${f.p99}ms`, 'red');
+      log(
+        `  ${f.endpoint} (${f.scenario}): p95=${f.p95}ms, p99=${f.p99}ms`,
+        'red'
+      );
     });
   }
 
   // Summary statistics
   log('\n📈 SUMMARY:', 'bright');
   if (warmResults.length > 0) {
-    const avgP95 = warmResults.reduce((sum, r) => sum + (r.p95 || 0), 0) / warmResults.length;
-    const avgP99 = warmResults.reduce((sum, r) => sum + (r.p99 || 0), 0) / warmResults.length;
-    const avgRPS = warmResults.reduce((sum, r) => sum + (r.rps || 0), 0) / warmResults.length;
-    
+    const avgP95 =
+      warmResults.reduce((sum, r) => sum + (r.p95 || 0), 0) /
+      warmResults.length;
+    const avgP99 =
+      warmResults.reduce((sum, r) => sum + (r.p99 || 0), 0) /
+      warmResults.length;
+    const avgRPS =
+      warmResults.reduce((sum, r) => sum + (r.rps || 0), 0) /
+      warmResults.length;
+
     log(`  Warm - Avg p95: ${avgP95.toFixed(2)}ms`, 'reset');
     log(`  Warm - Avg p99: ${avgP99.toFixed(2)}ms`, 'reset');
     log(`  Warm - Avg RPS: ${avgRPS.toFixed(2)}`, 'reset');
   }
 
   if (coldResults.length > 0) {
-    const avgP95 = coldResults.reduce((sum, r) => sum + (r.p95 || 0), 0) / coldResults.length;
-    const avgP99 = coldResults.reduce((sum, r) => sum + (r.p99 || 0), 0) / coldResults.length;
-    const avgRPS = coldResults.reduce((sum, r) => sum + (r.rps || 0), 0) / coldResults.length;
-    
+    const avgP95 =
+      coldResults.reduce((sum, r) => sum + (r.p95 || 0), 0) /
+      coldResults.length;
+    const avgP99 =
+      coldResults.reduce((sum, r) => sum + (r.p99 || 0), 0) /
+      coldResults.length;
+    const avgRPS =
+      coldResults.reduce((sum, r) => sum + (r.rps || 0), 0) /
+      coldResults.length;
+
     log(`  Cold - Avg p95: ${avgP95.toFixed(2)}ms`, 'reset');
     log(`  Cold - Avg p99: ${avgP99.toFixed(2)}ms`, 'reset');
     log(`  Cold - Avg RPS: ${avgRPS.toFixed(2)}`, 'reset');
@@ -339,4 +374,3 @@ main().catch(error => {
   console.error(error);
   process.exit(1);
 });
-

@@ -13,7 +13,7 @@ export default function ContactPage() {
     lastName: '',
     subject: '',
     phone: '',
-    message: ''
+    message: '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -22,16 +22,18 @@ export default function ContactPage() {
     alert('Dziękujemy za wiadomość! Skontaktujemy się z Tobą wkrótce.');
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const breadcrumbs = [
     { label: 'Strona główna', href: '/' },
-    { label: 'Kontakt', href: '/kontakt' }
+    { label: 'Kontakt', href: '/kontakt' },
   ];
 
   return (
@@ -43,7 +45,6 @@ export default function ContactPage() {
         {/* Main Content */}
         <section className="py-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            
             {/* Left Column - Contact Information */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -54,13 +55,15 @@ export default function ContactPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-8">
                 Informacje kontaktowe
               </h2>
-              
+
               <div className="space-y-6">
                 {/* Email */}
                 <div className="flex items-center">
                   <Mail className="w-6 h-6 text-gray-600 mr-4" />
                   <div>
-                    <p className="text-gray-900 font-medium">Email: kontakt@filler.pl</p>
+                    <p className="text-gray-900 font-medium">
+                      Email: kontakt@filler.pl
+                    </p>
                   </div>
                 </div>
 
@@ -68,7 +71,9 @@ export default function ContactPage() {
                 <div className="flex items-center">
                   <Phone className="w-6 h-6 text-gray-600 mr-4" />
                   <div>
-                    <p className="text-gray-900 font-medium">Telefon: +48 535 956 932</p>
+                    <p className="text-gray-900 font-medium">
+                      Telefon: +48 535 956 932
+                    </p>
                   </div>
                 </div>
 
@@ -76,7 +81,9 @@ export default function ContactPage() {
                 <div className="flex items-center">
                   <MapPin className="w-6 h-6 text-gray-600 mr-4" />
                   <div>
-                    <p className="text-gray-900 font-medium">Adres: ul. Partyzantów 8/101, 80-254 Gdańsk</p>
+                    <p className="text-gray-900 font-medium">
+                      Adres: ul. Partyzantów 8/101, 80-254 Gdańsk
+                    </p>
                   </div>
                 </div>
               </div>
@@ -92,11 +99,14 @@ export default function ContactPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-8">
                 Formularz kontaktowy
               </h2>
-              
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-semibold text-gray-900 mb-2">
+                    <label
+                      htmlFor="firstName"
+                      className="block text-sm font-semibold text-gray-900 mb-2"
+                    >
                       Imię *
                     </label>
                     <input
@@ -110,9 +120,12 @@ export default function ContactPage() {
                       placeholder="Jan"
                     />
                   </div>
-                  
+
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-semibold text-gray-900 mb-2">
+                    <label
+                      htmlFor="lastName"
+                      className="block text-sm font-semibold text-gray-900 mb-2"
+                    >
                       Nazwisko *
                     </label>
                     <input
@@ -129,7 +142,10 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label
+                    htmlFor="subject"
+                    className="block text-sm font-semibold text-gray-900 mb-2"
+                  >
                     Temat *
                   </label>
                   <input
@@ -145,7 +161,10 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-semibold text-gray-900 mb-2"
+                  >
                     Telefon *
                   </label>
                   <input
@@ -161,7 +180,10 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label
+                    htmlFor="message"
+                    className="block text-sm font-semibold text-gray-900 mb-2"
+                  >
                     Wiadomość
                   </label>
                   <textarea

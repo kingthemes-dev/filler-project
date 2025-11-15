@@ -1,30 +1,118 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ModalCloseButton from './modal-close-button';
 import { Heart, Trash2 } from 'lucide-react';
-import { useFavoritesItems, useFavoritesIsModalOpen, useFavoritesIsLoading, useFavoritesActions } from '@/stores/favorites-store';
+import {
+  useFavoritesItems,
+  useFavoritesIsModalOpen,
+  useFavoritesIsLoading,
+  useFavoritesActions,
+} from '@/stores/favorites-store';
 import { Button } from '@/components/ui/button';
 import KingProductCard from '@/components/king-product-card';
 import { lockBodyScroll, unlockBodyScroll } from '@/utils/lock-body-scroll';
 import { useViewportHeightVar } from '@/hooks/use-viewport-height-var';
+import { WooProduct } from '@/types/woocommerce';
 
 export default function FavoritesModal() {
   const favorites = useFavoritesItems();
   const isModalOpen = useFavoritesIsModalOpen();
   const isLoading = useFavoritesIsLoading();
-  const { closeFavoritesModal, removeFromFavorites, clearFavorites } = useFavoritesActions();
-  
+  const { closeFavoritesModal, removeFromFavorites, clearFavorites } =
+    useFavoritesActions();
+  const [enrichedProducts, setEnrichedProducts] =
+    useState<WooProduct[]>(favorites);
+  const [isEnriching, setIsEnriching] = useState(false);
+
   useViewportHeightVar();
-  
+
   useEffect(() => {
     if (isModalOpen) {
       lockBodyScroll();
       return () => unlockBodyScroll();
     }
   }, [isModalOpen]);
-  
+
+  // Enrich products with full data (categories and attributes) when modal opens
+  useEffect(() => {
+    if (!isModalOpen || favorites.length === 0) {
+      setEnrichedProducts(favorites);
+      return;
+    }
+
+    // Check if any product is missing categories or attributes
+    const needsEnrichment = favorites.some(
+      product =>
+        !product.categories ||
+        !Array.isArray(product.categories) ||
+        product.categories.length === 0 ||
+        !product.attributes ||
+        !Array.isArray(product.attributes)
+    );
+
+    if (!needsEnrichment) {
+      setEnrichedProducts(favorites);
+      return;
+    }
+
+    // Enrich products with full data from API
+    const enrichProducts = async () => {
+      setIsEnriching(true);
+      try {
+        const productIds = favorites.map(p => p.id).join(',');
+        const response = await fetch(
+          `/api/woocommerce?endpoint=products&include=${productIds}&_fields=id,name,slug,price,regular_price,sale_price,on_sale,featured,status,date_created,images,categories,attributes`
+        );
+
+        if (!response.ok) {
+          console.warn(
+            'Failed to enrich favorites products, using existing data'
+          );
+          setEnrichedProducts(favorites);
+          return;
+        }
+
+        const data = await response.json();
+        const enriched: WooProduct[] = Array.isArray(data) ? data : [];
+
+        // Merge enriched data with existing favorites (preserve order and other properties)
+        const enrichedMap = new Map(enriched.map(p => [p.id, p]));
+        const merged = favorites.map(fav => {
+          const enrichedProduct = enrichedMap.get(fav.id);
+          if (enrichedProduct) {
+            // Merge: use enriched categories/attributes if available, otherwise use existing
+            return {
+              ...fav,
+              categories:
+                enrichedProduct.categories &&
+                Array.isArray(enrichedProduct.categories) &&
+                enrichedProduct.categories.length > 0
+                  ? enrichedProduct.categories
+                  : fav.categories || [],
+              attributes:
+                enrichedProduct.attributes &&
+                Array.isArray(enrichedProduct.attributes)
+                  ? enrichedProduct.attributes
+                  : fav.attributes || [],
+            };
+          }
+          return fav;
+        });
+
+        setEnrichedProducts(merged);
+      } catch (error) {
+        console.error('Error enriching favorites products:', error);
+        setEnrichedProducts(favorites);
+      } finally {
+        setIsEnriching(false);
+      }
+    };
+
+    enrichProducts();
+  }, [isModalOpen, favorites]);
+
   const handleRemoveFromFavorites = (productId: number) => {
     removeFromFavorites(productId);
   };
@@ -47,7 +135,7 @@ export default function FavoritesModal() {
             className="fixed inset-0 bg-black/60 backdrop-blur-md z-[70]"
             onClick={closeFavoritesModal}
           />
-          
+
           {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -55,13 +143,13 @@ export default function FavoritesModal() {
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-            onClick={(e) => {
+            onClick={e => {
               if (e.target === e.currentTarget) closeFavoritesModal();
             }}
           >
-            <div 
+            <div
               className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
@@ -86,7 +174,7 @@ export default function FavoritesModal() {
                       <span className="hidden sm:inline">Wyczyść</span>
                     </Button>
                   )}
-                  <ModalCloseButton 
+                  <ModalCloseButton
                     onClick={closeFavoritesModal}
                     ariaLabel="Zamknij ulubione"
                   />
@@ -104,7 +192,7 @@ export default function FavoritesModal() {
                     <p className="text-gray-600 mb-6">
                       Dodaj produkty do ulubionych, klikając ikonę serca
                     </p>
-                    <Button 
+                    <Button
                       onClick={closeFavoritesModal}
                       className="bg-black hover:bg-gray-800 text-white px-8 py-3 text-sm font-medium rounded-2xl"
                     >
@@ -113,29 +201,33 @@ export default function FavoritesModal() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-                    {favorites.map((product) => (
-                      <motion.div
-                        key={product.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="relative group"
-                      >
-                        {/* Remove from favorites button overlay */}
-                        <button
-                          onClick={() => handleRemoveFromFavorites(product.id)}
-                          className="absolute top-2 right-2 z-10 w-8 h-8 bg-white/90 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150 opacity-0 group-hover:opacity-100"
+                    {(isEnriching ? favorites : enrichedProducts).map(
+                      product => (
+                        <motion.div
+                          key={product.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="relative group"
                         >
-                          <Heart className="w-4 h-4 fill-current text-red-500" />
-                        </button>
-                        
-                        {/* Use KingProductCard for consistent styling */}
-                        <KingProductCard
-                          product={product}
-                          showActions={true}
-                          variant="default"
-                        />
-                      </motion.div>
-                    ))}
+                          {/* Remove from favorites button overlay */}
+                          <button
+                            onClick={() =>
+                              handleRemoveFromFavorites(product.id)
+                            }
+                            className="absolute top-2 right-2 z-10 w-8 h-8 bg-white/90 hover:bg-white hover:shadow-md rounded-full flex items-center justify-center transition-all duration-150 opacity-0 group-hover:opacity-100"
+                          >
+                            <Heart className="w-4 h-4 fill-current text-red-500" />
+                          </button>
+
+                          {/* Use KingProductCard for consistent styling */}
+                          <KingProductCard
+                            product={product}
+                            showActions={true}
+                            variant="default"
+                          />
+                        </motion.div>
+                      )
+                    )}
                   </div>
                 )}
               </div>

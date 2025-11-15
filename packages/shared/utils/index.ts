@@ -6,7 +6,8 @@ export * from './error-handler';
 export * from './logger';
 export * from './performance';
 export * from './accessibility';
-export * from './analytics';
+// Analytics removed - use apps/web/src/utils/analytics.ts instead
+// export * from './analytics';
 export * from './backup';
 // export * from './test-helpers'; // Removed to prevent HMR issues
 

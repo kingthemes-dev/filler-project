@@ -1,4 +1,7 @@
-import { AdvancedAnalytics, ADVANCED_ANALYTICS_CONFIG } from '@/utils/advanced-analytics';
+import {
+  AdvancedAnalytics,
+  ADVANCED_ANALYTICS_CONFIG,
+} from '@/utils/advanced-analytics';
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -21,7 +24,7 @@ describe('AdvancedAnalytics', () => {
   describe('Event Tracking', () => {
     it('should track custom events', () => {
       analytics.trackEvent('test_event', { data: 'test' });
-      
+
       const stats = analytics.getStats();
       expect(stats.events).toBeGreaterThan(0);
     });
@@ -31,14 +34,14 @@ describe('AdvancedAnalytics', () => {
         page_title: 'Test Page',
         page_location: 'https://test.com',
       });
-      
+
       const stats = analytics.getStats();
       expect(stats.events).toBeGreaterThan(0);
     });
 
     it('should set user ID', () => {
       analytics.setUserId('test-user-123');
-      
+
       const stats = analytics.getStats();
       expect(stats.userId).toBe('test-user-123');
     });
@@ -52,23 +55,23 @@ describe('AdvancedAnalytics', () => {
   describe('Ecommerce Tracking', () => {
     it('should track purchases', () => {
       analytics.trackPurchase('order-123', 100, [
-        { item_id: 'prod-1', item_name: 'Test Product', item_category: 'Test' }
+        { item_id: 'prod-1', item_name: 'Test Product', item_category: 'Test' },
       ]);
-      
+
       const stats = analytics.getStats();
       expect(stats.events).toBeGreaterThan(0);
     });
 
     it('should track add to cart', () => {
       analytics.trackAddToCart('prod-1', 'Test Product', 'Test Category', 50);
-      
+
       const stats = analytics.getStats();
       expect(stats.events).toBeGreaterThan(0);
     });
 
     it('should track view item', () => {
       analytics.trackViewItem('prod-1', 'Test Product', 'Test Category', 50);
-      
+
       const stats = analytics.getStats();
       expect(stats.events).toBeGreaterThan(0);
     });
@@ -80,7 +83,7 @@ describe('AdvancedAnalytics', () => {
         event_name: 'web_vitals',
         metrics: { lcp: 2500, fid: 100, cls: 0.1 },
       });
-      
+
       const stats = analytics.getStats();
       expect(stats.events).toBeGreaterThan(0);
     });

@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.success) {
       return createErrorResponse(
-        new ValidationError('Nieprawidłowe dane błędu', validationResult.error.errors),
+        new ValidationError(
+          'Nieprawidłowe dane błędu',
+          validationResult.error.errors
+        ),
         { endpoint: 'errors', method: 'POST' }
       );
     }
@@ -56,7 +59,6 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
     logger.error('Error tracking API error', { error });
     return NextResponse.json(
@@ -89,19 +91,20 @@ async function storeErrorInRedis(errorData: ErrorPayload) {
     const errorRecord = {
       ...errorData,
       error_id: errorId,
-      processed_at: new Date().toISOString()
+      processed_at: new Date().toISOString(),
     };
 
     await redisCache.set(redisKey, errorRecord, 604800);
 
     const errorsListKey = 'errors:list';
-    const errorsList = (await redisCache.get<StoredError[]>(errorsListKey)) || [];
+    const errorsList =
+      (await redisCache.get<StoredError[]>(errorsListKey)) || [];
     errorsList.push({
       error_id: errorId,
       message: errorData.message,
       severity: errorData.severity,
       timestamp: errorData.timestamp,
-      type: errorData.type
+      type: errorData.type,
     });
 
     if (errorsList.length > 1000) {
@@ -109,7 +112,6 @@ async function storeErrorInRedis(errorData: ErrorPayload) {
     }
 
     await redisCache.set(errorsListKey, errorsList, 604800);
-
   } catch (error) {
     logger.error('Failed to store error in Redis', { error });
   }
@@ -124,7 +126,7 @@ async function updateErrorMetrics(errorData: ErrorPayload) {
       errors_by_type: {},
       errors_by_severity: {},
       errors_by_component: {},
-      last_updated: new Date().toISOString()
+      last_updated: new Date().toISOString(),
     };
 
     metrics.total_errors += 1;
@@ -134,15 +136,16 @@ async function updateErrorMetrics(errorData: ErrorPayload) {
     metrics.errors_by_type[type] = (metrics.errors_by_type[type] || 0) + 1;
 
     const severity = errorData.severity || 'medium';
-    metrics.errors_by_severity[severity] = (metrics.errors_by_severity[severity] || 0) + 1;
+    metrics.errors_by_severity[severity] =
+      (metrics.errors_by_severity[severity] || 0) + 1;
 
     if (errorData.component) {
       const component = errorData.component;
-      metrics.errors_by_component[component] = (metrics.errors_by_component[component] || 0) + 1;
+      metrics.errors_by_component[component] =
+        (metrics.errors_by_component[component] || 0) + 1;
     }
 
     await redisCache.set(metricsKey, metrics, 86400);
-
   } catch (error) {
     logger.error('Failed to update error metrics', { error });
   }
@@ -158,7 +161,7 @@ async function sendCriticalErrorAlert(errorData: ErrorPayload) {
       component: errorData.component,
       timestamp: errorData.timestamp,
       url: errorData.url,
-      stack: errorData.stack
+      stack: errorData.stack,
     };
 
     logger.error('CRITICAL ERROR ALERT', alertData);
@@ -189,7 +192,6 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
     }
-
   } catch (error) {
     logger.error('Error GET error', { error });
     return NextResponse.json(
@@ -208,14 +210,13 @@ async function getErrorSummary() {
       errors_by_type: {},
       errors_by_severity: {},
       errors_by_component: {},
-      last_updated: new Date().toISOString()
+      last_updated: new Date().toISOString(),
     };
 
     return NextResponse.json({
       success: true,
-      data: metrics
+      data: metrics,
     });
-
   } catch (error) {
     logger.error('Failed to get error summary', { error });
     return NextResponse.json(
@@ -226,31 +227,42 @@ async function getErrorSummary() {
 }
 
 // Get error list
-async function getErrorList(severity?: string, component?: string, limit: number = 50) {
+async function getErrorList(
+  severity?: string,
+  component?: string,
+  limit: number = 50
+) {
   try {
     const errorsListKey = 'errors:list';
-    const errorsList = (await redisCache.get<StoredError[]>(errorsListKey)) || [];
+    const errorsList =
+      (await redisCache.get<StoredError[]>(errorsListKey)) || [];
 
     let filteredErrors = errorsList;
 
     if (severity) {
-      filteredErrors = filteredErrors.filter((error) => error.severity === severity);
+      filteredErrors = filteredErrors.filter(
+        error => error.severity === severity
+      );
     }
 
     if (component) {
-      filteredErrors = filteredErrors.filter((error) => error.component === component);
+      filteredErrors = filteredErrors.filter(
+        error => error.component === component
+      );
     }
 
-    filteredErrors.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    filteredErrors.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     const limited = filteredErrors.slice(0, limit);
 
     return NextResponse.json({
       success: true,
       data: limited,
-      total: limited.length
+      total: limited.length,
     });
-
   } catch (error) {
     logger.error('Failed to get error list', { error });
     return NextResponse.json(
@@ -269,24 +281,23 @@ async function getErrorMetrics() {
       errors_by_type: {},
       errors_by_severity: {},
       errors_by_component: {},
-      last_updated: new Date().toISOString()
+      last_updated: new Date().toISOString(),
     };
 
     const additionalMetrics = {
       error_rate: calculateErrorRate(metrics),
       top_error_types: getTopErrors(metrics.errors_by_type),
       top_error_components: getTopErrors(metrics.errors_by_component),
-      severity_distribution: metrics.errors_by_severity
+      severity_distribution: metrics.errors_by_severity,
     };
 
     return NextResponse.json({
       success: true,
       data: {
         ...metrics,
-        ...additionalMetrics
-      }
+        ...additionalMetrics,
+      },
     });
-
   } catch (error) {
     logger.error('Failed to get error metrics', { error });
     return NextResponse.json(
@@ -307,9 +318,12 @@ function calculateErrorRate(metrics: ErrorSummary): number {
   return metrics.total_errors || 0;
 }
 
-function getTopErrors(errorCounts: Record<string, number>, limit: number = 5): Array<{type: string, count: number}> {
+function getTopErrors(
+  errorCounts: Record<string, number>,
+  limit: number = 5
+): Array<{ type: string; count: number }> {
   return Object.entries(errorCounts || {})
-    .sort(([,a], [,b]) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, limit)
     .map(([type, count]) => ({ type, count }));
 }

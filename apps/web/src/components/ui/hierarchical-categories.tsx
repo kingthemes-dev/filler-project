@@ -35,16 +35,20 @@ const hierarchicalCategories: Category[] = [
       { id: 'cellulit', name: 'Cellulit', slug: 'cellulit' },
       { id: 'lipoliza', name: 'Lipoliza', slug: 'lipoliza' },
       { id: 'rewitalizacja', name: 'Rewitalizacja', slug: 'rewitalizacja' },
-      { id: 'zmarszczki', name: 'Zmarszczki', slug: 'zmarszczki' }
-    ]
+      { id: 'zmarszczki', name: 'Zmarszczki', slug: 'zmarszczki' },
+    ],
   },
   {
     id: 'peelingi',
     name: 'Peelingi',
     slug: 'peelingi',
     subcategories: [
-      { id: 'post-peel', name: 'Post peel (pielęgnacja pozabiegowa)', slug: 'post-peel' }
-    ]
+      {
+        id: 'post-peel',
+        name: 'Post peel (pielęgnacja pozabiegowa)',
+        slug: 'post-peel',
+      },
+    ],
   },
   {
     id: 'stymulatory',
@@ -52,14 +56,34 @@ const hierarchicalCategories: Category[] = [
     slug: 'stymulatory',
     subcategories: [
       { id: 'egzosomy', name: 'Egzosomy', slug: 'egzosomy' },
-      { id: 'hydroksyapatyt', name: 'Hydroksyapatyt wapnia (CaHA)', slug: 'hydroksyapatyt-wapnia' },
+      {
+        id: 'hydroksyapatyt',
+        name: 'Hydroksyapatyt wapnia (CaHA)',
+        slug: 'hydroksyapatyt-wapnia',
+      },
       { id: 'kolagen', name: 'Kolagen', slug: 'kolagen' },
-      { id: 'kwas-bursztynowy', name: 'Kwas bursztynowy', slug: 'kwas-bursztynowy' },
-      { id: 'kwas-hialuronowy', name: 'Kwas hialuronowy', slug: 'kwas-hialuronowy' },
-      { id: 'kwas-polimlekowy', name: 'Kwas polimlekowy (PLLA)', slug: 'kwas-polimlekowy' },
-      { id: 'polikaprolakton', name: 'Polikaprolakton (PCL)', slug: 'polikaprolakton' },
-      { id: 'polinukleotydy', name: 'Polinukleotydy', slug: 'polinukleotydy' }
-    ]
+      {
+        id: 'kwas-bursztynowy',
+        name: 'Kwas bursztynowy',
+        slug: 'kwas-bursztynowy',
+      },
+      {
+        id: 'kwas-hialuronowy',
+        name: 'Kwas hialuronowy',
+        slug: 'kwas-hialuronowy',
+      },
+      {
+        id: 'kwas-polimlekowy',
+        name: 'Kwas polimlekowy (PLLA)',
+        slug: 'kwas-polimlekowy',
+      },
+      {
+        id: 'polikaprolakton',
+        name: 'Polikaprolakton (PCL)',
+        slug: 'polikaprolakton',
+      },
+      { id: 'polinukleotydy', name: 'Polinukleotydy', slug: 'polinukleotydy' },
+    ],
   },
   {
     id: 'wypelniacze',
@@ -67,18 +91,28 @@ const hierarchicalCategories: Category[] = [
     slug: 'wypelniacze',
     subcategories: [
       { id: 'korekcja-nosa', name: 'Korekcja nosa', slug: 'korekcja-nosa' },
-      { id: 'wypelniacze-ha', name: 'Wypełniacze HA (ogólne)', slug: 'wypelniacze-ha' },
-      { id: 'zmarszczki-srednie', name: 'Zmarszczki średnie', slug: 'zmarszczki-srednie' }
-    ]
-  }
+      {
+        id: 'wypelniacze-ha',
+        name: 'Wypełniacze HA (ogólne)',
+        slug: 'wypelniacze-ha',
+      },
+      {
+        id: 'zmarszczki-srednie',
+        name: 'Zmarszczki średnie',
+        slug: 'zmarszczki-srednie',
+      },
+    ],
+  },
 ];
 
-export default function HierarchicalCategories({ 
-  onCategoryChange, 
-  selectedCategory, 
-  selectedSubcategory 
+export default function HierarchicalCategories({
+  onCategoryChange,
+  selectedCategory,
+  selectedSubcategory,
 }: HierarchicalCategoriesProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories(prev => {
@@ -96,9 +130,12 @@ export default function HierarchicalCategories({
     onCategoryChange(categoryId, subcategoryId);
   };
 
-  const isCategoryExpanded = (categoryId: string) => expandedCategories.has(categoryId);
-  const isCategorySelected = (categoryId: string) => selectedCategory === categoryId;
-  const isSubcategorySelected = (subcategoryId: string) => selectedSubcategory === subcategoryId;
+  const isCategoryExpanded = (categoryId: string) =>
+    expandedCategories.has(categoryId);
+  const isCategorySelected = (categoryId: string) =>
+    selectedCategory === categoryId;
+  const isSubcategorySelected = (subcategoryId: string) =>
+    selectedSubcategory === subcategoryId;
 
   return (
     <div className="w-full max-w-6xl mx-auto px-6">
@@ -129,7 +166,7 @@ export default function HierarchicalCategories({
 
       {/* Hierarchiczne kategorie */}
       <div className="space-y-3">
-        {hierarchicalCategories.map((category) => (
+        {hierarchicalCategories.map(category => (
           <motion.div
             key={category.id}
             className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
@@ -154,7 +191,9 @@ export default function HierarchicalCategories({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <motion.div
-                    animate={{ rotate: isCategoryExpanded(category.id) ? 90 : 0 }}
+                    animate={{
+                      rotate: isCategoryExpanded(category.id) ? 90 : 0,
+                    }}
                     transition={{ duration: 0.2 }}
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -189,7 +228,9 @@ export default function HierarchicalCategories({
                     {category.subcategories.map((subcategory, index) => (
                       <motion.button
                         key={subcategory.id}
-                        onClick={() => handleCategoryClick(category.id, subcategory.id)}
+                        onClick={() =>
+                          handleCategoryClick(category.id, subcategory.id)
+                        }
                         className={`w-full px-6 py-3 text-left transition-all duration-200 flex items-center gap-3 ${
                           isSubcategorySelected(subcategory.id)
                             ? 'bg-purple-100 text-purple-700 border-l-4 border-purple-500'
@@ -229,7 +270,8 @@ export default function HierarchicalCategories({
         transition={{ delay: 0.5 }}
       >
         <p className="text-sm text-gray-500 text-center">
-          💡 <strong>Wskazówka:</strong> Kliknij na kategorię, aby zobaczyć podkategorie
+          💡 <strong>Wskazówka:</strong> Kliknij na kategorię, aby zobaczyć
+          podkategorie
         </p>
       </motion.div>
     </div>

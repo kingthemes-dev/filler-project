@@ -46,7 +46,9 @@ class BackgroundJobsService {
         });
         console.log('Background jobs: Redis connected');
       } else {
-        console.warn('Background jobs: Redis not configured, using in-memory fallback');
+        console.warn(
+          'Background jobs: Redis not configured, using in-memory fallback'
+        );
       }
     } catch (error) {
       console.error('Background jobs: Redis connection failed', error);
@@ -137,7 +139,7 @@ class BackgroundJobsService {
     scheduledFor?: Date
   ): Promise<string> {
     const jobId = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const job: JobData = {
       id: jobId,
       type,
@@ -154,7 +156,10 @@ class BackgroundJobsService {
       await this.redis.lpush('jobs:queue', JSON.stringify(job));
     } else {
       // In-memory fallback
-      console.log('Background jobs: Added job to memory queue', { type, jobId });
+      console.log('Background jobs: Added job to memory queue', {
+        type,
+        jobId,
+      });
     }
 
     return jobId;
@@ -171,7 +176,7 @@ class BackgroundJobsService {
 
       try {
         const jobData = await this.redis!.brpop('jobs:queue', 1);
-        
+
         if (jobData) {
           const job: JobData = JSON.parse(jobData[1]);
           await this.executeJob(job);
@@ -195,7 +200,9 @@ class BackgroundJobsService {
       job.status = 'processing';
       job.attempts++;
 
-      console.log(`Background jobs: Executing job ${job.id} (attempt ${job.attempts})`);
+      console.log(
+        `Background jobs: Executing job ${job.id} (attempt ${job.attempts})`
+      );
 
       // Execute job based on type
       switch (job.type) {
@@ -219,10 +226,12 @@ class BackgroundJobsService {
       console.log(`Background jobs: Job ${job.id} completed`);
     } catch (error) {
       console.error(`Background jobs: Job ${job.id} failed`, error);
-      
+
       if (job.attempts >= job.maxAttempts) {
         job.status = 'failed';
-        console.error(`Background jobs: Job ${job.id} failed after ${job.maxAttempts} attempts`);
+        console.error(
+          `Background jobs: Job ${job.id} failed after ${job.maxAttempts} attempts`
+        );
       } else {
         job.status = 'pending';
         // Re-queue job for retry
@@ -239,18 +248,18 @@ class BackgroundJobsService {
       if (!this.isRunning) return;
 
       const now = new Date();
-      
+
       for (const [name, job] of this.cronJobs) {
         if (!job.enabled) continue;
 
         const shouldRun = this.shouldRunCronJob(job, now);
-        
+
         if (shouldRun) {
           console.log(`Background jobs: Running cron job "${name}"`);
           job.handler().catch(error => {
             console.error(`Background jobs: Cron job "${name}" failed`, error);
           });
-          
+
           job.lastRun = now;
           job.nextRun = this.getNextRunTime(job.schedule, now);
         }
@@ -268,10 +277,10 @@ class BackgroundJobsService {
    */
   private shouldRunCronJob(job: CronJob, now: Date): boolean {
     if (!job.lastRun) return true;
-    
+
     const timeSinceLastRun = now.getTime() - job.lastRun.getTime();
     const oneMinute = 60 * 1000;
-    
+
     return timeSinceLastRun >= oneMinute;
   }
 
@@ -291,7 +300,7 @@ class BackgroundJobsService {
   private async syncProducts(): Promise<void> {
     try {
       console.log('Background jobs: Syncing products...');
-      
+
       // This would typically sync products from WooCommerce to local database
       // For now, just log the action
       console.log('Background jobs: Products synced');
@@ -307,25 +316,28 @@ class BackgroundJobsService {
   private async cleanCache(): Promise<void> {
     try {
       console.log('Background jobs: Cleaning cache...');
-      
+
       if (this.redis) {
         // Clean expired cache keys
         const keys = await this.redis.keys('cache:*');
         const expiredKeys = [];
-        
+
         for (const key of keys) {
           const ttl = await this.redis.ttl(key);
-          if (ttl === -1) { // No expiration set
+          if (ttl === -1) {
+            // No expiration set
             expiredKeys.push(key);
           }
         }
-        
+
         if (expiredKeys.length > 0) {
           await this.redis.del(...expiredKeys);
-          console.log(`Background jobs: Cleaned ${expiredKeys.length} expired cache keys`);
+          console.log(
+            `Background jobs: Cleaned ${expiredKeys.length} expired cache keys`
+          );
         }
       }
-      
+
       console.log('Background jobs: Cache cleaned');
     } catch (error) {
       console.error('Background jobs: Cache clean failed', error);
@@ -339,18 +351,18 @@ class BackgroundJobsService {
   private async healthCheck(): Promise<void> {
     try {
       console.log('Background jobs: Running health check...');
-      
+
       // Check Redis connection
       if (this.redis) {
         await this.redis.ping();
       }
-      
+
       // Check WooCommerce API
       const response = await fetch('/api/health');
       if (!response.ok) {
         throw new Error('Health check failed');
       }
-      
+
       console.log('Background jobs: Health check passed');
     } catch (error) {
       console.error('Background jobs: Health check failed', error);
@@ -364,7 +376,7 @@ class BackgroundJobsService {
   private async generateSitemap(): Promise<void> {
     try {
       console.log('Background jobs: Generating sitemap...');
-      
+
       // This would generate and save sitemap.xml
       console.log('Background jobs: Sitemap generated');
     } catch (error) {

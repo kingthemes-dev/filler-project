@@ -4,11 +4,11 @@
  */
 
 import { QueryClient } from '@tanstack/react-query';
-import { 
-  prefetchWooCommerceFilters, 
-  prefetchShopifyFilters, 
+import {
+  prefetchWooCommerceFilters,
+  prefetchShopifyFilters,
   prefetchCustomFilters,
-  prefetchAutoDetectedFilters 
+  prefetchAutoDetectedFilters,
 } from '@/lib/universal-prefetch';
 import { getFilterConfig } from '@/config/filter-config';
 
@@ -22,24 +22,24 @@ export async function prefetchWooCommerceExample(queryClient: QueryClient) {
       endpoints: {
         categories: '/wp-json/wc/v3/products/categories',
         attributes: '/wp-json/wc/v3/products/attributes',
-        products: '/wp-json/wc/v3/products'
+        products: '/wp-json/wc/v3/products',
       },
       headers: {
-        'Authorization': 'Bearer your-token'
-      }
+        Authorization: 'Bearer your-token',
+      },
     },
     categories: {
       autoDiscover: true,
-      excludeSlugs: ['uncategorized', 'default']
+      excludeSlugs: ['uncategorized', 'default'],
     },
     attributes: {
       autoDiscover: true,
       customNames: {
-        'pa_brand': 'Marka',
-        'pa_color': 'Kolor',
-        'pa_size': 'Rozmiar'
-      }
-    }
+        pa_brand: 'Marka',
+        pa_color: 'Kolor',
+        pa_size: 'Rozmiar',
+      },
+    },
   });
 }
 
@@ -53,23 +53,23 @@ export async function prefetchShopifyExample(queryClient: QueryClient) {
       endpoints: {
         categories: '/admin/api/2023-10/collections.json',
         attributes: '/admin/api/2023-10/metafields.json',
-        products: '/admin/api/2023-10/products.json'
+        products: '/admin/api/2023-10/products.json',
       },
       headers: {
-        'X-Shopify-Access-Token': 'your-access-token'
-      }
+        'X-Shopify-Access-Token': 'your-access-token',
+      },
     },
     categories: {
       autoDiscover: true,
-      excludeSlugs: ['all', 'featured']
+      excludeSlugs: ['all', 'featured'],
     },
     attributes: {
       autoDiscover: true,
       customNames: {
-        'vendor': 'Producent',
-        'product_type': 'Typ produktu'
-      }
-    }
+        vendor: 'Producent',
+        product_type: 'Typ produktu',
+      },
+    },
   });
 }
 
@@ -83,35 +83,35 @@ export async function prefetchCustomAPIExample(queryClient: QueryClient) {
       endpoints: {
         categories: '/v1/categories',
         attributes: '/v1/attributes',
-        products: '/v1/products'
+        products: '/v1/products',
       },
       headers: {
         'API-Key': 'your-api-key',
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     },
     categories: {
       autoDiscover: true,
       customMapping: {
-        'electronics': {
+        electronics: {
           name: 'Elektronika',
           subcategories: ['phones', 'laptops', 'tablets'],
-          icon: '📱'
-        }
-      }
+          icon: '📱',
+        },
+      },
     },
     attributes: {
       autoDiscover: true,
       customNames: {
-        'brand': 'Marka',
-        'material': 'Materiał',
-        'color': 'Kolor'
-      }
+        brand: 'Marka',
+        material: 'Materiał',
+        color: 'Kolor',
+      },
     },
     cache: {
       staleTime: 15 * 60_000, // 15 minutes
-      gcTime: 60 * 60_000 // 1 hour
-    }
+      gcTime: 60 * 60_000, // 1 hour
+    },
   });
 }
 
@@ -134,7 +134,7 @@ export function UniversalShopFiltersExample() {
       minPrice: 0,
       maxPrice: 10000,
       inStock: false,
-      onSale: false
+      onSale: false,
     },
     priceRange: { min: 0, max: 10000 },
     setPriceRange: () => {},
@@ -144,30 +144,30 @@ export function UniversalShopFiltersExample() {
     showFilters: true,
     onToggleFilters: () => {},
     totalProducts: 0,
-    preset: "woocommerce" as const,
+    preset: 'woocommerce' as const,
     filterConfig: {
       api: {
         baseUrl: 'https://your-api.com',
         endpoints: {
           categories: '/categories',
           attributes: '/attributes',
-          products: '/products'
-        }
+          products: '/products',
+        },
       },
       categories: {
         autoDiscover: true,
-        excludeSlugs: ['uncategorized']
+        excludeSlugs: ['uncategorized'],
       },
       attributes: {
         autoDiscover: true,
         customNames: {
-          'brand': 'Marka',
-          'color': 'Kolor'
-        }
-      }
-    }
+          brand: 'Marka',
+          color: 'Kolor',
+        },
+      },
+    },
   };
-  
+
   return exampleConfig;
 }
 
@@ -177,29 +177,31 @@ export function UniversalShopFiltersExample() {
 export function getEnvironmentConfig() {
   const isProduction = process.env.NODE_ENV === 'production';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  
+
   return getFilterConfig('woocommerce', {
     api: {
       baseUrl: apiUrl,
       endpoints: {
         categories: '/wp-json/wc/v3/products/categories',
         attributes: '/wp-json/wc/v3/products/attributes',
-        products: '/wp-json/wc/v3/products'
+        products: '/wp-json/wc/v3/products',
       },
-      headers: isProduction ? {
-        'Authorization': `Bearer ${process.env.API_TOKEN}`,
-        'X-API-Version': 'v2'
-      } : {}
+      headers: isProduction
+        ? {
+            Authorization: `Bearer ${process.env.API_TOKEN}`,
+            'X-API-Version': 'v2',
+          }
+        : {},
     },
     cache: {
       staleTime: isProduction ? 30 * 60_000 : 5 * 60_000, // Longer cache in production
-      gcTime: isProduction ? 2 * 60 * 60_000 : 30 * 60_000
+      gcTime: isProduction ? 2 * 60 * 60_000 : 30 * 60_000,
     },
     ui: {
       showCounts: isProduction,
       maxItemsPerFilter: isProduction ? 100 : 20,
-      expandByDefault: false
-    }
+      expandByDefault: false,
+    },
   });
 }
 
@@ -208,52 +210,63 @@ export function getEnvironmentConfig() {
 // ========================================
 export async function prefetchMultiStoreExample(queryClient: QueryClient) {
   const stores = [
-    { name: 'electronics', url: 'https://electronics-api.com', preset: 'woocommerce' as const },
-    { name: 'clothing', url: 'https://clothing-api.com', preset: 'shopify' as const },
-    { name: 'books', url: 'https://books-api.com', preset: 'custom' as const }
+    {
+      name: 'electronics',
+      url: 'https://electronics-api.com',
+      preset: 'woocommerce' as const,
+    },
+    {
+      name: 'clothing',
+      url: 'https://clothing-api.com',
+      preset: 'shopify' as const,
+    },
+    { name: 'books', url: 'https://books-api.com', preset: 'custom' as const },
   ];
 
   // Prefetch filters for all stores
   await Promise.all(
-    stores.map(async (store) => {
+    stores.map(async store => {
       try {
         if (store.preset === 'woocommerce') {
           await prefetchWooCommerceFilters(queryClient, {
-            api: { 
+            api: {
               baseUrl: store.url,
               endpoints: {
                 categories: '/wp-json/wc/v3/products/categories',
                 attributes: '/wp-json/wc/v3/products/attributes',
-                products: '/wp-json/wc/v3/products'
-              }
-            }
+                products: '/wp-json/wc/v3/products',
+              },
+            },
           });
         } else if (store.preset === 'shopify') {
           await prefetchShopifyFilters(queryClient, {
-            api: { 
+            api: {
               baseUrl: store.url,
               endpoints: {
                 categories: '/admin/api/2023-10/collections.json',
                 attributes: '/admin/api/2023-10/metafields.json',
-                products: '/admin/api/2023-10/products.json'
-              }
-            }
+                products: '/admin/api/2023-10/products.json',
+              },
+            },
           });
         } else {
           await prefetchCustomFilters(queryClient, {
-            api: { 
+            api: {
               baseUrl: store.url,
               endpoints: {
                 categories: '/v1/categories',
                 attributes: '/v1/attributes',
-                products: '/v1/products'
-              }
-            }
+                products: '/v1/products',
+              },
+            },
           });
         }
         console.log(`✅ Prefetched filters for ${store.name}`);
       } catch (error) {
-        console.error(`❌ Failed to prefetch filters for ${store.name}:`, error);
+        console.error(
+          `❌ Failed to prefetch filters for ${store.name}:`,
+          error
+        );
       }
     })
   );
@@ -266,29 +279,29 @@ export async function prefetchWithErrorHandling(queryClient: QueryClient) {
   try {
     // Try primary API
     await prefetchWooCommerceFilters(queryClient, {
-      api: { 
+      api: {
         baseUrl: 'https://primary-api.com',
         endpoints: {
           categories: '/wp-json/wc/v3/products/categories',
           attributes: '/wp-json/wc/v3/products/attributes',
-          products: '/wp-json/wc/v3/products'
-        }
-      }
+          products: '/wp-json/wc/v3/products',
+        },
+      },
     });
   } catch {
     console.warn('Primary API failed, trying fallback...');
-    
+
     try {
       // Try fallback API
       await prefetchWooCommerceFilters(queryClient, {
-        api: { 
+        api: {
           baseUrl: 'https://fallback-api.com',
           endpoints: {
             categories: '/wp-json/wc/v3/products/categories',
             attributes: '/wp-json/wc/v3/products/attributes',
-            products: '/wp-json/wc/v3/products'
-          }
-        }
+            products: '/wp-json/wc/v3/products',
+          },
+        },
       });
     } catch {
       console.error('All APIs failed, using cached data');

@@ -5,21 +5,34 @@ test.describe('Shop Filters – A11y, URL sync, actions', () => {
     await page.goto('/sklep');
   });
 
-  test('mobile: open/close filter panel with toggle and Esc, focus trap works', async ({ page, browserName }) => {
-    test.skip(browserName === 'chromium', 'Run on mobile project only for speed');
+  test('mobile: open/close filter panel with toggle and Esc, focus trap works', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'chromium',
+      'Run on mobile project only for speed'
+    );
     // open filters
     await page.getByRole('button', { name: /Filtry/ }).click();
     await expect(page.getByRole('region', { name: 'Filtry' })).toBeVisible();
     // Esc closes
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('region', { name: 'Filtry' })).toBeHidden({ timeout: 2000 });
+    await expect(page.getByRole('region', { name: 'Filtry' })).toBeHidden({
+      timeout: 2000,
+    });
   });
 
-  test('URL sync updates on filter changes and chips remove filters (smoke-lite)', async ({ page }) => {
+  test('URL sync updates on filter changes and chips remove filters (smoke-lite)', async ({
+    page,
+  }) => {
     // Open filters (desktop visible or mobile toggle)
     const toggle = page.getByRole('button', { name: /Filtry/ });
     if (await toggle.isVisible()) await toggle.click();
-    let searchInput = page.getByTestId('filter-search').locator('input[type="text"]').first();
+    let searchInput = page
+      .getByTestId('filter-search')
+      .locator('input[type="text"]')
+      .first();
     if (!(await searchInput.isVisible({ timeout: 5000 }).catch(() => false))) {
       searchInput = page.getByPlaceholder('Szukaj produktów...').first();
     }
@@ -45,7 +58,9 @@ test.describe('Shop Filters – A11y, URL sync, actions', () => {
     }
   });
 
-  test('attributes filter (pa_*) updates URL and affects results', async ({ page }) => {
+  test('attributes filter (pa_*) updates URL and affects results', async ({
+    page,
+  }) => {
     // Open filters on mobile if needed
     const toggle = page.getByRole('button', { name: /Filtry/ });
     if (await toggle.isVisible()) await toggle.click();
@@ -58,9 +73,14 @@ test.describe('Shop Filters – A11y, URL sync, actions', () => {
     const firstTerm = page.locator('input[type="checkbox"]').first();
     if (await firstTerm.isVisible()) {
       // Capture initial results count
-      const initialText = await page.locator('text=Znaleziono').first().innerText();
+      const initialText = await page
+        .locator('text=Znaleziono')
+        .first()
+        .innerText();
       const initialCountMatch = initialText.match(/Znaleziono\s+(\d+)/);
-      const initialCount = initialCountMatch ? parseInt(initialCountMatch[1], 10) : undefined;
+      const initialCount = initialCountMatch
+        ? parseInt(initialCountMatch[1], 10)
+        : undefined;
 
       await firstTerm.check();
       await page.waitForTimeout(500);
@@ -68,9 +88,14 @@ test.describe('Shop Filters – A11y, URL sync, actions', () => {
 
       // Wait for results to update
       await page.waitForTimeout(500);
-      const afterText = await page.locator('text=Znaleziono').first().innerText();
+      const afterText = await page
+        .locator('text=Znaleziono')
+        .first()
+        .innerText();
       const afterCountMatch = afterText.match(/Znaleziono\s+(\d+)/);
-      const afterCount = afterCountMatch ? parseInt(afterCountMatch[1], 10) : undefined;
+      const afterCount = afterCountMatch
+        ? parseInt(afterCountMatch[1], 10)
+        : undefined;
 
       // Assert count changed (if both parsed)
       if (initialCount !== undefined && afterCount !== undefined) {
@@ -83,5 +108,3 @@ test.describe('Shop Filters – A11y, URL sync, actions', () => {
     if (await closeBtn.isVisible()) await closeBtn.click();
   });
 });
-
-

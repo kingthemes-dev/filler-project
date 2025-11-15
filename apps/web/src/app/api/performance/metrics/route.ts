@@ -8,7 +8,13 @@ import { checkEndpointRateLimit } from '@/utils/rate-limiter';
 import { getClientIP } from '@/utils/client-ip';
 
 type MetricMetadata = Record<string, unknown>;
-type MetricRecord = { name: string; value: number; timestamp?: string; url?: string; metadata?: MetricMetadata };
+type MetricRecord = {
+  name: string;
+  value: number;
+  timestamp?: string;
+  url?: string;
+  metadata?: MetricMetadata;
+};
 
 interface MetricObject {
   value: number;
@@ -32,25 +38,34 @@ export async function POST(request: NextRequest) {
     const clientIp = getClientIP(request);
     const path = request.nextUrl.pathname;
     const rateLimitResult = await checkEndpointRateLimit(path, clientIp);
-    
+
     if (!rateLimitResult.allowed) {
       logger.warn('Performance metrics: Rate limit exceeded', {
         ip: clientIp,
         remaining: rateLimitResult.remaining,
       });
       return NextResponse.json(
-        { error: 'Rate limit exceeded', retryAfter: rateLimitResult.retryAfter },
-        { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfter || 60) } }
+        {
+          error: 'Rate limit exceeded',
+          retryAfter: rateLimitResult.retryAfter,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateLimitResult.retryAfter || 60) },
+        }
       );
     }
-    
+
     const body = await request.json();
     const sanitizedBody = validateApiInput(body);
     const validationResult = performanceMetricsSchema.safeParse(sanitizedBody);
 
     if (!validationResult.success) {
       return createErrorResponse(
-        new ValidationError('Nieprawidłowe dane metryk wydajności', validationResult.error.errors),
+        new ValidationError(
+          'Nieprawidłowe dane metryk wydajności',
+          validationResult.error.errors
+        ),
         { endpoint: 'performance/metrics', method: 'POST' }
       );
     }
@@ -76,7 +91,10 @@ export async function POST(request: NextRequest) {
           metrics.push({
             name,
             value: metricObj.value,
-            timestamp: metricObj.timestamp || payload.timestamp || new Date().toISOString(),
+            timestamp:
+              metricObj.timestamp ||
+              payload.timestamp ||
+              new Date().toISOString(),
             url: metricObj.url || payload.url || 'unknown',
             metadata: metricObj.metadata || payload.metadata || {},
           });
@@ -106,7 +124,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (metrics.length === 0) {
-      return NextResponse.json({ error: 'Brak metryk do zapisania' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Brak metryk do zapisania' },
+        { status: 400 }
+      );
     }
 
     for (const metric of metrics) {
@@ -121,7 +142,7 @@ export async function POST(request: NextRequest) {
       } catch (error: unknown) {
         logger.warn('Failed to process metric', {
           metric,
-          error: error instanceof Error ? error.message : error
+          error: error instanceof Error ? error.message : error,
         });
       }
     }
@@ -132,11 +153,17 @@ export async function POST(request: NextRequest) {
       message: 'Metrics recorded successfully',
     });
   } catch (error) {
-    const err = error instanceof Error ? error : new Error('Unknown metrics processing error');
+    const err =
+      error instanceof Error
+        ? error
+        : new Error('Unknown metrics processing error');
     logger.error('Error processing performance metrics', {
       message: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
-    return NextResponse.json({ error: err.message || 'Failed to process metrics' }, { status: 500 });
+    return NextResponse.json(
+      { error: err.message || 'Failed to process metrics' },
+      { status: 500 }
+    );
   }
 }

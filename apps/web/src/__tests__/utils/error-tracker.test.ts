@@ -27,7 +27,7 @@ describe('ErrorTracker', () => {
     it('should capture JavaScript errors', () => {
       const error = new Error('Test error');
       error.stack = 'Error: Test error\n    at test (test.js:1:1)';
-      
+
       errorTracker.captureError({
         message: 'Test error',
         stack: error.stack,
@@ -41,7 +41,7 @@ describe('ErrorTracker', () => {
 
     it('should capture custom events', () => {
       errorTracker.captureCustomEvent('test_event', { data: 'test' });
-      
+
       const stats = errorTracker.getStats();
       expect(stats.errors).toBeGreaterThan(0);
     });

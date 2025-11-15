@@ -34,4 +34,3 @@ describe('formatPrice', () => {
     expect(norm(formatPrice(undefined))).toBe('0,00 zł');
   });
 });
-

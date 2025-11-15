@@ -2,6 +2,15 @@
 
 Wersjonowanie według [Conventional Commits](https://www.conventionalcommits.org/). Wydania opisują zmiany w aplikacji webowej (Next.js) oraz dokumentacji.
 
+## [0.1.2] - 2025-01-XX
+
+### Docs
+- `docs: synchronizacja dokumentacji (Docs Sync)`
+- Zaktualizowane bloki AUTO w `API.md` (dodane endpointy GDPR, cache/invalidate, health/circuit-breakers, performance/dashboard, king-jwt/logout)
+- Zaktualizowane bloki AUTO w `COMPONENTS_BRIEF.md` (dodane brakujące eksporty: hooki, typy, funkcje pomocnicze)
+- Zaktualizowane bloki AUTO w `ARCHITECTURE.md` (dodane foldery: config, types, __tests__, examples, shared-types)
+- Weryfikacja `README.md` - zmienne środowiskowe i skrypty zgodne z aktualnym stanem projektu
+
 ## [0.1.1] - 2025-11-08
 
 ### Docs

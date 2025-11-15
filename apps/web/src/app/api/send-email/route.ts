@@ -4,8 +4,22 @@ import { sendEmailSchema } from '@/lib/schemas/internal';
 import { validateApiInput } from '@/utils/request-validation';
 import { createErrorResponse, ValidationError } from '@/lib/errors';
 import { logger } from '@/utils/logger';
+import { checkApiSecurity, addSecurityHeaders } from '@/utils/api-security';
 
 export async function POST(request: NextRequest) {
+  // Security check: rate limiting and CSRF protection
+  const securityCheck = await checkApiSecurity(request, {
+    enforceRateLimit: true,
+    enforceCSRF: true,
+  });
+  
+  if (!securityCheck.allowed) {
+    return securityCheck.response || NextResponse.json(
+      { error: 'Security check failed' },
+      { status: 403 }
+    );
+  }
+  
   try {
     const rawBody = await request.json();
     const sanitizedBody = validateApiInput(rawBody);
@@ -13,7 +27,10 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.success) {
       return createErrorResponse(
-        new ValidationError('Nieprawidłowe dane do wysyłki emaila', validationResult.error.errors),
+        new ValidationError(
+          'Nieprawidłowe dane do wysyłki emaila',
+          validationResult.error.errors
+        ),
         { endpoint: 'send-email', method: 'POST' }
       );
     }
@@ -36,7 +53,8 @@ export async function POST(request: NextRequest) {
     } = validationResult.data;
 
     const recipientEmail = customer_email || customerEmail || to;
-    const normalizedOrderId = typeof order_id !== 'undefined' ? order_id : orderId;
+    const normalizedOrderId =
+      typeof order_id !== 'undefined' ? order_id : orderId;
     const normalizedOrderNumber = order_number || orderNumber;
     const normalizedCustomerName = customer_name || customerName;
 
@@ -44,13 +62,17 @@ export async function POST(request: NextRequest) {
       type,
       orderId: normalizedOrderId,
       recipient: recipientEmail,
-      hasItems: Array.isArray(items) && items.length > 0
+      hasItems: Array.isArray(items) && items.length > 0,
     });
 
-    const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
+    const wpUrl =
+      process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl';
     let primaryAttemptSuccessful = false;
 
-    if (typeof normalizedOrderId !== 'undefined' && normalizedOrderId !== null) {
+    if (
+      typeof normalizedOrderId !== 'undefined' &&
+      normalizedOrderId !== null
+    ) {
       const wpOrderId =
         typeof normalizedOrderId === 'string'
           ? parseInt(normalizedOrderId, 10)
@@ -74,14 +96,14 @@ export async function POST(request: NextRequest) {
         if (response.ok) {
           logger.info('Email sent via WooCommerce API', {
             orderId: wpOrderId,
-            type
+            type,
           });
           primaryAttemptSuccessful = true;
         } else {
           const errorText = await response.text();
           logger.warn('WooCommerce email API failed', {
             status: response.status,
-            error: errorText?.slice(0, 500) ?? 'unknown'
+            error: errorText?.slice(0, 500) ?? 'unknown',
           });
         }
       }
@@ -90,76 +112,84 @@ export async function POST(request: NextRequest) {
     if (!primaryAttemptSuccessful) {
       logger.info('Falling back to direct email API', {
         type,
-        orderId: normalizedOrderId
+        orderId: normalizedOrderId,
       });
-      const fallbackResponse = await fetch(`${wpUrl}/wp-json/king-email/v1/send-direct-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type,
-          order_id: normalizedOrderId ?? null,
-          order_number: normalizedOrderNumber ?? null,
-          customer_email: recipientEmail,
-          customer_name: normalizedCustomerName ?? 'Klient',
-          total: total ?? null,
-          items: items ?? [],
-          subject: subject ?? undefined,
-          message: message ?? undefined,
-        }),
-      });
-
-      if (fallbackResponse.ok) {
-        logger.info('Email sent via fallback API', {
-          type,
-          orderId: normalizedOrderId
-        });
-        return NextResponse.json({
-          success: true,
-          message: 'Email wysłany (fallback)',
-        });
-      } else {
-        const fallbackErrorText = await fallbackResponse.text();
-        logger.error('Fallback email API failed', {
-          status: fallbackResponse.status,
-          error: fallbackErrorText?.slice(0, 500) ?? 'unknown'
-        });
-        if (process.env.NODE_ENV !== 'production') {
-          logger.warn('Dev mode email fallback override', {
-            reason: 'fallback-failure'
-          });
-          return NextResponse.json({
-            success: true,
-            message: 'Dev: Email zarejestrowany (no-op)',
-          });
-        }
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'Nie udało się wysłać emaila',
+      const fallbackResponse = await fetch(
+        `${wpUrl}/wp-json/king-email/v1/send-direct-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          { status: 500 }
-        );
-      }
+          body: JSON.stringify({
+            type,
+            order_id: normalizedOrderId ?? null,
+            order_number: normalizedOrderNumber ?? null,
+            customer_email: recipientEmail,
+            customer_name: normalizedCustomerName ?? 'Klient',
+            total: total ?? null,
+            items: items ?? [],
+            subject: subject ?? undefined,
+            message: message ?? undefined,
+          }),
+        }
+      );
+
+        if (fallbackResponse.ok) {
+          logger.info('Email sent via fallback API', {
+            type,
+            orderId: normalizedOrderId,
+          });
+          const response = NextResponse.json({
+            success: true,
+            message: 'Email wysłany (fallback)',
+          });
+          return addSecurityHeaders(response);
+        } else {
+          const fallbackErrorText = await fallbackResponse.text();
+          logger.error('Fallback email API failed', {
+            status: fallbackResponse.status,
+            error: fallbackErrorText?.slice(0, 500) ?? 'unknown',
+          });
+          if (process.env.NODE_ENV !== 'production') {
+            logger.warn('Dev mode email fallback override', {
+              reason: 'fallback-failure',
+            });
+            const response = NextResponse.json({
+              success: true,
+              message: 'Dev: Email zarejestrowany (no-op)',
+            });
+            return addSecurityHeaders(response);
+          }
+          const errorResponse = NextResponse.json(
+            {
+              success: false,
+              message: 'Nie udało się wysłać emaila',
+            },
+            { status: 500 }
+          );
+          return addSecurityHeaders(errorResponse);
+        }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Email wysłany pomyślnie',
     });
+    return addSecurityHeaders(response);
   } catch (error) {
     const err = error instanceof Error ? error : new Error('Email API error');
     logger.error('Email API error', {
       message: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       {
         success: false,
         message: err.message || 'Błąd wysyłania emaila',
       },
       { status: 500 }
     );
+    return addSecurityHeaders(errorResponse);
   }
 }

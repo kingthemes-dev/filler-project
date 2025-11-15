@@ -6,7 +6,13 @@ import wooCommerceService from '@/services/woocommerce-optimized';
 import KingProductCard from './king-product-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Search, Grid3X3, List } from 'lucide-react';
 
@@ -37,7 +43,7 @@ export default function KingProductGrid({
   variant = 'default',
   limit,
   orderBy = 'date',
-  order = 'desc'
+  order = 'desc',
 }: KingProductGridProps) {
   const [products, setProducts] = useState<WooProduct[]>(initialProducts || []);
   const [loading, setLoading] = useState(!initialProducts);
@@ -48,8 +54,11 @@ export default function KingProductGrid({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: '', max: '' });
-  
+  const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({
+    min: '',
+    max: '',
+  });
+
   // (removed) cacheKey was unused and could trigger unnecessary effects
 
   // Grid columns configuration
@@ -59,50 +68,57 @@ export default function KingProductGrid({
     3: 'grid-cols-2 lg:grid-cols-3',
     4: 'grid-cols-2 lg:grid-cols-4',
     5: 'grid-cols-2 lg:grid-cols-4 xl:grid-cols-5',
-    6: 'grid-cols-2 lg:grid-cols-4 xl:grid-cols-6'
+    6: 'grid-cols-2 lg:grid-cols-4 xl:grid-cols-6',
   };
 
   // Fetch products
-  const fetchProducts = useCallback(async (page: number = 1) => {
-    setLoading(true);
-    setError(null);
+  const fetchProducts = useCallback(
+    async (page: number = 1) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const query: WooProductQuery = {
-        page,
-        per_page: limit || 12,
-        status: 'publish',
-        orderby: orderBy,
-        order: order,
-      };
+      try {
+        const query: WooProductQuery = {
+          page,
+          per_page: limit || 12,
+          status: 'publish',
+          orderby: orderBy,
+          order: order,
+        };
 
-      // Add filters
-      if (categoryId) {
-        query.category = categoryId.toString();
-      }
-      if (featured) {
-        query.featured = true;
-      }
-      if (onSale) {
-        query.on_sale = true;
-      }
-      if (searchTerm) {
-        query.search = searchTerm;
-      }
+        // Add filters
+        if (categoryId) {
+          query.category = categoryId.toString();
+        }
+        if (featured) {
+          query.featured = true;
+        }
+        if (onSale) {
+          query.on_sale = true;
+        }
+        if (searchTerm) {
+          query.search = searchTerm;
+        }
 
-      const response = await wooCommerceService.getProducts(query);
-      
-      setProducts(response.data);
-      setTotalPages(response.totalPages);
-      setTotalProducts(response.total);
-      setCurrentPage(page);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Błąd podczas ładowania produktów');
-      console.error('Error fetching products:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [categoryId, featured, onSale, searchTerm, limit, orderBy, order]);
+        const response = await wooCommerceService.getProducts(query);
+
+        setProducts(response.data);
+        setTotalPages(response.totalPages);
+        setTotalProducts(response.total);
+        setCurrentPage(page);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Błąd podczas ładowania produktów'
+        );
+        console.error('Error fetching products:', err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [categoryId, featured, onSale, searchTerm, limit, orderBy, order]
+  );
 
   // Initial fetch
   useEffect(() => {
@@ -202,7 +218,10 @@ export default function KingProductGrid({
 
             {/* Sort */}
             <div className="flex items-center gap-2">
-              <Select value={`${sortBy}-${sortOrder}`} onValueChange={handleSortChange}>
+              <Select
+                value={`${sortBy}-${sortOrder}`}
+                onValueChange={handleSortChange}
+              >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Sortuj według" />
                 </SelectTrigger>
@@ -210,7 +229,9 @@ export default function KingProductGrid({
                   <SelectItem value="date-desc">Najnowsze</SelectItem>
                   <SelectItem value="date-asc">Najstarsze</SelectItem>
                   <SelectItem value="price-asc">Cena: od najniższej</SelectItem>
-                  <SelectItem value="price-desc">Cena: od najwyższej</SelectItem>
+                  <SelectItem value="price-desc">
+                    Cena: od najwyższej
+                  </SelectItem>
                   <SelectItem value="name-asc">Nazwa: A-Z</SelectItem>
                   <SelectItem value="name-desc">Nazwa: Z-A</SelectItem>
                   <SelectItem value="popularity-desc">Popularność</SelectItem>
@@ -228,7 +249,7 @@ export default function KingProductGrid({
                 type="number"
                 placeholder="Min"
                 value={priceRange.min}
-                onChange={(e) => handlePriceRangeChange('min', e.target.value)}
+                onChange={e => handlePriceRangeChange('min', e.target.value)}
                 className="w-20"
               />
               <span className="text-muted-foreground">-</span>
@@ -236,7 +257,7 @@ export default function KingProductGrid({
                 type="number"
                 placeholder="Max"
                 value={priceRange.max}
-                onChange={(e) => handlePriceRangeChange('max', e.target.value)}
+                onChange={e => handlePriceRangeChange('max', e.target.value)}
                 className="w-20"
               />
               <span className="text-sm text-muted-foreground">zł</span>
@@ -248,7 +269,9 @@ export default function KingProductGrid({
       {/* Products Grid */}
       {products.length > 0 ? (
         <>
-          <div className={`grid gap-4 lg:gap-6 ${viewMode === 'list' ? 'grid-cols-1' : gridColsClasses[gridCols]}`}>
+          <div
+            className={`grid gap-4 lg:gap-6 ${viewMode === 'list' ? 'grid-cols-1' : gridColsClasses[gridCols]}`}
+          >
             {products.map((product, index) => (
               <KingProductCard
                 key={product.id}
@@ -271,8 +294,8 @@ export default function KingProductGrid({
               >
                 Poprzednia
               </Button>
-              
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                 <Button
                   key={page}
                   variant={currentPage === page ? 'default' : 'outline'}
@@ -282,7 +305,7 @@ export default function KingProductGrid({
                   {page}
                 </Button>
               ))}
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -302,8 +325,12 @@ export default function KingProductGrid({
         </>
       ) : (
         <div className="text-center py-12">
-          <p className="text-muted-foreground text-lg">Nie znaleziono produktów</p>
-          <p className="text-muted-foreground">Spróbuj zmienić filtry lub wyszukiwanie</p>
+          <p className="text-muted-foreground text-lg">
+            Nie znaleziono produktów
+          </p>
+          <p className="text-muted-foreground">
+            Spróbuj zmienić filtry lub wyszukiwanie
+          </p>
         </div>
       )}
     </div>

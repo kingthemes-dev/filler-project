@@ -10,11 +10,13 @@ function deepSanitize<T extends SanitizableValue>(value: T): T {
   }
 
   if (Array.isArray(value)) {
-    return value.map((item) => deepSanitize(item)) as unknown as T;
+    return value.map(item => deepSanitize(item)) as unknown as T;
   }
 
   if (value && typeof value === 'object') {
-    const entries = Object.entries(value as UnknownRecord).map(([key, entryValue]) => [key, deepSanitize(entryValue)]);
+    const entries = Object.entries(value as UnknownRecord).map(
+      ([key, entryValue]) => [key, deepSanitize(entryValue)]
+    );
     return Object.fromEntries(entries) as T;
   }
 
@@ -28,7 +30,8 @@ export function validateApiInput<T extends SanitizableValue>(payload: T): T {
 export function sanitizeHeaders(headers: UnknownRecord): UnknownRecord {
   const sanitized: UnknownRecord = {};
   Object.entries(headers).forEach(([key, value]) => {
-    sanitized[key] = typeof value === 'string' ? sanitizePrimitive(value) : value;
+    sanitized[key] =
+      typeof value === 'string' ? sanitizePrimitive(value) : value;
   });
   return sanitized;
 }

@@ -63,7 +63,8 @@ export class EmailService {
   private sentEmails: EmailResponse[] = [];
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'http://localhost:3001';
+    this.baseUrl =
+      process.env.NEXT_PUBLIC_WORDPRESS_URL || 'http://localhost:3001';
     this.initializeTemplates();
   }
 
@@ -168,7 +169,7 @@ export class EmailService {
         
         FILLER - Profesjonalne produkty do pielęgnacji
         © 2024 FILLER. Wszystkie prawa zastrzeżone.
-      `
+      `,
     });
 
     // Order Shipped Template
@@ -238,7 +239,7 @@ export class EmailService {
         
         FILLER - Profesjonalne produkty do pielęgnacji
         © 2024 FILLER. Wszystkie prawa zastrzeżone.
-      `
+      `,
     });
 
     // Order Delivered Template
@@ -308,7 +309,7 @@ export class EmailService {
         
         FILLER - Profesjonalne produkty do pielęgnacji
         © 2024 FILLER. Wszystkie prawa zastrzeżone.
-      `
+      `,
     });
 
     // Password Reset Template
@@ -375,7 +376,7 @@ export class EmailService {
         
         FILLER - Profesjonalne produkty do pielęgnacji
         © 2024 FILLER. Wszystkie prawa zastrzeżone.
-      `
+      `,
     });
   }
 
@@ -392,7 +393,9 @@ export class EmailService {
       // Adapter: w produkcji możesz logować, ale nie wysyłamy testowego requestu.
       // Maile i tak wyśle WooCommerce po stronie WordPress.
       if (process.env.NODE_ENV === 'production') {
-        console.log('[EmailService] Adapter mode: relying on WooCommerce emails');
+        console.log(
+          '[EmailService] Adapter mode: relying on WooCommerce emails'
+        );
         return {
           success: true,
           messageId: this.generateMessageId(),
@@ -409,7 +412,7 @@ export class EmailService {
           messageId: this.generateMessageId(),
           status: 'sent',
           message: 'DEV adapter: pomijam wywołanie WordPress',
-          sentAt: new Date()
+          sentAt: new Date(),
         };
 
         // Zapisz wysłany email
@@ -419,21 +422,20 @@ export class EmailService {
           to: emailData.to,
           template: emailData.template,
           messageId: emailResponse.messageId,
-          sentAt: emailResponse.sentAt
-      });
+          sentAt: emailResponse.sentAt,
+        });
 
         return emailResponse;
       }
-
     } catch (error) {
       console.error('❌ Błąd wysyłania email przez WordPress:', error);
-      
+
       const response: EmailResponse = {
         success: false,
         messageId: this.generateMessageId(),
         status: 'failed',
         message: error instanceof Error ? error.message : 'Nieznany błąd',
-        sentAt: new Date()
+        sentAt: new Date(),
       };
 
       return response;
@@ -443,7 +445,9 @@ export class EmailService {
   /**
    * Wyślij potwierdzenie zamówienia
    */
-  async sendOrderConfirmation(orderData: OrderEmailData): Promise<EmailResponse> {
+  async sendOrderConfirmation(
+    orderData: OrderEmailData
+  ): Promise<EmailResponse> {
     const variables = {
       orderNumber: orderData.orderNumber,
       customerName: orderData.customerName,
@@ -453,14 +457,14 @@ export class EmailService {
       items: this.formatOrderItems(orderData.items),
       billingAddress: this.formatAddress(orderData.billingAddress),
       shippingAddress: this.formatAddress(orderData.shippingAddress),
-      paymentMethod: orderData.paymentMethod
+      paymentMethod: orderData.paymentMethod,
     };
 
     return this.sendEmail({
       to: orderData.customerEmail,
       toName: orderData.customerName,
       template: 'order_confirmation',
-      variables
+      variables,
     });
   }
 
@@ -475,14 +479,14 @@ export class EmailService {
     const variables = {
       orderNumber: orderData.orderNumber,
       customerName: orderData.customerName,
-      trackingNumber: orderData.trackingNumber
+      trackingNumber: orderData.trackingNumber,
     };
 
     return this.sendEmail({
       to: orderData.customerEmail,
       toName: orderData.customerName,
       template: 'order_shipped',
-      variables
+      variables,
     });
   }
 
@@ -492,31 +496,35 @@ export class EmailService {
   async sendOrderDelivered(orderData: OrderEmailData): Promise<EmailResponse> {
     const variables = {
       orderNumber: orderData.orderNumber,
-      customerName: orderData.customerName
+      customerName: orderData.customerName,
     };
 
     return this.sendEmail({
       to: orderData.customerEmail,
       toName: orderData.customerName,
       template: 'order_delivered',
-      variables
+      variables,
     });
   }
 
   /**
    * Wyślij reset hasła
    */
-  async sendPasswordReset(email: string, name: string, resetLink: string): Promise<EmailResponse> {
+  async sendPasswordReset(
+    email: string,
+    name: string,
+    resetLink: string
+  ): Promise<EmailResponse> {
     const variables = {
       customerName: name,
-      resetLink
+      resetLink,
     };
 
     return this.sendEmail({
       to: email,
       toName: name,
       template: 'password_reset',
-      variables
+      variables,
     });
   }
 
@@ -537,32 +545,53 @@ export class EmailService {
   /**
    * Przetwórz szablon z zmiennymi
    */
-  private processTemplate(template: string, variables: Record<string, string | number | boolean>): string {
+  private processTemplate(
+    template: string,
+    variables: Record<string, string | number | boolean>
+  ): string {
     let processed = template;
-    
+
     for (const [key, value] of Object.entries(variables)) {
       const placeholder = `{${key}}`;
-      processed = processed.replace(new RegExp(placeholder, 'g'), String(value));
+      processed = processed.replace(
+        new RegExp(placeholder, 'g'),
+        String(value)
+      );
     }
-    
+
     return processed;
   }
 
   /**
    * Formatuj listę produktów
    */
-  private formatOrderItems(items: Array<{ name: string; quantity: number; price: number; total: number }>): string {
-    return items.map(item => 
-      `<div class="item">
+  private formatOrderItems(
+    items: Array<{
+      name: string;
+      quantity: number;
+      price: number;
+      total: number;
+    }>
+  ): string {
+    return items
+      .map(
+        item =>
+          `<div class="item">
         <strong>${item.name}</strong> x ${item.quantity} = ${this.formatPrice(item.total)}
       </div>`
-    ).join('');
+      )
+      .join('');
   }
 
   /**
    * Formatuj adres
    */
-  private formatAddress(address: { address: string; city: string; postcode: string; country: string }): string {
+  private formatAddress(address: {
+    address: string;
+    city: string;
+    postcode: string;
+    country: string;
+  }): string {
     return `${address.address}, ${address.city} ${address.postcode}, ${address.country}`;
   }
 

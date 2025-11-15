@@ -13,11 +13,36 @@ export interface PopupChipsMotionProps {
 }
 
 const DEFAULT_LABELS = [
-  'Aesthetic dermal', 'BioPlus Co', 'Caregen', 'Dexlevo', 'Dongkook', 'Dr. PPS',
-  'Filmed', 'Galderma', 'Guna', 'HyaluAl', 'Italfarmacia', 'Jalor', 'JM Biotech',
-  'Koru pharma', 'Lab in cube', 'Merz Aesthetics', 'Mesorga', 'Nahyco', 'Neauvia',
-  'Oreon', 'Professional Derma', 'Professional dietetics', 'Promoitalia', 'Quiver',
-  'Revolax', 'Richesse', 'Tiramer', 'Vaim', 'Victoria sun', 'VM corporation'
+  'Aesthetic dermal',
+  'BioPlus Co',
+  'Caregen',
+  'Dexlevo',
+  'Dongkook',
+  'Dr. PPS',
+  'Filmed',
+  'Galderma',
+  'Guna',
+  'HyaluAl',
+  'Italfarmacia',
+  'Jalor',
+  'JM Biotech',
+  'Koru pharma',
+  'Lab in cube',
+  'Merz Aesthetics',
+  'Mesorga',
+  'Nahyco',
+  'Neauvia',
+  'Oreon',
+  'Professional Derma',
+  'Professional dietetics',
+  'Promoitalia',
+  'Quiver',
+  'Revolax',
+  'Richesse',
+  'Tiramer',
+  'Vaim',
+  'Victoria sun',
+  'VM corporation',
 ];
 
 function getMaxByDensity(density: Density): number {
@@ -27,9 +52,15 @@ function getMaxByDensity(density: Density): number {
 }
 
 // Small helper to clamp a value
-const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, v));
 
-export default function PopupChipsMotion({ labels, isOpen, density = 'med', className }: PopupChipsMotionProps) {
+export default function PopupChipsMotion({
+  labels,
+  isOpen,
+  density = 'med',
+  className,
+}: PopupChipsMotionProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [dims, setDims] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
@@ -78,18 +109,29 @@ export default function PopupChipsMotion({ labels, isOpen, density = 'med', clas
   return (
     <div
       ref={containerRef}
-      className={
-        `relative w-full h-[45vh] md:h-[50vh] overflow-hidden rounded-2xl border border-gray-200 bg-white ${className || ''}`
-      }
+      className={`relative w-full h-[45vh] md:h-[50vh] overflow-hidden rounded-2xl border border-gray-200 bg-white ${className || ''}`}
     >
       {items.map((label, idx) => (
-        <Chip key={`${label}-${idx}`} label={label} container={dims} shake={shake} />
+        <Chip
+          key={`${label}-${idx}`}
+          label={label}
+          container={dims}
+          shake={shake}
+        />
       ))}
     </div>
   );
 }
 
-function Chip({ label, container, shake }: { label: string; container: { w: number; h: number }; shake: { x: number; y: number } }) {
+function Chip({
+  label,
+  container,
+  shake,
+}: {
+  label: string;
+  container: { w: number; h: number };
+  shake: { x: number; y: number };
+}) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [0, 100], [0, 2]);
@@ -104,13 +146,18 @@ function Chip({ label, container, shake }: { label: string; container: { w: numb
 
     // Drop to bottom with subtle bounce (bez pętli, jednorazowa animacja)
     const bottomY = clamp(container.h - 56 - pad, pad, Number.MAX_SAFE_INTEGER);
-    animate(y, bottomY, { type: 'spring', stiffness: 220, damping: 22, bounce: 0.35 });
+    animate(y, bottomY, {
+      type: 'spring',
+      stiffness: 220,
+      damping: 22,
+      bounce: 0.35,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [container.w, container.h]);
 
   // Apply shake as a tiny offset
-  const shakeX = useTransform(x, (v) => v + shake.x);
-  const shakeY = useTransform(y, (v) => v + shake.y);
+  const shakeX = useTransform(x, v => v + shake.x);
+  const shakeY = useTransform(y, v => v + shake.y);
 
   // Drag constraints and post-drag bounce to the bounds
   const pad = 24;
@@ -118,7 +165,7 @@ function Chip({ label, container, shake }: { label: string; container: { w: numb
     left: pad,
     top: pad,
     right: Math.max(pad, container.w - 200 - pad),
-    bottom: Math.max(pad, container.h - 56 - pad)
+    bottom: Math.max(pad, container.h - 56 - pad),
   };
 
   const handleDragEnd = () => {
@@ -126,8 +173,20 @@ function Chip({ label, container, shake }: { label: string; container: { w: numb
     const cy = clamp(y.get(), bounds.top, bounds.bottom);
     const hitX = cx !== x.get();
     const hitY = cy !== y.get();
-    if (hitX) animate(x, cx, { type: 'spring', stiffness: 300, damping: 20, bounce: 0.4 });
-    if (hitY) animate(y, cy, { type: 'spring', stiffness: 300, damping: 20, bounce: 0.4 });
+    if (hitX)
+      animate(x, cx, {
+        type: 'spring',
+        stiffness: 300,
+        damping: 20,
+        bounce: 0.4,
+      });
+    if (hitY)
+      animate(y, cy, {
+        type: 'spring',
+        stiffness: 300,
+        damping: 20,
+        bounce: 0.4,
+      });
   };
 
   return (
@@ -164,5 +223,3 @@ Przykład użycia w popupie:
   />
 )}
 */
-
-

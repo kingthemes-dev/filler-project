@@ -9,7 +9,7 @@ interface QuickViewStore {
   closeQuickView: () => void;
 }
 
-export const useQuickViewStore = create<QuickViewStore>((set) => ({
+export const useQuickViewStore = create<QuickViewStore>(set => ({
   isOpen: false,
   product: null,
   openQuickView: (product: WooProduct | null) => set({ isOpen: true, product }),
@@ -17,16 +17,21 @@ export const useQuickViewStore = create<QuickViewStore>((set) => ({
 }));
 
 // Selectors for optimized subscriptions
-export const useQuickViewIsOpen = () => useQuickViewStore((state) => state.isOpen);
-export const useQuickViewProduct = () => useQuickViewStore((state) => state.product);
+export const useQuickViewIsOpen = () =>
+  useQuickViewStore(state => state.isOpen);
+export const useQuickViewProduct = () =>
+  useQuickViewStore(state => state.product);
 
 // Memoized selectors for actions to prevent re-renders
 export const useQuickViewActions = () => {
-  const openQuickView = useQuickViewStore((state) => state.openQuickView);
-  const closeQuickView = useQuickViewStore((state) => state.closeQuickView);
-  
-  return useMemo(() => ({
-    openQuickView,
-    closeQuickView,
-  }), [openQuickView, closeQuickView]);
+  const openQuickView = useQuickViewStore(state => state.openQuickView);
+  const closeQuickView = useQuickViewStore(state => state.closeQuickView);
+
+  return useMemo(
+    () => ({
+      openQuickView,
+      closeQuickView,
+    }),
+    [openQuickView, closeQuickView]
+  );
 };

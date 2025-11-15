@@ -13,7 +13,10 @@ declare global {
   }
 }
 
-export type GA4Parameters = Record<string, string | number | boolean | null | undefined>;
+export type GA4Parameters = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
 type LayoutShiftEntry = PerformanceEntry & {
   value?: number;
   hadRecentInput?: boolean;
@@ -30,7 +33,7 @@ class SearchConsoleAnalytics {
 
   private initialize(): void {
     if (typeof window === 'undefined') return;
-    
+
     // Wait for gtag to be available
     const checkGtag = () => {
       if (typeof window !== 'undefined' && 'gtag' in window) {
@@ -41,7 +44,7 @@ class SearchConsoleAnalytics {
         setTimeout(checkGtag, 100);
       }
     };
-    
+
     checkGtag();
   }
 
@@ -94,7 +97,7 @@ class SearchConsoleAnalytics {
 
     // Track Core Web Vitals
     this.trackCoreWebVitals();
-    
+
     // Track page load metrics
     this.trackPageLoadMetrics();
   }
@@ -106,7 +109,7 @@ class SearchConsoleAnalytics {
     // Largest Contentful Paint
     if ('PerformanceObserver' in window) {
       try {
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
             if (entry.entryType === 'largest-contentful-paint') {
               this.sendToGA4('web_vitals', {
@@ -124,12 +127,14 @@ class SearchConsoleAnalytics {
 
       // First Input Delay
       try {
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
             const fidEntry = entry as PerformanceEventTiming;
             this.sendToGA4('web_vitals', {
               metric_name: 'FID',
-              metric_value: Math.round(fidEntry.processingStart - fidEntry.startTime),
+              metric_value: Math.round(
+                fidEntry.processingStart - fidEntry.startTime
+              ),
               page_location: window.location.href,
             });
           }
@@ -142,7 +147,7 @@ class SearchConsoleAnalytics {
       // Cumulative Layout Shift
       try {
         let clsValue = 0;
-        const observer = new PerformanceObserver((list) => {
+        const observer = new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
             const layoutShift = entry as LayoutShiftEntry;
             if (!layoutShift.hadRecentInput) {
@@ -168,7 +173,7 @@ class SearchConsoleAnalytics {
   private trackPageLoadMetrics(): void {
     window.addEventListener('load', () => {
       const loadTime = performance.now();
-      
+
       this.sendToGA4('page_load', {
         load_time: Math.round(loadTime),
         page_location: window.location.href,
@@ -177,7 +182,8 @@ class SearchConsoleAnalytics {
 
       // Track TTFB if available
       if (performance.timing) {
-        const ttfb = performance.timing.responseStart - performance.timing.navigationStart;
+        const ttfb =
+          performance.timing.responseStart - performance.timing.navigationStart;
         this.sendToGA4('page_load', {
           ttfb: ttfb,
           page_location: window.location.href,
@@ -192,17 +198,23 @@ class SearchConsoleAnalytics {
   private setupSearchTracking(): void {
     // Track URL search parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const searchQuery = urlParams.get('q') || urlParams.get('search') || urlParams.get('s');
-    
+    const searchQuery =
+      urlParams.get('q') || urlParams.get('search') || urlParams.get('s');
+
     if (searchQuery) {
       this.trackSiteSearch(searchQuery);
     }
 
     // Track form submissions
-    document.addEventListener('submit', (event) => {
+    document.addEventListener('submit', event => {
       const form = event.target as HTMLFormElement;
-      if (form.querySelector('input[type="search"]') || form.action.includes('search')) {
-        const searchInput = form.querySelector('input[type="search"]') as HTMLInputElement;
+      if (
+        form.querySelector('input[type="search"]') ||
+        form.action.includes('search')
+      ) {
+        const searchInput = form.querySelector(
+          'input[type="search"]'
+        ) as HTMLInputElement;
         if (searchInput && searchInput.value) {
           this.trackSiteSearch(searchInput.value);
         }
@@ -215,14 +227,14 @@ class SearchConsoleAnalytics {
    */
   private setupSEOTracking(): void {
     // Track outbound links
-    document.addEventListener('click', (event) => {
+    document.addEventListener('click', event => {
       const target = event.target as HTMLElement;
       const link = target.closest('a');
-      
+
       if (link && link.href) {
         const url = new URL(link.href);
         const currentDomain = window.location.hostname;
-        
+
         if (url.hostname !== currentDomain) {
           this.sendToGA4('click', {
             link_url: link.href,
@@ -235,15 +247,27 @@ class SearchConsoleAnalytics {
     });
 
     // Track file downloads
-    document.addEventListener('click', (event) => {
+    document.addEventListener('click', event => {
       const target = event.target as HTMLElement;
       const link = target.closest('a');
-      
+
       if (link && link.href) {
         const url = new URL(link.href);
-        const fileExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar'];
-        const isDownload = fileExtensions.some(ext => url.pathname.toLowerCase().endsWith(ext));
-        
+        const fileExtensions = [
+          '.pdf',
+          '.doc',
+          '.docx',
+          '.xls',
+          '.xlsx',
+          '.ppt',
+          '.pptx',
+          '.zip',
+          '.rar',
+        ];
+        const isDownload = fileExtensions.some(ext =>
+          url.pathname.toLowerCase().endsWith(ext)
+        );
+
         if (isDownload) {
           this.sendToGA4('file_download', {
             file_name: url.pathname.split('/').pop() || '',
@@ -276,12 +300,14 @@ class SearchConsoleAnalytics {
 
     const trackScroll = () => {
       const scrollPercent = Math.round(
-        (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
+        (window.scrollY /
+          (document.documentElement.scrollHeight - window.innerHeight)) *
+          100
       );
 
       if (scrollPercent > maxScroll) {
         maxScroll = scrollPercent;
-        
+
         // Track milestone scroll depths
         scrollThresholds.forEach(threshold => {
           if (scrollPercent >= threshold && maxScroll < threshold + 10) {
@@ -301,7 +327,9 @@ class SearchConsoleAnalytics {
 // Export singleton instance
 let searchConsoleAnalytics: SearchConsoleAnalytics | null = null;
 
-export function initializeSearchConsoleAnalytics(ga4Id: string): SearchConsoleAnalytics {
+export function initializeSearchConsoleAnalytics(
+  ga4Id: string
+): SearchConsoleAnalytics {
   if (!searchConsoleAnalytics) {
     searchConsoleAnalytics = new SearchConsoleAnalytics(ga4Id);
   }

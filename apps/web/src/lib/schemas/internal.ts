@@ -331,6 +331,79 @@ export const discountCodeSchema = z
   })
   .strict();
 
+// ============================================
+// Generic WooCommerce POST Body Schema (for unknown endpoints)
+// ============================================
+
+/**
+ * Basic validation for generic WooCommerce POST requests
+ * This schema validates structure and prevents DoS attacks
+ * More specific validation should be added for known endpoints
+ */
+export const genericWooCommercePostSchema = z
+  .object({
+    // Allow any object structure but validate basic types
+    // This is a permissive schema that validates structure but not specific fields
+  })
+  .passthrough()
+  .superRefine((value, ctx) => {
+    // Basic validation: ensure it's an object
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Request body must be an object',
+      });
+      return;
+    }
+
+    // Validate that the object is not too large (prevent DoS)
+    try {
+      const bodyString = JSON.stringify(value);
+      if (bodyString.length > 1_000_000) {
+        // 1MB limit
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Request body is too large (max 1MB)',
+        });
+      }
+
+      // Validate that object doesn't have too many keys (prevent DoS)
+      const keys = Object.keys(value);
+      if (keys.length > 1000) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Request body has too many keys (max 1000)',
+        });
+      }
+    } catch (error) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Request body is not valid JSON',
+      });
+    }
+  });
+
+// ============================================
+// Customer Invoices Query Schema
+// ============================================
+
+export const customerInvoicesQuerySchema = z
+  .object({
+    customer_id: z
+      .string()
+      .min(1, 'Customer ID is required')
+      .regex(/^\d+$/, 'Customer ID must be a positive number')
+      .transform((val) => parseInt(val, 10))
+      .refine((val) => val > 0, {
+        message: 'Customer ID must be positive',
+      }),
+  })
+  .strict();
+
+// ============================================
+// Type Exports
+// ============================================
+
 export type AdminAuthPayload = z.infer<typeof adminAuthSchema>;
 export type SendEmailPayload = z.infer<typeof sendEmailSchema>;
 export type SendDiscountEmailPayload = z.infer<typeof sendDiscountEmailSchema>;
@@ -342,3 +415,5 @@ export type ErrorPayload = z.infer<typeof errorsSchema>;
 export type PerformanceMetricsPayload = z.infer<typeof performanceMetricsSchema>;
 export type PerformanceReportPayload = z.infer<typeof performanceReportSchema>;
 export type RecaptchaVerifyPayload = z.infer<typeof recaptchaVerifySchema>;
+export type GenericWooCommercePostPayload = z.infer<typeof genericWooCommercePostSchema>;
+export type CustomerInvoicesQueryPayload = z.infer<typeof customerInvoicesQuerySchema>;

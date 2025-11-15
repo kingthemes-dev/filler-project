@@ -12,10 +12,13 @@ export default function FreeShippingBanner() {
   const itemCount = useCartItemCount();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  
+
   const FREE_SHIPPING_THRESHOLD = SHIPPING_CONFIG.FREE_SHIPPING_THRESHOLD;
   const nettoTotal = total / SHIPPING_CONFIG.VAT_RATE;
-  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - nettoTotal);
+  const remainingForFreeShipping = Math.max(
+    0,
+    FREE_SHIPPING_THRESHOLD - nettoTotal
+  );
   const hasCart = itemCount > 0;
 
   // Show/hide on scroll direction: hide when scrolling down, show when scrolling up or at top
@@ -46,32 +49,38 @@ export default function FreeShippingBanner() {
       setIsShopModalOpen(event.detail.open);
     };
 
-    window.addEventListener('shopModalToggle', handleShopModalToggle as EventListener);
-    return () => window.removeEventListener('shopModalToggle', handleShopModalToggle as EventListener);
+    window.addEventListener(
+      'shopModalToggle',
+      handleShopModalToggle as EventListener
+    );
+    return () =>
+      window.removeEventListener(
+        'shopModalToggle',
+        handleShopModalToggle as EventListener
+      );
   }, []);
-
-
 
   return (
     <motion.div
       initial={{ y: -100, opacity: 0 }}
-      animate={{ 
-        y: (isVisible && !isShopModalOpen) ? 0 : -100,
-        opacity: (isVisible && !isShopModalOpen) ? 1 : 0
+      animate={{
+        y: isVisible && !isShopModalOpen ? 0 : -100,
+        opacity: isVisible && !isShopModalOpen ? 1 : 0,
       }}
       transition={{
-        type: "spring",
+        type: 'spring',
         stiffness: 60,
         damping: 15,
-        mass: 0.5
+        mass: 0.5,
       }}
       className="sticky top-0 z-[100]"
     >
       {/* Main Banner */}
-      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700"
+      <div
+        className="bg-gradient-to-r from-gray-900 via-gray-800 to-black border-b border-gray-700"
         style={{
           borderBottomLeftRadius: '16px',
-          borderBottomRightRadius: '16px'
+          borderBottomRightRadius: '16px',
         }}
       >
         <div className="px-6 py-2 ml-4">
@@ -80,17 +89,26 @@ export default function FreeShippingBanner() {
             <div className="flex-shrink-0">
               <Truck className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
-            
+
             {/* Text */}
             <div className="flex-shrink-0">
               <p className="text-white font-medium text-xs sm:text-sm leading-tight text-center">
                 <span className="hidden sm:inline">
-                  Darmowa dostawa od <span className="font-semibold">200 zł netto</span>
+                  Darmowa dostawa od{' '}
+                  <span className="font-semibold">200 zł netto</span>
                   {hasCart && remainingForFreeShipping > 0 && (
-                    <> · Brakuje <span className="font-bold text-emerald-400">{remainingForFreeShipping.toFixed(2)} zł</span></>
+                    <>
+                      {' '}
+                      · Brakuje{' '}
+                      <span className="font-bold text-emerald-400">
+                        {remainingForFreeShipping.toFixed(2)} zł
+                      </span>
+                    </>
                   )}
                   {hasCart && remainingForFreeShipping <= 0 && (
-                    <span className="text-emerald-400 font-semibold">✅ Masz darmową dostawę!</span>
+                    <span className="text-emerald-400 font-semibold">
+                      ✅ Masz darmową dostawę!
+                    </span>
                   )}
                 </span>
                 <span className="sm:hidden">Darmowa dostawa od 200 zł</span>

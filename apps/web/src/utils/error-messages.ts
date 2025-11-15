@@ -14,5 +14,3 @@ export function httpErrorMessage(status?: number): string {
       return 'Wystąpił nieoczekiwany błąd. Spróbuj ponownie.';
   }
 }
-
-

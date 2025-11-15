@@ -27,6 +27,9 @@
 - Wymaga `SENDINBLUE_API_KEY` oraz `SENDINBLUE_LIST_ID` (ID listy marketingowej).
 - Backend wykorzystuje SDK Sendinblue (Brevo) przez customowy helper `utils/api-helpers.ts`, obsługując idempotencję (sprawdza czy kontakt już istnieje).
 - W UI formularz `newsletter-form` (polskie etykiety, walidacja patternem email). Statusy operacji wyświetlane toastami.
+- **Webhook handler**: `POST /api/webhooks/brevo` - obsługuje eventy z Brevo (subscribe, unsubscribe, update, complaint, bounce) dla synchronizacji statusu.
+- **Zarządzanie kontaktami**: Klasa `SendinBlueAPI` zawiera metody `updateContact()`, `removeContact()`, `unsubscribeContact()` do pełnego zarządzania kontaktami.
+- **Endpoint wypisu**: `GET /wp-json/newsletter/v1/unsubscribe?email={email}&redirect={url}` - publiczny endpoint WordPress do wypisu z listy Brevo. Można używać w mailach newsletterowych jako link wypisu.
 
 ## Płatności
 - Frontend korzysta z danych zwracanych przez WooCommerce REST (`GET /wp-json/wc/v3/payment_gateways`). Brak bezpośredniej integracji frontowej ze Stripe – obsługa dzieje się po stronie WooCommerce.

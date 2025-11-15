@@ -38,59 +38,121 @@ export default function SettingsPage() {
       url: '',
       consumerKey: '',
       consumerSecret: '',
-      webhookSecret: ''
+      webhookSecret: '',
     },
     redis: {
       url: '',
-      enabled: false
+      enabled: false,
     },
     performance: {
       cacheEnabled: true,
       cacheTtl: 60,
-      monitoringEnabled: true
+      monitoringEnabled: true,
     },
     security: {
       csrfEnabled: true,
       rateLimitEnabled: true,
-      corsEnabled: true
-    }
+      corsEnabled: true,
+    },
   });
 
   const [showSecrets, setShowSecrets] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [nodeVersion, setNodeVersion] = useState('');
-  const [platform, setPlatform] = useState('');
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
 
-  // Load environment variables after hydration
+  // Load environment variables from API (server-side only)
   useEffect(() => {
-    setSettings({
-      woocommerce: {
-        url: (process.env.NEXT_PUBLIC_WORDPRESS_URL || '') + '/wp-json/wc/v3',
-        consumerKey: process.env.WC_CONSUMER_KEY || '',
-        consumerSecret: process.env.WC_CONSUMER_SECRET || '',
-        webhookSecret: process.env.WOOCOMMERCE_WEBHOOK_SECRET || ''
-      },
-      redis: {
-        url: process.env.REDIS_URL || '',
-        enabled: !!process.env.REDIS_URL
-      },
-      performance: {
-        cacheEnabled: true,
-        cacheTtl: 60,
-        monitoringEnabled: true
-      },
-      security: {
-        csrfEnabled: true,
-        rateLimitEnabled: true,
-        corsEnabled: true
+    const loadSettings = async () => {
+      try {
+        // Fetch settings from API endpoint (requires admin auth via cookie)
+        // Admin token is set in cookie by /admin/login page
+        const response = await fetch('/api/settings/status', {
+          credentials: 'include', // Include cookies (admin-token)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setSettings({
+            woocommerce: {
+              url: data.woocommerce?.url || (process.env.NEXT_PUBLIC_WORDPRESS_URL || '') + '/wp-json/wc/v3',
+              consumerKey: data.woocommerce?.consumerKey || '',
+              consumerSecret: data.woocommerce?.consumerSecret || '',
+              webhookSecret: data.woocommerce?.webhookSecret || '',
+            },
+            redis: {
+              url: data.redis?.url || '',
+              enabled: data.redis?.enabled || false,
+            },
+            performance: data.performance || {
+              cacheEnabled: true,
+              cacheTtl: 60,
+              monitoringEnabled: true,
+            },
+            security: data.security || {
+              csrfEnabled: true,
+              rateLimitEnabled: true,
+              corsEnabled: true,
+            },
+          });
+        } else {
+          // Fallback: use public env vars only (secrets will be empty)
+          logger.warn('Settings status: Failed to fetch, using fallback');
+          setSettings({
+            woocommerce: {
+              url: (process.env.NEXT_PUBLIC_WORDPRESS_URL || '') + '/wp-json/wc/v3',
+              consumerKey: '',
+              consumerSecret: '',
+              webhookSecret: '',
+            },
+            redis: {
+              url: '',
+              enabled: false,
+            },
+            performance: {
+              cacheEnabled: true,
+              cacheTtl: 60,
+              monitoringEnabled: true,
+            },
+            security: {
+              csrfEnabled: true,
+              rateLimitEnabled: true,
+              corsEnabled: true,
+            },
+          });
+        }
+      } catch (error) {
+        logger.error('Settings status: Error loading settings', { error });
+        // Fallback: use public env vars only
+        setSettings({
+          woocommerce: {
+            url: (process.env.NEXT_PUBLIC_WORDPRESS_URL || '') + '/wp-json/wc/v3',
+            consumerKey: '',
+            consumerSecret: '',
+            webhookSecret: '',
+          },
+          redis: {
+            url: '',
+            enabled: false,
+          },
+          performance: {
+            cacheEnabled: true,
+            cacheTtl: 60,
+            monitoringEnabled: true,
+          },
+          security: {
+            csrfEnabled: true,
+            rateLimitEnabled: true,
+            corsEnabled: true,
+          },
+        });
       }
-    });
-    
-    // Set Node.js version and platform after hydration
-    setNodeVersion(process.version);
-    setPlatform(process.platform);
+    };
+
+    loadSettings();
+
+    // Note: process.version and process.platform are not available in client-side components
+    // These would need to be fetched from API if needed
   }, []);
 
   const handleSave = async () => {
@@ -108,11 +170,11 @@ export default function SettingsPage() {
 
   const updateSetting = <
     Section extends keyof Settings,
-    Key extends keyof Settings[Section]
+    Key extends keyof Settings[Section],
   >(
     section: Section,
     key: Key,
-    value: Settings[Section][Key],
+    value: Settings[Section][Key]
   ) => {
     setSettings(prev => ({
       ...prev,
@@ -126,10 +188,10 @@ export default function SettingsPage() {
   const testConnection = async (type: 'woocommerce' | 'redis') => {
     setTestingConnection(true);
     setConnectionStatus(null);
-    
+
     try {
       let isConnected = false;
-      
+
       if (type === 'woocommerce') {
         const response = await fetch('/api/health');
         const data = await response.json();
@@ -139,12 +201,13 @@ export default function SettingsPage() {
         const data = await response.json();
         isConnected = data.services.redis.status === 'ok';
       }
-      
-      setConnectionStatus(isConnected ? 'Connection successful!' : 'Connection failed!');
-      
+
+      setConnectionStatus(
+        isConnected ? 'Connection successful!' : 'Connection failed!'
+      );
+
       // Clear status after 3 seconds
       setTimeout(() => setConnectionStatus(null), 3000);
-      
     } catch {
       setConnectionStatus('Connection failed!');
       setTimeout(() => setConnectionStatus(null), 3000);
@@ -179,7 +242,9 @@ export default function SettingsPage() {
               <Input
                 id="wc-url"
                 value={settings.woocommerce.url}
-                onChange={(e) => updateSetting('woocommerce', 'url', e.target.value)}
+                onChange={e =>
+                  updateSetting('woocommerce', 'url', e.target.value)
+                }
                 placeholder="https://your-site.com/wp-json/wc/v3"
               />
             </div>
@@ -193,13 +258,15 @@ export default function SettingsPage() {
                 {testingConnection ? 'Testing...' : 'Test Connection'}
               </Button>
               {connectionStatus && (
-                <div className={`text-sm mt-2 ${connectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}>
+                <div
+                  className={`text-sm mt-2 ${connectionStatus.includes('successful') ? 'text-green-600' : 'text-red-600'}`}
+                >
                   {connectionStatus}
                 </div>
               )}
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="wc-key">Consumer Key</Label>
@@ -208,7 +275,9 @@ export default function SettingsPage() {
                   id="wc-key"
                   type={showSecrets ? 'text' : 'password'}
                   value={settings.woocommerce.consumerKey}
-                  onChange={(e) => updateSetting('woocommerce', 'consumerKey', e.target.value)}
+                  onChange={e =>
+                    updateSetting('woocommerce', 'consumerKey', e.target.value)
+                  }
                   placeholder="ck_..."
                 />
                 <Button
@@ -218,7 +287,11 @@ export default function SettingsPage() {
                   className="absolute right-0 top-0 h-full px-3"
                   onClick={() => setShowSecrets(!showSecrets)}
                 >
-                  {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showSecrets ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -229,7 +302,13 @@ export default function SettingsPage() {
                   id="wc-secret"
                   type={showSecrets ? 'text' : 'password'}
                   value={settings.woocommerce.consumerSecret}
-                  onChange={(e) => updateSetting('woocommerce', 'consumerSecret', e.target.value)}
+                  onChange={e =>
+                    updateSetting(
+                      'woocommerce',
+                      'consumerSecret',
+                      e.target.value
+                    )
+                  }
                   placeholder="cs_..."
                 />
                 <Button
@@ -239,7 +318,11 @@ export default function SettingsPage() {
                   className="absolute right-0 top-0 h-full px-3"
                   onClick={() => setShowSecrets(!showSecrets)}
                 >
-                  {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showSecrets ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -252,7 +335,9 @@ export default function SettingsPage() {
                 id="wc-webhook"
                 type={showSecrets ? 'text' : 'password'}
                 value={settings.woocommerce.webhookSecret}
-                onChange={(e) => updateSetting('woocommerce', 'webhookSecret', e.target.value)}
+                onChange={e =>
+                  updateSetting('woocommerce', 'webhookSecret', e.target.value)
+                }
                 placeholder="wc_wh_..."
               />
               <Button
@@ -262,7 +347,11 @@ export default function SettingsPage() {
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowSecrets(!showSecrets)}
               >
-                {showSecrets ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showSecrets ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
@@ -284,11 +373,13 @@ export default function SettingsPage() {
               id="redis-enabled"
               type="checkbox"
               checked={settings.redis.enabled}
-              onChange={(e) => updateSetting('redis', 'enabled', e.target.checked)}
+              onChange={e =>
+                updateSetting('redis', 'enabled', e.target.checked)
+              }
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
-          
+
           {settings.redis.enabled && (
             <div>
               <Label htmlFor="redis-url">Redis URL</Label>
@@ -297,7 +388,7 @@ export default function SettingsPage() {
                   id="redis-url"
                   type={showSecrets ? 'text' : 'password'}
                   value={settings.redis.url}
-                  onChange={(e) => updateSetting('redis', 'url', e.target.value)}
+                  onChange={e => updateSetting('redis', 'url', e.target.value)}
                   placeholder="redis://localhost:6379"
                 />
                 <Button
@@ -327,11 +418,13 @@ export default function SettingsPage() {
               id="cache-enabled"
               type="checkbox"
               checked={settings.performance.cacheEnabled}
-              onChange={(e) => updateSetting('performance', 'cacheEnabled', e.target.checked)}
+              onChange={e =>
+                updateSetting('performance', 'cacheEnabled', e.target.checked)
+              }
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="monitoring-enabled">Enable Monitoring</Label>
@@ -341,7 +434,13 @@ export default function SettingsPage() {
               id="monitoring-enabled"
               type="checkbox"
               checked={settings.performance.monitoringEnabled}
-              onChange={(e) => updateSetting('performance', 'monitoringEnabled', e.target.checked)}
+              onChange={e =>
+                updateSetting(
+                  'performance',
+                  'monitoringEnabled',
+                  e.target.checked
+                )
+              }
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
@@ -352,7 +451,13 @@ export default function SettingsPage() {
               id="cache-ttl"
               type="number"
               value={settings.performance.cacheTtl}
-              onChange={(e) => updateSetting('performance', 'cacheTtl', parseInt(e.target.value))}
+              onChange={e =>
+                updateSetting(
+                  'performance',
+                  'cacheTtl',
+                  parseInt(e.target.value)
+                )
+              }
               min="1"
               max="3600"
             />
@@ -369,17 +474,21 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="csrf-enabled">CSRF Protection</Label>
-              <p className="text-sm text-gray-600">Protect against CSRF attacks</p>
+              <p className="text-sm text-gray-600">
+                Protect against CSRF attacks
+              </p>
             </div>
             <input
               id="csrf-enabled"
               type="checkbox"
               checked={settings.security.csrfEnabled}
-              onChange={(e) => updateSetting('security', 'csrfEnabled', e.target.checked)}
+              onChange={e =>
+                updateSetting('security', 'csrfEnabled', e.target.checked)
+              }
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="rate-limit-enabled">Rate Limiting</Label>
@@ -389,7 +498,9 @@ export default function SettingsPage() {
               id="rate-limit-enabled"
               type="checkbox"
               checked={settings.security.rateLimitEnabled}
-              onChange={(e) => updateSetting('security', 'rateLimitEnabled', e.target.checked)}
+              onChange={e =>
+                updateSetting('security', 'rateLimitEnabled', e.target.checked)
+              }
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
@@ -397,13 +508,17 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="cors-enabled">CORS</Label>
-              <p className="text-sm text-gray-600">Enable Cross-Origin Resource Sharing</p>
+              <p className="text-sm text-gray-600">
+                Enable Cross-Origin Resource Sharing
+              </p>
             </div>
             <input
               id="cors-enabled"
               type="checkbox"
               checked={settings.security.corsEnabled}
-              onChange={(e) => updateSetting('security', 'corsEnabled', e.target.checked)}
+              onChange={e =>
+                updateSetting('security', 'corsEnabled', e.target.checked)
+              }
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
           </div>
@@ -420,7 +535,9 @@ export default function SettingsPage() {
             <div>
               <Label>Environment</Label>
               <div className="text-sm text-gray-600">
-                <Badge variant="outline">{process.env.NODE_ENV || 'development'}</Badge>
+                <Badge variant="outline">
+                  {process.env.NODE_ENV || 'development'}
+                </Badge>
               </div>
             </div>
             <div>
@@ -429,11 +546,11 @@ export default function SettingsPage() {
             </div>
             <div>
               <Label>Node.js Version</Label>
-              <div className="text-sm text-gray-600">{nodeVersion || 'Loading...'}</div>
+              <div className="text-sm text-gray-600">N/A (client-side)</div>
             </div>
             <div>
               <Label>Platform</Label>
-              <div className="text-sm text-gray-600">{platform || 'Loading...'}</div>
+              <div className="text-sm text-gray-600">N/A (client-side)</div>
             </div>
           </div>
         </CardContent>

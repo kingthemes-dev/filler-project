@@ -3,7 +3,16 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, ExternalLink, CheckCircle, XCircle, AlertTriangle, Clock, Users, Webhook } from 'lucide-react';
+import {
+  RefreshCw,
+  ExternalLink,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Clock,
+  Users,
+  Webhook,
+} from 'lucide-react';
 
 interface WooCommerceStatus {
   api: {
@@ -45,7 +54,7 @@ export default function WooCommerceStatus() {
   const fetchWooCommerceStatus = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch WooCommerce status from dedicated endpoint
       const response = await fetch('/api/woocommerce-status');
       if (response.ok) {
@@ -66,8 +75,10 @@ export default function WooCommerceStatus() {
   }, []);
 
   const getStatusIcon = (status: string) => {
-    if (status === 'ok' || status === 'active') return <CheckCircle className="h-4 w-4 text-green-500" />;
-    if (status === 'degraded' || status === 'warning') return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+    if (status === 'ok' || status === 'active')
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    if (status === 'degraded' || status === 'warning')
+      return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
     return <XCircle className="h-4 w-4 text-red-500" />;
   };
 
@@ -79,9 +90,12 @@ export default function WooCommerceStatus() {
     try {
       console.log('Syncing products...');
       // Trigger product sync via API
-      const response = await fetch('/api/woocommerce?endpoint=products&per_page=100', {
-        method: 'GET',
-      });
+      const response = await fetch(
+        '/api/woocommerce?endpoint=products&per_page=100',
+        {
+          method: 'GET',
+        }
+      );
       if (response.ok) {
         console.log('Products synced successfully');
         await fetchWooCommerceStatus(); // Refresh status
@@ -116,7 +130,9 @@ export default function WooCommerceStatus() {
           <p className="text-gray-600">Backend API status and data overview</p>
         </div>
         <Button onClick={fetchWooCommerceStatus} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+          />
           Refresh
         </Button>
       </div>
@@ -133,7 +149,9 @@ export default function WooCommerceStatus() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Status:</span>
-                  <span className={`text-sm font-bold ${status.api.status === 'ok' ? 'text-green-600' : 'text-red-600'}`}>
+                  <span
+                    className={`text-sm font-bold ${status.api.status === 'ok' ? 'text-green-600' : 'text-red-600'}`}
+                  >
                     {status.api.status === 'ok' ? 'Connected' : 'Disconnected'}
                   </span>
                 </div>
@@ -142,12 +160,18 @@ export default function WooCommerceStatus() {
                   <span className="text-sm">{status.api.responseTime}ms</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium">WooCommerce Version:</span>
-                  <span className="text-sm">{status.api.version || 'Unknown'}</span>
+                  <span className="text-sm font-medium">
+                    WooCommerce Version:
+                  </span>
+                  <span className="text-sm">
+                    {status.api.version || 'Unknown'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Last Check:</span>
-                  <span className="text-sm">{new Date(status.api.lastCheck).toLocaleTimeString()}</span>
+                  <span className="text-sm">
+                    {new Date(status.api.lastCheck).toLocaleTimeString()}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -161,8 +185,13 @@ export default function WooCommerceStatus() {
                 <Clock className="h-4 w-4 text-gray-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{status.products.total}</div>
-                <p className="text-xs text-gray-500">{status.products.published} published, {status.products.featured} featured</p>
+                <div className="text-2xl font-bold">
+                  {status.products.total}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {status.products.published} published,{' '}
+                  {status.products.featured} featured
+                </p>
               </CardContent>
             </Card>
 
@@ -173,7 +202,10 @@ export default function WooCommerceStatus() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{status.orders.total}</div>
-                <p className="text-xs text-gray-500">{status.orders.pending} pending, {status.orders.completed} completed</p>
+                <p className="text-xs text-gray-500">
+                  {status.orders.pending} pending, {status.orders.completed}{' '}
+                  completed
+                </p>
               </CardContent>
             </Card>
 
@@ -183,8 +215,12 @@ export default function WooCommerceStatus() {
                 <Users className="h-4 w-4 text-gray-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{status.customers.total}</div>
-                <p className="text-xs text-gray-500">{status.customers.active} active</p>
+                <div className="text-2xl font-bold">
+                  {status.customers.total}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {status.customers.active} active
+                </p>
               </CardContent>
             </Card>
 
@@ -194,8 +230,12 @@ export default function WooCommerceStatus() {
                 <Webhook className="h-4 w-4 text-gray-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{status.webhooks.count}</div>
-                <p className="text-xs text-gray-500 capitalize">{status.webhooks.status}</p>
+                <div className="text-2xl font-bold">
+                  {status.webhooks.count}
+                </div>
+                <p className="text-xs text-gray-500 capitalize">
+                  {status.webhooks.status}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -207,32 +247,37 @@ export default function WooCommerceStatus() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
-                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-admin`, '_blank')}
+                  onClick={() =>
+                    window.open(
+                      `${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-admin`,
+                      '_blank'
+                    )
+                  }
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   WooCommerce Admin
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={handleTestConnection}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Test API Connection
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={handleSyncProducts}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Sync Products
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start"
                   onClick={handleViewLogs}
                 >
@@ -252,19 +297,27 @@ export default function WooCommerceStatus() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">WooCommerce URL:</span>
-                  <span className="text-sm font-mono text-gray-600">{status.integration.url}</span>
+                  <span className="text-sm font-mono text-gray-600">
+                    {status.integration.url}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Consumer Key:</span>
-                  <span className="text-sm font-mono text-gray-600">{status.integration.consumerKey}</span>
+                  <span className="text-sm font-mono text-gray-600">
+                    {status.integration.consumerKey}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Consumer Secret:</span>
-                  <span className="text-sm font-mono text-gray-600">{status.integration.consumerSecret}</span>
+                  <span className="text-sm font-mono text-gray-600">
+                    {status.integration.consumerSecret}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Webhook Secret:</span>
-                  <span className="text-sm font-mono text-gray-600">{status.integration.webhookSecret}</span>
+                  <span className="text-sm font-mono text-gray-600">
+                    {status.integration.webhookSecret}
+                  </span>
                 </div>
               </div>
             </CardContent>

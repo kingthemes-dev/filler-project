@@ -11,22 +11,35 @@ import { revalidateSchema } from '@/lib/schemas/internal';
 import { validateApiInput } from '@/utils/request-validation';
 import { createErrorResponse, ValidationError } from '@/lib/errors';
 import { logger } from '@/utils/logger';
+import { addSecurityHeaders } from '@/utils/api-security';
+import { checkApiRateLimit } from '@/utils/api-security';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Security check: rate limiting only (admin endpoint, no CSRF)
+  const rateLimitCheck = await checkApiRateLimit(request);
+  
+  if (!rateLimitCheck.allowed) {
+    return rateLimitCheck.response || NextResponse.json(
+      { error: 'Rate limit exceeded' },
+      { status: 429 }
+    );
+  }
+  
   try {
     // Verify authorization
     const authHeader = request.headers.get('authorization');
     const expectedToken = env.REVALIDATE_SECRET;
-    
-    if (!authHeader || !expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+
+    if (
+      !authHeader ||
+      !expectedToken ||
+      authHeader !== `Bearer ${expectedToken}`
+    ) {
       logger.warn('Revalidate: Unauthorized attempt', {
         hasAuthHeader: !!authHeader,
         hasExpectedToken: !!expectedToken,
       });
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Parse and validate body
@@ -36,7 +49,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!validationResult.success) {
       return createErrorResponse(
-        new ValidationError('Invalid revalidation data', validationResult.error.errors),
+        new ValidationError(
+          'Invalid revalidation data',
+          validationResult.error.errors
+        ),
         { endpoint: 'revalidate', method: 'POST' }
       );
     }
@@ -53,9 +69,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           results.push({ path, status: 'revalidated' });
           logger.info('Path revalidated', { path });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           results.push({ path, status: 'error', error: errorMessage });
-          logger.error('Path revalidation failed', { path, error: errorMessage });
+          logger.error('Path revalidation failed', {
+            path,
+            error: errorMessage,
+          });
         }
       }
     }
@@ -68,7 +88,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           results.push({ tag, status: 'revalidated' });
           logger.info('Tag revalidated', { tag });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           results.push({ tag, status: 'error', error: errorMessage });
           logger.error('Tag revalidation failed', { tag, error: errorMessage });
         }
@@ -81,26 +102,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       resultsCount: results.length,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Revalidation completed',
       results,
       timestamp: new Date().toISOString(),
     });
+    return addSecurityHeaders(response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Revalidation failed', { error: errorMessage });
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Revalidation failed', message: errorMessage },
       { status: 500 }
     );
+    return addSecurityHeaders(errorResponse);
   }
 }
 
 export async function GET(): Promise<NextResponse> {
-  return NextResponse.json({
+  const response = NextResponse.json({
     status: 'ok',
     message: 'Revalidation endpoint is active',
     timestamp: new Date().toISOString(),
   });
+  return addSecurityHeaders(response);
 }

@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { dynamicCategoriesService, type DynamicFilters, type HierarchicalCategory } from '@/services/dynamic-categories';
+import {
+  dynamicCategoriesService,
+  type DynamicFilters,
+  type HierarchicalCategory,
+} from '@/services/dynamic-categories';
 import { useQuery } from '@tanstack/react-query';
 
 interface DynamicCategoryFiltersProps {
@@ -13,17 +17,19 @@ interface DynamicCategoryFiltersProps {
   dynamicFiltersData?: DynamicFilters;
 }
 
-export default function DynamicCategoryFilters({ 
-  onCategoryChange, 
+export default function DynamicCategoryFilters({
+  onCategoryChange,
   selectedCategories,
   totalProducts: _totalProducts,
-  dynamicFiltersData
+  dynamicFiltersData,
 }: DynamicCategoryFiltersProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
 
   // Użyj React Query jako fallback jeśli nie ma prefetchowanych danych
   const dynamicFiltersQuery = useQuery<DynamicFilters>({
-    queryKey: ['shop','dynamic-filters'],
+    queryKey: ['shop', 'dynamic-filters'],
     queryFn: async () => {
       console.log('🔄 Loading dynamic categories from prefetched data...');
       return await dynamicCategoriesService.getDynamicFilters();
@@ -34,7 +40,9 @@ export default function DynamicCategoryFilters({
 
   // Użyj prefetchowanych danych jeśli dostępne, w przeciwnym razie React Query
   const categories: HierarchicalCategory[] =
-    dynamicFiltersData?.categories || dynamicFiltersQuery.data?.categories || [];
+    dynamicFiltersData?.categories ||
+    dynamicFiltersQuery.data?.categories ||
+    [];
   // Usunięto główny loading state - dane są prefetchowane
 
   const toggleCategory = (categoryId: string) => {
@@ -51,16 +59,21 @@ export default function DynamicCategoryFilters({
 
   // removed unused handleCategoryClick
 
-  const isCategoryExpanded = (categoryId: string) => expandedCategories.has(categoryId);
-  const isCategorySelected = (categorySlug: string) => selectedCategories.includes(categorySlug);
+  const isCategoryExpanded = (categoryId: string) =>
+    expandedCategories.has(categoryId);
+  const isCategorySelected = (categorySlug: string) =>
+    selectedCategories.includes(categorySlug);
 
   // Usunięto główny loading state - dane są prefetchowane
 
   return (
     <div className="space-y-2">
       {/* Dynamiczne kategorie */}
-      {categories.map((category) => (
-        <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
+      {categories.map(category => (
+        <div
+          key={category.id}
+          className="border border-gray-100 rounded-lg overflow-hidden"
+        >
           {/* Główna kategoria */}
           <div className="bg-gray-50">
             <button
@@ -68,60 +81,75 @@ export default function DynamicCategoryFilters({
               className="flex items-center justify-between w-full p-2 sm:p-3 hover:bg-gray-100 transition-colors"
             >
               <div className="flex items-center">
-                <span className="text-xs sm:text-sm font-semibold text-gray-800">{category.name}</span>
-                <span className="ml-2 text-xs text-gray-500">({category.count})</span>
+                <span className="text-xs sm:text-sm font-semibold text-gray-800">
+                  {category.name}
+                </span>
+                <span className="ml-2 text-xs text-gray-500">
+                  ({category.count})
+                </span>
               </div>
-              {category.subcategories && category.subcategories.length > 0 && (
-                isCategoryExpanded(category.id) ? (
+              {category.subcategories &&
+                category.subcategories.length > 0 &&
+                (isCategoryExpanded(category.id) ? (
                   <ChevronUp className="w-4 h-4 text-gray-500" />
                 ) : (
                   <ChevronDown className="w-4 h-4 text-gray-500" />
-                )
-              )}
+                ))}
             </button>
           </div>
 
           {/* Podkategorie */}
           <AnimatePresence>
-            {isCategoryExpanded(category.id) && category.subcategories && category.subcategories.length > 0 && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="overflow-hidden bg-white"
-              >
-                <div className="border-t border-gray-100">
-                  {category.subcategories && category.subcategories.map((subcategory, index) => (
-                    <motion.label
-                      key={subcategory.id}
-                      className="flex items-center p-2 sm:p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <input
-                        type="checkbox"
-                        name="categories"
-                        value={subcategory.slug}
-                        checked={isCategorySelected(subcategory.slug)}
-                        onChange={() => onCategoryChange(category.slug, subcategory.slug)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                      />
-                      <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{subcategory.name}</span>
-                      <span className="ml-auto text-xs text-gray-500">({subcategory.count})</span>
-                    </motion.label>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+            {isCategoryExpanded(category.id) &&
+              category.subcategories &&
+              category.subcategories.length > 0 && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="overflow-hidden bg-white"
+                >
+                  <div className="border-t border-gray-100">
+                    {category.subcategories &&
+                      category.subcategories.map((subcategory, index) => (
+                        <motion.label
+                          key={subcategory.id}
+                          className="flex items-center p-2 sm:p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <input
+                            type="checkbox"
+                            name="categories"
+                            value={subcategory.slug}
+                            checked={isCategorySelected(subcategory.slug)}
+                            onChange={() =>
+                              onCategoryChange(category.slug, subcategory.slug)
+                            }
+                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                          />
+                          <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">
+                            {subcategory.name}
+                          </span>
+                          <span className="ml-auto text-xs text-gray-500">
+                            ({subcategory.count})
+                          </span>
+                        </motion.label>
+                      ))}
+                  </div>
+                </motion.div>
+              )}
           </AnimatePresence>
         </div>
       ))}
 
       {categories.length === 0 && (
         <div className="text-center py-4">
-          <p className="text-sm text-gray-500">Brak kategorii do wyświetlenia</p>
+          <p className="text-sm text-gray-500">
+            Brak kategorii do wyświetlenia
+          </p>
         </div>
       )}
     </div>

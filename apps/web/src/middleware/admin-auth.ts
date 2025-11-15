@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/config/env';
 
 /**
  * Simple admin authentication middleware
@@ -6,9 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export function adminAuthMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   console.log('🔍 AdminAuth Middleware called for:', pathname);
-  
+
   // Skip admin auth for non-admin routes
   if (!pathname.startsWith('/admin')) {
     console.log('⏭️ Skipping non-admin route:', pathname);
@@ -22,14 +23,16 @@ export function adminAuthMiddleware(request: NextRequest) {
   }
 
   // Check for admin token in headers or cookies
-  const adminToken = request.headers.get('x-admin-token') || 
-                    request.cookies.get('admin-token')?.value;
+  const adminToken =
+    request.headers.get('x-admin-token') ||
+    request.cookies.get('admin-token')?.value;
 
   console.log('🔑 Admin token found:', !!adminToken);
 
   // Simple token check (in production, use proper JWT validation)
-  const validToken = process.env.ADMIN_TOKEN || 'admin-2024-secure-token';
-  
+  // Use env.ADMIN_CACHE_TOKEN (required in production) or ADMIN_TOKEN fallback
+  const validToken = env.ADMIN_CACHE_TOKEN || process.env.ADMIN_TOKEN;
+
   if (!adminToken || adminToken !== validToken) {
     console.log('❌ Invalid or missing token, redirecting to login');
     // Redirect to admin login page

@@ -20,9 +20,7 @@ export default function AdminLayout({
             <LogoutButton />
           </div>
         </aside>
-        <main className="flex-1 py-6 px-6">
-          {children}
-        </main>
+        <main className="flex-1 py-6 px-6">{children}</main>
       </div>
     </div>
   );

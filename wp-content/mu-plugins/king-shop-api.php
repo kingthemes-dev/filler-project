@@ -647,6 +647,17 @@ class KingShopAPI {
         $image_id = $product->get_image_id();
         $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'woocommerce_thumbnail') : wc_placeholder_img_src('woocommerce_thumbnail');
         
+        // Get categories as full objects (id, name, slug) instead of just names
+        $category_terms = wp_get_post_terms($product->get_id(), 'product_cat', array('fields' => 'all'));
+        $formatted_categories = array();
+        foreach ($category_terms as $term) {
+            $formatted_categories[] = array(
+                'id' => $term->term_id,
+                'name' => $term->name,
+                'slug' => $term->slug
+            );
+        }
+        
         return array(
             'id' => $product->get_id(),
             'name' => $product->get_name(),
@@ -658,7 +669,7 @@ class KingShopAPI {
             'featured' => $product->is_featured(),
             'image' => $image_url,
             'images' => array($image_url), // For compatibility
-            'categories' => wp_get_post_terms($product->get_id(), 'product_cat', array('fields' => 'names')),
+            'categories' => $formatted_categories, // Full category objects with id, name, slug
             'stock_status' => $product->get_stock_status(),
             'type' => $product->get_type(),
             'short_description' => $product->get_short_description(),

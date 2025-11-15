@@ -17,7 +17,12 @@ export default function TestFormUnderNewsletter() {
       await fetch('/api/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, message, source: 'newsletter-test-form' })
+        body: JSON.stringify({
+          name,
+          email,
+          message,
+          source: 'newsletter-test-form',
+        }),
       });
       setSent(true);
     } catch {
@@ -36,32 +41,37 @@ export default function TestFormUnderNewsletter() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+    <form
+      onSubmit={onSubmit}
+      className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left"
+    >
       <input
         type="text"
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={e => setName(e.target.value)}
         placeholder="Imię"
         className="h-11 rounded-lg px-3 bg-white/10 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/40"
       />
       <input
         type="email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={e => setEmail(e.target.value)}
         placeholder="Email"
         className="h-11 rounded-lg px-3 bg-white/10 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/40"
       />
-      <Button type="submit" disabled={loading} className="h-11 bg-white text-black hover:bg-white/90 rounded-lg font-semibold">
+      <Button
+        type="submit"
+        disabled={loading}
+        className="h-11 bg-white text-black hover:bg-white/90 rounded-lg font-semibold"
+      >
         {loading ? 'Wysyłanie...' : 'Wyślij test'}
       </Button>
       <textarea
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={e => setMessage(e.target.value)}
         placeholder="Wiadomość (opcjonalnie)"
         className="sm:col-span-3 h-24 rounded-lg px-3 py-2 bg-white/10 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/40"
       />
     </form>
   );
 }
-
-

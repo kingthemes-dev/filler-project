@@ -75,6 +75,6 @@ export const useAuthModals = () => {
   // For now, we'll use a simple approach with window events
   return {
     openLogin: () => window.dispatchEvent(new CustomEvent('openLogin')),
-    openRegister: () => window.dispatchEvent(new CustomEvent('openRegister'))
+    openRegister: () => window.dispatchEvent(new CustomEvent('openRegister')),
   };
 };

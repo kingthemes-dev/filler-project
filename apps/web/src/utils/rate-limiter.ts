@@ -1,7 +1,7 @@
 /**
  * Centralized Rate Limiter
  * FIX: Ujednolicenie 3 implementacji rate limiting do jednej centralnej
- * 
+ *
  * Features:
  * - Redis-based (if available) with in-memory fallback
  * - Configurable limits per endpoint/route
@@ -86,6 +86,46 @@ export const ENDPOINT_RATE_LIMITS: Record<string, EndpointRateLimit> = {
     windowMs: 5 * 60 * 1000, // 5 minutes
     keyPrefix: 'ratelimit:reviews',
   },
+  // Newsletter subscription (mutation, moderate)
+  '/api/newsletter/subscribe': {
+    maxRequests: 10,
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    keyPrefix: 'ratelimit:newsletter',
+  },
+  // Reviews upload (mutation, strict)
+  '/api/reviews/upload': {
+    maxRequests: 10,
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    keyPrefix: 'ratelimit:reviews-upload',
+  },
+  // Cart proxy (mutation, moderate)
+  '/api/cart-proxy': {
+    maxRequests: 50,
+    windowMs: 1 * 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:cart',
+  },
+  // Email endpoints (mutation, moderate)
+  '/api/send-email': {
+    maxRequests: 20,
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    keyPrefix: 'ratelimit:send-email',
+  },
+  '/api/send-newsletter-email': {
+    maxRequests: 10,
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    keyPrefix: 'ratelimit:send-newsletter-email',
+  },
+  '/api/send-discount-email': {
+    maxRequests: 10,
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    keyPrefix: 'ratelimit:send-discount-email',
+  },
+  // reCAPTCHA verification (moderate)
+  '/api/recaptcha/verify': {
+    maxRequests: 30,
+    windowMs: 1 * 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:recaptcha',
+  },
   // Webhooks (very lenient)
   '/api/webhooks': {
     maxRequests: 1000,
@@ -130,12 +170,37 @@ export const ENDPOINT_RATE_LIMITS: Record<string, EndpointRateLimit> = {
     windowMs: 60 * 1000, // 1 minute
     keyPrefix: 'ratelimit:performance-stats',
   },
+  // Analytics endpoints (tracking, lenient)
+  '/api/edge/analytics': {
+    maxRequests: 100,
+    windowMs: 1 * 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:edge-analytics',
+  },
+  '/api/error-tracking': {
+    maxRequests: 50,
+    windowMs: 1 * 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:error-tracking',
+  },
+  '/api/analytics': {
+    maxRequests: 100,
+    windowMs: 1 * 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:analytics',
+  },
+  // Revalidation endpoint (admin, strict)
+  '/api/revalidate': {
+    maxRequests: 10,
+    windowMs: 1 * 60 * 1000, // 1 minute
+    keyPrefix: 'ratelimit:revalidate',
+  },
 };
 
 /**
  * Get rate limit config for endpoint
  */
-export function getEndpointRateLimit(path: string, searchParams?: URLSearchParams): EndpointRateLimit | null {
+export function getEndpointRateLimit(
+  path: string,
+  searchParams?: URLSearchParams
+): EndpointRateLimit | null {
   // Try exact match first
   if (ENDPOINT_RATE_LIMITS[path]) {
     return ENDPOINT_RATE_LIMITS[path];
@@ -147,16 +212,27 @@ export function getEndpointRateLimit(path: string, searchParams?: URLSearchParam
     if (endpoint) {
       // Check for specific endpoint patterns
       if (endpoint === 'products' && searchParams.has('search')) {
-        return ENDPOINT_RATE_LIMITS['/api/woocommerce?endpoint=products&search'] || null;
+        return (
+          ENDPOINT_RATE_LIMITS['/api/woocommerce?endpoint=products&search'] ||
+          null
+        );
       }
       if (endpoint === 'products') {
-        return ENDPOINT_RATE_LIMITS['/api/woocommerce?endpoint=products'] || null;
+        return (
+          ENDPOINT_RATE_LIMITS['/api/woocommerce?endpoint=products'] || null
+        );
       }
       if (endpoint === 'products/categories') {
-        return ENDPOINT_RATE_LIMITS['/api/woocommerce?endpoint=products/categories'] || null;
+        return (
+          ENDPOINT_RATE_LIMITS[
+            '/api/woocommerce?endpoint=products/categories'
+          ] || null
+        );
       }
       if (endpoint === 'customers') {
-        return ENDPOINT_RATE_LIMITS['/api/woocommerce?endpoint=customers'] || null;
+        return (
+          ENDPOINT_RATE_LIMITS['/api/woocommerce?endpoint=customers'] || null
+        );
       }
       if (endpoint === 'orders') {
         return ENDPOINT_RATE_LIMITS['/api/woocommerce?endpoint=orders'] || null;
@@ -174,8 +250,17 @@ export function getEndpointRateLimit(path: string, searchParams?: URLSearchParam
   if (path.startsWith('/api/woocommerce')) {
     return ENDPOINT_RATE_LIMITS['/api/woocommerce'] || null;
   }
+  if (path.startsWith('/api/reviews/upload')) {
+    return ENDPOINT_RATE_LIMITS['/api/reviews/upload'] || null;
+  }
   if (path.startsWith('/api/reviews')) {
     return ENDPOINT_RATE_LIMITS['/api/reviews'] || null;
+  }
+  if (path.startsWith('/api/newsletter/subscribe')) {
+    return ENDPOINT_RATE_LIMITS['/api/newsletter/subscribe'] || null;
+  }
+  if (path.startsWith('/api/cart-proxy')) {
+    return ENDPOINT_RATE_LIMITS['/api/cart-proxy'] || null;
   }
   if (path.startsWith('/api/webhooks')) {
     return ENDPOINT_RATE_LIMITS['/api/webhooks'] || null;
@@ -200,6 +285,30 @@ export function getEndpointRateLimit(path: string, searchParams?: URLSearchParam
   }
   if (path.startsWith('/api/performance')) {
     return ENDPOINT_RATE_LIMITS['/api/performance'] || null;
+  }
+  if (path.startsWith('/api/revalidate')) {
+    return ENDPOINT_RATE_LIMITS['/api/revalidate'] || null;
+  }
+  if (path.startsWith('/api/send-email')) {
+    return ENDPOINT_RATE_LIMITS['/api/send-email'] || null;
+  }
+  if (path.startsWith('/api/send-newsletter-email')) {
+    return ENDPOINT_RATE_LIMITS['/api/send-newsletter-email'] || null;
+  }
+  if (path.startsWith('/api/send-discount-email')) {
+    return ENDPOINT_RATE_LIMITS['/api/send-discount-email'] || null;
+  }
+  if (path.startsWith('/api/recaptcha/verify')) {
+    return ENDPOINT_RATE_LIMITS['/api/recaptcha/verify'] || null;
+  }
+  if (path.startsWith('/api/edge/analytics')) {
+    return ENDPOINT_RATE_LIMITS['/api/edge/analytics'] || null;
+  }
+  if (path.startsWith('/api/error-tracking')) {
+    return ENDPOINT_RATE_LIMITS['/api/error-tracking'] || null;
+  }
+  if (path.startsWith('/api/analytics')) {
+    return ENDPOINT_RATE_LIMITS['/api/analytics'] || null;
   }
 
   // Default: no specific limit (use global)
@@ -230,7 +339,9 @@ async function initializeRedis(): Promise<void> {
   try {
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) {
-      logger.debug('Redis not configured for rate limiting, using in-memory store');
+      logger.debug(
+        'Redis not configured for rate limiting, using in-memory store'
+      );
       return;
     }
 
@@ -248,7 +359,10 @@ async function initializeRedis(): Promise<void> {
     });
 
     redisClient.on('error', (error: Error) => {
-      logger.warn('Rate limiter: Redis connection failed, using in-memory store', { error: error.message });
+      logger.warn(
+        'Rate limiter: Redis connection failed, using in-memory store',
+        { error: error.message }
+      );
       redisClient = null;
     });
 
@@ -262,7 +376,10 @@ async function initializeRedis(): Promise<void> {
       redisClient = null;
     });
   } catch (error) {
-    logger.warn('Rate limiter: Failed to initialize Redis, using in-memory store', { error });
+    logger.warn(
+      'Rate limiter: Failed to initialize Redis, using in-memory store',
+      { error }
+    );
     redisClient = null;
   }
 }
@@ -270,7 +387,10 @@ async function initializeRedis(): Promise<void> {
 /**
  * Get rate limit key
  */
-function getRateLimitKey(identifier: string, keyPrefix: string = 'ratelimit'): string {
+function getRateLimitKey(
+  identifier: string,
+  keyPrefix: string = 'ratelimit'
+): string {
   return `${keyPrefix}:${identifier}`;
 }
 
@@ -289,22 +409,22 @@ async function checkRateLimitRedis(
   try {
     const now = Date.now();
     const windowSeconds = Math.ceil(windowMs / 1000);
-    
+
     // Use Redis INCR with TTL (sliding window)
     const current = await redisClient.incr(key);
-    
+
     // Set TTL on first request
     if (current === 1) {
       await redisClient.expire(key, windowSeconds);
     }
-    
+
     // Get TTL to calculate reset time
     const ttl = await redisClient.ttl(key);
-    const resetAt = now + (ttl * 1000);
-    
+    const resetAt = now + ttl * 1000;
+
     const remaining = Math.max(0, maxRequests - current);
     const allowed = current <= maxRequests;
-    
+
     return {
       allowed,
       remaining,
@@ -326,7 +446,7 @@ function checkRateLimitMemory(
   windowMs: number
 ): RateLimitResult {
   const now = Date.now();
-  
+
   // Clean old entries (every 1000 requests to avoid performance hit)
   if (Math.random() < 0.001) {
     for (const [k, v] of memoryStore.entries()) {
@@ -335,7 +455,7 @@ function checkRateLimitMemory(
       }
     }
   }
-  
+
   // Get or create entry
   let entry = memoryStore.get(key);
   if (!entry || entry.resetAt < now) {
@@ -344,7 +464,7 @@ function checkRateLimitMemory(
       resetAt: now + windowMs,
     };
   }
-  
+
   // Check limit
   if (entry.count >= maxRequests) {
     return {
@@ -354,11 +474,11 @@ function checkRateLimitMemory(
       retryAfter: Math.ceil((entry.resetAt - now) / 1000),
     };
   }
-  
+
   // Increment and update
   entry.count++;
   memoryStore.set(key, entry);
-  
+
   return {
     allowed: true,
     remaining: maxRequests - entry.count,
@@ -368,22 +488,24 @@ function checkRateLimitMemory(
 
 /**
  * Main rate limit check function
- * 
+ *
  * @param config Rate limit configuration
  * @returns Rate limit result
  */
-export async function checkRateLimit(config: RateLimitConfig): Promise<RateLimitResult> {
+export async function checkRateLimit(
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
   const { maxRequests, windowMs, identifier, keyPrefix } = config;
   const key = getRateLimitKey(identifier, keyPrefix);
-  
+
   // Initialize Redis if not done yet
   await initializeRedis();
-  
+
   // Use Redis if available, otherwise memory
   if (redisClient) {
     return checkRateLimitRedis(key, maxRequests, windowMs);
   }
-  
+
   return checkRateLimitMemory(key, maxRequests, windowMs);
 }
 
@@ -396,7 +518,7 @@ export async function checkEndpointRateLimit(
   searchParams?: URLSearchParams
 ): Promise<RateLimitResult> {
   const endpointConfig = getEndpointRateLimit(path, searchParams);
-  
+
   if (!endpointConfig) {
     // No specific limit, use default
     return checkRateLimit({
@@ -418,9 +540,12 @@ export async function checkEndpointRateLimit(
 /**
  * Reset rate limit for identifier
  */
-export async function resetRateLimit(identifier: string, keyPrefix: string = 'ratelimit'): Promise<void> {
+export async function resetRateLimit(
+  identifier: string,
+  keyPrefix: string = 'ratelimit'
+): Promise<void> {
   const key = getRateLimitKey(identifier, keyPrefix);
-  
+
   if (redisClient) {
     try {
       await redisClient.del(key);
@@ -428,7 +553,7 @@ export async function resetRateLimit(identifier: string, keyPrefix: string = 'ra
       logger.warn('Rate limiter: Failed to reset in Redis', { error });
     }
   }
-  
+
   memoryStore.delete(key);
 }
 
@@ -443,24 +568,26 @@ export async function getRateLimitStatus(
 ): Promise<RateLimitResult> {
   const key = getRateLimitKey(identifier, keyPrefix);
   await initializeRedis();
-  
+
   if (redisClient) {
     try {
       const current = await redisClient.get(key);
       const count = current ? parseInt(current, 10) : 0;
       const ttl = await redisClient.ttl(key);
       const resetAt = Date.now() + (ttl > 0 ? ttl * 1000 : windowMs);
-      
+
       return {
         allowed: count < maxRequests,
         remaining: Math.max(0, maxRequests - count),
         resetAt,
       };
     } catch (error) {
-      logger.debug('Rate limiter: Falling back to memory status lookup', { error });
+      logger.debug('Rate limiter: Falling back to memory status lookup', {
+        error,
+      });
     }
   }
-  
+
   const entry = memoryStore.get(key);
   if (!entry) {
     return {
@@ -469,7 +596,7 @@ export async function getRateLimitStatus(
       resetAt: Date.now() + windowMs,
     };
   }
-  
+
   const now = Date.now();
   if (entry.resetAt < now) {
     return {
@@ -478,7 +605,7 @@ export async function getRateLimitStatus(
       resetAt: now + windowMs,
     };
   }
-  
+
   return {
     allowed: entry.count < maxRequests,
     remaining: Math.max(0, maxRequests - entry.count),

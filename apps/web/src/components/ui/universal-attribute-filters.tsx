@@ -45,15 +45,17 @@ interface UniversalAttributeFiltersProps {
   };
 }
 
-export default function UniversalAttributeFilters({ 
-  onFilterChange, 
+export default function UniversalAttributeFilters({
+  onFilterChange,
   selectedFilters,
   totalProducts: _totalProducts,
   config,
   preset = 'woocommerce',
-  currentFilters: _currentFilters = { categories: [] }
+  currentFilters: _currentFilters = { categories: [] },
 }: UniversalAttributeFiltersProps) {
-  const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(new Set());
+  const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(
+    new Set()
+  );
 
   // 🚀 USE PREFETCHED DATA - No loading, instant display!
   const attributesQuery = useQuery<AttributeMap>({
@@ -68,7 +70,10 @@ export default function UniversalAttributeFilters({
   });
 
   // Use prefetched data - should be instant! (memoized for stable identity)
-  const attributes = useMemo<AttributeMap>(() => attributesQuery.data || {}, [attributesQuery.data]);
+  const attributes = useMemo<AttributeMap>(
+    () => attributesQuery.data || {},
+    [attributesQuery.data]
+  );
   const loading = attributesQuery.isLoading && !attributesQuery.data; // Only show loading if no data at all
 
   const toggleAttribute = (attributeSlug: string) => {
@@ -83,27 +88,31 @@ export default function UniversalAttributeFilters({
     });
   };
 
-  const handleAttributeTermClick = (attributeSlug: string, termSlug: string) => {
+  const handleAttributeTermClick = (
+    attributeSlug: string,
+    termSlug: string
+  ) => {
     const filterValue = selectedFilters[`pa_${attributeSlug}`];
     const currentTerms = Array.isArray(filterValue) ? filterValue : [];
     const newTerms = currentTerms.includes(termSlug)
       ? currentTerms.filter(t => t !== termSlug)
       : [...currentTerms, termSlug];
-    
+
     onFilterChange(`pa_${attributeSlug}`, newTerms.join(','));
   };
 
-  const isAttributeExpanded = (attributeSlug: string) => expandedAttributes.has(attributeSlug);
+  const isAttributeExpanded = (attributeSlug: string) =>
+    expandedAttributes.has(attributeSlug);
   const isTermSelected = (attributeSlug: string, termSlug: string) => {
     const filterValue = selectedFilters[`pa_${attributeSlug}`];
     let terms: string[] = [];
-    
+
     if (Array.isArray(filterValue)) {
       terms = filterValue;
     } else if (typeof filterValue === 'string') {
       terms = filterValue.split(',').filter(v => v.trim());
     }
-    
+
     return terms.includes(termSlug);
   };
 
@@ -116,8 +125,8 @@ export default function UniversalAttributeFilters({
         slug,
         ...attr,
         terms: attr.terms
-          .filter((term) => term.count > 0)
-          .sort((a, b) => b.count - a.count)
+          .filter(term => term.count > 0)
+          .sort((a, b) => b.count - a.count),
       }));
   }, [attributes]);
 
@@ -148,73 +157,101 @@ export default function UniversalAttributeFilters({
 
   return (
     <div className="space-y-4">
-      {sortedAttributes.map((attribute) => {
+      {sortedAttributes.map(attribute => {
         const attributeSlug = attribute.slug;
         return (
-          <div key={attributeSlug} className="border border-gray-100 rounded-lg overflow-hidden">
-          {/* Attribute header */}
-          <div className="bg-gray-50">
-            <button
-              onClick={() => toggleAttribute(attributeSlug)}
-              className="flex items-center justify-between w-full p-3 hover:bg-gray-100 transition-colors"
-            >
-              <div className="flex items-center">
-                <span className="text-sm font-semibold text-gray-800">{attribute.name}</span>
-                <span className="ml-2 text-xs text-gray-500">({attribute.terms.length})</span>
-              </div>
-              {isAttributeExpanded(attributeSlug) ? (
-                <ChevronUp className="w-4 h-4 text-gray-500" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              )}
-            </button>
-          </div>
-
-          {/* Attribute terms */}
-          <AnimatePresence>
-            {isAttributeExpanded(attributeSlug) && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="overflow-hidden bg-white"
+          <div
+            key={attributeSlug}
+            className="border border-gray-100 rounded-lg overflow-hidden"
+          >
+            {/* Attribute header */}
+            <div className="bg-gray-50">
+              <button
+                onClick={() => toggleAttribute(attributeSlug)}
+                className="flex items-center justify-between w-full p-3 hover:bg-gray-100 transition-colors"
               >
-                <div className="border-t border-gray-100">
-                  {(() => {
-                    const items = attribute.terms;
-                    const Row = ({ index, style }: ListChildComponentProps) => {
-                      const term = items[index] as AttributeTerm;
-                      return (
-                        <div style={style}>
-                          <label className="flex items-center px-2 sm:px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0 min-w-0">
-                            <input
-                              type="checkbox"
-                              name={attributeSlug}
-                              value={term.slug}
-                              checked={isTermSelected(attributeSlug, term.slug)}
-                              onChange={() => handleAttributeTermClick(attributeSlug, term.slug)}
-                              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                            />
-                            <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700 text-left truncate">{term.name}</span>
-                            <span className="ml-auto text-xs text-gray-500">({term.count})</span>
-                          </label>
-                        </div>
-                      );
-                    };
-                    const itemSize = 44; // px per row
-                    const height = Math.min(8, items.length) * itemSize; // show up to 8 rows without scroll
-                    return (
-                      <List height={height} width={'100%'} itemCount={items.length} itemSize={itemSize} overscanCount={8}>
-                        {Row}
-                      </List>
-                    );
-                  })()}
+                <div className="flex items-center">
+                  <span className="text-sm font-semibold text-gray-800">
+                    {attribute.name}
+                  </span>
+                  <span className="ml-2 text-xs text-gray-500">
+                    ({attribute.terms.length})
+                  </span>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                {isAttributeExpanded(attributeSlug) ? (
+                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                )}
+              </button>
+            </div>
+
+            {/* Attribute terms */}
+            <AnimatePresence>
+              {isAttributeExpanded(attributeSlug) && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="overflow-hidden bg-white"
+                >
+                  <div className="border-t border-gray-100">
+                    {(() => {
+                      const items = attribute.terms;
+                      const Row = ({
+                        index,
+                        style,
+                      }: ListChildComponentProps) => {
+                        const term = items[index] as AttributeTerm;
+                        return (
+                          <div style={style}>
+                            <label className="flex items-center px-2 sm:px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0 min-w-0">
+                              <input
+                                type="checkbox"
+                                name={attributeSlug}
+                                value={term.slug}
+                                checked={isTermSelected(
+                                  attributeSlug,
+                                  term.slug
+                                )}
+                                onChange={() =>
+                                  handleAttributeTermClick(
+                                    attributeSlug,
+                                    term.slug
+                                  )
+                                }
+                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                              />
+                              <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700 text-left truncate">
+                                {term.name}
+                              </span>
+                              <span className="ml-auto text-xs text-gray-500">
+                                ({term.count})
+                              </span>
+                            </label>
+                          </div>
+                        );
+                      };
+                      const itemSize = 44; // px per row
+                      const height = Math.min(8, items.length) * itemSize; // show up to 8 rows without scroll
+                      return (
+                        <List
+                          height={height}
+                          width={'100%'}
+                          itemCount={items.length}
+                          itemSize={itemSize}
+                          overscanCount={8}
+                        >
+                          {Row}
+                        </List>
+                      );
+                    })()}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         );
       })}
     </div>

@@ -4,6 +4,11 @@ if (file_exists(WP_CONTENT_DIR . '/mu-plugins/headless-config.php')) {
     require_once WP_CONTENT_DIR . '/mu-plugins/headless-config.php';
 }
 
+// Load newsletter unsubscribe endpoint
+if (file_exists(WP_CONTENT_DIR . '/mu-plugins/unsubscribe-endpoint.php')) {
+    require_once WP_CONTENT_DIR . '/mu-plugins/unsubscribe-endpoint.php';
+}
+
 /**
  * HPOS-Compatible King Email System - System powiadomień email
  * Updated for High-Performance Order Storage compatibility
@@ -82,6 +87,28 @@ class KingEmailSystem {
         // Adapter mode: do not send custom emails. Rely on WooCommerce defaults.
         // Keep only adapters/filters that enrich/brand default emails.
         add_action('woocommerce_order_status_changed', [$this, 'handle_order_status_change'], 10, 4);
+        
+        // Prevent duplicate emails for REST API orders
+        // WooCommerce sends emails automatically, but may send twice for REST API orders
+        // Hook into all customer email types
+        add_filter('woocommerce_email_enabled_customer_processing_order', [$this, 'prevent_duplicate_emails'], 10, 2);
+        add_filter('woocommerce_email_enabled_customer_on_hold_order', [$this, 'prevent_duplicate_emails'], 10, 2);
+        add_filter('woocommerce_email_enabled_customer_completed_order', [$this, 'prevent_duplicate_emails'], 10, 2);
+        add_filter('woocommerce_email_enabled_customer_invoice', [$this, 'prevent_duplicate_emails'], 10, 2);
+        add_filter('woocommerce_email_enabled_customer_refunded_order', [$this, 'prevent_duplicate_emails'], 10, 2);
+        
+        // Also prevent at the trigger level (more reliable)
+        add_filter('woocommerce_email_recipient_customer_processing_order', [$this, 'prevent_duplicate_emails_recipient'], 10, 2);
+        add_filter('woocommerce_email_recipient_customer_on_hold_order', [$this, 'prevent_duplicate_emails_recipient'], 10, 2);
+        add_filter('woocommerce_email_recipient_customer_completed_order', [$this, 'prevent_duplicate_emails_recipient'], 10, 2);
+        
+        // Mark email as sent when WooCommerce sends it
+        // Note: woocommerce_email_sent hook passes different arguments depending on WooCommerce version
+        // Some versions pass: ($enabled, $email_id, $order)
+        // Others pass: ($to, $subject, $message, $headers, $attachments) from wp_mail
+        add_action('woocommerce_email_sent', [$this, 'mark_email_as_sent'], 10, 3);
+        // Also hook into before_send to mark immediately
+        add_action('woocommerce_email_before_send', [$this, 'mark_email_before_send'], 10, 2);
 
         // Add meta (NIP, firma, tracking) to Woo emails
         add_action('woocommerce_email_order_meta', [$this, 'inject_order_meta_into_email'], 10, 3);
@@ -103,6 +130,10 @@ class KingEmailSystem {
         // add_action('woocommerce_rest_insert_shop_order_object', [$this, 'trigger_rest_api_emails'], 10, 2);
         // add_action('woocommerce_create_order', [$this, 'trigger_rest_api_emails'], 10, 1);
         // add_action('woocommerce_checkout_order_processed', [$this, 'trigger_rest_api_emails'], 10, 1);
+        
+        // Prevent duplicate emails at order creation level
+        add_action('woocommerce_new_order', [$this, 'prevent_duplicate_on_new_order'], 1, 1);
+        add_action('woocommerce_rest_insert_shop_order_object', [$this, 'prevent_duplicate_on_rest_order'], 1, 2);
         
         // Debug: Log all order creation attempts
         add_action('woocommerce_new_order', [$this, 'debug_order_creation'], 5, 1);
@@ -238,6 +269,51 @@ class KingEmailSystem {
     }
     
     /**
+     * Prevent duplicate emails when new order is created
+     * Mark order as having email sent to prevent WooCommerce from sending duplicate
+     */
+    public function prevent_duplicate_on_new_order($order_id) {
+        try {
+            $order = wc_get_order($order_id);
+            if (!$order) {
+                return;
+            }
+            
+            // Check if email was already sent (shouldn't be, but check anyway)
+            $email_sent_key = '_king_email_sent_' . $order_id;
+            $email_sent = $order->get_meta($email_sent_key);
+            
+            if ($email_sent && $email_sent !== 'sending') {
+                error_log("King Email System: Order {$order_id} already has email sent flag at creation, preventing duplicate");
+            }
+        } catch (Exception $e) {
+            error_log("King Email System: Error preventing duplicate on new order: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Prevent duplicate emails when REST API order is created
+     */
+    public function prevent_duplicate_on_rest_order($order, $request) {
+        try {
+            $order_id = $order->get_id();
+            if (!$order_id) {
+                return;
+            }
+            
+            // Mark that we're processing this order to prevent duplicates
+            $email_sent_key = '_king_email_sent_' . $order_id;
+            $email_sent = $order->get_meta($email_sent_key);
+            
+            if ($email_sent && $email_sent !== 'sending') {
+                error_log("King Email System: REST order {$order_id} already has email sent flag, preventing duplicate");
+            }
+        } catch (Exception $e) {
+            error_log("King Email System: Error preventing duplicate on REST order: " . $e->getMessage());
+        }
+    }
+    
+    /**
      * Debug order creation
      */
     public function debug_order_creation($order_id) {
@@ -309,6 +385,11 @@ class KingEmailSystem {
                 $original_status = $order->get_status();
                 
                 try {
+                    // Mark order as "sending" to prevent duplicate emails during status change
+                    $email_sent_key = '_king_email_sent_' . $order_id;
+                    $order->update_meta_data($email_sent_key, 'sending');
+                    $order->save();
+                    
                     // Temporarily change status to 'processing' to allow WooCommerce email to send
                     $order->set_status('processing', 'Temporary status change for email sending', false);
                     $order->save();
@@ -317,6 +398,11 @@ class KingEmailSystem {
                     // Now try to send the email
                     // WooCommerce stores emails with class name as key (WC_Email_Customer_Processing_Order)
                     $email_found = false;
+                    
+                    // Temporarily remove 'sending' flag to allow manual trigger
+                    // This allows our manual trigger() to work, but blocks automatic WooCommerce emails
+                    $order->update_meta_data($email_sent_key, null);
+                    $order->save();
                     
                     // Try WC_Email_Customer_Processing_Order first (correct key)
                     if (isset($emails['WC_Email_Customer_Processing_Order'])) {
@@ -350,6 +436,10 @@ class KingEmailSystem {
                         $email_triggered = true;
                         $email_found = true;
                     }
+                    
+                    // Restore 'sending' flag after manual trigger
+                    $order->update_meta_data($email_sent_key, 'sending');
+                    $order->save();
                     
                     // Restore original status
                     $order->set_status($original_status, 'Restored original status after email sending', false);
@@ -455,6 +545,14 @@ class KingEmailSystem {
             
             if (!$admin_email_found) {
                 error_log("King Email System ERROR: new_order email not found. Available keys: " . implode(', ', array_keys($emails)));
+            }
+            
+            // Mark emails as fully sent (with timestamp) after all emails are sent
+            if ($emails_sent > 0) {
+                $email_sent_key = '_king_email_sent_' . $order_id;
+                $order->update_meta_data($email_sent_key, current_time('mysql'));
+                $order->save();
+                error_log("King Email System: Marked all emails as sent for order {$order_id} (timestamp set)");
             }
             
             return $emails_sent > 0;
@@ -742,6 +840,176 @@ class KingEmailSystem {
     }
     
     /**
+     * Prevent duplicate emails for REST API orders
+     * WooCommerce may send emails twice - once on creation and once on status change
+     */
+    public function prevent_duplicate_emails($enabled, $order) {
+        if (!$enabled || !$order) {
+            return $enabled;
+        }
+        
+        try {
+            $order_id = $order->get_id();
+            if (!$order_id) {
+                return $enabled;
+            }
+            
+            // Check if email was already sent for this order
+            $email_sent_key = '_king_email_sent_' . $order_id;
+            $email_sent = $order->get_meta($email_sent_key);
+            
+            // Block if email was already sent (has timestamp)
+            if ($email_sent && $email_sent !== 'sending') {
+                error_log("King Email System: Preventing duplicate email for order {$order_id} (already sent at {$email_sent})");
+                return false; // Disable email
+            }
+            
+            // Also block if 'sending' is set - this prevents WooCommerce automatic emails
+            // during our manual email sending process
+            if ($email_sent === 'sending') {
+                error_log("King Email System: Preventing automatic WooCommerce email for order {$order_id} (manual sending in progress)");
+                return false; // Disable automatic WooCommerce email
+            }
+            
+            return $enabled;
+        } catch (Exception $e) {
+            error_log("King Email System: Error preventing duplicate emails: " . $e->getMessage());
+            return $enabled; // If error, allow email to be sent
+        }
+    }
+    
+    /**
+     * Prevent duplicate emails at recipient level (more reliable)
+     * Returns empty string to prevent email sending if already sent
+     */
+    public function prevent_duplicate_emails_recipient($recipient, $order) {
+        if (!$order || !method_exists($order, 'get_id')) {
+            return $recipient;
+        }
+        
+        try {
+            $order_id = $order->get_id();
+            if (!$order_id) {
+                return $recipient;
+            }
+            
+            // Check if email was already sent for this order
+            $email_sent_key = '_king_email_sent_' . $order_id;
+            $email_sent = $order->get_meta($email_sent_key);
+            
+            // Only block if email was already sent (has timestamp), not if it's just 'sending'
+            // 'sending' means email is being sent right now, which is OK for multiple emails (admin + customer)
+            if ($email_sent && $email_sent !== 'sending') {
+                error_log("King Email System: Preventing duplicate email at recipient level for order {$order_id} (already sent at {$email_sent})");
+                return ''; // Empty recipient = no email sent
+            }
+            
+            return $recipient;
+        } catch (Exception $e) {
+            error_log("King Email System: Error preventing duplicate emails at recipient level: " . $e->getMessage());
+            return $recipient; // If error, allow email to be sent
+        }
+    }
+    
+    /**
+     * Mark email as sent before WooCommerce sends it
+     * This hook has direct access to the order object
+     */
+    public function mark_email_before_send($email, $order) {
+        try {
+            if (!$order || !method_exists($order, 'get_id')) {
+                return;
+            }
+            
+            $order_id = $order->get_id();
+            if (!$order_id) {
+                return;
+            }
+            
+            $email_sent_key = '_king_email_sent_' . $order_id;
+            $email_sent = $order->get_meta($email_sent_key);
+            
+            // Only mark as sent if not already marked (allows multiple emails in same request)
+            // Mark with timestamp only after ALL emails are sent (we'll use a different approach)
+            // For now, just set 'sending' to allow multiple emails, and mark as sent only at the end
+            if (!$email_sent || $email_sent === 'sending') {
+                // Keep as 'sending' to allow multiple emails (admin + customer) in same request
+                // We'll mark as fully sent only when we're sure all emails are sent
+                // This is handled by checking if we're in trigger_rest_api_emails context
+                $order->update_meta_data($email_sent_key, 'sending');
+                $order->save();
+                error_log("King Email System: Marked email as sending for order {$order_id} (before_send)");
+            }
+        } catch (Exception $e) {
+            error_log("King Email System: Error marking email before send: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Mark email as sent when WooCommerce sends it (fallback)
+     * This hook receives different arguments depending on WooCommerce version:
+     * - Newer versions: ($enabled, $email_id, $order)
+     * - Older versions: ($to, $subject, $message, $headers, $attachments) from wp_mail
+     */
+    public function mark_email_as_sent($arg1, $arg2 = null, $arg3 = null) {
+        try {
+            $order = null;
+            $order_id = null;
+            
+            // Check if first argument is an order object (newer WooCommerce versions)
+            if (is_object($arg1) && method_exists($arg1, 'get_id')) {
+                $order = $arg1;
+                $order_id = $order->get_id();
+            } elseif (is_object($arg3) && method_exists($arg3, 'get_id')) {
+                // Newer WooCommerce: ($enabled, $email_id, $order)
+                $order = $arg3;
+                $order_id = $order->get_id();
+            } elseif (is_string($arg1)) {
+                // Older WooCommerce: ($to, $subject, $message, $headers, $attachments)
+                $to = $arg1;
+                $subject = $arg2;
+                
+                // Try to extract order ID from email subject
+                if (preg_match('/#(\d+)/', $subject, $matches)) {
+                    $order_number = $matches[1];
+                    $order = wc_get_order($order_number);
+                    if ($order) {
+                        $order_id = $order->get_id();
+                    }
+                }
+                
+                // Alternative: try to find order by email address
+                if (!$order_id && $to) {
+                    $orders = wc_get_orders([
+                        'billing_email' => $to,
+                        'limit' => 1,
+                        'orderby' => 'date',
+                        'order' => 'DESC',
+                    ]);
+                    
+                    if (!empty($orders)) {
+                        $order = $orders[0];
+                        $order_id = $order->get_id();
+                    }
+                }
+            }
+            
+            if ($order_id && $order) {
+                $email_sent_key = '_king_email_sent_' . $order_id;
+                // Only update if not already set (before_send might have set it)
+                $existing = $order->get_meta($email_sent_key);
+                if (!$existing || $existing === 'sending') {
+                    $order->update_meta_data($email_sent_key, current_time('mysql'));
+                    $order->save();
+                    error_log("King Email System: Marked email as sent for order {$order_id} (email_sent hook)");
+                }
+            }
+        } catch (Exception $e) {
+            error_log("King Email System: Error marking email as sent: " . $e->getMessage());
+        }
+    }
+    
+    /**
      * HPOS-Compatible: Log email sent
      */
     private function log_email_sent($order_id, $email_type, $recipient) {
@@ -863,9 +1131,14 @@ class KingEmailSystem {
             'permission_callback' => '__return_true',
             'args' => [
                 'to' => [
-                    'required' => true,
+                    'required' => false,
                     'type' => 'string',
-                    'description' => 'Recipient email'
+                    'description' => 'Recipient email (alternative: customer_email)'
+                ],
+                'customer_email' => [
+                    'required' => false,
+                    'type' => 'string',
+                    'description' => 'Recipient email (alternative: to)'
                 ],
                 'subject' => [
                     'required' => true,
@@ -880,7 +1153,12 @@ class KingEmailSystem {
                 'customerName' => [
                     'required' => false,
                     'type' => 'string',
-                    'description' => 'Customer name'
+                    'description' => 'Customer name (alternative: customer_name)'
+                ],
+                'customer_name' => [
+                    'required' => false,
+                    'type' => 'string',
+                    'description' => 'Customer name (alternative: customerName)'
                 ]
             ]
         ]);
@@ -888,6 +1166,7 @@ class KingEmailSystem {
     
     /**
      * Trigger order email via API
+     * FIXED: Added deduplication to prevent sending multiple emails
      */
     public function trigger_order_email_api($request) {
         $order_id = $request->get_param('order_id');
@@ -899,6 +1178,27 @@ class KingEmailSystem {
             return new WP_Error('missing_order_id', 'Brak ID zamówienia', array('status' => 400));
         }
         
+        // Get order object
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            error_log("King Email System API ERROR: Order {$order_id} not found");
+            return new WP_Error('order_not_found', 'Zamówienie nie zostało znalezione', array('status' => 404));
+        }
+        
+        // DEDUPLICATION: Check if email was already sent for this order using order meta (more reliable than transients)
+        $email_sent_key = '_king_email_sent_' . $order_id;
+        $email_sent = $order->get_meta($email_sent_key);
+        
+        if ($email_sent && $email_sent !== 'sending') {
+            error_log("King Email System API: Email already sent for order {$order_id} (sent at {$email_sent}), skipping duplicate");
+            return array(
+                'success' => true,
+                'message' => "Email już został wysłany dla zamówienia {$order_id}",
+                'order_id' => $order_id,
+                'skipped' => true
+            );
+        }
+        
         error_log("King Email System API: Triggering email for order {$order_id}");
         
         try {
@@ -907,6 +1207,13 @@ class KingEmailSystem {
             error_log("King Email System API: trigger_rest_api_emails returned: " . ($result ? 'true' : 'false'));
             
             if ($result) {
+                // Mark email as sent using order meta (permanent, not transient)
+                // This is already done in mark_email_before_send, but set it here as well for safety
+                if (!$email_sent || $email_sent === 'sending') {
+                    $order->update_meta_data($email_sent_key, current_time('mysql'));
+                    $order->save();
+                }
+                
                 $response = array(
                     'success' => true,
                     'message' => "Email wysłany dla zamówienia {$order_id}",
@@ -1005,42 +1312,122 @@ class KingEmailSystem {
     
     /**
      * Send newsletter email via API
+     * FIXED: Support both parameter formats (to/customer_email, customerName/customer_name)
      */
     public function send_newsletter_email_api($request) {
-        $to = sanitize_email($request->get_param('to'));
+        // Support both formats: 'to' or 'customer_email'
+        $to = sanitize_email($request->get_param('to') ?: $request->get_param('customer_email'));
         $subject = sanitize_text_field($request->get_param('subject'));
         $message = $request->get_param('message');
-        $customerName = sanitize_text_field($request->get_param('customerName'));
+        // Support both formats: 'customerName' or 'customer_name'
+        $customerName = sanitize_text_field($request->get_param('customerName') ?: $request->get_param('customer_name') ?: 'Użytkownik');
         
-        error_log("King Email System: Sending newsletter email to {$to}");
+        if (!$to) {
+            error_log("King Email System API ERROR: Missing 'to' or 'customer_email' parameter");
+            return new WP_Error('missing_email', 'Brak adresu email', array('status' => 400));
+        }
+        
+        if (!$subject) {
+            error_log("King Email System API ERROR: Missing 'subject' parameter");
+            return new WP_Error('missing_subject', 'Brak tematu emaila', array('status' => 400));
+        }
+        
+        if (!$message) {
+            error_log("King Email System API ERROR: Missing 'message' parameter");
+            return new WP_Error('missing_message', 'Brak treści emaila', array('status' => 400));
+        }
+        
+        error_log("King Email System: Sending newsletter email to {$to} (customer: {$customerName})");
         
         try {
             // Send email using WordPress mail
+            $from_name = 'FILLER';
+            $from_email = 'noreply@' . parse_url(get_site_url(), PHP_URL_HOST);
+            
             $headers = [
                 'Content-Type: text/html; charset=UTF-8',
-                'From: Cosmetic Cream <noreply@' . parse_url(get_site_url(), PHP_URL_HOST) . '>'
+                'From: ' . $from_name . ' <' . $from_email . '>'
             ];
             
+            error_log("King Email System: Attempting to send email with wp_mail - to: {$to}, subject: {$subject}, from_email: {$from_email}, from_name: {$from_name}, has_message: " . (!empty($message) ? 'yes' : 'no') . ", message_length: " . strlen($message) . ", wp_mail_smtp_active: " . (class_exists('WPMailSMTP') ? 'yes' : 'no'));
+            
+            // wp-mail-smtp plugin is active, let it handle SMTP
+            // We just need to ensure headers are correct
+            // wp_mail will use wp-mail-smtp's configuration automatically
+            
+            // Check if wp-mail-smtp is active - if so, don't override From headers
+            $wp_mail_smtp_active = class_exists('WPMailSMTP');
+            
+            if (!$wp_mail_smtp_active) {
+                // Only set filters if wp-mail-smtp is not active
+                // wp-mail-smtp handles From headers itself
+                add_filter('wp_mail_from', function() use ($from_email) {
+                    return $from_email;
+                }, 999);
+                
+                add_filter('wp_mail_from_name', function() use ($from_name) {
+                    return $from_name;
+                }, 999);
+            }
+            
+            // Enable HTML content type (always needed)
+            add_filter('wp_mail_content_type', function() {
+                return 'text/html';
+            }, 999);
+            
+            // Send email
             $result = wp_mail($to, $subject, $message, $headers);
             
+            // Remove filters if we added them
+            if (!$wp_mail_smtp_active) {
+                remove_all_filters('wp_mail_from');
+                remove_all_filters('wp_mail_from_name');
+            }
+            remove_all_filters('wp_mail_content_type');
+            
             if ($result) {
-                error_log("King Email System: ✅ Newsletter email sent to {$to}");
+                error_log("King Email System: ✅ Newsletter email sent successfully to {$to}");
                 return new WP_REST_Response([
                     'success' => true,
-                    'message' => 'Email został wysłany'
+                    'message' => 'Email został wysłany',
+                    'to' => $to,
+                    'subject' => $subject
                 ], 200);
             } else {
-                error_log("King Email System: ❌ Failed to send newsletter email to {$to}");
+                error_log("King Email System: ❌ wp_mail returned false for {$to}");
+                // Check if there's an error in global PHP error log
+                $last_error = error_get_last();
+                if ($last_error) {
+                    error_log("King Email System: PHP error: " . print_r($last_error, true));
+                }
+                
+                // Check if wp-mail-smtp plugin is active
+                $wp_mail_smtp_active = class_exists('WPMailSMTP');
+                error_log("King Email System: wp-mail-smtp active: " . ($wp_mail_smtp_active ? 'yes' : 'no'));
+                
+                // Try to get more information about why wp_mail failed
+                global $phpmailer;
+                if (isset($phpmailer) && is_object($phpmailer)) {
+                    $phpmailer_error = $phpmailer->ErrorInfo;
+                    if ($phpmailer_error) {
+                        error_log("King Email System: PHPMailer error: " . $phpmailer_error);
+                    }
+                }
+                
                 return new WP_REST_Response([
                     'success' => false,
-                    'message' => 'Nie udało się wysłać emaila'
+                    'message' => 'Nie udało się wysłać emaila (wp_mail returned false)',
+                    'to' => $to,
+                    'error' => $last_error ? print_r($last_error, true) : 'Unknown error',
+                    'wp_mail_smtp_active' => $wp_mail_smtp_active
                 ], 500);
             }
         } catch (Exception $e) {
             error_log("King Email System: Exception sending newsletter email: " . $e->getMessage());
+            error_log("King Email System: Exception stack trace: " . $e->getTraceAsString());
             return new WP_REST_Response([
                 'success' => false,
-                'message' => 'Błąd podczas wysyłania emaila'
+                'message' => 'Błąd podczas wysyłania emaila: ' . $e->getMessage()
             ], 500);
         }
     }

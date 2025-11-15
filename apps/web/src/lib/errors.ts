@@ -1,6 +1,6 @@
 /**
  * Unified Error Handling System
- * 
+ *
  * Provides typed errors and consistent error response formats
  */
 
@@ -72,18 +72,138 @@ export class AppError<TDetails = unknown> extends Error {
   }
 
   toJSON() {
+    // Mask sensitive data in error messages and details (production only)
+    const isProduction = process.env.NODE_ENV === 'production';
+    const maskedMessage = isProduction
+      ? this.maskSecrets(this.message)
+      : this.message;
+    const maskedDetails = isProduction && this.details
+      ? this.maskSecretsInObject(this.details)
+      : this.details;
+
     return {
       error: {
-        message: this.message,
+        message: maskedMessage,
         type: this.type,
         code: this.code,
         statusCode: this.statusCode,
         severity: this.severity,
         retryable: this.retryable,
         timestamp: this.timestamp,
-        ...(this.details && { details: this.details }),
+        ...(maskedDetails && { details: maskedDetails }),
       },
     };
+  }
+
+  /**
+   * Mask secrets in error messages
+   */
+  private maskSecrets(message: string): string {
+    // Mask common secret patterns
+    const patterns = [
+      // API keys, tokens, secrets
+      /(consumer_key|consumer_secret|api_key|api_secret|access_token|refresh_token|secret_key|secret_token)=[^&\s"']+/gi,
+      // Passwords
+      /(password|passwd|pwd)=[^&\s"']+/gi,
+      // Email with tokens
+      /token=[a-zA-Z0-9_-]{20,}/gi,
+      // Long hex strings (likely tokens)
+      /[a-f0-9]{32,}/gi,
+      // Base64 encoded secrets (if detected)
+      /[A-Za-z0-9+/]{40,}={0,2}/g,
+    ];
+
+    let masked = message;
+    for (const pattern of patterns) {
+      masked = masked.replace(pattern, (match) => {
+        // Preserve the key name but mask the value
+        if (match.includes('=')) {
+          const [key] = match.split('=');
+          return `${key}=***masked***`;
+        }
+        // Mask entire value if no key
+        return '***masked***';
+      });
+    }
+
+    // Mask URLs with secrets in query params
+    try {
+      const url = new URL(masked);
+      const sensitiveParams = [
+        'consumer_key',
+        'consumer_secret',
+        'api_key',
+        'api_secret',
+        'token',
+        'access_token',
+        'refresh_token',
+        'password',
+        'passwd',
+        'pwd',
+      ];
+      sensitiveParams.forEach((param) => {
+        if (url.searchParams.has(param)) {
+          url.searchParams.set(param, '***masked***');
+        }
+      });
+      return url.toString();
+    } catch {
+      // Not a URL, return masked message as-is
+      return masked;
+    }
+  }
+
+  /**
+   * Recursively mask secrets in objects
+   */
+  private maskSecretsInObject(obj: unknown): unknown {
+    if (typeof obj !== 'object' || obj === null) {
+      if (typeof obj === 'string') {
+        return this.maskSecrets(obj);
+      }
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.map((item) => this.maskSecretsInObject(item));
+    }
+
+    const masked: Record<string, unknown> = {};
+    const sensitiveKeys = [
+      'consumer_key',
+      'consumer_secret',
+      'api_key',
+      'api_secret',
+      'token',
+      'access_token',
+      'refresh_token',
+      'password',
+      'passwd',
+      'pwd',
+      'secret',
+      'key',
+      'authorization',
+      'auth',
+    ];
+
+    for (const [key, value] of Object.entries(obj)) {
+      const lowerKey = key.toLowerCase();
+      if (
+        sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive)) ||
+        lowerKey.includes('secret') ||
+        lowerKey.includes('token') ||
+        lowerKey.includes('key') ||
+        lowerKey.includes('password')
+      ) {
+        masked[key] = '***masked***';
+      } else if (typeof value === 'string') {
+        masked[key] = this.maskSecrets(value);
+      } else {
+        masked[key] = this.maskSecretsInObject(value);
+      }
+    }
+
+    return masked;
   }
 }
 
@@ -101,7 +221,10 @@ export class ValidationError extends AppError {
 }
 
 export class AuthenticationError extends AppError {
-  constructor(message: string = 'Authentication required', details?: Record<string, unknown>) {
+  constructor(
+    message: string = 'Authentication required',
+    details?: Record<string, unknown>
+  ) {
     super(message, ErrorType.AUTHENTICATION, 401, {
       severity: ErrorSeverity.MEDIUM,
       code: 'AUTH_REQUIRED',
@@ -113,7 +236,10 @@ export class AuthenticationError extends AppError {
 }
 
 export class AuthorizationError extends AppError {
-  constructor(message: string = 'Insufficient permissions', details?: Record<string, unknown>) {
+  constructor(
+    message: string = 'Insufficient permissions',
+    details?: Record<string, unknown>
+  ) {
     super(message, ErrorType.AUTHORIZATION, 403, {
       severity: ErrorSeverity.MEDIUM,
       code: 'FORBIDDEN',
@@ -125,7 +251,10 @@ export class AuthorizationError extends AppError {
 }
 
 export class NotFoundError extends AppError {
-  constructor(message: string = 'Resource not found', details?: Record<string, unknown>) {
+  constructor(
+    message: string = 'Resource not found',
+    details?: Record<string, unknown>
+  ) {
     super(message, ErrorType.NOT_FOUND, 404, {
       severity: ErrorSeverity.LOW,
       code: 'NOT_FOUND',
@@ -166,7 +295,10 @@ export class ExternalApiError extends AppError {
 }
 
 export class TimeoutError extends AppError {
-  constructor(message: string = 'Request timeout', details?: Record<string, unknown>) {
+  constructor(
+    message: string = 'Request timeout',
+    details?: Record<string, unknown>
+  ) {
     super(message, ErrorType.TIMEOUT, 504, {
       severity: ErrorSeverity.MEDIUM,
       code: 'TIMEOUT',
@@ -178,7 +310,10 @@ export class TimeoutError extends AppError {
 }
 
 export class CircuitBreakerError extends AppError {
-  constructor(message: string = 'Service temporarily unavailable', details?: Record<string, unknown>) {
+  constructor(
+    message: string = 'Service temporarily unavailable',
+    details?: Record<string, unknown>
+  ) {
     super(message, ErrorType.CIRCUIT_BREAKER, 503, {
       severity: ErrorSeverity.HIGH,
       code: 'CIRCUIT_BREAKER_OPEN',
@@ -190,7 +325,10 @@ export class CircuitBreakerError extends AppError {
 }
 
 export class InternalError extends AppError {
-  constructor(message: string = 'Internal server error', details?: Record<string, unknown>) {
+  constructor(
+    message: string = 'Internal server error',
+    details?: Record<string, unknown>
+  ) {
     super(message, ErrorType.INTERNAL, 500, {
       severity: ErrorSeverity.CRITICAL,
       code: 'INTERNAL_ERROR',
@@ -201,8 +339,62 @@ export class InternalError extends AppError {
   }
 }
 
+/**
+ * Mask secrets in strings (utility function)
+ */
+function maskSecretsInString(str: string): string {
+  // Mask common secret patterns
+  const patterns = [
+    // API keys, tokens, secrets in query params
+    /(consumer_key|consumer_secret|api_key|api_secret|access_token|refresh_token|secret_key|secret_token)=[^&\s"']+/gi,
+    // Passwords
+    /(password|passwd|pwd)=[^&\s"']+/gi,
+    // Long tokens
+    /token=[a-zA-Z0-9_-]{20,}/gi,
+    // Long hex strings (likely tokens)
+    /\b[a-f0-9]{32,}\b/gi,
+  ];
+
+  let masked = str;
+  for (const pattern of patterns) {
+    masked = masked.replace(pattern, (match) => {
+      if (match.includes('=')) {
+        const [key] = match.split('=');
+        return `${key}=***masked***`;
+      }
+      return '***masked***';
+    });
+  }
+
+  // Mask URLs with secrets
+  try {
+    const url = new URL(masked);
+    const sensitiveParams = [
+      'consumer_key',
+      'consumer_secret',
+      'api_key',
+      'api_secret',
+      'token',
+      'access_token',
+      'refresh_token',
+      'password',
+    ];
+    sensitiveParams.forEach((param) => {
+      if (url.searchParams.has(param)) {
+        url.searchParams.set(param, '***masked***');
+      }
+    });
+    return url.toString();
+  } catch {
+    return masked;
+  }
+}
+
 // Error response helper
-export function createErrorResponse(error: unknown, context?: { endpoint?: string; method?: string; requestId?: string }): NextResponse {
+export function createErrorResponse(
+  error: unknown,
+  context?: { endpoint?: string; method?: string; requestId?: string }
+): NextResponse {
   // Handle AppError instances
   if (error instanceof AppError) {
     logger.error(`[${error.type}] ${error.message}`, {
@@ -215,7 +407,10 @@ export function createErrorResponse(error: unknown, context?: { endpoint?: strin
     });
 
     // Send to Sentry based on severity
-    if (error.severity === ErrorSeverity.CRITICAL || error.severity === ErrorSeverity.HIGH) {
+    if (
+      error.severity === ErrorSeverity.CRITICAL ||
+      error.severity === ErrorSeverity.HIGH
+    ) {
       Sentry.captureException(error, {
         level: error.severity === ErrorSeverity.CRITICAL ? 'fatal' : 'error',
         tags: {
@@ -263,15 +458,20 @@ export function createErrorResponse(error: unknown, context?: { endpoint?: strin
 
   // Handle standard Error instances
   if (error instanceof Error) {
+    // Mask secrets in error message before logging (production only)
+    const isProduction = process.env.NODE_ENV === 'production';
+    const errorMessage = isProduction
+      ? maskSecretsInString(error.message)
+      : error.message;
+
     logger.error('Unhandled error', {
-      message: error.message,
-      stack: error.stack,
+      message: errorMessage,
+      stack: isProduction ? undefined : error.stack, // Hide stack in production
       ...context,
     });
 
-    const isProduction = process.env.NODE_ENV === 'production';
     const internalError = new InternalError(
-      isProduction ? 'Internal server error' : error.message,
+      isProduction ? 'Internal server error' : errorMessage,
       isProduction ? undefined : { stack: error.stack }
     );
 
@@ -336,13 +536,15 @@ export async function withRetry<T>(
     initialDelay = 1000,
     maxDelay = 10000,
     backoffMultiplier = 2,
-    retryable = (error) => {
+    retryable = error => {
       if (error instanceof AppError) {
         return error.retryable;
       }
       // Retry on network errors and 5xx status codes
       if (error instanceof Error) {
-        return error.message.includes('fetch') || error.message.includes('network');
+        return (
+          error.message.includes('fetch') || error.message.includes('network')
+        );
       }
       return false;
     },
@@ -368,7 +570,7 @@ export async function withRetry<T>(
       }
 
       // Wait before retry with exponential backoff
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      await new Promise(resolve => setTimeout(resolve, delay));
       delay = Math.min(delay * backoffMultiplier, maxDelay);
     }
   }
@@ -377,16 +579,17 @@ export async function withRetry<T>(
 }
 
 // Error boundary helper for async route handlers
-export function withErrorHandler<T extends (...args: unknown[]) => Promise<NextResponse>>(
+export function withErrorHandler<
+  T extends (...args: unknown[]) => Promise<NextResponse>,
+>(
   handler: T,
   context?: { endpoint?: string; method?: string }
 ): (...args: Parameters<T>) => Promise<NextResponse> {
-  return (async (...args: Parameters<T>) => {
+  return async (...args: Parameters<T>) => {
     try {
       return await handler(...args);
     } catch (error) {
       return createErrorResponse(error, context);
     }
-  });
+  };
 }
-

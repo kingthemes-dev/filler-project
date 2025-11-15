@@ -67,7 +67,7 @@ class HPOSCacheManager {
 
     // Initialize compression if available
     this.initializeCompression();
-    
+
     // Start cleanup interval
     this.startCleanupInterval();
   }
@@ -79,7 +79,9 @@ class HPOSCacheManager {
         this.compressionEnabled = true;
         logger.info('HPOS Cache: Compression enabled');
       } else {
-        logger.info('HPOS Cache: Compression not available, using uncompressed cache');
+        logger.info(
+          'HPOS Cache: Compression not available, using uncompressed cache'
+        );
       }
     } catch (error) {
       logger.warn('HPOS Cache: Failed to initialize compression', { error });
@@ -105,11 +107,17 @@ class HPOSCacheManager {
     }
 
     if (cleanedCount > 0) {
-      logger.info('HPOS Cache: Cleaned up expired entries', { count: cleanedCount });
+      logger.info('HPOS Cache: Cleaned up expired entries', {
+        count: cleanedCount,
+      });
     }
   }
 
-  private generateKey(type: keyof HPOSCacheConfig, identifier: string, params?: Record<string, unknown>): string {
+  private generateKey(
+    type: keyof HPOSCacheConfig,
+    identifier: string,
+    params?: Record<string, unknown>
+  ): string {
     const paramString = params ? JSON.stringify(params) : '';
     return `hpos:${type}:${identifier}:${paramString}`;
   }
@@ -140,7 +148,9 @@ class HPOSCacheManager {
         }
       }
 
-      const compressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+      const compressed = new Uint8Array(
+        chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+      );
       let offset = 0;
       for (const chunk of chunks) {
         compressed.set(chunk, offset);
@@ -149,7 +159,9 @@ class HPOSCacheManager {
 
       return btoa(String.fromCharCode(...compressed));
     } catch (error) {
-      logger.warn('HPOS Cache: Compression failed, using uncompressed data', { error });
+      logger.warn('HPOS Cache: Compression failed, using uncompressed data', {
+        error,
+      });
       return JSON.stringify(data);
     }
   }
@@ -160,7 +172,9 @@ class HPOSCacheManager {
     }
 
     try {
-      const compressed = Uint8Array.from(atob(compressedData), c => c.charCodeAt(0));
+      const compressed = Uint8Array.from(atob(compressedData), c =>
+        c.charCodeAt(0)
+      );
       const stream = new DecompressionStream('gzip');
       const writer = stream.writable.getWriter();
       const reader = stream.readable.getReader();
@@ -179,7 +193,9 @@ class HPOSCacheManager {
         }
       }
 
-      const decompressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+      const decompressed = new Uint8Array(
+        chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+      );
       let offset = 0;
       for (const chunk of chunks) {
         decompressed.set(chunk, offset);
@@ -189,12 +205,19 @@ class HPOSCacheManager {
       const decoder = new TextDecoder();
       return JSON.parse(decoder.decode(decompressed));
     } catch (error) {
-      logger.warn('HPOS Cache: Decompression failed, trying uncompressed data', { error });
+      logger.warn(
+        'HPOS Cache: Decompression failed, trying uncompressed data',
+        { error }
+      );
       return JSON.parse(compressedData);
     }
   }
 
-  async get<T>(type: keyof HPOSCacheConfig, identifier: string, params?: Record<string, unknown>): Promise<T | null> {
+  async get<T>(
+    type: keyof HPOSCacheConfig,
+    identifier: string,
+    params?: Record<string, unknown>
+  ): Promise<T | null> {
     const key = this.generateKey(type, identifier, params);
     const entry = this.cache.get(key);
 
@@ -210,12 +233,16 @@ class HPOSCacheManager {
 
     try {
       let data: unknown = entry.data;
-      
+
       if (entry.compressed) {
         data = await this.decompressData(entry.data as string);
       }
 
-      logger.debug('HPOS Cache: Cache hit', { type, identifier, age: now - entry.timestamp });
+      logger.debug('HPOS Cache: Cache hit', {
+        type,
+        identifier,
+        age: now - entry.timestamp,
+      });
       return data as T;
     } catch (error) {
       logger.warn('HPOS Cache: Failed to retrieve cached data', { key, error });
@@ -224,7 +251,13 @@ class HPOSCacheManager {
     }
   }
 
-  async set<T>(type: keyof HPOSCacheConfig, identifier: string, data: T, params?: Record<string, unknown>, tags: string[] = []): Promise<void> {
+  async set<T>(
+    type: keyof HPOSCacheConfig,
+    identifier: string,
+    data: T,
+    params?: Record<string, unknown>,
+    tags: string[] = []
+  ): Promise<void> {
     const config = this.config[type];
     const key = this.generateKey(type, identifier, params);
 
@@ -253,7 +286,11 @@ class HPOSCacheManager {
       this.cache.set(key, entry);
       logger.debug('HPOS Cache: Data cached', { type, identifier, compressed });
     } catch (error) {
-      logger.warn('HPOS Cache: Failed to cache data', { type, identifier, error });
+      logger.warn('HPOS Cache: Failed to cache data', {
+        type,
+        identifier,
+        error,
+      });
     }
   }
 
@@ -285,7 +322,10 @@ class HPOSCacheManager {
     }
 
     if (invalidatedCount > 0) {
-      logger.info('HPOS Cache: Invalidated entries by tag', { tag, count: invalidatedCount });
+      logger.info('HPOS Cache: Invalidated entries by tag', {
+        tag,
+        count: invalidatedCount,
+      });
     }
   }
 
@@ -300,7 +340,10 @@ class HPOSCacheManager {
     }
 
     if (invalidatedCount > 0) {
-      logger.info('HPOS Cache: Invalidated entries by type', { type, count: invalidatedCount });
+      logger.info('HPOS Cache: Invalidated entries by type', {
+        type,
+        count: invalidatedCount,
+      });
     }
   }
 
@@ -321,7 +364,9 @@ class HPOSCacheManager {
     let totalMaxSize = 0;
 
     for (const [type, config] of Object.entries(this.config)) {
-      const count = Array.from(this.cache.keys()).filter(key => key.startsWith(`hpos:${type}:`)).length;
+      const count = Array.from(this.cache.keys()).filter(key =>
+        key.startsWith(`hpos:${type}:`)
+      ).length;
       types[type] = { count, maxSize: config.maxSize };
       totalMaxSize += config.maxSize;
     }

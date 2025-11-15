@@ -1,6 +1,12 @@
-import { requestDeduplicator, deduplicateRequest, generateCacheKey } from '@/utils/request-deduplication';
+import {
+  requestDeduplicator,
+  deduplicateRequest,
+  generateCacheKey,
+} from '@/utils/request-deduplication';
 // Tolerate intentionally rejected promises in this suite
-try { process.on('unhandledRejection', () => {}); } catch {}
+try {
+  process.on('unhandledRejection', () => {});
+} catch {}
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -69,7 +75,8 @@ describe('Request Deduplication', () => {
 
     it('handles request failures with retry', async () => {
       const mockResponse = { data: 'test' };
-      const requestFn = jest.fn()
+      const requestFn = jest
+        .fn()
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce(mockResponse);
 
@@ -99,7 +106,7 @@ describe('Request Deduplication', () => {
   describe('requestDeduplicator', () => {
     it('provides cache statistics', () => {
       const stats = requestDeduplicator.getStats();
-      
+
       expect(stats).toHaveProperty('pendingRequests');
       expect(stats).toHaveProperty('cacheSize');
       expect(stats).toHaveProperty('oldestRequest');
@@ -109,9 +116,8 @@ describe('Request Deduplication', () => {
     it('clears all pending requests', () => {
       requestDeduplicator.clear();
       const stats = requestDeduplicator.getStats();
-      
+
       expect(stats.pendingRequests).toBe(0);
     });
   });
 });
-

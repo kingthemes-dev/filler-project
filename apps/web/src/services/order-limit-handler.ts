@@ -46,7 +46,7 @@ class OrderLimitHandler {
 
   private cleanupOldAttempts(): void {
     const now = Date.now();
-    const oneDayAgo = now - (24 * 60 * 60 * 1000);
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
     for (const [key, attempt] of this.attempts.entries()) {
       if (attempt.timestamp < oneDayAgo) {
@@ -54,12 +54,15 @@ class OrderLimitHandler {
       }
     }
 
-    logger.info('OrderLimitHandler: Cleaned up old attempts', { 
-      remainingAttempts: this.attempts.size 
+    logger.info('OrderLimitHandler: Cleaned up old attempts', {
+      remainingAttempts: this.attempts.size,
     });
   }
 
-  private getAttemptsInTimeframe(customerId: number, timeframeMs: number): number {
+  private getAttemptsInTimeframe(
+    customerId: number,
+    timeframeMs: number
+  ): number {
     const now = Date.now();
     const cutoff = now - timeframeMs;
 
@@ -73,7 +76,10 @@ class OrderLimitHandler {
     return count;
   }
 
-  async checkOrderLimit(customerId: number, sessionId: string): Promise<{
+  async checkOrderLimit(
+    customerId: number,
+    sessionId: string
+  ): Promise<{
     allowed: boolean;
     reason?: string;
     attemptsRemaining?: number;
@@ -93,11 +99,14 @@ class OrderLimitHandler {
     }
 
     // Check hourly limit
-    const hourlyAttempts = this.getAttemptsInTimeframe(customerId, 60 * 60 * 1000);
+    const hourlyAttempts = this.getAttemptsInTimeframe(
+      customerId,
+      60 * 60 * 1000
+    );
     if (hourlyAttempts >= this.config.maxAttemptsPerHour) {
       // Block for the configured duration
-      const blockedUntil = now + (this.config.blockDurationMinutes * 60 * 1000);
-      
+      const blockedUntil = now + this.config.blockDurationMinutes * 60 * 1000;
+
       if (attempt) {
         attempt.blockedUntil = blockedUntil;
       } else {
@@ -125,7 +134,10 @@ class OrderLimitHandler {
     }
 
     // Check daily limit
-    const dailyAttempts = this.getAttemptsInTimeframe(customerId, 24 * 60 * 60 * 1000);
+    const dailyAttempts = this.getAttemptsInTimeframe(
+      customerId,
+      24 * 60 * 60 * 1000
+    );
     if (dailyAttempts >= this.config.maxAttemptsPerDay) {
       logger.warn('OrderLimitHandler: Daily limit exceeded', {
         customerId,
@@ -154,7 +166,11 @@ class OrderLimitHandler {
     };
   }
 
-  async recordOrderAttempt(customerId: number, sessionId: string, success: boolean): Promise<void> {
+  async recordOrderAttempt(
+    customerId: number,
+    sessionId: string,
+    success: boolean
+  ): Promise<void> {
     const key = this.generateKey(customerId, sessionId);
     const now = Date.now();
 
@@ -172,7 +188,13 @@ class OrderLimitHandler {
     this.attempts.set(key, attempt);
 
     // Cache the attempt for persistence
-    await hposCache.set('sessions', `order_attempt_${key}`, attempt, undefined, ['order_attempts']);
+    await hposCache.set(
+      'sessions',
+      `order_attempt_${key}`,
+      attempt,
+      undefined,
+      ['order_attempts']
+    );
 
     logger.info('OrderLimitHandler: Recorded order attempt', {
       customerId,
@@ -208,9 +230,15 @@ class OrderLimitHandler {
     isBlocked: boolean;
     blockedUntil?: number;
   }> {
-    const hourlyAttempts = this.getAttemptsInTimeframe(customerId, 60 * 60 * 1000);
-    const dailyAttempts = this.getAttemptsInTimeframe(customerId, 24 * 60 * 60 * 1000);
-    
+    const hourlyAttempts = this.getAttemptsInTimeframe(
+      customerId,
+      60 * 60 * 1000
+    );
+    const dailyAttempts = this.getAttemptsInTimeframe(
+      customerId,
+      24 * 60 * 60 * 1000
+    );
+
     let isBlocked = false;
     let blockedUntil: number | undefined;
 
@@ -235,7 +263,9 @@ class OrderLimitHandler {
 
   updateConfig(newConfig: Partial<OrderLimitConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    logger.info('OrderLimitHandler: Configuration updated', { config: this.config });
+    logger.info('OrderLimitHandler: Configuration updated', {
+      config: this.config,
+    });
   }
 
   getConfig(): OrderLimitConfig {

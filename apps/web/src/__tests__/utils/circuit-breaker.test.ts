@@ -1,4 +1,9 @@
-import { CircuitBreaker, CircuitState, circuitBreakers as _circuitBreakers, withCircuitBreaker } from '@/utils/circuit-breaker';
+import {
+  CircuitBreaker,
+  CircuitState,
+  circuitBreakers as _circuitBreakers,
+  withCircuitBreaker,
+} from '@/utils/circuit-breaker';
 
 describe('Circuit Breaker', () => {
   let circuitBreaker: CircuitBreaker;
@@ -18,7 +23,9 @@ describe('Circuit Breaker', () => {
     });
 
     it('opens circuit after failure threshold', async () => {
-      const failingFn = jest.fn().mockRejectedValue(new Error('Service unavailable'));
+      const failingFn = jest
+        .fn()
+        .mockRejectedValue(new Error('Service unavailable'));
 
       // Make requests that will fail
       for (let i = 0; i < 3; i++) {
@@ -33,7 +40,9 @@ describe('Circuit Breaker', () => {
     });
 
     it('fails fast when circuit is open', async () => {
-      const failingFn = jest.fn().mockRejectedValue(new Error('Service unavailable'));
+      const failingFn = jest
+        .fn()
+        .mockRejectedValue(new Error('Service unavailable'));
 
       // Open the circuit
       for (let i = 0; i < 3; i++) {
@@ -51,7 +60,9 @@ describe('Circuit Breaker', () => {
     });
 
     it('allows probe after recovery timeout (HALF_OPEN window)', async () => {
-      const failingFn = jest.fn().mockRejectedValue(new Error('Service unavailable'));
+      const failingFn = jest
+        .fn()
+        .mockRejectedValue(new Error('Service unavailable'));
 
       // Open the circuit
       for (let i = 0; i < 3; i++) {
@@ -69,11 +80,15 @@ describe('Circuit Breaker', () => {
 
       // After timeout, a probe may occur; state can remain OPEN on failure
       // Ensure state is not CLOSED without a successful probe
-      expect([CircuitState.OPEN, CircuitState.HALF_OPEN]).toContain(circuitBreaker.getState());
+      expect([CircuitState.OPEN, CircuitState.HALF_OPEN]).toContain(
+        circuitBreaker.getState()
+      );
     });
 
     it('closes circuit after successful request in HALF_OPEN', async () => {
-      const failingFn = jest.fn().mockRejectedValue(new Error('Service unavailable'));
+      const failingFn = jest
+        .fn()
+        .mockRejectedValue(new Error('Service unavailable'));
       const successFn = jest.fn().mockResolvedValue('success');
 
       // Open the circuit
@@ -99,7 +114,9 @@ describe('Circuit Breaker', () => {
   describe('Statistics', () => {
     it('tracks request statistics', async () => {
       const successFn = jest.fn().mockResolvedValue('success');
-      const failingFn = jest.fn().mockRejectedValue(new Error('Service unavailable'));
+      const failingFn = jest
+        .fn()
+        .mockRejectedValue(new Error('Service unavailable'));
 
       // Make some successful requests
       await circuitBreaker.execute(successFn);
@@ -123,13 +140,15 @@ describe('Circuit Breaker', () => {
 
   describe('Reset', () => {
     it('resets circuit breaker state', async () => {
-      const failingFn = jest.fn().mockRejectedValue(new Error('Service unavailable'));
+      const failingFn = jest
+        .fn()
+        .mockRejectedValue(new Error('Service unavailable'));
 
       // Open the circuit
       for (let i = 0; i < 3; i++) {
         try {
           await circuitBreaker.execute(failingFn);
-      } catch {
+        } catch {
           // Expected to fail
         }
       }
@@ -156,13 +175,15 @@ describe('Circuit Breaker', () => {
     });
 
     it('handles circuit breaker failures', async () => {
-      const failingFn = jest.fn().mockRejectedValue(new Error('Service unavailable'));
+      const failingFn = jest
+        .fn()
+        .mockRejectedValue(new Error('Service unavailable'));
 
       // Open the wordpress circuit breaker
       for (let i = 0; i < 3; i++) {
         try {
           await withCircuitBreaker('wordpress', failingFn);
-      } catch {
+        } catch {
           // Expected to fail
         }
       }
@@ -174,4 +195,3 @@ describe('Circuit Breaker', () => {
     });
   });
 });
-

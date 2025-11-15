@@ -3,16 +3,20 @@
  * Bez separatorów tysięcy (np. 1999,00 zł zamiast 1 999,00 zł)
  */
 export function formatPrice(price: number | string | null | undefined): string {
-  if (price === null || price === undefined || (typeof price === 'string' && price.trim() === '')) {
+  if (
+    price === null ||
+    price === undefined ||
+    (typeof price === 'string' && price.trim() === '')
+  ) {
     return '0,00 zł';
   }
 
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-  
+
   if (isNaN(numPrice)) {
     return '0,00 zł';
   }
-  
+
   // Format bez separatorów tysięcy, tylko z dwoma miejscami po przecinku
   const formatted = numPrice.toFixed(2).replace('.', ',');
   return `${formatted} zł`;
@@ -50,7 +54,10 @@ export function formatPriceWithoutCurrency(price: number): string {
 /**
  * Formatuje cenę z promocją (wejście w złotówkach)
  */
-export function formatPriceWithDiscount(regularPrice: number, salePrice: number) {
+export function formatPriceWithDiscount(
+  regularPrice: number,
+  salePrice: number
+) {
   return {
     regular: formatPrice(regularPrice),
     sale: formatPrice(salePrice),

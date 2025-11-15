@@ -25,7 +25,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   // Initialize viewport height variable
   useViewportHeightVar();
 
@@ -40,16 +40,22 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   }, []);
 
   // Save search to history
-  const saveToHistory = useCallback((query: string) => {
-    if (!query.trim()) return;
-    
-    const newHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 5);
-    setSearchHistory(newHistory);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('searchHistory', JSON.stringify(newHistory));
-    }
-  }, [searchHistory]);
+  const saveToHistory = useCallback(
+    (query: string) => {
+      if (!query.trim()) return;
+
+      const newHistory = [
+        query,
+        ...searchHistory.filter(item => item !== query),
+      ].slice(0, 5);
+      setSearchHistory(newHistory);
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+      }
+    },
+    [searchHistory]
+  );
 
   // Debounced search function
   const debouncedSearch = useDebouncedCallback((query: string) => {
@@ -64,9 +70,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     if (products.length === 0 && !hasSearched) {
       setIsLoading(true);
     }
-    
+
     // Search products
-    fetch(`/api/woocommerce?endpoint=products&search=${encodeURIComponent(query)}&per_page=10`)
+    fetch(
+      `/api/woocommerce?endpoint=products&search=${encodeURIComponent(query)}&per_page=10`
+    )
       .then(res => res.json())
       .then(data => {
         setProducts(data || []);
@@ -136,8 +144,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       // Stop debounce and trigger immediate search
       const query = searchQuery.trim();
       setIsLoading(true);
-      
-      fetch(`/api/woocommerce?endpoint=products&search=${encodeURIComponent(query)}&per_page=10`)
+
+      fetch(
+        `/api/woocommerce?endpoint=products&search=${encodeURIComponent(query)}&per_page=10`
+      )
         .then(res => res.json())
         .then(data => {
           setProducts(data || []);
@@ -165,7 +175,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             className="fixed inset-0 bg-black/60 backdrop-blur-md z-[70]"
             onClick={onClose}
           />
-          
+
           {/* Modal */}
           <motion.div
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -173,13 +183,13 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="fixed inset-0 z-[80] flex items-start justify-center pt-20 sm:pt-24 px-4 max-h-screen overflow-y-auto"
-            onClick={(e) => {
+            onClick={e => {
               if (e.target === e.currentTarget) onClose();
             }}
           >
-            <div 
+            <div
               className="bg-white rounded-3xl shadow-xl w-[90%] max-h-[80vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center border-b border-gray-200 px-4 py-3">
@@ -190,7 +200,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     type="search"
                     placeholder="Szukaj produktów..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={handleKeyDown}
                     className="flex-1 text-base focus:outline-none text-gray-900 placeholder-gray-400"
                     autoFocus
@@ -232,7 +242,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Trending / Popular */}
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 flex items-center mb-3">
@@ -266,17 +276,20 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     {/* Suggestions (top 5) */}
                     {suggestions.length > 0 && (
                       <>
-                        {suggestions.map((product) => (
+                        {suggestions.map(product => (
                           <motion.div
                             key={product.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.15 }}
                           >
-                            <SearchResultItem product={product} onClose={onClose} />
+                            <SearchResultItem
+                              product={product}
+                              onClose={onClose}
+                            />
                           </motion.div>
                         ))}
-                        
+
                         {products.length > 5 && (
                           <Link
                             href={`/wyszukiwanie?q=${encodeURIComponent(searchQuery)}`}
@@ -301,13 +314,23 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 }
 
 // Search result item component
-function SearchResultItem({ product, onClose }: { product: WooProduct; onClose: () => void }) {
-  const imageUrl = product.images?.[0]?.src || '/images/placeholder-product.jpg';
+function SearchResultItem({
+  product,
+  onClose,
+}: {
+  product: WooProduct;
+  onClose: () => void;
+}) {
+  const imageUrl =
+    product.images?.[0]?.src || '/images/placeholder-product.jpg';
   const categories = product.categories || [];
-  const mainCategory = Array.isArray(categories) && categories.length > 0 
-    ? (typeof categories[0] === 'string' ? categories[0] : categories[0]?.name)
-    : null;
-  
+  const mainCategory =
+    Array.isArray(categories) && categories.length > 0
+      ? typeof categories[0] === 'string'
+        ? categories[0]
+        : categories[0]?.name
+      : null;
+
   return (
     <Link
       href={`/produkt/${product.slug}`}
@@ -330,14 +353,12 @@ function SearchResultItem({ product, onClose }: { product: WooProduct; onClose: 
         <h4 className="font-medium text-gray-900 text-sm sm:text-base line-clamp-2 group-hover:text-blue-600 transition-colors">
           {product.name}
         </h4>
-        
+
         {/* Category */}
         {mainCategory && (
-          <div className="text-xs text-gray-500 mt-1">
-            {mainCategory}
-          </div>
+          <div className="text-xs text-gray-500 mt-1">{mainCategory}</div>
         )}
-        
+
         {/* Rating & Price */}
         <div className="flex items-center justify-between mt-2">
           {product.average_rating && parseFloat(product.average_rating) > 0 && (
@@ -356,4 +377,3 @@ function SearchResultItem({ product, onClose }: { product: WooProduct; onClose: 
     </Link>
   );
 }
-

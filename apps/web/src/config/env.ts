@@ -89,11 +89,11 @@ function validateEnv(): EnvConfig {
       throw new Error(message);
     }
   }
-  
+
   // Validate URLs
   const wordpressUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL!;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
-  
+
   if (wordpressUrl && baseUrl) {
     try {
       new URL(wordpressUrl);
@@ -104,15 +104,17 @@ function validateEnv(): EnvConfig {
       }
     }
   }
-  
+
   // Validate NODE_ENV
   const nodeEnv = process.env.NODE_ENV as EnvConfig['NODE_ENV'];
   if (!['development', 'production', 'test'].includes(nodeEnv)) {
     throw new Error('NODE_ENV must be development, production, or test');
   }
-  
+
   return {
-    NEXT_PUBLIC_WC_URL: process.env.NEXT_PUBLIC_WC_URL || `${wordpressUrl || 'http://localhost:3000'}/wp-json/wc/v3`,
+    NEXT_PUBLIC_WC_URL:
+      process.env.NEXT_PUBLIC_WC_URL ||
+      `${wordpressUrl || 'http://localhost:3000'}/wp-json/wc/v3`,
     WC_CONSUMER_KEY: process.env.WC_CONSUMER_KEY || '',
     WC_CONSUMER_SECRET: process.env.WC_CONSUMER_SECRET || '',
     NEXT_PUBLIC_WORDPRESS_URL: wordpressUrl || 'http://localhost:3000',
@@ -125,9 +127,11 @@ function validateEnv(): EnvConfig {
     REVALIDATE_SECRET: process.env.REVALIDATE_SECRET || 'dev-revalidate-secret',
     ADMIN_CACHE_TOKEN: process.env.ADMIN_CACHE_TOKEN || 'dev-admin-cache-token',
     CSRF_SECRET: process.env.CSRF_SECRET || 'dev-csrf-secret',
-    WOOCOMMERCE_WEBHOOK_SECRET: process.env.WOOCOMMERCE_WEBHOOK_SECRET || 'dev-woo-webhook-secret',
-    KING_CART_API_SECRET: process.env.KING_CART_API_SECRET || 'dev-king-cart-secret',
-    NODE_ENV: nodeEnv || 'development'
+    WOOCOMMERCE_WEBHOOK_SECRET:
+      process.env.WOOCOMMERCE_WEBHOOK_SECRET || 'dev-woo-webhook-secret',
+    KING_CART_API_SECRET:
+      process.env.KING_CART_API_SECRET || 'dev-king-cart-secret',
+    NODE_ENV: nodeEnv || 'development',
   };
 }
 
@@ -143,7 +147,7 @@ export const isTest = env.NODE_ENV === 'test';
 export const features = {
   analytics: !!(env.NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID),
   newsletter: !!env.SENDINBLUE_API_KEY,
-  debugMode: isDevelopment
+  debugMode: isDevelopment,
 } as const;
 
 // Log environment status in development

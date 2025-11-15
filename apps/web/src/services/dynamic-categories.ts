@@ -75,19 +75,21 @@ class DynamicCategoriesService {
    */
   async getAllCategories(): Promise<WooCategory[]> {
     const cacheKey = 'categories';
-    
+
     // Sprawdź cache
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey) as WooCategory[];
     }
-    
+
     try {
-      const response = await fetch(`${this.baseUrl}?endpoint=products/categories&per_page=100`);
-      
+      const response = await fetch(
+        `${this.baseUrl}?endpoint=products/categories&per_page=100`
+      );
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const categoriesRaw = Array.isArray(data)
         ? data
@@ -95,13 +97,13 @@ class DynamicCategoriesService {
 
       const categories = Array.isArray(categoriesRaw)
         ? categoriesRaw
-            .map((item) => this.transformCategory(item))
+            .map(item => this.transformCategory(item))
             .filter((category): category is WooCategory => category !== null)
         : [];
-      
+
       // Zapisz w cache
       this.cache.set(cacheKey, categories);
-      
+
       return categories;
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -115,28 +117,33 @@ class DynamicCategoriesService {
    */
   async getAllAttributes(): Promise<WooAttribute[]> {
     const cacheKey = 'attributes';
-    
+
     // Sprawdź cache
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey) as WooAttribute[];
     }
-    
+
     try {
       // Use local API custom attributes endpoint (maps to King Shop API)
       const response = await fetch(`${this.baseUrl}?endpoint=attributes`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const parsedData = this.toRecord(data);
 
       let attributesRaw: unknown[] = [];
       if (Array.isArray(data)) {
         attributesRaw = data;
-      } else if (parsedData?.attributes && typeof parsedData.attributes === 'object') {
-        attributesRaw = Object.entries(parsedData.attributes as Record<string, unknown>).map(([slug, value]) => {
+      } else if (
+        parsedData?.attributes &&
+        typeof parsedData.attributes === 'object'
+      ) {
+        attributesRaw = Object.entries(
+          parsedData.attributes as Record<string, unknown>
+        ).map(([slug, value]) => {
           const valueRecord = this.toRecord(value);
           return {
             id: valueRecord?.id ?? slug,
@@ -151,12 +158,12 @@ class DynamicCategoriesService {
       }
 
       const attributes = attributesRaw
-        .map((item) => this.transformAttribute(item))
+        .map(item => this.transformAttribute(item))
         .filter((attribute): attribute is WooAttribute => attribute !== null);
-      
+
       // Zapisz w cache
       this.cache.set(cacheKey, attributes);
-      
+
       return attributes;
     } catch (error) {
       console.error('Error fetching attributes:', error);
@@ -171,20 +178,26 @@ class DynamicCategoriesService {
   async getAttributeTerms(attributeSlug: string): Promise<WooAttributeTerm[]> {
     try {
       // Use local API route for attribute terms
-      const response = await fetch(`${this.baseUrl}?endpoint=attributes/${attributeSlug}/terms`, { cache: 'no-store' });
-      
+      const response = await fetch(
+        `${this.baseUrl}?endpoint=attributes/${attributeSlug}/terms`,
+        { cache: 'no-store' }
+      );
+
       if (!response.ok) {
         // If endpoint doesn't exist for given slug, gracefully return empty
         return [];
       }
-      
+
       const data = await response.json();
       const termsArray = Array.isArray(data) ? data : [];
       return termsArray
-        .map((term) => this.transformTerm(term))
+        .map(term => this.transformTerm(term))
         .filter((term): term is WooAttributeTerm => term !== null);
     } catch (error) {
-      console.warn(`Error fetching terms for attribute ${attributeSlug}:`, error);
+      console.warn(
+        `Error fetching terms for attribute ${attributeSlug}:`,
+        error
+      );
       return [];
     }
   }
@@ -235,7 +248,8 @@ class DynamicCategoriesService {
     const slug = this.toOptionalString(record.slug);
     const type = this.toOptionalString(record.type) || 'select';
     const orderBy = this.toOptionalString(record.order_by) || 'menu_order';
-    const hasArchives = typeof record.has_archives === 'boolean' ? record.has_archives : false;
+    const hasArchives =
+      typeof record.has_archives === 'boolean' ? record.has_archives : false;
 
     if (idValue === undefined || !name || !slug) {
       return null;
@@ -243,7 +257,7 @@ class DynamicCategoriesService {
 
     const termsRaw = Array.isArray(record.terms) ? record.terms : [];
     const terms = termsRaw
-      .map((term) => this.transformTerm(term))
+      .map(term => this.transformTerm(term))
       .filter((term): term is WooAttributeTerm => term !== null);
 
     return {
@@ -337,7 +351,7 @@ class DynamicCategoriesService {
         level: 0,
         subcategories: [],
         description: category.description,
-        image: category.image
+        image: category.image,
       };
 
       categoryMap.set(category.id, hierarchicalCategory);
@@ -377,33 +391,39 @@ class DynamicCategoriesService {
       // Pobierz kategorie i atrybuty równolegle
       const [categories, attributes] = await Promise.all([
         this.getAllCategories(),
-        this.getAllAttributes()
+        this.getAllAttributes(),
       ]);
 
       // Zbuduj hierarchię kategorii
       const hierarchicalCategories = this.buildCategoryHierarchy(categories);
 
       // Pobierz terminy dla każdego atrybutu
-      const attributesWithTerms: { [key: string]: { name: string; slug: string; terms: WooAttributeTerm[] } } = {};
-      
+      const attributesWithTerms: {
+        [key: string]: {
+          name: string;
+          slug: string;
+          terms: WooAttributeTerm[];
+        };
+      } = {};
+
       for (const attribute of attributes) {
         const terms = await this.getAttributeTerms(attribute.slug);
         attributesWithTerms[attribute.slug] = {
           name: attribute.name,
           slug: attribute.slug,
-          terms: terms
+          terms: terms,
         };
       }
 
       return {
         categories: hierarchicalCategories,
-        attributes: attributesWithTerms
+        attributes: attributesWithTerms,
       };
     } catch (error) {
       console.error('Error fetching dynamic filters:', error);
       return {
         categories: [],
-        attributes: {}
+        attributes: {},
       };
     }
   }
@@ -418,20 +438,29 @@ class DynamicCategoriesService {
   /**
    * Pobiera kategorie z liczbami produktów dla konkretnego filtra
    */
-  async getCategoriesWithCounts(filters: {
-    search?: string;
-    category?: string;
-    attributes?: { [key: string]: string[] };
-    minPrice?: number;
-    maxPrice?: number;
-    onSale?: boolean;
-  } = {}): Promise<HierarchicalCategory[]> {
+  async getCategoriesWithCounts(
+    filters: {
+      search?: string;
+      category?: string;
+      attributes?: { [key: string]: string[] };
+      minPrice?: number;
+      maxPrice?: number;
+      onSale?: boolean;
+    } = {}
+  ): Promise<HierarchicalCategory[]> {
     try {
       // Pobierz wszystkie kategorie
       const allCategories = await this.getAllCategories();
-      
+
       // Jeśli nie ma filtrów, zwróć wszystkie kategorie
-      if (!filters.category && !filters.search && !filters.attributes && !filters.minPrice && !filters.maxPrice && !filters.onSale) {
+      if (
+        !filters.category &&
+        !filters.search &&
+        !filters.attributes &&
+        !filters.minPrice &&
+        !filters.maxPrice &&
+        !filters.onSale
+      ) {
         return this.buildCategoryHierarchy(allCategories);
       }
 
@@ -439,10 +468,12 @@ class DynamicCategoriesService {
       const params = new URLSearchParams();
       params.append('endpoint', 'shop');
       params.append('per_page', '1'); // Tylko liczba, nie produkty
-      
+
       if (filters.search) params.append('search', filters.search);
-      if (filters.minPrice) params.append('min_price', filters.minPrice.toString());
-      if (filters.maxPrice) params.append('max_price', filters.maxPrice.toString());
+      if (filters.minPrice)
+        params.append('min_price', filters.minPrice.toString());
+      if (filters.maxPrice)
+        params.append('max_price', filters.maxPrice.toString());
       if (filters.onSale) params.append('on_sale', 'true');
 
       const response = await fetch(`${this.baseUrl}?${params.toString()}`);

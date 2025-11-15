@@ -20,29 +20,29 @@ type OptimizeOptions = {
 export const IMAGE_OPTIMIZATION_CONFIG = {
   // Supported formats
   formats: ['avif', 'webp', 'jpeg', 'png'] as ImageFormat[],
-  
+
   // Quality settings
   quality: {
     avif: 80,
     webp: 85,
     jpeg: 90,
-    png: 95
+    png: 95,
   },
-  
+
   // Size breakpoints
   breakpoints: {
     mobile: 375,
     tablet: 768,
     desktop: 1200,
-    large: 1920
+    large: 1920,
   },
-  
+
   // Lazy loading
   lazyLoading: true,
   intersectionThreshold: 0.1,
-  
+
   // Placeholder
-  placeholder: '/images/placeholder-product.jpg'
+  placeholder: '/images/placeholder-product.jpg',
 };
 
 // Image optimization class
@@ -54,7 +54,7 @@ export class ImageOptimizer {
     webp: boolean;
   } = {
     avif: false,
-    webp: false
+    webp: false,
   };
 
   constructor() {
@@ -68,13 +68,15 @@ export class ImageOptimizer {
     const avifCanvas = document.createElement('canvas');
     avifCanvas.width = 1;
     avifCanvas.height = 1;
-    this.isSupported.avif = avifCanvas.toDataURL('image/avif').indexOf('data:image/avif') === 0;
+    this.isSupported.avif =
+      avifCanvas.toDataURL('image/avif').indexOf('data:image/avif') === 0;
 
     // Check WebP support
     const webpCanvas = document.createElement('canvas');
     webpCanvas.width = 1;
     webpCanvas.height = 1;
-    this.isSupported.webp = webpCanvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    this.isSupported.webp =
+      webpCanvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
 
     logger.info('Image format support detected', this.isSupported);
   }
@@ -84,7 +86,7 @@ export class ImageOptimizer {
     if (!IMAGE_OPTIMIZATION_CONFIG.lazyLoading) return;
 
     this.observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const img = entry.target as HTMLImageElement;
@@ -95,16 +97,13 @@ export class ImageOptimizer {
       },
       {
         threshold: IMAGE_OPTIMIZATION_CONFIG.intersectionThreshold,
-        rootMargin: '50px'
+        rootMargin: '50px',
       }
     );
   }
 
   // Optimize image URL
-  optimizeImageUrl(
-    originalUrl: string,
-    options: OptimizeOptions = {}
-  ): string {
+  optimizeImageUrl(originalUrl: string, options: OptimizeOptions = {}): string {
     if (!originalUrl) return IMAGE_OPTIMIZATION_CONFIG.placeholder;
 
     // WordPress image optimization
@@ -122,50 +121,56 @@ export class ImageOptimizer {
   }
 
   // Optimize WordPress images
-  private optimizeWordPressImage(url: string, options: OptimizeOptions): string {
+  private optimizeWordPressImage(
+    url: string,
+    options: OptimizeOptions
+  ): string {
     const { width, height, quality, format, device } = options;
-    
+
     // Determine optimal format
     const optimalFormat = this.getOptimalFormat(format);
-    
+
     // Determine optimal size
     const optimalSize = this.getOptimalSize(width, height, device);
-    
+
     // Build optimized URL
     const urlObj = new URL(url);
     const params = new URLSearchParams();
-    
+
     if (optimalSize.width) params.set('w', optimalSize.width.toString());
     if (optimalSize.height) params.set('h', optimalSize.height.toString());
     if (quality) params.set('q', quality.toString());
     if (optimalFormat !== 'jpeg') params.set('f', optimalFormat);
-    
+
     // Add optimization parameters
     params.set('fit', 'cover');
     params.set('auto', 'format');
-    
+
     return `${urlObj.origin}${urlObj.pathname}?${params.toString()}`;
   }
 
   // Optimize Next.js images
   private optimizeNextJsImage(url: string, options: OptimizeOptions): string {
     const { width, height, quality, format, device } = options;
-    
+
     const optimalFormat = this.getOptimalFormat(format);
     const optimalSize = this.getOptimalSize(width, height, device);
-    
+
     const params = new URLSearchParams();
-    
+
     if (optimalSize.width) params.set('w', optimalSize.width.toString());
     if (optimalSize.height) params.set('h', optimalSize.height.toString());
     if (quality) params.set('q', quality.toString());
     if (optimalFormat !== 'jpeg') params.set('f', optimalFormat);
-    
+
     return `${url}?${params.toString()}`;
   }
 
   // Optimize external images
-  private optimizeExternalImage(url: string, _options: OptimizeOptions): string {
+  private optimizeExternalImage(
+    url: string,
+    _options: OptimizeOptions
+  ): string {
     // For external images, we can use a proxy service or return original
     // In production, you might want to use a service like Cloudinary or ImageKit
     return url;
@@ -173,7 +178,10 @@ export class ImageOptimizer {
 
   // Get optimal format based on browser support
   private getOptimalFormat(preferredFormat?: ImageFormat): ImageFormat {
-    if (preferredFormat && IMAGE_OPTIMIZATION_CONFIG.formats.includes(preferredFormat)) {
+    if (
+      preferredFormat &&
+      IMAGE_OPTIMIZATION_CONFIG.formats.includes(preferredFormat)
+    ) {
       return preferredFormat;
     }
 
@@ -220,7 +228,7 @@ export class ImageOptimizer {
       width: parseInt(img.dataset.width || '0') || undefined,
       height: parseInt(img.dataset.height || '0') || undefined,
       quality: parseInt(img.dataset.quality || '0') || undefined,
-      format: this.parseFormat(img.dataset.format)
+      format: this.parseFormat(img.dataset.format),
     });
 
     img.src = optimizedSrc;
@@ -234,7 +242,7 @@ export class ImageOptimizer {
         src: optimizedSrc,
         loadTime: loadTime,
         originalSize: src.length,
-        optimizedSize: optimizedSrc.length
+        optimizedSize: optimizedSrc.length,
       });
     });
 
@@ -277,13 +285,13 @@ export class ImageOptimizer {
     } = {}
   ): string {
     const { sizes = [375, 768, 1200, 1920], quality, format } = options;
-    
+
     return sizes
       .map(size => {
         const optimizedUrl = this.optimizeImageUrl(baseUrl, {
           width: size,
           quality,
-          format: this.parseFormat(format)
+          format: this.parseFormat(format),
         });
         return `${optimizedUrl} ${size}w`;
       })
@@ -296,11 +304,11 @@ export class ImageOptimizer {
       '(max-width: 375px)': '100vw',
       '(max-width: 768px)': '50vw',
       '(max-width: 1200px)': '33vw',
-      '(min-width: 1201px)': '25vw'
+      '(min-width: 1201px)': '25vw',
     };
 
     const finalBreakpoints = { ...defaultBreakpoints, ...breakpoints };
-    
+
     return Object.entries(finalBreakpoints)
       .map(([media, size]) => `${media} ${size}`)
       .join(', ');
@@ -328,13 +336,13 @@ export class ImageOptimizer {
       format,
       lazy = true,
       className,
-      sizes
+      sizes,
     } = options;
 
     const img = document.createElement('img');
     img.alt = alt;
     img.className = className || '';
-    
+
     if (width) img.width = width;
     if (height) img.height = height;
     if (sizes) img.sizes = sizes;
@@ -346,10 +354,15 @@ export class ImageOptimizer {
       if (height) img.dataset.height = height.toString();
       if (quality) img.dataset.quality = quality.toString();
       if (format) img.dataset.format = format;
-      
+
       this.setupLazyLoading(img);
     } else {
-      img.src = this.optimizeImageUrl(src, { width, height, quality, format: this.parseFormat(format) });
+      img.src = this.optimizeImageUrl(src, {
+        width,
+        height,
+        quality,
+        format: this.parseFormat(format),
+      });
     }
 
     return img;
@@ -365,7 +378,9 @@ export class ImageOptimizer {
   private parseFormat(format?: string | null): ImageFormat | undefined {
     if (!format) return undefined;
     const normalized = format.toLowerCase();
-    return IMAGE_OPTIMIZATION_CONFIG.formats.find(item => item === normalized) as ImageFormat | undefined;
+    return IMAGE_OPTIMIZATION_CONFIG.formats.find(
+      item => item === normalized
+    ) as ImageFormat | undefined;
   }
 }
 
@@ -380,7 +395,8 @@ export function useImageOptimization() {
     preloadImages: imageOptimizer.preloadImages.bind(imageOptimizer),
     generateSrcSet: imageOptimizer.generateSrcSet.bind(imageOptimizer),
     generateSizes: imageOptimizer.generateSizes.bind(imageOptimizer),
-    createOptimizedImage: imageOptimizer.createOptimizedImage.bind(imageOptimizer)
+    createOptimizedImage:
+      imageOptimizer.createOptimizedImage.bind(imageOptimizer),
   };
 }
 

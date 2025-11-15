@@ -48,7 +48,8 @@ class StoreApiService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL + '/wp-json/wc/store/v1';
+    this.baseUrl =
+      process.env.NEXT_PUBLIC_WORDPRESS_URL + '/wp-json/wc/store/v1';
     this.config = {
       baseUrl: this.baseUrl,
     };
@@ -63,13 +64,13 @@ class StoreApiService {
         method: 'GET',
         credentials: 'include',
       });
-      
+
       const nonce = response.headers.get('X-WC-Store-API-Nonce');
       if (nonce) {
         this.config.nonce = nonce;
         return nonce;
       }
-      
+
       throw new Error('No nonce received');
     } catch (error) {
       console.error('Failed to get nonce:', error);
@@ -85,7 +86,7 @@ class StoreApiService {
     options: RequestInit = {}
   ): Promise<Response> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     // Get nonce if not available
     if (!this.config.nonce) {
       await this.getNonce();
@@ -118,7 +119,7 @@ class StoreApiService {
   async getCart(): Promise<CartResponse> {
     try {
       const response = await this.makeRequest('/cart');
-      
+
       if (!response.ok) {
         throw new Error(`Cart fetch failed: ${response.statusText}`);
       }
@@ -134,7 +135,11 @@ class StoreApiService {
   /**
    * Add item to cart
    */
-  async addToCart(productId: number, quantity: number = 1, variation?: UnknownRecord): Promise<CartResponse> {
+  async addToCart(
+    productId: number,
+    quantity: number = 1,
+    variation?: UnknownRecord
+  ): Promise<CartResponse> {
     try {
       const response = await this.makeRequest('/cart/add-item', {
         method: 'POST',
@@ -161,7 +166,10 @@ class StoreApiService {
   /**
    * Update cart item quantity
    */
-  async updateCartItem(itemKey: string, quantity: number): Promise<CartResponse> {
+  async updateCartItem(
+    itemKey: string,
+    quantity: number
+  ): Promise<CartResponse> {
     try {
       const response = await this.makeRequest(`/cart/update-item`, {
         method: 'POST',
@@ -237,9 +245,11 @@ class StoreApiService {
   async getShippingMethods(): Promise<UnknownRecord[]> {
     try {
       const response = await this.makeRequest('/cart/shipping-methods');
-      
+
       if (!response.ok) {
-        throw new Error(`Shipping methods fetch failed: ${response.statusText}`);
+        throw new Error(
+          `Shipping methods fetch failed: ${response.statusText}`
+        );
       }
 
       const data = await response.json();
@@ -256,7 +266,7 @@ class StoreApiService {
   async getPaymentMethods(): Promise<UnknownRecord[]> {
     try {
       const response = await this.makeRequest('/cart/payment-methods');
-      
+
       if (!response.ok) {
         throw new Error(`Payment methods fetch failed: ${response.statusText}`);
       }
@@ -344,7 +354,7 @@ class StoreApiService {
   async getSession(): Promise<UnknownRecord> {
     try {
       const response = await this.makeRequest('/session');
-      
+
       if (!response.ok) {
         throw new Error(`Session fetch failed: ${response.statusText}`);
       }

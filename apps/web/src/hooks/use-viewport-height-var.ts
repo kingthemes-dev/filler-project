@@ -19,10 +19,10 @@ export function useViewportHeightVar() {
 
     // Update on resize
     window.addEventListener('resize', setVH);
-    
+
     // Update on orientation change
     window.addEventListener('orientationchange', setVH);
-    
+
     // Update on visual viewport change (mobile zoom)
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', setVH);
@@ -39,4 +39,3 @@ export function useViewportHeightVar() {
     };
   }, []);
 }
-

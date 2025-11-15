@@ -2,17 +2,35 @@
 
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingCart, Eye, Trash2, ArrowLeft, User, Package, FileText } from 'lucide-react';
+import {
+  Heart,
+  ShoppingCart,
+  Eye,
+  Trash2,
+  ArrowLeft,
+  User,
+  Package,
+  FileText,
+} from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useWishlist } from '@/hooks/use-wishlist';
 import { useCartActions } from '@/stores/cart-store';
-import { useQuickViewActions, useQuickViewIsOpen, useQuickViewProduct } from '@/stores/quickview-store';
+import {
+  useQuickViewActions,
+  useQuickViewIsOpen,
+  useQuickViewProduct,
+} from '@/stores/quickview-store';
 import type { WishlistItem } from '@/stores/wishlist-store';
 import { WooProduct } from '@/types/woocommerce';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/utils/format-price';
 import QuickViewModal from '@/components/ui/quick-view-modal';
@@ -21,20 +39,14 @@ import PageHeader from '@/components/ui/page-header';
 
 export default function WishlistPage() {
   const router = useRouter();
-  const { 
-    items, 
-    isLoading, 
-    error, 
-    removeItem, 
-    clearWishlist, 
-    loadFromServer 
-  } = useWishlist();
-  
+  const { items, isLoading, error, removeItem, clearWishlist, loadFromServer } =
+    useWishlist();
+
   const breadcrumbs = [
     { label: 'Strona główna', href: '/' },
-    { label: 'Lista życzeń', href: '/lista-zyczen' }
+    { label: 'Lista życzeń', href: '/lista-zyczen' },
   ];
-  
+
   const { addItem, openCart } = useCartActions();
   const isQuickViewOpen = useQuickViewIsOpen();
   const quickViewProduct = useQuickViewProduct();
@@ -49,7 +61,9 @@ export default function WishlistPage() {
     id: item.id,
     name: item.name,
     price: Number.parseFloat(item.price),
-    sale_price: item.sale_price ? Number.parseFloat(item.sale_price) : undefined,
+    sale_price: item.sale_price
+      ? Number.parseFloat(item.sale_price)
+      : undefined,
     regular_price: Number.parseFloat(item.regular_price),
     image: item.images[0]?.src || '/images/placeholder-product.jpg',
     permalink: item.slug ? `/produkt/${item.slug}` : item.id.toString(),
@@ -57,7 +71,9 @@ export default function WishlistPage() {
 
   const createProductFromWishlist = (item: WishlistItem): WooProduct => {
     const now = new Date(item.addedAt).toISOString();
-    const saleActive = Boolean(item.sale_price && Number.parseFloat(item.sale_price) > 0);
+    const saleActive = Boolean(
+      item.sale_price && Number.parseFloat(item.sale_price) > 0
+    );
 
     return {
       id: item.id,
@@ -154,13 +170,13 @@ export default function WishlistPage() {
       <div className="min-h-screen bg-white py-8 pb-16">
         <PageContainer>
           {/* Header with Title and Breadcrumbs */}
-          <PageHeader 
-            title="Lista życzeń"
-            breadcrumbs={breadcrumbs}
-          />
+          <PageHeader title="Lista życzeń" breadcrumbs={breadcrumbs} />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
             {Array.from({ length: 8 }).map((_, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-xl p-4 animate-pulse">
+              <div
+                key={idx}
+                className="border border-gray-200 rounded-xl p-4 animate-pulse"
+              >
                 <div className="w-full h-48 bg-gray-100 rounded mb-3" />
                 <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
@@ -181,16 +197,15 @@ export default function WishlistPage() {
       <div className="min-h-screen bg-white py-8 pb-16">
         <PageContainer>
           {/* Header with Title and Breadcrumbs */}
-          <PageHeader 
-            title="Lista życzeń"
-            breadcrumbs={breadcrumbs}
-          />
-          
+          <PageHeader title="Lista życzeń" breadcrumbs={breadcrumbs} />
+
           <div className="text-center py-16">
             <div className="text-red-500 mb-4">
               <Heart className="w-16 h-16 mx-auto" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Błąd ładowania</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Błąd ładowania
+            </h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <Button onClick={loadFromServer} variant="outline">
               Spróbuj ponownie
@@ -206,23 +221,21 @@ export default function WishlistPage() {
       <div className="min-h-screen bg-white py-8 pb-16">
         <PageContainer>
           {/* Header with Title and Breadcrumbs */}
-          <PageHeader 
-            title="Lista życzeń"
-            breadcrumbs={breadcrumbs}
-          />
-          
+          <PageHeader title="Lista życzeń" breadcrumbs={breadcrumbs} />
+
           <div className="text-center py-16">
             <div className="text-gray-400 mb-4">
               <Heart className="w-16 h-16 mx-auto" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Lista życzeń jest pusta</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Lista życzeń jest pusta
+            </h2>
             <p className="text-gray-600 mb-6">
-              Dodaj produkty do listy życzeń, klikając ikonę serca na kartach produktów
+              Dodaj produkty do listy życzeń, klikając ikonę serca na kartach
+              produktów
             </p>
             <Link href="/sklep">
-              <Button>
-                Przejdź do sklepu
-              </Button>
+              <Button>Przejdź do sklepu</Button>
             </Link>
           </div>
         </PageContainer>
@@ -233,10 +246,7 @@ export default function WishlistPage() {
   return (
     <PageContainer>
       {/* Header with Title and Breadcrumbs */}
-      <PageHeader 
-        title="Lista życzeń"
-        breadcrumbs={breadcrumbs}
-      />
+      <PageHeader title="Lista życzeń" breadcrumbs={breadcrumbs} />
 
       {/* Tabs for My Account */}
       <div className="flex justify-center mb-8">
@@ -256,13 +266,11 @@ export default function WishlistPage() {
               <Package className="w-5 h-5" />
               <span>Zamówienia</span>
             </button>
-            <button
-              className="relative flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold text-white transition-colors duration-300 ease-out border-0 border-transparent rounded-[22px] group"
-            >
+            <button className="relative flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold text-white transition-colors duration-300 ease-out border-0 border-transparent rounded-[22px] group">
               <motion.div
                 layoutId="activeTab"
                 className="absolute inset-0 bg-gradient-to-r from-black to-[#0f1a26] rounded-[22px] shadow-lg"
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               />
               <Heart className="w-5 h-5 relative z-10" />
               <span className="relative z-10">Ulubione</span>
@@ -277,7 +285,7 @@ export default function WishlistPage() {
           </AnimatePresence>
         </div>
       </div>
-      
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-4">
@@ -289,13 +297,15 @@ export default function WishlistPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Lista życzeń</h1>
-            <p className="text-gray-600">{items.length} {items.length === 1 ? 'produkt' : 'produktów'}</p>
+            <p className="text-gray-600">
+              {items.length} {items.length === 1 ? 'produkt' : 'produktów'}
+            </p>
           </div>
         </div>
-        
+
         {items.length > 0 && (
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={clearWishlist}
             className="text-red-600 hover:text-red-700 hover:border-red-300"
           >
@@ -307,7 +317,7 @@ export default function WishlistPage() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-        {items.map((item) => (
+        {items.map(item => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, y: 20 }}
@@ -321,7 +331,10 @@ export default function WishlistPage() {
                   <Link href={`/produkt/${item.slug}`}>
                     <div className="aspect-square relative overflow-hidden">
                       <Image
-                        src={item.images[0]?.src || '/images/placeholder-product.jpg'}
+                        src={
+                          item.images[0]?.src ||
+                          '/images/placeholder-product.jpg'
+                        }
                         alt={item.name}
                         width={300}
                         height={300}
@@ -329,7 +342,7 @@ export default function WishlistPage() {
                       />
                     </div>
                   </Link>
-                  
+
                   {/* Remove from wishlist button */}
                   <button
                     onClick={() => removeItem(item.id)}
@@ -346,9 +359,11 @@ export default function WishlistPage() {
                     {item.name}
                   </h3>
                 </Link>
-                
+
                 <div className="flex items-center space-x-2 mb-3">
-                  {item.sale_price && parseFloat(item.sale_price) < parseFloat(item.regular_price) ? (
+                  {item.sale_price &&
+                  parseFloat(item.sale_price) <
+                    parseFloat(item.regular_price) ? (
                     <>
                       <span className="text-lg font-bold text-gray-900">
                         {formatPrice(parseFloat(item.sale_price))}
@@ -368,12 +383,16 @@ export default function WishlistPage() {
                 </div>
 
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    item.stock_status === 'instock' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {item.stock_status === 'instock' ? 'Dostępny' : 'Niedostępny'}
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      item.stock_status === 'instock'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {item.stock_status === 'instock'
+                      ? 'Dostępny'
+                      : 'Niedostępny'}
                   </span>
                 </div>
               </CardContent>

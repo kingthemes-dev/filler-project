@@ -4,41 +4,67 @@ import { useState, useEffect } from 'react';
 import PageHeader from '@/components/ui/page-header';
 import PageContainer from '@/components/ui/page-container';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User as UserIcon, Mail, Phone, Edit, Save, X, Shield, CreditCard, Truck, ShoppingCart, FileText, Package, AlertCircle } from 'lucide-react';
-import { useAuthUser, useAuthIsAuthenticated, useAuthActions, type User } from '@/stores/auth-store';
+import {
+  User as UserIcon,
+  Mail,
+  Phone,
+  Edit,
+  Save,
+  X,
+  Shield,
+  CreditCard,
+  Truck,
+  ShoppingCart,
+  FileText,
+  Package,
+  AlertCircle,
+} from 'lucide-react';
+import {
+  useAuthUser,
+  useAuthIsAuthenticated,
+  useAuthActions,
+  type User,
+} from '@/stores/auth-store';
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  validateNIP, 
-  validatePhone, 
-  validateName, 
-  validateCompanyName, 
-  validateAddress, 
+import {
+  validateNIP,
+  validatePhone,
+  validateName,
+  validateCompanyName,
+  validateAddress,
   validatePostalCode,
   formatNIP,
-  formatPhone 
+  formatPhone,
 } from '@/utils/validation';
 
 // Debug helper (no logs in prod unless explicitly enabled)
 const __DEBUG__ = process.env.NEXT_PUBLIC_DEBUG === 'true';
-const debugLog = (...args: unknown[]) => { if (__DEBUG__) console.log(...args); };
+const debugLog = (...args: unknown[]) => {
+  if (__DEBUG__) console.log(...args);
+};
 
 type UserMetaEntry = { key: string; value: unknown };
 
 type ExtendedUser = User & {
   meta_data?: UserMetaEntry[];
-  billing?: (User['billing'] & {
-    address_1?: string;
-    invoiceRequest?: boolean | string;
-    nip?: string;
-  }) | null;
-  shipping?: (User['shipping'] & {
-    address_1?: string;
-  }) | null;
+  billing?:
+    | (User['billing'] & {
+        address_1?: string;
+        invoiceRequest?: boolean | string;
+        nip?: string;
+      })
+    | null;
+  shipping?:
+    | (User['shipping'] & {
+        address_1?: string;
+      })
+    | null;
 };
 
-const ensureString = (value: unknown): string => (typeof value === 'string' ? value : '');
+const ensureString = (value: unknown): string =>
+  typeof value === 'string' ? value : '';
 
 const interpretInvoiceRequest = (value: unknown): boolean => {
   if (typeof value === 'boolean') return value;
@@ -48,8 +74,10 @@ const interpretInvoiceRequest = (value: unknown): boolean => {
   return false;
 };
 
-const getMetaValue = (meta: UserMetaEntry[] | undefined, key: string): unknown =>
-  meta?.find((entry) => entry.key === key)?.value;
+const getMetaValue = (
+  meta: UserMetaEntry[] | undefined,
+  key: string
+): unknown => meta?.find(entry => entry.key === key)?.value;
 
 const initialFormState = {
   firstName: '',
@@ -71,7 +99,9 @@ const initialFormState = {
 
 type FormState = typeof initialFormState;
 
-const buildFormStateFromUser = (rawUser: User): {
+const buildFormStateFromUser = (
+  rawUser: User
+): {
   form: FormState;
   sameAsBilling: boolean;
 } => {
@@ -103,7 +133,8 @@ const buildFormStateFromUser = (rawUser: User): {
   const invoiceRequest =
     interpretInvoiceRequest(billing.invoiceRequest) ||
     interpretInvoiceRequest(metaInvoiceRequest) ||
-    (!!billing.nip || !!metaNip);
+    !!billing.nip ||
+    !!metaNip;
 
   const form = {
     firstName: user.firstName || '',
@@ -133,17 +164,24 @@ export default function MyAccountPage() {
   const router = useRouter();
   const user = useAuthUser();
   const isAuthenticated = useAuthIsAuthenticated();
-  const { updateProfile, changePassword, logout, fetchUserProfile } = useAuthActions();
+  const { updateProfile, changePassword, logout, fetchUserProfile } =
+    useAuthActions();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [openSection, setOpenSection] = useState<{ profile: boolean; billing: boolean; shipping: boolean }>({ profile: true, billing: false, shipping: false });
+  const [openSection, setOpenSection] = useState<{
+    profile: boolean;
+    billing: boolean;
+    shipping: boolean;
+  }>({ profile: true, billing: false, shipping: false });
   const [activeTab, setActiveTab] = useState('profile');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [sameAsBilling, setSameAsBilling] = useState(true);
@@ -156,7 +194,7 @@ export default function MyAccountPage() {
         router.push('/');
       }
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
 
@@ -164,20 +202,21 @@ export default function MyAccountPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       // Check if billing data is empty or missing key fields
-      const hasEmptyBilling = !user.billing || 
-        !user.billing.address || 
-        !user.billing.city || 
+      const hasEmptyBilling =
+        !user.billing ||
+        !user.billing.address ||
+        !user.billing.city ||
         !user.billing.phone ||
         Object.values(user.billing).every(value => !value || value === 'PL');
-      
+
       // Also check if NIP is missing (even if other fields are filled)
-      
-      debugLog('🔍 My Account: Checking billing data:', { 
-        billing: user.billing, 
+
+      debugLog('🔍 My Account: Checking billing data:', {
+        billing: user.billing,
         hasEmptyBilling,
-        shouldFetch: hasEmptyBilling
+        shouldFetch: hasEmptyBilling,
       });
-      
+
       if (hasEmptyBilling) {
         debugLog('🔄 My Account: User data incomplete, fetching profile...');
         fetchUserProfile();
@@ -193,16 +232,26 @@ export default function MyAccountPage() {
         shippingAddress: prev.billingAddress,
         shippingCity: prev.billingCity,
         shippingPostcode: prev.billingPostcode,
-        shippingCountry: prev.billingCountry
+        shippingCountry: prev.billingCountry,
       }));
     }
-  }, [sameAsBilling, formData.billingAddress, formData.billingCity, formData.billingPostcode, formData.billingCountry]);
+  }, [
+    sameAsBilling,
+    formData.billingAddress,
+    formData.billingCity,
+    formData.billingPostcode,
+    formData.billingCountry,
+  ]);
 
   // Load user data into form
   useEffect(() => {
-    debugLog('🔍 My Account useEffect - user check:', { user: !!user, billing: user?.billing });
+    debugLog('🔍 My Account useEffect - user check:', {
+      user: !!user,
+      billing: user?.billing,
+    });
     if (user) {
-      const { form, sameAsBilling: shouldMirror } = buildFormStateFromUser(user);
+      const { form, sameAsBilling: shouldMirror } =
+        buildFormStateFromUser(user);
       setFormData(form);
       setSameAsBilling(shouldMirror);
     }
@@ -210,7 +259,7 @@ export default function MyAccountPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear validation error when user starts typing
     if (validationErrors[field]) {
       setValidationErrors(prev => {
@@ -270,28 +319,50 @@ export default function MyAccountPage() {
       debugLog('❌ Company validation failed:', companyValidation);
     }
 
-    const billingAddressValidation = validateAddress(formData.billingAddress, 'Adres rozliczeniowy');
+    const billingAddressValidation = validateAddress(
+      formData.billingAddress,
+      'Adres rozliczeniowy'
+    );
     if (!billingAddressValidation.isValid) {
       errors.billingAddress = billingAddressValidation.message!;
-      debugLog('❌ Billing address validation failed:', billingAddressValidation);
+      debugLog(
+        '❌ Billing address validation failed:',
+        billingAddressValidation
+      );
     }
 
-    const billingPostcodeValidation = validatePostalCode(formData.billingPostcode);
+    const billingPostcodeValidation = validatePostalCode(
+      formData.billingPostcode
+    );
     if (!billingPostcodeValidation.isValid) {
       errors.billingPostcode = billingPostcodeValidation.message!;
-      debugLog('❌ Billing postcode validation failed:', billingPostcodeValidation);
+      debugLog(
+        '❌ Billing postcode validation failed:',
+        billingPostcodeValidation
+      );
     }
 
-    const shippingAddressValidation = validateAddress(formData.shippingAddress, 'Adres dostawy');
+    const shippingAddressValidation = validateAddress(
+      formData.shippingAddress,
+      'Adres dostawy'
+    );
     if (!shippingAddressValidation.isValid) {
       errors.shippingAddress = shippingAddressValidation.message!;
-      debugLog('❌ Shipping address validation failed:', shippingAddressValidation);
+      debugLog(
+        '❌ Shipping address validation failed:',
+        shippingAddressValidation
+      );
     }
 
-    const shippingPostcodeValidation = validatePostalCode(formData.shippingPostcode);
+    const shippingPostcodeValidation = validatePostalCode(
+      formData.shippingPostcode
+    );
     if (!shippingPostcodeValidation.isValid) {
       errors.shippingPostcode = shippingPostcodeValidation.message!;
-      debugLog('❌ Shipping postcode validation failed:', shippingPostcodeValidation);
+      debugLog(
+        '❌ Shipping postcode validation failed:',
+        shippingPostcodeValidation
+      );
     }
 
     setValidationErrors(errors);
@@ -318,18 +389,18 @@ export default function MyAccountPage() {
           city: formData.billingCity.trim(),
           postcode: formData.billingPostcode.trim(),
           country: formData.billingCountry,
-          phone: formData.phone.trim()
+          phone: formData.phone.trim(),
         },
         shipping: {
           address: formData.shippingAddress.trim(),
           city: formData.shippingCity.trim(),
           postcode: formData.shippingPostcode.trim(),
-          country: formData.shippingCountry
-        }
+          country: formData.shippingCountry,
+        },
       };
 
       const result = await updateProfile(profileData);
-      
+
       if (result.success) {
         setIsEditing(false);
         setValidationErrors({});
@@ -355,11 +426,18 @@ export default function MyAccountPage() {
     }
 
     try {
-      const result = await changePassword(passwordData.currentPassword, passwordData.newPassword);
-      
+      const result = await changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
+
       if (result.success) {
         setShowPasswordModal(false);
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
         alert('Hasło zostało zmienione!');
       } else {
         alert(`Błąd: ${result.message}`);
@@ -372,7 +450,8 @@ export default function MyAccountPage() {
 
   const handleCancel = () => {
     if (user) {
-      const { form, sameAsBilling: shouldMirror } = buildFormStateFromUser(user);
+      const { form, sameAsBilling: shouldMirror } =
+        buildFormStateFromUser(user);
       setFormData(form);
       setSameAsBilling(shouldMirror);
     }
@@ -394,12 +473,12 @@ export default function MyAccountPage() {
     <div className="min-h-screen bg-white">
       <PageContainer className="pb-12">
         {/* Header */}
-        <PageHeader 
+        <PageHeader
           title="Moje konto"
           subtitle="Zarządzaj swoimi danymi i ustawieniami"
           breadcrumbs={[
             { label: 'Strona główna', href: '/' },
-            { label: 'Moje konto', href: '/moje-konto' }
+            { label: 'Moje konto', href: '/moje-konto' },
           ]}
         />
 
@@ -408,7 +487,7 @@ export default function MyAccountPage() {
           <div className="w-full">
             <div className="grid grid-cols-3 bg-white border border-gray-300 p-1 rounded-[28px] sm:h-[80px] h-auto relative overflow-hidden shadow-sm">
               {/* Animated background indicator with layoutId for smooth transition */}
-              <motion.div 
+              <motion.div
                 layoutId="accountActiveTab"
                 className="absolute top-1 bottom-1 bg-gradient-to-r from-black to-[#0f1a26] rounded-[22px] shadow-lg"
                 style={{
@@ -416,25 +495,35 @@ export default function MyAccountPage() {
                   width: `calc(${100 / 3}% - 6px)`,
                 }}
                 transition={{
-                  type: "spring",
+                  type: 'spring',
                   stiffness: 300,
-                  damping: 30
+                  damping: 30,
                 }}
               />
               <button
                 onClick={() => setActiveTab('profile')}
                 className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
               >
-                <div className={`transition-all duration-300 ${
-                  activeTab === 'profile' ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
-                } ${
-                  activeTab === 'profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`}>
+                <div
+                  className={`transition-all duration-300 ${
+                    activeTab === 'profile'
+                      ? 'scale-110'
+                      : 'group-hover:scale-110 group-active:scale-95'
+                  } ${
+                    activeTab === 'profile'
+                      ? 'text-white'
+                      : 'text-gray-500 group-hover:text-gray-700'
+                  }`}
+                >
                   <UserIcon className="w-5 h-5 sm:w-5 sm:h-5" />
                 </div>
-                <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
-                  activeTab === 'profile' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`}>
+                <span
+                  className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
+                    activeTab === 'profile'
+                      ? 'text-white'
+                      : 'text-gray-500 group-hover:text-gray-700'
+                  }`}
+                >
                   Moje konto
                 </span>
               </button>
@@ -442,16 +531,26 @@ export default function MyAccountPage() {
                 onClick={() => router.push('/moje-zamowienia')}
                 className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
               >
-                <div className={`transition-all duration-300 ${
-                  activeTab === 'orders' ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
-                } ${
-                  activeTab === 'orders' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`}>
+                <div
+                  className={`transition-all duration-300 ${
+                    activeTab === 'orders'
+                      ? 'scale-110'
+                      : 'group-hover:scale-110 group-active:scale-95'
+                  } ${
+                    activeTab === 'orders'
+                      ? 'text-white'
+                      : 'text-gray-500 group-hover:text-gray-700'
+                  }`}
+                >
                   <Package className="w-5 h-5 sm:w-5 sm:h-5" />
                 </div>
-                <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
-                  activeTab === 'orders' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`}>
+                <span
+                  className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
+                    activeTab === 'orders'
+                      ? 'text-white'
+                      : 'text-gray-500 group-hover:text-gray-700'
+                  }`}
+                >
                   Zamówienia
                 </span>
               </button>
@@ -459,17 +558,27 @@ export default function MyAccountPage() {
                 onClick={() => router.push('/moje-faktury')}
                 className="relative z-10 flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs sm:text-[17px] font-semibold transition-all duration-300 ease-out border-0 border-transparent rounded-[22px] group"
               >
-                <div className={`transition-all duration-300 ${
-                  activeTab === 'invoices' ? 'scale-110' : 'group-hover:scale-110 group-active:scale-95'
-                } ${
-                  activeTab === 'invoices' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`}>
+                <div
+                  className={`transition-all duration-300 ${
+                    activeTab === 'invoices'
+                      ? 'scale-110'
+                      : 'group-hover:scale-110 group-active:scale-95'
+                  } ${
+                    activeTab === 'invoices'
+                      ? 'text-white'
+                      : 'text-gray-500 group-hover:text-gray-700'
+                  }`}
+                >
                   <FileText className="w-5 h-5 sm:w-5 sm:h-5" />
                 </div>
-                <span className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
-                  activeTab === 'invoices' ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`}>
-                Faktury
+                <span
+                  className={`text-center leading-tight transition-all duration-300 whitespace-nowrap ${
+                    activeTab === 'invoices'
+                      ? 'text-white'
+                      : 'text-gray-500 group-hover:text-gray-700'
+                  }`}
+                >
+                  Faktury
                 </span>
               </button>
             </div>
@@ -480,483 +589,582 @@ export default function MyAccountPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             <AnimatePresence mode="wait">
-            {activeTab === 'profile' && (
-              <>
-                {/* Personal Information */}
-                <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="bg-white rounded-lg shadow-sm border border-gray-200"
-            >
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setOpenSection(prev => ({ ...prev, profile: !prev.profile }))}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenSection(prev => ({ ...prev, profile: !prev.profile })); }}
-                className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
-                aria-expanded={openSection.profile}
-              >
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <UserIcon className="w-5 h-5 mr-2" />
-                  Dane osobowe
-                </h2>
-                {!isEditing && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+              {activeTab === 'profile' && (
+                <>
+                  {/* Personal Information */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200"
                   >
-                    <Edit className="w-4 h-4" />
-                    <span>Edytuj</span>
-                  </button>
-                )}
-              </div>
-
-              <div className={`${openSection.profile ? 'block' : 'hidden'} lg:block px-6 pb-6`}>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Company */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nazwa firmy
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.company}
-                    onChange={(e) => handleInputChange('company', e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.company 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                    placeholder="np. King Brand Sp. z o.o."
-                  />
-                  {validationErrors.company && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.company}
-                    </div>
-                  )}
-                </div>
-                {/* NIP */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    NIP
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nip}
-                    onChange={(e) => handleNIPChange(e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.nip 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                    placeholder="123-456-78-90"
-                  />
-                  {validationErrors.nip && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.nip}
-                    </div>
-                  )}
-                </div>
-                {/* Invoice Request */}
-                <div className="sm:col-span-2">
-                  <label className="flex items-center space-x-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={formData.invoiceRequest}
-                      onChange={(e) => setFormData(prev => ({ ...prev, invoiceRequest: e.target.checked }))}
-                      disabled={!isEditing}
-                      className="w-4 h-4"
-                    />
-                    <span>Chcę faktury (na firmę)</span>
-                  </label>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Imię <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.firstName 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                    placeholder="np. Jan"
-                  />
-                  {validationErrors.firstName && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.firstName}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nazwisko <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.lastName 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                    placeholder="np. Kowalski"
-                  />
-                  {validationErrors.lastName && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.lastName}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    disabled
-                    className="w-full px-4 py-3 border border-gray-200 bg-gray-50 text-gray-600 rounded-lg"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Email nie może być zmieniony
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Telefon
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.phone 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                    placeholder="+48 123 456 789"
-                  />
-                  {validationErrors.phone && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.phone}
-                    </div>
-                  )}
-                </div>
-              </div>
-              </div>
-
-              {isEditing && (
-                <div className={`${openSection.profile ? 'flex' : 'hidden'} lg:flex gap-3 px-6 pb-6`}
-                >
-                  <button
-                    onClick={handleSave}
-                    className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center space-x-2"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Zapisz</span>
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center space-x-2"
-                  >
-                    <X className="w-4 h-4" />
-                    <span>Anuluj</span>
-                  </button>
-                </div>
-              )}
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white rounded-lg shadow-sm border border-gray-200"
-            >
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setOpenSection(prev => ({ ...prev, billing: !prev.billing }))}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenSection(prev => ({ ...prev, billing: !prev.billing })); }}
-                className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
-                aria-expanded={openSection.billing}
-              >
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Adres rozliczeniowy
-                </h2>
-                {!isEditing && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); setOpenSection(prev => ({ ...prev, billing: true })); }}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span>Edytuj</span>
-                  </button>
-                )}
-              </div>
-
-              <div className={`${openSection.billing ? 'block' : 'hidden'} lg:block px-6 pb-6`}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adres
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.billingAddress}
-                    onChange={(e) => handleInputChange('billingAddress', e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.billingAddress 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                  />
-                  {validationErrors.billingAddress && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.billingAddress}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Miasto
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.billingCity}
-                    onChange={(e) => handleInputChange('billingCity', e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? 'border-gray-300' 
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kod pocztowy
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.billingPostcode}
-                    onChange={(e) => handleInputChange('billingPostcode', e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.billingPostcode 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                  />
-                  {validationErrors.billingPostcode && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.billingPostcode}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kraj
-                  </label>
-                  <select
-                    value={formData.billingCountry}
-                    onChange={(e) => handleInputChange('billingCountry', e.target.value)}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? 'border-gray-300' 
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                  >
-                    <option value="PL">Polska</option>
-                    <option value="DE">Niemcy</option>
-                    <option value="CZ">Czechy</option>
-                    <option value="SK">Słowacja</option>
-                  </select>
-                </div>
-              </div>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-white rounded-lg shadow-sm border border-gray-200"
-            >
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setOpenSection(prev => ({ ...prev, shipping: !prev.shipping }))}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setOpenSection(prev => ({ ...prev, shipping: !prev.shipping })); }}
-                className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
-                aria-expanded={openSection.shipping}
-              >
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <Truck className="w-5 h-5 mr-2" />
-                  Adres dostawy
-                </h2>
-                {isEditing && (
-                  <label className="flex items-center space-x-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={sameAsBilling}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setSameAsBilling(checked);
-                        if (checked) {
-                          setFormData(prev => ({
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        setOpenSection(prev => ({
+                          ...prev,
+                          profile: !prev.profile,
+                        }))
+                      }
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ')
+                          setOpenSection(prev => ({
                             ...prev,
-                            shippingAddress: prev.billingAddress,
-                            shippingCity: prev.billingCity,
-                            shippingPostcode: prev.billingPostcode,
-                            shippingCountry: prev.billingCountry
+                            profile: !prev.profile,
                           }));
-                        }
                       }}
-                      className="w-4 h-4"
-                    />
-                    <span>Adres dostawy taki sam jak rozliczeniowy</span>
-                  </label>
-                )}
-                {!isEditing && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); setOpenSection(prev => ({ ...prev, shipping: true })); }}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span>Edytuj</span>
-                  </button>
-                )}
-              </div>
-
-              <div className={`${openSection.shipping ? 'block' : 'hidden'} lg:block px-6 pb-6`}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adres
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.shippingAddress}
-                    onChange={(e) => handleInputChange('shippingAddress', e.target.value)}
-                    disabled={!isEditing || sameAsBilling}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.shippingAddress 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                  />
-                  {validationErrors.shippingAddress && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.shippingAddress}
+                      className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
+                      aria-expanded={openSection.profile}
+                    >
+                      <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                        <UserIcon className="w-5 h-5 mr-2" />
+                        Dane osobowe
+                      </h2>
+                      {!isEditing && (
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setIsEditing(true);
+                          }}
+                          className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span>Edytuj</span>
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Miasto
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.shippingCity}
-                    onChange={(e) => handleInputChange('shippingCity', e.target.value)}
-                    disabled={!isEditing || sameAsBilling}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? 'border-gray-300' 
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kod pocztowy
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.shippingPostcode}
-                    onChange={(e) => handleInputChange('shippingPostcode', e.target.value)}
-                    disabled={!isEditing || sameAsBilling}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? validationErrors.shippingPostcode 
-                          ? 'border-red-500' 
-                          : 'border-gray-300'
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
-                  />
-                  {validationErrors.shippingPostcode && (
-                    <div className="flex items-center mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      {validationErrors.shippingPostcode}
+
+                    <div
+                      className={`${openSection.profile ? 'block' : 'hidden'} lg:block px-6 pb-6`}
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Company */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Nazwa firmy
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.company}
+                            onChange={e =>
+                              handleInputChange('company', e.target.value)
+                            }
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.company
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                            placeholder="np. King Brand Sp. z o.o."
+                          />
+                          {validationErrors.company && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.company}
+                            </div>
+                          )}
+                        </div>
+                        {/* NIP */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            NIP
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.nip}
+                            onChange={e => handleNIPChange(e.target.value)}
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.nip
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                            placeholder="123-456-78-90"
+                          />
+                          {validationErrors.nip && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.nip}
+                            </div>
+                          )}
+                        </div>
+                        {/* Invoice Request */}
+                        <div className="sm:col-span-2">
+                          <label className="flex items-center space-x-2 text-sm text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={formData.invoiceRequest}
+                              onChange={e =>
+                                setFormData(prev => ({
+                                  ...prev,
+                                  invoiceRequest: e.target.checked,
+                                }))
+                              }
+                              disabled={!isEditing}
+                              className="w-4 h-4"
+                            />
+                            <span>Chcę faktury (na firmę)</span>
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Imię <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.firstName}
+                            onChange={e =>
+                              handleInputChange('firstName', e.target.value)
+                            }
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.firstName
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                            placeholder="np. Jan"
+                          />
+                          {validationErrors.firstName && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.firstName}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Nazwisko <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.lastName}
+                            onChange={e =>
+                              handleInputChange('lastName', e.target.value)
+                            }
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.lastName
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                            placeholder="np. Kowalski"
+                          />
+                          {validationErrors.lastName && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.lastName}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            value={formData.email}
+                            disabled
+                            className="w-full px-4 py-3 border border-gray-200 bg-gray-50 text-gray-600 rounded-lg"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Email nie może być zmieniony
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Telefon
+                          </label>
+                          <input
+                            type="tel"
+                            value={formData.phone}
+                            onChange={e => handlePhoneChange(e.target.value)}
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.phone
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                            placeholder="+48 123 456 789"
+                          />
+                          {validationErrors.phone && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.phone}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kraj
-                  </label>
-                  <select
-                    value={formData.shippingCountry}
-                    onChange={(e) => handleInputChange('shippingCountry', e.target.value)}
-                    disabled={!isEditing || sameAsBilling}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
-                      isEditing 
-                        ? 'border-gray-300' 
-                        : 'border-gray-200 bg-gray-50 text-gray-600'
-                    }`}
+
+                    {isEditing && (
+                      <div
+                        className={`${openSection.profile ? 'flex' : 'hidden'} lg:flex gap-3 px-6 pb-6`}
+                      >
+                        <button
+                          onClick={handleSave}
+                          className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center space-x-2"
+                        >
+                          <Save className="w-4 h-4" />
+                          <span>Zapisz</span>
+                        </button>
+                        <button
+                          onClick={handleCancel}
+                          className="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>Anuluj</span>
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200"
                   >
-                    <option value="PL">Polska</option>
-                    <option value="DE">Niemcy</option>
-                    <option value="CZ">Czechy</option>
-                    <option value="SK">Słowacja</option>
-                  </select>
-                </div>
-              </div>
-              </div>
-            </motion.div>
-              </>
-            )}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        setOpenSection(prev => ({
+                          ...prev,
+                          billing: !prev.billing,
+                        }))
+                      }
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ')
+                          setOpenSection(prev => ({
+                            ...prev,
+                            billing: !prev.billing,
+                          }));
+                      }}
+                      className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
+                      aria-expanded={openSection.billing}
+                    >
+                      <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                        <CreditCard className="w-5 h-5 mr-2" />
+                        Adres rozliczeniowy
+                      </h2>
+                      {!isEditing && (
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setIsEditing(true);
+                            setOpenSection(prev => ({
+                              ...prev,
+                              billing: true,
+                            }));
+                          }}
+                          className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span>Edytuj</span>
+                        </button>
+                      )}
+                    </div>
 
+                    <div
+                      className={`${openSection.billing ? 'block' : 'hidden'} lg:block px-6 pb-6`}
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Adres
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.billingAddress}
+                            onChange={e =>
+                              handleInputChange(
+                                'billingAddress',
+                                e.target.value
+                              )
+                            }
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.billingAddress
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          />
+                          {validationErrors.billingAddress && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.billingAddress}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Miasto
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.billingCity}
+                            onChange={e =>
+                              handleInputChange('billingCity', e.target.value)
+                            }
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kod pocztowy
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.billingPostcode}
+                            onChange={e =>
+                              handleInputChange(
+                                'billingPostcode',
+                                e.target.value
+                              )
+                            }
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.billingPostcode
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          />
+                          {validationErrors.billingPostcode && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.billingPostcode}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kraj
+                          </label>
+                          <select
+                            value={formData.billingCountry}
+                            onChange={e =>
+                              handleInputChange(
+                                'billingCountry',
+                                e.target.value
+                              )
+                            }
+                            disabled={!isEditing}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          >
+                            <option value="PL">Polska</option>
+                            <option value="DE">Niemcy</option>
+                            <option value="CZ">Czechy</option>
+                            <option value="SK">Słowacja</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
 
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200"
+                  >
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        setOpenSection(prev => ({
+                          ...prev,
+                          shipping: !prev.shipping,
+                        }))
+                      }
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ')
+                          setOpenSection(prev => ({
+                            ...prev,
+                            shipping: !prev.shipping,
+                          }));
+                      }}
+                      className="w-full flex items-center justify-between p-6 cursor-pointer select-none"
+                      aria-expanded={openSection.shipping}
+                    >
+                      <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                        <Truck className="w-5 h-5 mr-2" />
+                        Adres dostawy
+                      </h2>
+                      {isEditing && (
+                        <label className="flex items-center space-x-2 text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={sameAsBilling}
+                            onChange={e => {
+                              const checked = e.target.checked;
+                              setSameAsBilling(checked);
+                              if (checked) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  shippingAddress: prev.billingAddress,
+                                  shippingCity: prev.billingCity,
+                                  shippingPostcode: prev.billingPostcode,
+                                  shippingCountry: prev.billingCountry,
+                                }));
+                              }
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <span>Adres dostawy taki sam jak rozliczeniowy</span>
+                        </label>
+                      )}
+                      {!isEditing && (
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setIsEditing(true);
+                            setOpenSection(prev => ({
+                              ...prev,
+                              shipping: true,
+                            }));
+                          }}
+                          className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span>Edytuj</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div
+                      className={`${openSection.shipping ? 'block' : 'hidden'} lg:block px-6 pb-6`}
+                    >
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="sm:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Adres
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.shippingAddress}
+                            onChange={e =>
+                              handleInputChange(
+                                'shippingAddress',
+                                e.target.value
+                              )
+                            }
+                            disabled={!isEditing || sameAsBilling}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.shippingAddress
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          />
+                          {validationErrors.shippingAddress && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.shippingAddress}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Miasto
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.shippingCity}
+                            onChange={e =>
+                              handleInputChange('shippingCity', e.target.value)
+                            }
+                            disabled={!isEditing || sameAsBilling}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kod pocztowy
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.shippingPostcode}
+                            onChange={e =>
+                              handleInputChange(
+                                'shippingPostcode',
+                                e.target.value
+                              )
+                            }
+                            disabled={!isEditing || sameAsBilling}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? validationErrors.shippingPostcode
+                                  ? 'border-red-500'
+                                  : 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          />
+                          {validationErrors.shippingPostcode && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              {validationErrors.shippingPostcode}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kraj
+                          </label>
+                          <select
+                            value={formData.shippingCountry}
+                            onChange={e =>
+                              handleInputChange(
+                                'shippingCountry',
+                                e.target.value
+                              )
+                            }
+                            disabled={!isEditing || sameAsBilling}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent ${
+                              isEditing
+                                ? 'border-gray-300'
+                                : 'border-gray-200 bg-gray-50 text-gray-600'
+                            }`}
+                          >
+                            <option value="PL">Polska</option>
+                            <option value="DE">Niemcy</option>
+                            <option value="CZ">Czechy</option>
+                            <option value="SK">Słowacja</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </>
+              )}
             </AnimatePresence>
           </div>
 
@@ -986,7 +1194,9 @@ export default function MyAccountPage() {
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm text-gray-600">{user.billing?.phone || 'Nie podano'}</span>
+                    <span className="text-sm text-gray-600">
+                      {user.billing?.phone || 'Nie podano'}
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -1049,7 +1259,7 @@ export default function MyAccountPage() {
                 <p className="text-sm text-gray-600 mb-3">
                   Twoje dane są bezpieczne i szyfrowane.
                 </p>
-                <button 
+                <button
                   onClick={() => setShowPasswordModal(true)}
                   className="text-sm text-black font-medium hover:underline transition-colors"
                 >
@@ -1106,7 +1316,12 @@ export default function MyAccountPage() {
                 <input
                   type="password"
                   value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  onChange={e =>
+                    setPasswordData(prev => ({
+                      ...prev,
+                      currentPassword: e.target.value,
+                    }))
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   placeholder="••••••••"
                 />
@@ -1120,7 +1335,12 @@ export default function MyAccountPage() {
                 <input
                   type="password"
                   value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  onChange={e =>
+                    setPasswordData(prev => ({
+                      ...prev,
+                      newPassword: e.target.value,
+                    }))
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   placeholder="••••••••"
                 />
@@ -1134,7 +1354,12 @@ export default function MyAccountPage() {
                 <input
                   type="password"
                   value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  onChange={e =>
+                    setPasswordData(prev => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   placeholder="••••••••"
                 />

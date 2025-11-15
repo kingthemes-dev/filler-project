@@ -64,16 +64,21 @@
 | --- | --- | --- |
 | `apps/web/src/app/` | App Router (strony, layouty, trasy API, segmenty RSC) | ISR, tagi `revalidate`, middleware specyficzne per segment. |
 | `apps/web/src/components/` | Komponenty UI (Tailwind + shadcn/ui) i moduły biznesowe | Struktura płaska, katalog `ui/` zawiera atomy i portale. |
+| `apps/web/src/config/` | Konfiguracja aplikacji (env, constants, filter-config) | Walidacja zmiennych środowiskowych, stałe aplikacji. |
 | `apps/web/src/hooks/` | Hooki klienckie (Zustand sync, performance, viewport) | Wszystkie oznaczone `'use client'`. |
-| `apps/web/src/stores/` | Lokalne store’y Zustand specyficzne dla web (auth, koszyk, quick view) | Persist przez `localStorage` lub sesję. |
+| `apps/web/src/stores/` | Lokalne store'y Zustand specyficzne dla web (auth, koszyk, quick view) | Persist przez `localStorage` lub sesję. |
 | `apps/web/src/services/` | Integracje serwerowe (WooCommerce, cache, webhooks, HPOS, email) | Współdzielone przez RSC i trasy API. |
 | `apps/web/src/lib/` | Infrastrukturę wspierającą (cache, rate limiter, walidacje Zod, logger, redis) | Preferowane importy aliasem `@/lib/*`. |
 | `apps/web/src/middleware/` | Middleware Vercel (CSP, CSRF, CDN-cache, admin auth) | Ładowane globalnie przez `middleware.ts`. |
+| `apps/web/src/types/` | Typy TypeScript (API, WooCommerce, GDPR, monitoring) | Współdzielone typy dla całej aplikacji. |
 | `apps/web/src/utils/` | Utilsy współdzielone (analiza, telemetry, perf monitor, formattery) | Utrzymywane jako funkcje czyste. |
-| `apps/mobile/` | Aplikacja Expo/React Native (nawigacja, ekrany, współdzielone store’y) | Korzysta z `@headless-woo/shared`. |
-| `packages/shared/` | Pakiet współdzielony (typy, serwisy API, constants, store’y) dla web + mobile | Publikowany jako workspace; alias `@headless-woo/shared`. |
+| `apps/web/src/__tests__/` | Testy jednostkowe (Jest, Testing Library) | Testy komponentów, utils, middleware. |
+| `apps/web/src/examples/` | Przykłady użycia (universal-filter) | Dokumentacja kodu przez przykłady. |
+| `apps/mobile/` | Aplikacja Expo/React Native (nawigacja, ekrany, współdzielone store'y) | Korzysta z `@headless-woo/shared`. |
+| `packages/shared/` | Pakiet współdzielony (typy, serwisy API, constants, store'y) dla web + mobile | Publikowany jako workspace; alias `@headless-woo/shared`. |
 | `packages/shared/services/` | Klient WooCommerce, mock płatności, email service, search | Używane zarówno w web jak i mobile. |
-| `wp-content/mu-plugins/` | Custom MU-plugins (koszyk, shop API, recenzje, email, webhooks, JWT) | Zasila dedykowane namespace’y REST. |
+| `packages/shared-types/` | Pakiet typów współdzielonych (schematy Zod dla catalog, content, images, newsletter, seo, tokens) | Publikowany jako workspace; typy walidacji. |
+| `wp-content/mu-plugins/` | Custom MU-plugins (koszyk, shop API, recenzje, email, webhooks, JWT) | Zasila dedykowane namespace'y REST. |
 | `config/` | Konfiguracja bezpieczeństwa (`security.headers.json`), nagłówki CDN | Synchronizowana z Vercel/NGINX. |
 | `scripts/` | Skrypty DevOps (deploy MU, testy perf, profiling WP, automaty) | Używane w CI/CD i podczas audytów. |
 | `docs/` | Dokumentacja bieżąca + archiwum audytów | Uaktualniana w rytmie sprintów (blok AUTO generowany z repo). |

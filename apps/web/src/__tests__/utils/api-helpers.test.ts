@@ -1,11 +1,16 @@
-import { buildApiUrl, sanitizeInput, validateEmail, formatError } from '@/utils/api-helpers';
+import {
+  buildApiUrl,
+  sanitizeInput,
+  validateEmail,
+  formatError,
+} from '@/utils/api-helpers';
 
 describe('buildApiUrl', () => {
   it('builds correct API URL', () => {
     const baseUrl = 'https://api.example.com';
     const endpoint = 'products';
     const params = { page: 1, limit: 10 };
-    
+
     const result = buildApiUrl(baseUrl, endpoint, params);
     expect(result).toBe('https://api.example.com/products?page=1&limit=10');
   });
@@ -13,7 +18,7 @@ describe('buildApiUrl', () => {
   it('handles empty params', () => {
     const baseUrl = 'https://api.example.com';
     const endpoint = 'products';
-    
+
     const result = buildApiUrl(baseUrl, endpoint);
     expect(result).toBe('https://api.example.com/products');
   });
@@ -22,7 +27,7 @@ describe('buildApiUrl', () => {
     const baseUrl = 'https://api.example.com';
     const endpoint = 'search';
     const params = { q: 'test & query', category: 'beauty/cosmetics' };
-    
+
     const result = buildApiUrl(baseUrl, endpoint, params);
     // Accept '+' or '%20' for spaces depending on encoder
     expect(result).toMatch(/q=test(%20|\+)%26(%20|\+)query/);
@@ -32,7 +37,9 @@ describe('buildApiUrl', () => {
 
 describe('sanitizeInput', () => {
   it('removes HTML tags', () => {
-    expect(sanitizeInput('<script>alert("test")</script>')).toBe('alert("test")');
+    expect(sanitizeInput('<script>alert("test")</script>')).toBe(
+      'alert("test")'
+    );
     expect(sanitizeInput('<p>Hello <b>World</b></p>')).toBe('Hello World');
   });
 
@@ -72,7 +79,7 @@ describe('formatError', () => {
   it('formats error objects', () => {
     const error = new Error('Test error');
     const result = formatError(error);
-    
+
     expect(result.message).toBe('Test error');
     expect(result.timestamp).toBeDefined();
     expect(result.type).toBe('Error');
@@ -80,14 +87,14 @@ describe('formatError', () => {
 
   it('handles string errors', () => {
     const result = formatError('String error');
-    
+
     expect(result.message).toBe('String error');
     expect(result.type).toBe('string');
   });
 
   it('handles unknown errors', () => {
     const result = formatError(null);
-    
+
     expect(result.message).toBe('Unknown error');
     expect(result.type).toBe('unknown');
   });
@@ -95,7 +102,7 @@ describe('formatError', () => {
   it('includes stack trace for Error objects', () => {
     const error = new Error('Test error');
     const result = formatError(error);
-    
+
     expect(result.stack).toBeDefined();
   });
 });

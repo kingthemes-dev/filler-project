@@ -56,7 +56,7 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -70,9 +70,10 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
   // Filter options based on search
   const filteredOptions = React.useMemo(() => {
     if (!searchQuery) return options;
-    return options.filter(option =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      option.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    return options.filter(
+      option =>
+        option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        option.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [options, searchQuery]);
 
@@ -83,7 +84,7 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
     if (multiSelect) {
       const currentValues = Array.isArray(value) ? value : [];
       const isSelected = currentValues.includes(option.value);
-      
+
       if (isSelected) {
         onChange(currentValues.filter(v => v !== option.value));
       } else {
@@ -151,9 +152,7 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
     <div className="flex items-center justify-between w-full">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {option.icon && (
-          <div className="flex-shrink-0 text-gray-400">
-            {option.icon}
-          </div>
+          <div className="flex-shrink-0 text-gray-400">{option.icon}</div>
         )}
         <div className="flex-1 min-w-0">
           <div className="font-medium text-gray-900 truncate">
@@ -172,19 +171,22 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
             {option.count}
           </span>
         )}
-        {isSelected && (
-          <Check className="w-4 h-4 text-blue-600" />
-        )}
+        {isSelected && <Check className="w-4 h-4 text-blue-600" />}
       </div>
     </div>
   );
 
-  const renderTrigger = (selectedOptions: ShopDropdownOption[], isOpen: boolean) => (
+  const renderTrigger = (
+    selectedOptions: ShopDropdownOption[],
+    isOpen: boolean
+  ) => (
     <div className="flex items-center justify-between w-full">
-      <span className={cn(
-        "truncate",
-        selectedOptions.length === 0 && "text-gray-500"
-      )}>
+      <span
+        className={cn(
+          'truncate',
+          selectedOptions.length === 0 && 'text-gray-500'
+        )}
+      >
         {getDisplayText()}
       </span>
       <div className="flex items-center gap-1 ml-2">
@@ -197,16 +199,18 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
             <X className="w-3 h-3 text-gray-400" />
           </button>
         )}
-        <ChevronDown className={cn(
-          "w-4 h-4 text-gray-400 transition-transform duration-200",
-          isOpen && "rotate-180"
-        )} />
+        <ChevronDown
+          className={cn(
+            'w-4 h-4 text-gray-400 transition-transform duration-200',
+            isOpen && 'rotate-180'
+          )}
+        />
       </div>
     </div>
   );
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn('space-y-2', className)}>
       {/* Label */}
       {label && (
         <label className="block text-sm font-medium text-gray-700">
@@ -222,11 +226,11 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
           disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
           className={cn(
-            "w-full px-4 py-3 text-left bg-white border border-gray-200 rounded-xl",
-            "hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-            "disabled:opacity-50 disabled:cursor-not-allowed",
-            "transition-all duration-200",
-            error && "border-red-300 focus:ring-red-500/20 focus:border-red-500"
+            'w-full px-4 py-3 text-left bg-white border border-gray-200 rounded-xl',
+            'hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            'transition-all duration-200',
+            error && 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
           )}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
@@ -235,11 +239,7 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
         </button>
 
         {/* Error message */}
-        {error && (
-          <p className="mt-1 text-sm text-red-600">
-            {error}
-          </p>
-        )}
+        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
 
         {/* Dropdown Content */}
         <AnimatePresence>
@@ -261,7 +261,7 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={(e) => handleSearch(e.target.value)}
+                      onChange={e => handleSearch(e.target.value)}
                       placeholder="Szukaj..."
                       className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     />
@@ -283,9 +283,9 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
                     )}
                   </div>
                 ) : (
-                  filteredOptions.map((option) => {
+                  filteredOptions.map(option => {
                     const isSelectedOption = isSelected(option);
-                    
+
                     return (
                       <button
                         key={option.id}
@@ -293,11 +293,11 @@ const ShopDropdown: React.FC<ShopDropdownProps> = ({
                         disabled={option.disabled}
                         onClick={() => handleOptionSelect(option)}
                         className={cn(
-                          "w-full px-4 py-3 text-left transition-colors",
-                          "hover:bg-gray-50 focus:bg-gray-50 focus:outline-none",
-                          isSelectedOption && "bg-blue-50",
-                          option.disabled && "opacity-50 cursor-not-allowed",
-                          "border-b border-gray-100 last:border-b-0"
+                          'w-full px-4 py-3 text-left transition-colors',
+                          'hover:bg-gray-50 focus:bg-gray-50 focus:outline-none',
+                          isSelectedOption && 'bg-blue-50',
+                          option.disabled && 'opacity-50 cursor-not-allowed',
+                          'border-b border-gray-100 last:border-b-0'
                         )}
                       >
                         {renderOption(option, isSelectedOption)}

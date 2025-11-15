@@ -18,7 +18,7 @@ export default function KingProductTabs() {
   const [tabs, setTabs] = useState<TabData[]>([
     { id: 'nowosci', label: 'Nowości', products: [], loading: false },
     { id: 'promocje', label: 'Promocje', products: [], loading: false },
-    { id: 'polecane', label: 'Polecane', products: [], loading: false }
+    { id: 'polecane', label: 'Polecane', products: [], loading: false },
   ]);
 
   // Fetch products for each tab
@@ -26,16 +26,16 @@ export default function KingProductTabs() {
     if (!wooCommerceService) return;
 
     // Set loading state without relying on captured tabs
-    setTabs(prev => prev.map((tab) => 
-      tab.id === tabId ? { ...tab, loading: true } : tab
-    ));
+    setTabs(prev =>
+      prev.map(tab => (tab.id === tabId ? { ...tab, loading: true } : tab))
+    );
 
     // Retry logic for frontend
     let lastError: Error | null = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         // attempt loop
-        
+
         let products: WooProduct[] = [];
 
         switch (tabId) {
@@ -44,7 +44,7 @@ export default function KingProductTabs() {
             const newProducts = await wooCommerceService.getProducts({
               orderby: 'date',
               order: 'desc',
-              per_page: 4
+              per_page: 4,
             });
             products = newProducts.data || [];
             break;
@@ -53,7 +53,7 @@ export default function KingProductTabs() {
             // On sale products - limit 4
             const saleProducts = await wooCommerceService.getProducts({
               on_sale: true,
-              per_page: 4
+              per_page: 4,
             });
             products = saleProducts.data || [];
             break;
@@ -62,7 +62,7 @@ export default function KingProductTabs() {
             // Featured products - limit 4
             const featuredProducts = await wooCommerceService.getProducts({
               featured: true,
-              per_page: 4
+              per_page: 4,
             });
             products = featuredProducts.data || [];
             break;
@@ -72,33 +72,34 @@ export default function KingProductTabs() {
         }
 
         // Update tab with products
-        setTabs(prev => prev.map((tab) => 
-          tab.id === tabId ? { ...tab, products, loading: false } : tab
-        ));
-        
+        setTabs(prev =>
+          prev.map(tab =>
+            tab.id === tabId ? { ...tab, products, loading: false } : tab
+          )
+        );
+
         // success
         return; // Success, exit retry loop
-
       } catch (error) {
         lastError = error as Error;
         // attempt failed
-        
+
         if (attempt < 3) {
           // Wait before retry
           await new Promise(resolve => setTimeout(resolve, attempt * 1000));
         }
       }
     }
-    
+
     // All attempts failed
     if (process.env.NODE_ENV === 'development') {
       console.error(`🚨 All frontend attempts failed for ${tabId}:`, lastError);
     }
-    
+
     // Set loading to false on error
-    setTabs(prev => prev.map((tab) => 
-      tab.id === tabId ? { ...tab, loading: false } : tab
-    ));
+    setTabs(prev =>
+      prev.map(tab => (tab.id === tabId ? { ...tab, loading: false } : tab))
+    );
   }, []);
 
   // Fetch products when tab changes
@@ -128,35 +129,39 @@ export default function KingProductTabs() {
         <div className="flex flex-col mb-8">
           {/* Tabs */}
           <div className="flex space-x-4 sm:space-x-8 mb-4">
-            {tabs.map((tab) => (
+            {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
                 className="relative group"
               >
-                <span className={`text-sm sm:text-base font-bold transition-colors ${
-                  activeTab === tab.id ? 'text-black' : 'text-gray-500 hover:text-gray-700'
-                }`}>
+                <span
+                  className={`text-sm sm:text-base font-bold transition-colors ${
+                    activeTab === tab.id
+                      ? 'text-black'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
                   {tab.label}
                 </span>
-                
+
                 {/* Animated underline */}
                 <motion.div
                   className="absolute bottom-0 left-[5px] right-[5px] sm:left-0 sm:right-0 h-0.5 bg-black origin-left"
                   initial={false}
                   animate={{
                     scaleX: activeTab === tab.id ? 1 : 0,
-                    transition: { duration: 0.3, ease: "easeInOut" }
+                    transition: { duration: 0.3, ease: 'easeInOut' },
                   }}
                 />
-                
+
                 {/* Hover underline */}
                 {activeTab !== tab.id && (
                   <motion.div
                     className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-300 origin-left"
                     initial={{ scaleX: 0 }}
                     whileHover={{ scaleX: 1 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
                   />
                 )}
               </button>
@@ -183,9 +188,9 @@ export default function KingProductTabs() {
             // Products grid
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {activeTabData.products.map((product, index) => (
-                <KingProductCard 
-                  key={product?.id || `product-${index}`} 
-                  product={product} 
+                <KingProductCard
+                  key={product?.id || `product-${index}`}
+                  product={product}
                   tabType={activeTab}
                 />
               ))}
@@ -199,8 +204,6 @@ export default function KingProductTabs() {
             </div>
           )}
         </div>
-
-
       </div>
     </section>
   );

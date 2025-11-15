@@ -1,6 +1,6 @@
 /**
  * Request Batcher for WooCommerce REST API
- * 
+ *
  * Batches multiple compatible requests into a single API call to reduce
  * the number of HTTP requests and improve performance.
  */
@@ -104,21 +104,27 @@ class RequestBatcher {
    * Check if endpoint supports batching
    */
   private isBatchable(endpoint: string): BatchEndpointConfig | null {
-    return BATCH_ENDPOINTS.find((config) => endpoint.startsWith(config.endpoint)) || null;
+    return (
+      BATCH_ENDPOINTS.find(config => endpoint.startsWith(config.endpoint)) ||
+      null
+    );
   }
 
   /**
    * Generate batch key from endpoint and common params
    */
-  private getBatchKey(endpoint: string, params: Record<string, string>): string {
+  private getBatchKey(
+    endpoint: string,
+    params: Record<string, string>
+  ): string {
     // Extract common params that should be the same for batching
     const commonParams = ['per_page', 'orderby', 'order', '_fields'];
     const common = commonParams
-      .map((key) => (params[key] ? `${key}=${params[key]}` : null))
+      .map(key => (params[key] ? `${key}=${params[key]}` : null))
       .filter(Boolean)
       .sort()
       .join('&');
-    
+
     return `${endpoint}?${common}`;
   }
 
@@ -134,14 +140,24 @@ class RequestBatcher {
     const batchConfig = this.isBatchable(endpoint);
     if (!batchConfig) {
       // Endpoint doesn't support batching, make individual request
-      return this.makeIndividualRequest<T>(endpoint, params, baseUrl, authHeaders);
+      return this.makeIndividualRequest<T>(
+        endpoint,
+        params,
+        baseUrl,
+        authHeaders
+      );
     }
 
     // Check if request has batch parameter
     const batchParamValue = params[batchConfig.batchParam];
     if (!batchParamValue) {
       // No batch parameter, make individual request
-      return this.makeIndividualRequest<T>(endpoint, params, baseUrl, authHeaders);
+      return this.makeIndividualRequest<T>(
+        endpoint,
+        params,
+        baseUrl,
+        authHeaders
+      );
     }
 
     // Set base URL if not set
@@ -236,7 +252,7 @@ class RequestBatcher {
     if (!batchConfig) {
       // Should not happen, but handle gracefully
       logger.warn('RequestBatcher: Batch config not found', { batchKey });
-      batch.forEach((req) => req.reject(new Error('Batch config not found')));
+      batch.forEach(req => req.reject(new Error('Batch config not found')));
       return;
     }
 
@@ -244,12 +260,12 @@ class RequestBatcher {
       // Collect all batch parameter values
       const batchParamValues: string[] = [];
       const commonParams: Record<string, string> = { ...firstRequest.params };
-      
-      batch.forEach((req) => {
+
+      batch.forEach(req => {
         const value = req.params[batchConfig.batchParam];
         if (value) {
           // Support comma-separated values
-          const values = value.split(',').map((v) => v.trim());
+          const values = value.split(',').map(v => v.trim());
           batchParamValues.push(...values);
         }
       });
@@ -260,7 +276,7 @@ class RequestBatcher {
       // Build batch URL
       const url = new URL(`${baseUrl}/${firstRequest.endpoint}`);
       url.searchParams.set(batchConfig.batchParam, batchParamValues.join(','));
-      
+
       // Add common params
       Object.entries(commonParams).forEach(([key, value]) => {
         if (value) {
@@ -280,7 +296,9 @@ class RequestBatcher {
       });
 
       if (!response.ok) {
-        throw new Error(`Batch request failed: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Batch request failed: ${response.status} ${response.statusText}`
+        );
       }
 
       const data = await response.json();
@@ -296,7 +314,7 @@ class RequestBatcher {
       });
 
       // Resolve or reject each request
-      batch.forEach((req) => {
+      batch.forEach(req => {
         const batchParamValue = req.params[batchConfig.batchParam];
         if (!batchParamValue) {
           req.reject(new Error('Batch parameter missing'));
@@ -304,16 +322,20 @@ class RequestBatcher {
         }
 
         // Try to find matching result
-        const values = batchParamValue.split(',').map((v) => v.trim());
-        const matchingResult = values.find((v) => resultsMap.has(v));
-        
+        const values = batchParamValue.split(',').map(v => v.trim());
+        const matchingResult = values.find(v => resultsMap.has(v));
+
         if (matchingResult && resultsMap.has(matchingResult)) {
           // Type assertion needed because batch contains requests with different generic types
           // Each request resolves with its own expected type
           req.resolve(resultsMap.get(matchingResult) as unknown);
         } else {
           // Result not found, reject request
-          req.reject(new Error(`Result not found for batch parameter: ${batchParamValue}`));
+          req.reject(
+            new Error(
+              `Result not found for batch parameter: ${batchParamValue}`
+            )
+          );
         }
       });
 
@@ -324,14 +346,15 @@ class RequestBatcher {
       });
     } catch (error) {
       // Reject all requests in batch
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       logger.error('RequestBatcher: Batch request failed', {
         batchKey,
         batchSize: batch.length,
         error: errorMessage,
       });
 
-      batch.forEach((req) => {
+      batch.forEach(req => {
         req.reject(error instanceof Error ? error : new Error(errorMessage));
       });
     }
@@ -364,7 +387,9 @@ class RequestBatcher {
     });
 
     if (!response.ok) {
-      throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Request failed: ${response.status} ${response.statusText}`
+      );
     }
 
     return response.json() as Promise<T>;
@@ -373,10 +398,13 @@ class RequestBatcher {
   /**
    * Flush all pending batches
    */
-  async flushAll(baseUrl: string, authHeaders?: Record<string, string>): Promise<void> {
+  async flushAll(
+    baseUrl: string,
+    authHeaders?: Record<string, string>
+  ): Promise<void> {
     const batchKeys = Array.from(this.batches.keys());
     await Promise.all(
-      batchKeys.map((key) => this.flushBatch(key, baseUrl, authHeaders))
+      batchKeys.map(key => this.flushBatch(key, baseUrl, authHeaders))
     );
   }
 
@@ -388,7 +416,7 @@ class RequestBatcher {
     pendingRequests: number;
   } {
     let pendingRequests = 0;
-    this.batches.forEach((batch) => {
+    this.batches.forEach(batch => {
       pendingRequests += batch.length;
     });
 
@@ -409,4 +437,3 @@ export const requestBatcher = RequestBatcher.getInstance({
 // Export class for testing
 export { RequestBatcher };
 export type { BatchConfig, BatchedRequest, BatchEndpointConfig };
-

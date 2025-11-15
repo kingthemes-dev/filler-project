@@ -9,6 +9,7 @@
 | `/api/admin/auth` | POST, GET | nodejs | Waliduje `ADMIN_CACHE_TOKEN`/`ADMIN_TOKEN` dla narzędzi administracyjnych i monitoringu. |
 | `/api/analytics` | POST, GET | nodejs | Zbiera zdarzenia analityczne (Redis) oraz udostępnia `type=summary|realtime|sessions` do wglądu w czasie rzeczywistym. |
 | `/api/cache/clear` | POST | nodejs | Czyści pamięć podręczną w warstwie Next.js (`lib/cache`). |
+| `/api/cache/invalidate` | POST | nodejs | Inwalidacja cache po tagach (np. `product:123`, `category:5`). Body: `{ tags: string[] }`. |
 | `/api/cache/purge` | POST, GET | nodejs | Czyści cache po wzorcu lub globalnie (`x-admin-token`/`Authorization: Bearer`). GET zwraca statystyki. |
 | `/api/cache/warm` | POST | nodejs | Dogrzewa cache wykonując równoległe zapytania do najczęściej używanych tras (WooCommerce + health). |
 | `/api/cart-proxy` | POST, OPTIONS | nodejs | Proxy do `king-cart/v1/*` (dodawanie/usuwanie/aktualizacja koszyka) z nagłówkiem `X-King-Secret`. |
@@ -19,12 +20,20 @@
 | `/api/errors` | POST, GET | nodejs | Zaawansowane monitorowanie błędów (Redis, metryki, alerty krytyczne) z filtrami `type=summary|list|metrics`. |
 | `/api/favorites` | GET, POST, DELETE | nodejs | Mock Store API dla ulubionych produktów (persist w pamięci – używane w testach/Zustand). |
 | `/api/favorites/sync` | POST | nodejs | Synchronizacja listy ulubionych między klientem a mockowym backendem. |
+| `/api/gdpr/delete` | POST | nodejs | GDPR: usunięcie danych użytkownika (anonymizacja w WooCommerce). |
+| `/api/gdpr/export` | GET | nodejs | GDPR: eksport danych użytkownika (konto, zamówienia, recenzje, ulubione). |
+| `/api/gdpr/portability` | POST | nodejs | GDPR: przenośność danych użytkownika (format JSON). |
+| `/api/gdpr/rectify` | POST | nodejs | GDPR: korekta danych użytkownika (aktualizacja profilu). |
+| `/api/gdpr/restrict` | POST | nodejs | GDPR: ograniczenie przetwarzania danych użytkownika. |
 | `/api/health` | GET, HEAD | nodejs | Pełny health-check: Redis, WordPress, baza, cache, circuit breakers (status `ok/degraded/error`). |
+| `/api/health/circuit-breakers` | GET | nodejs | Dashboard stanu circuit breakers (OPEN/HALF_OPEN/CLOSED) z metrykami. |
 | `/api/home-feed` | GET | nodejs | Prefetch danych strony głównej (nowości, promocje, bestsellery) z cache TTL/ETag. |
 | `/api/live` | GET, HEAD | nodejs | Liveness check procesu Next.js (PID, uptime). |
 | `/api/monitoring` | GET | nodejs | HPOS performance dashboard (`action=summary|metrics|timeseries|reset`). |
 | `/api/newsletter/subscribe` | POST | nodejs | Rejestracja w Brevo (Sendinblue), generuje kupon WooCommerce i triggeruje email powitalny. |
+| `/api/webhooks/brevo` | POST, GET | nodejs | Endpoint do obsługi webhooków z Brevo (subscribe, unsubscribe, update, complaint, bounce). GET zwraca status endpointu. |
 | `/api/performance` | POST, GET | nodejs | Przyjmuje raporty Web Vitals / bundle metrics; GET zwraca status modułu monitoringu. |
+| `/api/performance/dashboard` | GET | nodejs | Dashboard metryk wydajności (cache stats, HTTP agent, deduplikacja, circuit breakers, response times). |
 | `/api/performance/metrics` | POST | nodejs | Magazynuje szczegółowe metryki (TTFB/LCP/CLS itd.) w `performanceMonitor`. |
 | `/api/performance/stats` | GET | nodejs | Ekspozycja aktualnych statystyk z `performanceMonitor` (przegląd dla panelu admin). |
 | `/api/ready` | GET, HEAD | nodejs | Readiness probe – sprawdza realne połączenie z WordPressem i WooCommerce. |
@@ -67,9 +76,11 @@
 | `king-email/v1` | `/trigger-order-email` | POST | Wymusza wysyłkę maila WooCommerce dla zamówienia. |
 | `king-email/v1` | `/send-direct-email` | POST | Fallback – wysyła email transakcyjny bezpośrednio przez WordPress SMTP. |
 | `king-email/v1` | `/send-newsletter-email` | POST | Bramka do newsletterów/akcji marketingowych (HTML + tracking). |
+| `newsletter/v1` | `/unsubscribe` | GET | Publiczny endpoint do wypisu z listy Brevo. Parametry: `email` (wymagany), `redirect` (opcjonalny). |
 | `king-jwt/v1` | `/login` | POST | Logowanie klientów WooCommerce (zwraca token JWT + dane profilu). |
 | `king-jwt/v1` | `/validate` | POST | Walidacja tokenu JWT i odczyt podstawowych informacji o użytkowniku. |
 | `king-jwt/v1` | `/refresh` | POST | Odświeża token JWT (rotacja). |
+| `king-jwt/v1` | `/logout` | POST | Wylogowanie użytkownika (unieważnienie tokenu JWT). |
 | `king-optimized/v1` | `/homepage` | GET | Jeden payload z sekcjami home (produkty, bannery, bestsellery) z cache Redis/WP. |
 | `king-optimized/v1` | `/shop` | GET | Lekka lista produktów dla listingu / infinite scroll. |
 | `king-optimized/v1` | `/product/(?P<id>\d+)` | GET | Szczegóły produktu + warianty. |
@@ -89,7 +100,15 @@
   - MU‑pluginy (`/wp-json/king-shop/v1/*`, `/wp-json/king-cart/v1/*`, `/wp-json/king-reviews/v1/*`, `/wp-json/king-optimized/v1/*`, `/wp-json/king-email/v1/*`)
   - Custom WP API (`/wp-json/custom/v1/*`) dla resetów hasła, faktur, śledzenia zamówień.
 - Rate limiting: globalny limiter w `middleware/security.ts` + per-endpoint limiter w `checkEndpointRateLimit`. Dodatkowe limity w MU‑pluginach (transienty, Redis).
-- Caching: deduplikacja 100 ms, `cache.ts` (pamięć + Redis), nagłówki `Cache-Control` z `stale-while-revalidate`. ISR/SSR rewalidacja – zobacz `ARCHITEKTURE.md`.
+- Caching: deduplikacja 100 ms, `cache.ts` (pamięć + Redis), nagłówki `Cache-Control` z `stale-while-revalidate`. ISR/SSR rewalidacja – zobacz `ARCHITEKTURE.md`.
+- **Optymalizacje wydajnościowe:**
+  - ✅ **HTTP Connection Reuse:** Connection pooling (undici) - 35 wywołań
+  - ✅ **Request Deduplication:** In-memory + Redis - 6 wywołań
+  - ✅ **Adaptive Timeouts:** Endpoint-specific timeouts - 11 wywołań
+  - ✅ **Circuit Breaker:** Protection przed cascading failures - 9 wywołań
+  - ✅ **Compression:** Automatyczne (gzip, br, deflate)
+  - ✅ **Request Batching:** WooCommerce API `include` parameter (natywnie)
+  - ✅ **HPOS Optimization:** Dedykowany service dla zamówień
 
 ## Mapowanie tras Next.js → WordPress
 | Trasa Next.js | Metoda | Runtime | Upstream | Zastosowanie | Cache |

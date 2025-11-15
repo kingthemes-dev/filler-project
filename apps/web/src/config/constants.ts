@@ -13,7 +13,11 @@ export const ENV = {
   CDN_URL: '',
   APP_ENV: env.NODE_ENV,
   ENABLE_PWA: false,
-  ENABLE_ANALYTICS: !!(env.NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID || env.NEXT_PUBLIC_GTM_ID),
+  ENABLE_ANALYTICS: !!(
+    env.NEXT_PUBLIC_GA4_ID ||
+    env.NEXT_PUBLIC_GA_ID ||
+    env.NEXT_PUBLIC_GTM_ID
+  ),
   GA_ID: env.NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID || '',
   GTM_ID: env.NEXT_PUBLIC_GTM_ID || '',
   RECAPTCHA_SITE_KEY: env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
@@ -39,8 +43,10 @@ export const API_ENDPOINTS = {
 // =========================================
 export const AUTH_CONFIG = {
   TOKEN_KEY: process.env.NEXT_PUBLIC_AUTH_TOKEN_SS_KEY || 'auth-token',
-  REFRESH_TOKEN_KEY: process.env.NEXT_PUBLIC_REFRESH_TOKEN_LS_KEY || 'refresh-token',
-  SESSION_TOKEN_KEY: process.env.NEXT_PUBLIC_SESSION_TOKEN_LS_KEY || 'session-token',
+  REFRESH_TOKEN_KEY:
+    process.env.NEXT_PUBLIC_REFRESH_TOKEN_LS_KEY || 'refresh-token',
+  SESSION_TOKEN_KEY:
+    process.env.NEXT_PUBLIC_SESSION_TOKEN_LS_KEY || 'session-token',
   TIMEOUT: parseInt(process.env.NEXT_PUBLIC_AUTH_KEY_TIMEOUT || '300000'),
 } as const;
 

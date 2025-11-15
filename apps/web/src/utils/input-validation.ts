@@ -67,7 +67,10 @@ export function validateNIP(nip: string): boolean {
   if (!PATTERNS.NIP.test(clean)) return false;
 
   const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];
-  const sum = weights.reduce((acc, weight, index) => acc + weight * parseInt(clean[index], 10), 0);
+  const sum = weights.reduce(
+    (acc, weight, index) => acc + weight * parseInt(clean[index], 10),
+    0
+  );
   const checksum = sum % 11;
   const lastDigit = parseInt(clean[9], 10);
 
@@ -96,12 +99,18 @@ export function validateInput(
   for (const [field, rules] of Object.entries(schema)) {
     const value = data[field];
 
-    if (rules.required && (!value || (typeof value === 'string' && !value.trim()))) {
+    if (
+      rules.required &&
+      (!value || (typeof value === 'string' && !value.trim()))
+    ) {
       errors[field] = `Pole ${field} jest wymagane`;
       continue;
     }
 
-    if ((value === undefined || value === null || value === '') && !rules.required) {
+    if (
+      (value === undefined || value === null || value === '') &&
+      !rules.required
+    ) {
       sanitizedData[field] = value;
       continue;
     }
@@ -112,18 +121,22 @@ export function validateInput(
       if (typeof value === 'string') {
         sanitizedValue = sanitizeString(value);
       } else {
-        sanitizedValue = sanitizePrimitive(value as string | number | boolean | null | undefined);
+        sanitizedValue = sanitizePrimitive(
+          value as string | number | boolean | null | undefined
+        );
       }
     }
 
     if (typeof sanitizedValue === 'string') {
       if (rules.minLength && sanitizedValue.length < rules.minLength) {
-        errors[field] = `Pole ${field} musi mieć co najmniej ${rules.minLength} znaków`;
+        errors[field] =
+          `Pole ${field} musi mieć co najmniej ${rules.minLength} znaków`;
         continue;
       }
 
       if (rules.maxLength && sanitizedValue.length > rules.maxLength) {
-        errors[field] = `Pole ${field} może mieć maksymalnie ${rules.maxLength} znaków`;
+        errors[field] =
+          `Pole ${field} może mieć maksymalnie ${rules.maxLength} znaków`;
         continue;
       }
 
@@ -173,20 +186,25 @@ export const VALIDATION_SCHEMAS = {
     email: {
       required: true,
       custom: (value: unknown) =>
-        typeof value === 'string' && validateEmail(value) || 'Nieprawidłowy format email',
+        (typeof value === 'string' && validateEmail(value)) ||
+        'Nieprawidłowy format email',
       sanitize: true,
     },
     phone: {
       required: false,
       custom: (value: unknown) =>
-        typeof value !== 'string' || value.length === 0 || validatePhone(value) || 'Nieprawidłowy format telefonu',
+        typeof value !== 'string' ||
+        value.length === 0 ||
+        validatePhone(value) ||
+        'Nieprawidłowy format telefonu',
       sanitize: true,
     },
     password: {
       required: true,
       minLength: 8,
       custom: (value: unknown) =>
-        typeof value === 'string' && validatePassword(value) || 'Hasło musi zawierać co najmniej 8 znaków, w tym wielką literę, małą literę i cyfrę',
+        (typeof value === 'string' && validatePassword(value)) ||
+        'Hasło musi zawierać co najmniej 8 znaków, w tym wielką literę, małą literę i cyfrę',
     },
   },
 
@@ -214,13 +232,19 @@ export const VALIDATION_SCHEMAS = {
     nip: {
       required: false,
       custom: (value: unknown) =>
-        typeof value !== 'string' || value.length === 0 || validateNIP(value) || 'Nieprawidłowy NIP',
+        typeof value !== 'string' ||
+        value.length === 0 ||
+        validateNIP(value) ||
+        'Nieprawidłowy NIP',
       sanitize: true,
     },
     phone: {
       required: false,
       custom: (value: unknown) =>
-        typeof value !== 'string' || value.length === 0 || validatePhone(value) || 'Nieprawidłowy format telefonu',
+        typeof value !== 'string' ||
+        value.length === 0 ||
+        validatePhone(value) ||
+        'Nieprawidłowy format telefonu',
       sanitize: true,
     },
     billingAddress: {
@@ -238,7 +262,10 @@ export const VALIDATION_SCHEMAS = {
     billingPostcode: {
       required: false,
       custom: (value: unknown) =>
-        typeof value !== 'string' || value.length === 0 || validatePostalCode(value) || 'Nieprawidłowy kod pocztowy (format: 12-345)',
+        typeof value !== 'string' ||
+        value.length === 0 ||
+        validatePostalCode(value) ||
+        'Nieprawidłowy kod pocztowy (format: 12-345)',
       sanitize: true,
     },
   },
@@ -247,12 +274,14 @@ export const VALIDATION_SCHEMAS = {
     email: {
       required: true,
       custom: (value: unknown) =>
-        typeof value === 'string' && validateEmail(value) || 'Nieprawidłowy format email',
+        (typeof value === 'string' && validateEmail(value)) ||
+        'Nieprawidłowy format email',
       sanitize: true,
     },
     consent: {
       required: true,
-      custom: (value: unknown) => value === true || 'Wymagana zgoda na przetwarzanie danych',
+      custom: (value: unknown) =>
+        value === true || 'Wymagana zgoda na przetwarzanie danych',
     },
   },
 } as const;

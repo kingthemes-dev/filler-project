@@ -30,13 +30,19 @@ process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_KEY = 'test_key';
 process.env.NEXT_PUBLIC_WOOCOMMERCE_CONSUMER_SECRET = 'test_secret';
 
 // Polyfill performance.getEntriesByType for jsdom and ensure 'resource' entries won't break
-if (!globalThis.performance || typeof globalThis.performance.getEntriesByType !== 'function') {
+if (
+  !globalThis.performance ||
+  typeof globalThis.performance.getEntriesByType !== 'function'
+) {
   globalThis.performance = globalThis.performance || {};
-  globalThis.performance.getEntriesByType = () => [{ fetchStart: 0, loadEventEnd: 0 }];
+  globalThis.performance.getEntriesByType = () => [
+    { fetchStart: 0, loadEventEnd: 0 },
+  ];
 }
 try {
-  const __originalGetEntriesByType = globalThis.performance.getEntriesByType.bind(globalThis.performance);
-  globalThis.performance.getEntriesByType = (type) => {
+  const __originalGetEntriesByType =
+    globalThis.performance.getEntriesByType.bind(globalThis.performance);
+  globalThis.performance.getEntriesByType = type => {
     if (type === 'resource') return [];
     return __originalGetEntriesByType(type);
   };
@@ -54,7 +60,11 @@ try {
   const mockFetch = jest.fn().mockResolvedValue(defaultResponse);
   try {
     // Force override even if already defined by environment
-    Object.defineProperty(globalThis, 'fetch', { value: mockFetch, configurable: true, writable: true });
+    Object.defineProperty(globalThis, 'fetch', {
+      value: mockFetch,
+      configurable: true,
+      writable: true,
+    });
   } catch {
     // Fallback assignment
     // @ts-expect-error - jsdom does not provide a writable fetch property

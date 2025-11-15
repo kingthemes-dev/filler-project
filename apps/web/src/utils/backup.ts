@@ -11,23 +11,23 @@ export const BACKUP_CONFIG = {
   INTERVALS: {
     DAILY: 24 * 60 * 60 * 1000,
     WEEKLY: 7 * 24 * 60 * 60 * 1000,
-    MONTHLY: 30 * 24 * 60 * 60 * 1000
+    MONTHLY: 30 * 24 * 60 * 60 * 1000,
   },
-  
+
   // Backup retention
   RETENTION: {
-    DAILY: 7,    // Keep 7 daily backups
-    WEEKLY: 4,   // Keep 4 weekly backups
-    MONTHLY: 12  // Keep 12 monthly backups
+    DAILY: 7, // Keep 7 daily backups
+    WEEKLY: 4, // Keep 4 weekly backups
+    MONTHLY: 12, // Keep 12 monthly backups
   },
-  
+
   // Storage locations
   STORAGE: {
     LOCAL: 'local',
     S3: 's3',
     GOOGLE_DRIVE: 'google_drive',
-    DROPBOX: 'dropbox'
-  }
+    DROPBOX: 'dropbox',
+  },
 } as const;
 
 // Backup types
@@ -65,7 +65,7 @@ export class DatabaseBackup {
       port: parseInt(process.env.DB_PORT || '3306'),
       database: process.env.DB_NAME || 'wordpress',
       username: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || ''
+      password: process.env.DB_PASSWORD || '',
     };
   }
 
@@ -73,26 +73,26 @@ export class DatabaseBackup {
   async createFullBackup(): Promise<BackupData> {
     const backupId = this.generateBackupId();
     const timestamp = new Date().toISOString();
-    
+
     logger.info('Starting full database backup', { backupId, timestamp });
 
     try {
       // Export database using mysqldump
       const dumpCommand = this.buildDumpCommand();
       const backupPath = `./backups/db_${backupId}.sql`;
-      
+
       // Execute backup command
       await this.executeCommand(dumpCommand, backupPath);
-      
+
       // Calculate checksum
       const checksum = await this.calculateChecksum(backupPath);
-      
+
       // Get backup size
       const size = await this.getFileSize(backupPath);
-      
+
       // Get metadata
       const metadata = await this.getDatabaseMetadata();
-      
+
       const backupData: BackupData = {
         id: backupId,
         type: 'full',
@@ -102,15 +102,14 @@ export class DatabaseBackup {
         metadata: {
           ...metadata,
           version: env.NODE_ENV,
-          environment: env.NODE_ENV
+          environment: env.NODE_ENV,
         },
         storage_location: backupPath,
-        status: 'completed'
+        status: 'completed',
       };
 
       logger.info('Database backup completed', { backupId, size, checksum });
       return backupData;
-
     } catch (error) {
       logger.error('Database backup failed', { backupId, error });
       throw error;
@@ -121,13 +120,16 @@ export class DatabaseBackup {
   async createIncrementalBackup(_lastBackupId: string): Promise<BackupData> {
     const backupId = this.generateBackupId();
     const timestamp = new Date().toISOString();
-    
-    logger.info('Starting incremental database backup', { backupId, lastBackupId: _lastBackupId });
+
+    logger.info('Starting incremental database backup', {
+      backupId,
+      lastBackupId: _lastBackupId,
+    });
 
     try {
       // Get changes since last backup
       const changes = await this.getChangesSinceBackup(_lastBackupId);
-      
+
       if (changes.length === 0) {
         logger.info('No changes since last backup', { backupId });
         return {
@@ -141,19 +143,19 @@ export class DatabaseBackup {
             environment: env.NODE_ENV,
             database_version: '',
             files_count: 0,
-            tables_count: 0
+            tables_count: 0,
           },
           storage_location: '',
-          status: 'completed'
+          status: 'completed',
         };
       }
 
       // Create incremental dump
       const dumpCommand = this.buildIncrementalDumpCommand(changes);
       const backupPath = `./backups/db_inc_${backupId}.sql`;
-      
+
       await this.executeCommand(dumpCommand, backupPath);
-      
+
       const checksum = await this.calculateChecksum(backupPath);
       const size = await this.getFileSize(backupPath);
       const metadata = await this.getDatabaseMetadata();
@@ -167,15 +169,18 @@ export class DatabaseBackup {
         metadata: {
           ...metadata,
           version: env.NODE_ENV,
-          environment: env.NODE_ENV
+          environment: env.NODE_ENV,
         },
         storage_location: backupPath,
-        status: 'completed'
+        status: 'completed',
       };
 
-      logger.info('Incremental backup completed', { backupId, size, changes_count: changes.length });
+      logger.info('Incremental backup completed', {
+        backupId,
+        size,
+        changes_count: changes.length,
+      });
       return backupData;
-
     } catch (error) {
       logger.error('Incremental backup failed', { backupId, error });
       throw error;
@@ -188,7 +193,7 @@ export class DatabaseBackup {
 
     try {
       const backupPath = `./backups/db_${backupId}.sql`;
-      
+
       // Verify backup exists and checksum
       const isValid = await this.verifyBackup(backupPath);
       if (!isValid) {
@@ -197,12 +202,11 @@ export class DatabaseBackup {
 
       // Create restore command
       const restoreCommand = this.buildRestoreCommand(backupPath);
-      
+
       // Execute restore
       await this.executeCommand(restoreCommand);
-      
-      logger.info('Database restore completed', { backupId });
 
+      logger.info('Database restore completed', { backupId });
     } catch (error) {
       logger.error('Database restore failed', { backupId, error });
       throw error;
@@ -227,11 +231,14 @@ export class DatabaseBackup {
     return `mysql -h ${this.dbConfig.host} -P ${this.dbConfig.port} -u ${this.dbConfig.username} -p${this.dbConfig.password} ${this.dbConfig.database} < ${backupPath}`;
   }
 
-  private async executeCommand(command: string, _outputPath?: string): Promise<void> {
+  private async executeCommand(
+    command: string,
+    _outputPath?: string
+  ): Promise<void> {
     // This would need to be implemented with actual command execution
     // For now, simulate the process
     logger.info('Executing backup command', { command });
-    
+
     // Simulate command execution
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
@@ -256,11 +263,13 @@ export class DatabaseBackup {
     return {
       database_version: '8.0.0',
       files_count: 0,
-      tables_count: 50
+      tables_count: 50,
     };
   }
 
-  private async getChangesSinceBackup(_lastBackupId: string): Promise<string[]> {
+  private async getChangesSinceBackup(
+    _lastBackupId: string
+  ): Promise<string[]> {
     // This would identify changes since last backup
     // For now, return empty array
     return [];
@@ -285,27 +294,27 @@ export class FileBackup {
   async backupFiles(): Promise<BackupData> {
     const backupId = this.generateBackupId();
     const timestamp = new Date().toISOString();
-    
+
     logger.info('Starting file backup', { backupId });
 
     try {
       const filesPath = './wp-content';
       const backupDir = `${this.backupPath}/files_${backupId}`;
-      
+
       // Create backup directory
       await this.createDirectory(backupDir);
-      
+
       // Copy files
       await this.copyDirectory(filesPath, backupDir);
-      
+
       // Create archive
       const archivePath = `${backupDir}.tar.gz`;
       await this.createArchive(backupDir, archivePath);
-      
+
       // Calculate checksum and size
       const checksum = await this.calculateChecksum(archivePath);
       const size = await this.getFileSize(archivePath);
-      
+
       // Get file metadata
       const metadata = await this.getFileMetadata(filesPath);
 
@@ -318,15 +327,18 @@ export class FileBackup {
         metadata: {
           ...metadata,
           version: env.NODE_ENV,
-          environment: env.NODE_ENV
+          environment: env.NODE_ENV,
         },
         storage_location: archivePath,
-        status: 'completed'
+        status: 'completed',
       };
 
-      logger.info('File backup completed', { backupId, size, files_count: metadata.files_count });
+      logger.info('File backup completed', {
+        backupId,
+        size,
+        files_count: metadata.files_count,
+      });
       return backupData;
-
     } catch (error) {
       logger.error('File backup failed', { backupId, error });
       throw error;
@@ -339,7 +351,7 @@ export class FileBackup {
 
     try {
       const archivePath = `${this.backupPath}/files_${backupId}.tar.gz`;
-      
+
       // Verify backup
       const isValid = await this.verifyBackup(archivePath);
       if (!isValid) {
@@ -349,16 +361,15 @@ export class FileBackup {
       // Extract archive
       const extractPath = `${this.backupPath}/restore_${backupId}`;
       await this.extractArchive(archivePath, extractPath);
-      
+
       // Copy files to destination
       const destinationPath = './wp-content';
       await this.copyDirectory(extractPath, destinationPath);
-      
+
       // Cleanup
       await this.removeDirectory(extractPath);
-      
-      logger.info('File restore completed', { backupId });
 
+      logger.info('File restore completed', { backupId });
     } catch (error) {
       logger.error('File restore failed', { backupId, error });
       throw error;
@@ -379,14 +390,26 @@ export class FileBackup {
     logger.info('Copying directory', { src: _src, dest: _dest });
   }
 
-  private async createArchive(_sourcePath: string, _archivePath: string): Promise<void> {
+  private async createArchive(
+    _sourcePath: string,
+    _archivePath: string
+  ): Promise<void> {
     // This would create actual archive
-    logger.info('Creating archive', { sourcePath: _sourcePath, archivePath: _archivePath });
+    logger.info('Creating archive', {
+      sourcePath: _sourcePath,
+      archivePath: _archivePath,
+    });
   }
 
-  private async extractArchive(_archivePath: string, _extractPath: string): Promise<void> {
+  private async extractArchive(
+    _archivePath: string,
+    _extractPath: string
+  ): Promise<void> {
     // This would extract actual archive
-    logger.info('Extracting archive', { archivePath: _archivePath, extractPath: _extractPath });
+    logger.info('Extracting archive', {
+      archivePath: _archivePath,
+      extractPath: _extractPath,
+    });
   }
 
   private async removeDirectory(_path: string): Promise<void> {
@@ -410,7 +433,7 @@ export class FileBackup {
     return {
       database_version: '',
       files_count: 1000,
-      tables_count: 0
+      tables_count: 0,
     };
   }
 
@@ -438,22 +461,34 @@ export class BackupScheduler {
     });
 
     // Weekly file backup
-    this.scheduleBackup('weekly_files', BACKUP_CONFIG.INTERVALS.WEEKLY, async () => {
-      await this.fileBackup.backupFiles();
-    });
+    this.scheduleBackup(
+      'weekly_files',
+      BACKUP_CONFIG.INTERVALS.WEEKLY,
+      async () => {
+        await this.fileBackup.backupFiles();
+      }
+    );
 
     // Monthly full backup
-    this.scheduleBackup('monthly_full', BACKUP_CONFIG.INTERVALS.MONTHLY, async () => {
-      await Promise.all([
-        this.databaseBackup.createFullBackup(),
-        this.fileBackup.backupFiles()
-      ]);
-    });
+    this.scheduleBackup(
+      'monthly_full',
+      BACKUP_CONFIG.INTERVALS.MONTHLY,
+      async () => {
+        await Promise.all([
+          this.databaseBackup.createFullBackup(),
+          this.fileBackup.backupFiles(),
+        ]);
+      }
+    );
 
     logger.info('Backup scheduler initialized');
   }
 
-  private scheduleBackup(name: string, interval: number, backupFunction: () => Promise<unknown>) {
+  private scheduleBackup(
+    name: string,
+    interval: number,
+    backupFunction: () => Promise<unknown>
+  ) {
     const scheduleBackup = async () => {
       try {
         logger.info('Starting scheduled backup', { name });
@@ -516,25 +551,30 @@ export class BackupManager {
 
     const [dbBackup, fileBackup] = await Promise.all([
       this.databaseBackup.createFullBackup(),
-      this.fileBackup.backupFiles()
+      this.fileBackup.backupFiles(),
     ]);
 
-    logger.info('Full backup completed', { 
-      db_backup_id: dbBackup.id, 
-      file_backup_id: fileBackup.id 
+    logger.info('Full backup completed', {
+      db_backup_id: dbBackup.id,
+      file_backup_id: fileBackup.id,
     });
 
     return [dbBackup, fileBackup];
   }
 
   // Restore from backup
-  async restoreFromBackup(backupIds: { database?: string; files?: string }): Promise<void> {
+  async restoreFromBackup(backupIds: {
+    database?: string;
+    files?: string;
+  }): Promise<void> {
     logger.info('Starting restore from backup', { backupIds });
 
     const restorePromises = [];
 
     if (backupIds.database) {
-      restorePromises.push(this.databaseBackup.restoreBackup(backupIds.database));
+      restorePromises.push(
+        this.databaseBackup.restoreBackup(backupIds.database)
+      );
     }
 
     if (backupIds.files) {
@@ -549,10 +589,10 @@ export class BackupManager {
   // Cleanup old backups
   async cleanupOldBackups(): Promise<void> {
     logger.info('Starting backup cleanup');
-    
+
     // This would implement cleanup logic based on retention policy
     // For now, just log the action
-    
+
     logger.info('Backup cleanup completed');
   }
 }
@@ -566,6 +606,6 @@ const backupExports = {
   FileBackup,
   BackupScheduler,
   BackupManager,
-  BACKUP_CONFIG
+  BACKUP_CONFIG,
 };
 export default backupExports;

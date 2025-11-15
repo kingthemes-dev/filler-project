@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
+import {
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Clock,
+} from 'lucide-react';
 
 interface ApiEndpoint {
   name: string;
@@ -20,38 +26,41 @@ export default function ApiStatus() {
   const [endpoints, setEndpoints] = useState<ApiEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const apiEndpoints = useMemo(() => ([
-    {
-      name: 'Health Check',
-      url: '/api/health',
-      method: 'GET'
-    },
-    {
-      name: 'WooCommerce Products',
-      url: '/api/woocommerce?endpoint=products&per_page=1',
-      method: 'GET'
-    },
-    {
-      name: 'WooCommerce Categories',
-      url: '/api/woocommerce?endpoint=products/categories',
-      method: 'GET'
-    },
-    {
-      name: 'WooCommerce Orders',
-      url: '/api/woocommerce?endpoint=orders&per_page=1',
-      method: 'GET'
-    },
-    {
-      name: 'Performance Stats',
-      url: '/api/performance/stats',
-      method: 'GET'
-    },
-    {
-      name: 'Webhook Endpoint',
-      url: '/api/webhooks',
-      method: 'POST'
-    }
-  ]), []);
+  const apiEndpoints = useMemo(
+    () => [
+      {
+        name: 'Health Check',
+        url: '/api/health',
+        method: 'GET',
+      },
+      {
+        name: 'WooCommerce Products',
+        url: '/api/woocommerce?endpoint=products&per_page=1',
+        method: 'GET',
+      },
+      {
+        name: 'WooCommerce Categories',
+        url: '/api/woocommerce?endpoint=products/categories',
+        method: 'GET',
+      },
+      {
+        name: 'WooCommerce Orders',
+        url: '/api/woocommerce?endpoint=orders&per_page=1',
+        method: 'GET',
+      },
+      {
+        name: 'Performance Stats',
+        url: '/api/performance/stats',
+        method: 'GET',
+      },
+      {
+        name: 'Webhook Endpoint',
+        url: '/api/webhooks',
+        method: 'POST',
+      },
+    ],
+    []
+  );
 
   const checkApiEndpoints = useCallback(async () => {
     try {
@@ -64,8 +73,8 @@ export default function ApiStatus() {
           const response = await fetch(endpoint.url, {
             method: endpoint.method,
             headers: {
-              'Content-Type': 'application/json'
-            }
+              'Content-Type': 'application/json',
+            },
           });
           const responseTime = Date.now() - startTime;
 
@@ -83,7 +92,7 @@ export default function ApiStatus() {
             status,
             responseTime,
             lastCheck: new Date().toISOString(),
-            error: !response.ok ? `HTTP ${response.status}` : undefined
+            error: !response.ok ? `HTTP ${response.status}` : undefined,
           });
         } catch (error) {
           results.push({
@@ -93,7 +102,7 @@ export default function ApiStatus() {
             status: 'error',
             responseTime: 0,
             lastCheck: new Date().toISOString(),
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
       }
@@ -128,7 +137,11 @@ export default function ApiStatus() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ok':
-        return <Badge variant="default" className="bg-green-500">OK</Badge>;
+        return (
+          <Badge variant="default" className="bg-green-500">
+            OK
+          </Badge>
+        );
       case 'error':
         return <Badge variant="destructive">Error</Badge>;
       case 'warning':
@@ -144,11 +157,14 @@ export default function ApiStatus() {
     return 'text-red-600';
   };
 
-  const overallStatus = endpoints.length > 0 
-    ? endpoints.every(e => e.status === 'ok') ? 'ok' 
-    : endpoints.some(e => e.status === 'error') ? 'error' 
-    : 'warning'
-    : 'unknown';
+  const overallStatus =
+    endpoints.length > 0
+      ? endpoints.every(e => e.status === 'ok')
+        ? 'ok'
+        : endpoints.some(e => e.status === 'error')
+          ? 'error'
+          : 'warning'
+      : 'unknown';
 
   if (loading && endpoints.length === 0) {
     return (
@@ -170,7 +186,9 @@ export default function ApiStatus() {
           <p className="text-gray-600">Real-time API endpoint monitoring</p>
         </div>
         <Button onClick={checkApiEndpoints} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+          />
           Refresh
         </Button>
       </div>
@@ -236,7 +254,9 @@ export default function ApiStatus() {
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
-                    <div className={`font-medium ${getResponseTimeColor(endpoint.responseTime)}`}>
+                    <div
+                      className={`font-medium ${getResponseTimeColor(endpoint.responseTime)}`}
+                    >
                       {endpoint.responseTime}ms
                     </div>
                     <div className="text-xs text-gray-500">
@@ -262,19 +282,27 @@ export default function ApiStatus() {
               <h4 className="font-medium mb-2">Available Endpoints:</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <code className="bg-gray-100 px-2 py-1 rounded">GET /api/health</code>
+                  <code className="bg-gray-100 px-2 py-1 rounded">
+                    GET /api/health
+                  </code>
                   <span className="text-gray-600">System health check</span>
                 </div>
                 <div className="flex justify-between">
-                  <code className="bg-gray-100 px-2 py-1 rounded">GET /api/woocommerce</code>
+                  <code className="bg-gray-100 px-2 py-1 rounded">
+                    GET /api/woocommerce
+                  </code>
                   <span className="text-gray-600">WooCommerce API proxy</span>
                 </div>
                 <div className="flex justify-between">
-                  <code className="bg-gray-100 px-2 py-1 rounded">GET /api/performance/stats</code>
+                  <code className="bg-gray-100 px-2 py-1 rounded">
+                    GET /api/performance/stats
+                  </code>
                   <span className="text-gray-600">Performance metrics</span>
                 </div>
                 <div className="flex justify-between">
-                  <code className="bg-gray-100 px-2 py-1 rounded">POST /api/webhooks</code>
+                  <code className="bg-gray-100 px-2 py-1 rounded">
+                    POST /api/webhooks
+                  </code>
                   <span className="text-gray-600">WooCommerce webhooks</span>
                 </div>
               </div>

@@ -3,7 +3,11 @@
  * Senior-level service that works with ANY e-commerce API
  */
 
-import { FilterConfig, getFilterConfig, validateFilterConfig } from '@/config/filter-config';
+import {
+  FilterConfig,
+  getFilterConfig,
+  validateFilterConfig,
+} from '@/config/filter-config';
 
 export interface UniversalCategory {
   id: string;
@@ -46,10 +50,13 @@ class UniversalFilterService {
   private cache: Map<string, unknown> = new Map();
   private cacheTimestamps: Map<string, number> = new Map();
 
-  constructor(config?: Partial<FilterConfig>, preset: 'woocommerce' | 'shopify' | 'custom' = 'woocommerce') {
+  constructor(
+    config?: Partial<FilterConfig>,
+    preset: 'woocommerce' | 'shopify' | 'custom' = 'woocommerce'
+  ) {
     this.preset = preset;
     this.config = getFilterConfig(preset, config);
-    
+
     const validation = validateFilterConfig(this.config);
     if (!validation.valid) {
       console.error('Invalid filter configuration:', validation.errors);
@@ -64,16 +71,18 @@ class UniversalFilterService {
     try {
       // Simple concatenation for relative URLs
       let fullUrl = this.config.api.baseUrl + endpoint;
-      
+
       // Add additional parameters if any - WITHOUT URLSearchParams!
       if (params) {
-        const paramPairs = Object.entries(params).map(([key, value]) => `${key}=${encodeURIComponent(value)}`);
+        const paramPairs = Object.entries(params).map(
+          ([key, value]) => `${key}=${encodeURIComponent(value)}`
+        );
         const paramString = paramPairs.join('&');
         if (paramString) {
           fullUrl += (endpoint.includes('?') ? '&' : '?') + paramString;
         }
       }
-      
+
       console.log(`🔗 Constructed URL:`, fullUrl);
       return fullUrl;
     } catch (error) {
@@ -81,7 +90,7 @@ class UniversalFilterService {
       console.error(`❌ Base URL:`, this.config.api.baseUrl);
       console.error(`❌ Endpoint:`, endpoint);
       console.error(`❌ Params:`, params);
-      
+
       // Fallback to simple concatenation
       const fallbackUrl = this.config.api.baseUrl + endpoint;
       console.log(`🔄 Using fallback URL:`, fallbackUrl);
@@ -100,51 +109,51 @@ class UniversalFilterService {
     const now = Date.now();
     const cachedData = this.cache.get(cacheKey) as T | undefined;
     const cacheTime = this.cacheTimestamps.get(cacheKey) || 0;
-    
+
     // Check if cache is still valid
-    if (cachedData && (now - cacheTime) < this.config.cache.staleTime) {
+    if (cachedData && now - cacheTime < this.config.cache.staleTime) {
       return cachedData;
     }
-    
+
     try {
       console.log(`🔄 Fetching ${cacheKey} from:`, url);
       console.log(`🔄 Base URL:`, this.config.api.baseUrl);
-      
+
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
-          ...this.config.api.headers
-        }
+          ...this.config.api.headers,
+        },
       });
-      
+
       if (!response.ok) {
         console.error(`❌ HTTP ${response.status} for ${cacheKey}:`, url);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const rawData = await response.json();
       console.log(`📦 Raw data for ${cacheKey}:`, rawData);
-      
+
       const transformedData = transformer(rawData);
       console.log(`🔄 Transformed data for ${cacheKey}:`, transformedData);
-      
+
       // Cache the result
       this.cache.set(cacheKey, transformedData);
       this.cacheTimestamps.set(cacheKey, now);
-      
+
       console.log(`✅ Successfully fetched ${cacheKey}`);
       return transformedData;
     } catch (error) {
       console.error(`❌ Error fetching ${cacheKey}:`, error);
       console.error(`❌ URL that failed:`, url);
       console.error(`❌ Cache key:`, cacheKey);
-      
+
       // Return cached data if available, even if stale
       if (cachedData) {
         console.warn(`🔄 Using stale cache for ${cacheKey}`);
         return cachedData;
       }
-      
+
       // Return empty data as fallback instead of throwing
       console.warn(`🔄 Returning empty data for ${cacheKey} as fallback`);
       try {
@@ -155,7 +164,8 @@ class UniversalFilterService {
       } catch (transformError) {
         console.error(`❌ Error transforming empty data:`, transformError);
         // Return basic empty structure
-        const basicEmpty = this.preset === 'woocommerce' ? [] as T : {} as T;
+        const basicEmpty =
+          this.preset === 'woocommerce' ? ([] as T) : ({} as T);
         this.cache.set(cacheKey, basicEmpty);
         this.cacheTimestamps.set(cacheKey, now);
         return basicEmpty;
@@ -170,7 +180,7 @@ class UniversalFilterService {
     return this.fetchWithCache(
       'categories',
       this.getApiUrl(this.config.api.endpoints.categories, { per_page: '100' }),
-      (data) => this.transformCategories(data)
+      data => this.transformCategories(data)
     );
   }
 
@@ -181,7 +191,7 @@ class UniversalFilterService {
     return this.fetchWithCache(
       'attributes',
       this.getApiUrl(this.config.api.endpoints.attributes, { per_page: '100' }),
-      (data) => this.transformAttributes(data)
+      data => this.transformAttributes(data)
     );
   }
 
@@ -191,12 +201,12 @@ class UniversalFilterService {
   async getAllFilters(): Promise<UniversalFilters> {
     const [categories, attributes] = await Promise.all([
       this.getCategories(),
-      this.getAttributes()
+      this.getAttributes(),
     ]);
 
     return {
       categories,
-      attributes
+      attributes,
     };
   }
 
@@ -204,37 +214,53 @@ class UniversalFilterService {
    * Transform raw API data to universal category format
    */
   private transformCategories(rawData: unknown): UniversalCategory[] {
-    const categoriesRaw = this.normalizeToArray(rawData, ['categories', 'data', 'collections']);
+    const categoriesRaw = this.normalizeToArray(rawData, [
+      'categories',
+      'data',
+      'collections',
+    ]);
 
     const filteredCategories = categoriesRaw
-      .map((item) => this.toRecord(item))
+      .map(item => this.toRecord(item))
       .filter((cat): cat is Record<string, unknown> => Boolean(cat))
-      .filter((cat) => {
+      .filter(cat => {
         const slug = this.toString(cat.slug);
         if (!slug) return false;
         if (this.config.categories.excludeSlugs?.includes(slug)) return false;
-        if (this.config.categories.includeSlugs?.length && !this.config.categories.includeSlugs.includes(slug)) return false;
+        if (
+          this.config.categories.includeSlugs?.length &&
+          !this.config.categories.includeSlugs.includes(slug)
+        )
+          return false;
         return true;
       });
 
-    const universalCategories: UniversalCategory[] = filteredCategories.map((cat) => {
-      const id = this.toId(cat.id);
-      const parent = this.toId(cat.parent, true);
-      const imageRecord = this.toRecord(cat.image);
-      const imageSrc = imageRecord ? this.toString(imageRecord.src) || this.toString(imageRecord.url) : undefined;
-      const imageAlt = imageRecord ? this.toString(imageRecord.alt) || this.toString(cat.name) : undefined;
+    const universalCategories: UniversalCategory[] = filteredCategories.map(
+      cat => {
+        const id = this.toId(cat.id);
+        const parent = this.toId(cat.parent, true);
+        const imageRecord = this.toRecord(cat.image);
+        const imageSrc = imageRecord
+          ? this.toString(imageRecord.src) || this.toString(imageRecord.url)
+          : undefined;
+        const imageAlt = imageRecord
+          ? this.toString(imageRecord.alt) || this.toString(cat.name)
+          : undefined;
 
-      return {
-        id,
-        name: this.toString(cat.name),
-        slug: this.toString(cat.slug),
-        count: this.toNumber(cat.count),
-        parent,
-        level: 0,
-        subcategories: [],
-        image: imageSrc ? { src: imageSrc, alt: imageAlt || this.toString(cat.name) } : undefined
-      };
-    });
+        return {
+          id,
+          name: this.toString(cat.name),
+          slug: this.toString(cat.slug),
+          count: this.toNumber(cat.count),
+          parent,
+          level: 0,
+          subcategories: [],
+          image: imageSrc
+            ? { src: imageSrc, alt: imageAlt || this.toString(cat.name) }
+            : undefined,
+        };
+      }
+    );
 
     return this.buildCategoryHierarchy(universalCategories);
   }
@@ -242,22 +268,35 @@ class UniversalFilterService {
   /**
    * Transform raw API data to universal attribute format
    */
-  private transformAttributes(rawData: unknown): Record<string, UniversalAttribute> {
-    const attributesRaw = this.normalizeToArray(rawData, ['attributes', 'data', 'product_options']);
+  private transformAttributes(
+    rawData: unknown
+  ): Record<string, UniversalAttribute> {
+    const attributesRaw = this.normalizeToArray(rawData, [
+      'attributes',
+      'data',
+      'product_options',
+    ]);
 
     const result: Record<string, UniversalAttribute> = {};
 
     attributesRaw
-      .map((item) => this.toRecord(item))
+      .map(item => this.toRecord(item))
       .filter((attr): attr is Record<string, unknown> => Boolean(attr))
       .forEach(attr => {
         const slug = this.toString(attr.slug);
         if (!slug) return;
 
         if (this.config.attributes.excludeSlugs?.includes(slug)) return;
-        if (this.config.attributes.includeSlugs?.length && !this.config.attributes.includeSlugs.includes(slug)) return;
+        if (
+          this.config.attributes.includeSlugs?.length &&
+          !this.config.attributes.includeSlugs.includes(slug)
+        )
+          return;
 
-        const attributeName = this.config.attributes.customNames?.[slug] || this.toString(attr.name) || slug;
+        const attributeName =
+          this.config.attributes.customNames?.[slug] ||
+          this.toString(attr.name) ||
+          slug;
         const termsRaw = this.normalizeToArray(attr.terms, []);
 
         const rawOrder = attr.order;
@@ -268,15 +307,17 @@ class UniversalFilterService {
           slug,
           type: this.detectAttributeType(attr),
           terms: termsRaw
-            .map((term) => this.toRecord(term))
-            .filter((termRecord): termRecord is Record<string, unknown> => Boolean(termRecord))
+            .map(term => this.toRecord(term))
+            .filter((termRecord): termRecord is Record<string, unknown> =>
+              Boolean(termRecord)
+            )
             .map(term => ({
               id: this.toId(term.id),
               name: this.toString(term.name),
               slug: this.toString(term.slug),
-              count: this.toNumber(term.count)
+              count: this.toNumber(term.count),
             })),
-          order: typeof rawOrder === 'number' ? rawOrder : undefined
+          order: typeof rawOrder === 'number' ? rawOrder : undefined,
         };
       });
 
@@ -286,7 +327,9 @@ class UniversalFilterService {
   /**
    * Detect attribute type based on data
    */
-  private detectAttributeType(attr: Record<string, unknown>): 'select' | 'multiselect' | 'range' | 'boolean' {
+  private detectAttributeType(
+    attr: Record<string, unknown>
+  ): 'select' | 'multiselect' | 'range' | 'boolean' {
     const rawType = this.toString(attr.type).toLowerCase();
     if (rawType) {
       switch (rawType) {
@@ -305,15 +348,19 @@ class UniversalFilterService {
     }
 
     const terms = this.normalizeToArray(attr.terms, [])
-      .map((term) => this.toRecord(term))
-      .filter((termRecord): termRecord is Record<string, unknown> => Boolean(termRecord));
+      .map(term => this.toRecord(term))
+      .filter((termRecord): termRecord is Record<string, unknown> =>
+        Boolean(termRecord)
+      );
 
     if (terms.length === 0) return 'select';
 
     const booleanTerms = ['tak', 'nie', 'yes', 'no', 'true', 'false'];
     if (
       terms.length === 2 &&
-      terms.every((term) => booleanTerms.includes(this.toString(term.name).toLowerCase()))
+      terms.every(term =>
+        booleanTerms.includes(this.toString(term.name).toLowerCase())
+      )
     ) {
       return 'boolean';
     }
@@ -324,19 +371,21 @@ class UniversalFilterService {
   /**
    * Build category hierarchy
    */
-  private buildCategoryHierarchy(categories: UniversalCategory[]): UniversalCategory[] {
+  private buildCategoryHierarchy(
+    categories: UniversalCategory[]
+  ): UniversalCategory[] {
     const categoryMap = new Map<string, UniversalCategory>();
     const rootCategories: UniversalCategory[] = [];
-    
+
     // Create map
     categories.forEach(cat => {
       categoryMap.set(cat.id, { ...cat, subcategories: [] });
     });
-    
+
     // Build hierarchy
     categories.forEach(cat => {
       const universalCat = categoryMap.get(cat.id)!;
-      
+
       if (cat.parent && categoryMap.has(cat.parent)) {
         const parent = categoryMap.get(cat.parent)!;
         universalCat.level = parent.level + 1;
@@ -346,7 +395,7 @@ class UniversalFilterService {
         rootCategories.push(universalCat);
       }
     });
-    
+
     return rootCategories;
   }
 

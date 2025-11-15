@@ -1,8 +1,19 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ShoppingBag, Trash2, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide-react';
-import { useCartState, useCartActions, type CartItem } from '@/stores/cart-store';
+import {
+  ShoppingBag,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowLeft,
+  ArrowRight,
+} from 'lucide-react';
+import {
+  useCartState,
+  useCartActions,
+  type CartItem,
+} from '@/stores/cart-store';
 import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import Link from 'next/link';
 import PageContainer from '@/components/ui/page-container';
@@ -12,10 +23,10 @@ import PageHeader from '@/components/ui/page-header';
 export default function CartPage() {
   const { items, total, itemCount } = useCartState();
   const { removeItem, updateQuantity, clearCart } = useCartActions();
-  
+
   const breadcrumbs = [
     { label: 'Strona główna', href: '/' },
-    { label: 'Koszyk', href: '/koszyk' }
+    { label: 'Koszyk', href: '/koszyk' },
   ];
 
   const handleQuantityChange = (item: CartItem, newQuantity: number) => {
@@ -32,7 +43,7 @@ export default function CartPage() {
         <PageContainer>
           {/* Header with Title and Breadcrumbs */}
           <PageHeader title="Koszyk" breadcrumbs={breadcrumbs} />
-          
+
           <div className="max-w-2xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -72,11 +83,8 @@ export default function CartPage() {
     <div className="min-h-screen bg-white">
       <PageContainer className="pb-12">
         {/* Header with Title and Breadcrumbs */}
-        <PageHeader 
-          title="Koszyk"
-          breadcrumbs={breadcrumbs}
-        />
-        
+        <PageHeader title="Koszyk" breadcrumbs={breadcrumbs} />
+
         {/* Content */}
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -162,7 +170,9 @@ export default function CartPage() {
                         {/* Quantity Controls */}
                         <div className="flex items-center space-x-3">
                           <button
-                            onClick={() => handleQuantityChange(item, item.quantity - 1)}
+                            onClick={() =>
+                              handleQuantityChange(item, item.quantity - 1)
+                            }
                             className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                           >
                             <Minus className="w-5 h-5 text-gray-600" />
@@ -171,7 +181,9 @@ export default function CartPage() {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => handleQuantityChange(item, item.quantity + 1)}
+                            onClick={() =>
+                              handleQuantityChange(item, item.quantity + 1)
+                            }
                             className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                           >
                             <Plus className="w-5 h-5 text-gray-600" />
@@ -218,14 +230,14 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                                            {/* Checkout Button */}
-                            <Link
-                              href="/checkout"
-                              className="w-full bg-black text-white py-4 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2 mb-4"
-                            >
-                              <span>Przejdź do kasy</span>
-                              <ArrowRight className="w-5 h-5" />
-                            </Link>
+                {/* Checkout Button */}
+                <Link
+                  href="/checkout"
+                  className="w-full bg-black text-white py-4 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2 mb-4"
+                >
+                  <span>Przejdź do kasy</span>
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
 
                 {/* Additional Info */}
                 <div className="text-sm text-gray-500 text-center">

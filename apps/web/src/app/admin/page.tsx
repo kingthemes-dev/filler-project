@@ -4,7 +4,15 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, AlertTriangle, CheckCircle, XCircle, Activity, ShoppingCart } from 'lucide-react';
+import {
+  RefreshCw,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Activity,
+  ShoppingCart,
+} from 'lucide-react';
 import Link from 'next/link';
 
 interface QuickStats {
@@ -32,7 +40,7 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch performance stats
       const perfResponse = await fetch('/api/performance/stats');
       if (perfResponse.ok) {
@@ -73,7 +81,11 @@ export default function AdminDashboard() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ok':
-        return <Badge variant="default" className="bg-green-500">OK</Badge>;
+        return (
+          <Badge variant="default" className="bg-green-500">
+            OK
+          </Badge>
+        );
       case 'error':
         return <Badge variant="destructive">Error</Badge>;
       default:
@@ -98,10 +110,14 @@ export default function AdminDashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Headless WooCommerce Dashboard</h1>
-          <p className="text-gray-600">Frontend monitoring and API integration status</p>
+          <p className="text-gray-600">
+            Frontend monitoring and API integration status
+          </p>
         </div>
         <Button onClick={fetchData} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+          />
           Refresh
         </Button>
       </div>
@@ -111,13 +127,17 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Performance Score</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Performance Score
+              </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{quickStats.performanceScore}/100</div>
+              <div className="text-2xl font-bold">
+                {quickStats.performanceScore}/100
+              </div>
               <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div 
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${quickStats.performanceScore}%` }}
                 />
@@ -127,33 +147,47 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Metrics Tracked</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Metrics Tracked
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{quickStats.totalMetrics}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {quickStats.totalMetrics}
+              </div>
               <p className="text-xs text-muted-foreground">Active monitoring</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Failed Budgets</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Failed Budgets
+              </CardTitle>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{quickStats.failedBudgets}</div>
-              <p className="text-xs text-muted-foreground">Performance issues</p>
+              <div className="text-2xl font-bold text-red-600">
+                {quickStats.failedBudgets}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Performance issues
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Recommendations</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Recommendations
+              </CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{quickStats.recommendations.length}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {quickStats.recommendations.length}
+              </div>
               <p className="text-xs text-muted-foreground">Optimization tips</p>
             </CardContent>
           </Card>
@@ -176,7 +210,8 @@ export default function AdminDashboard() {
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Uptime</span>
                   <span className="text-sm text-gray-600">
-                    {Math.floor(healthStatus.uptime / 3600)}h {Math.floor((healthStatus.uptime % 3600) / 60)}m
+                    {Math.floor(healthStatus.uptime / 3600)}h{' '}
+                    {Math.floor((healthStatus.uptime % 3600) / 60)}m
                   </span>
                 </div>
                 <div className="space-y-2">
@@ -236,7 +271,10 @@ export default function AdminDashboard() {
                     View Store Frontend
                   </Button>
                 </Link>
-                <Link href={`${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-admin`} target="_blank">
+                <Link
+                  href={`${process.env.NEXT_PUBLIC_WORDPRESS_URL}/wp-admin`}
+                  target="_blank"
+                >
                   <Button variant="outline" className="w-full justify-start">
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     WooCommerce Admin
@@ -259,12 +297,16 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {quickStats.recommendations.slice(0, 3).map((recommendation, index) => (
-                <li key={index} className="flex items-start">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">{recommendation}</span>
-                </li>
-              ))}
+              {quickStats.recommendations
+                .slice(0, 3)
+                .map((recommendation, index) => (
+                  <li key={index} className="flex items-start">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0" />
+                    <span className="text-sm text-gray-700">
+                      {recommendation}
+                    </span>
+                  </li>
+                ))}
             </ul>
             {quickStats.recommendations.length > 3 && (
               <div className="mt-4">

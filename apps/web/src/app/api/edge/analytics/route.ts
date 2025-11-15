@@ -5,6 +5,7 @@ import { edgeAnalyticsEventSchema } from '@/lib/schemas/internal';
 import { validateApiInput } from '@/utils/request-validation';
 import { createErrorResponse, ValidationError } from '@/lib/errors';
 import { logger } from '@/utils/logger';
+import { checkApiRateLimit, addSecurityHeaders } from '@/utils/api-security';
 
 type NextRequestWithGeo = NextRequest & {
   geo?: {
@@ -15,6 +16,16 @@ type NextRequestWithGeo = NextRequest & {
 };
 
 export async function POST(request: NextRequest) {
+  // Security check: rate limiting only (edge runtime, no CSRF)
+  const rateLimitCheck = await checkApiRateLimit(request);
+  
+  if (!rateLimitCheck.allowed) {
+    return rateLimitCheck.response || NextResponse.json(
+      { error: 'Rate limit exceeded' },
+      { status: 429 }
+    );
+  }
+  
   try {
     const body = await request.json();
     const sanitizedBody = validateApiInput(body);
@@ -22,7 +33,10 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.success) {
       return createErrorResponse(
-        new ValidationError('Nieprawidłowe dane analityczne', validationResult.error.errors),
+        new ValidationError(
+          'Nieprawidłowe dane analityczne',
+          validationResult.error.errors
+        ),
         { endpoint: 'edge/analytics', method: 'POST' }
       );
     }
@@ -33,8 +47,10 @@ export async function POST(request: NextRequest) {
     const referer = request.headers.get('referer') || 'Direct';
     const requestWithMeta = request as NextRequestWithGeo;
     const { geo } = requestWithMeta;
-    const country = geo?.country || request.headers.get('x-vercel-ip-country') || 'Unknown';
-    const city = geo?.city || request.headers.get('x-vercel-ip-city') || 'Unknown';
+    const country =
+      geo?.country || request.headers.get('x-vercel-ip-country') || 'Unknown';
+    const city =
+      geo?.city || request.headers.get('x-vercel-ip-city') || 'Unknown';
     const edgeIp =
       requestWithMeta.ip ||
       request.headers.get('x-forwarded-for') ||
@@ -57,10 +73,10 @@ export async function POST(request: NextRequest) {
       country,
       city,
       referer,
-      sessionId: analyticsEvent.sessionId
+      sessionId: analyticsEvent.sessionId,
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: true, eventId: `evt_${Date.now()}` },
       {
         headers: {
@@ -68,13 +84,19 @@ export async function POST(request: NextRequest) {
         },
       }
     );
+    return addSecurityHeaders(response);
   } catch (error) {
-    const err = error instanceof Error ? error : new Error('Edge analytics error');
+    const err =
+      error instanceof Error ? error : new Error('Edge analytics error');
     logger.error('Edge analytics error', {
       message: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
-    return NextResponse.json({ error: 'Failed to process analytics event' }, { status: 500 });
+    const errorResponse = NextResponse.json(
+      { error: 'Failed to process analytics event' },
+      { status: 500 }
+    );
+    return addSecurityHeaders(errorResponse);
   }
 }
 
@@ -97,17 +119,19 @@ export async function GET(_request: NextRequest) {
       timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json(summary, {
+    const response = NextResponse.json(summary, {
       headers: {
         'Cache-Control': 'public, max-age=300, s-maxage=300',
         'CDN-Cache-Control': 'max-age=300',
         'Vercel-CDN-Cache-Control': 'max-age=300',
       },
     });
+    return addSecurityHeaders(response);
   } catch {
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Failed to get analytics summary' },
       { status: 500 }
     );
+    return addSecurityHeaders(errorResponse);
   }
 }

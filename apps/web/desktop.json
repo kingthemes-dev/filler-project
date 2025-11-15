@@ -19,12 +19,7 @@
     "emulatedFormFactor": "desktop",
     "formFactor": "desktop",
     "locale": "pl",
-    "onlyCategories": [
-      "performance",
-      "accessibility",
-      "best-practices",
-      "seo"
-    ],
+    "onlyCategories": ["performance", "accessibility", "best-practices", "seo"],
     "channel": "lr"
   },
   "audits": {
@@ -457,9 +452,7 @@
           }
         ],
         "type": "opportunity",
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "headings": [
           {
             "valueType": "url",
@@ -570,9 +563,7 @@
       "scoreDisplayMode": "informative",
       "displayValue": "0 ms",
       "details": {
-        "sortedBy": [
-          "rtt"
-        ],
+        "sortedBy": ["rtt"],
         "items": [
           {
             "origin": "https://www.filler.pl",
@@ -782,9 +773,7 @@
           }
         ],
         "type": "table",
-        "sortedBy": [
-          "totalBytes"
-        ]
+        "sortedBy": ["totalBytes"]
       },
       "numericValue": 2527159,
       "numericUnit": "byte"
@@ -843,9 +832,7 @@
         "FCP": 0
       },
       "details": {
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "overallSavingsBytes": 0,
         "items": [],
         "overallSavingsMs": 0,
@@ -1000,9 +987,7 @@
       },
       "details": {
         "items": [],
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "headings": [],
         "debugData": {
           "metricSavings": {
@@ -1569,9 +1554,7 @@
             "FCP": 0
           }
         },
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "items": [
           {
             "url": "https://www.filler.pl/images/hero/newslettter.webp",
@@ -1846,9 +1829,7 @@
             "label": "Spędzony czas"
           }
         ],
-        "sortedBy": [
-          "duration"
-        ],
+        "sortedBy": ["duration"],
         "type": "table"
       },
       "numericValue": 587.3309999999972,
@@ -2117,9 +2098,7 @@
             "origin": "https://www.filler.pl"
           }
         ],
-        "sortedBy": [
-          "serverResponseTime"
-        ]
+        "sortedBy": ["serverResponseTime"]
       },
       "numericValue": 49.5,
       "numericUnit": "millisecond"
@@ -2270,9 +2249,7 @@
         "headings": [],
         "overallSavingsMs": 0,
         "overallSavingsBytes": 0,
-        "sortedBy": [
-          "wastedBytes"
-        ]
+        "sortedBy": ["wastedBytes"]
       },
       "numericValue": 0,
       "numericUnit": "millisecond"
@@ -2290,9 +2267,7 @@
       "details": {
         "overallSavingsMs": 0,
         "items": [],
-        "sortedBy": [
-          "wastedMs"
-        ],
+        "sortedBy": ["wastedMs"],
         "type": "opportunity",
         "headings": []
       },
@@ -2319,9 +2294,7 @@
       },
       "details": {
         "type": "table",
-        "sortedBy": [
-          "total"
-        ],
+        "sortedBy": ["total"],
         "items": [
           {
             "scriptParseCompile": 9.741999999999999,
@@ -2698,10 +2671,7 @@
           }
         ],
         "debugData": {
-          "tags": [
-            "cat.semantics",
-            "best-practice"
-          ],
+          "tags": ["cat.semantics", "best-practice"],
           "type": "debugdata",
           "impact": "moderate"
         }
@@ -3684,9 +3654,7 @@
       },
       "details": {
         "overallSavingsBytes": 0,
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "overallSavingsMs": 0,
         "type": "opportunity",
         "headings": [],
@@ -3738,9 +3706,7 @@
       "details": {
         "type": "opportunity",
         "headings": [],
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "items": [],
         "overallSavingsMs": 0,
         "debugData": {
@@ -4218,9 +4184,7 @@
         ],
         "type": "opportunity",
         "overallSavingsBytes": 22639,
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "overallSavingsMs": 40,
         "items": [
           {
@@ -4413,12 +4377,8 @@
             "https://www.filler.pl/_next/static/chunks/1255-f206d8cb7c37a3ff.js"
           ]
         },
-        "skipSumming": [
-          "startTime"
-        ],
-        "sortedBy": [
-          "duration"
-        ],
+        "skipSumming": ["startTime"],
+        "sortedBy": ["duration"],
         "headings": [
           {
             "valueType": "url",
@@ -4536,9 +4496,7 @@
         "overallSavingsBytes": 0,
         "overallSavingsMs": 0,
         "type": "opportunity",
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "items": [],
         "headings": [],
         "debugData": {
@@ -4607,9 +4565,7 @@
         "FCP": 0
       },
       "details": {
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "headings": [],
         "items": [],
         "overallSavingsMs": 0,
@@ -4798,9 +4754,7 @@
       },
       "details": {
         "headings": [],
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "overallSavingsBytes": 0,
         "items": [],
         "debugData": {
@@ -5536,9 +5490,7 @@
             "valueType": "bytes"
           }
         ],
-        "sortedBy": [
-          "wastedBytes"
-        ],
+        "sortedBy": ["wastedBytes"],
         "type": "opportunity",
         "overallSavingsMs": 0,
         "overallSavingsBytes": 106775.05,
@@ -6767,16 +6719,12 @@
       "name": "filler.pl",
       "isFirstParty": true,
       "isUnrecognized": true,
-      "origins": [
-        "https://www.filler.pl"
-      ]
+      "origins": ["https://www.filler.pl"]
     },
     {
       "name": "cfolks.pl",
       "isUnrecognized": true,
-      "origins": [
-        "https://qvwltjhdjw.cfolks.pl"
-      ]
+      "origins": ["https://qvwltjhdjw.cfolks.pl"]
     }
   ],
   "fullPageScreenshot": {

@@ -22,27 +22,22 @@ export async function prefetchUniversalFilters(
   queryClient: QueryClient,
   options: UniversalPrefetchOptions = {}
 ): Promise<void> {
-  const {
-    preset = 'woocommerce',
-    config,
-    baseUrl,
-    retries = 2
-  } = options;
+  const { preset = 'woocommerce', config, baseUrl, retries = 2 } = options;
 
   // Create configuration
   const filterConfig = getFilterConfig(preset, {
     ...config,
-    ...(baseUrl && { 
-      api: { 
-        baseUrl, 
+    ...(baseUrl && {
+      api: {
+        baseUrl,
         endpoints: {
           categories: '/wp-json/wc/v3/products/categories',
           attributes: '/wp-json/wc/v3/products/attributes',
-          products: '/wp-json/wc/v3/products'
+          products: '/wp-json/wc/v3/products',
         },
-        ...config?.api 
-      } 
-    })
+        ...config?.api,
+      },
+    }),
   });
 
   // Create service instance
@@ -57,7 +52,10 @@ export async function prefetchUniversalFilters(
         try {
           return await service.getCategories();
         } catch (err) {
-          console.warn(`⚠️ Categories prefetch failed, returning empty array:`, err);
+          console.warn(
+            `⚠️ Categories prefetch failed, returning empty array:`,
+            err
+          );
           return [];
         }
       },
@@ -74,7 +72,10 @@ export async function prefetchUniversalFilters(
         try {
           return await service.getAttributes();
         } catch (err) {
-          console.warn(`⚠️ Attributes prefetch failed, returning empty object:`, err);
+          console.warn(
+            `⚠️ Attributes prefetch failed, returning empty object:`,
+            err
+          );
           return {};
         }
       },
@@ -91,7 +92,10 @@ export async function prefetchUniversalFilters(
         try {
           return await service.getAllFilters();
         } catch (err) {
-          console.warn(`⚠️ All filters prefetch failed, returning empty data:`, err);
+          console.warn(
+            `⚠️ All filters prefetch failed, returning empty data:`,
+            err
+          );
           return { categories: [], attributes: {} };
         }
       },
@@ -122,11 +126,11 @@ export async function prefetchWooCommerceFilters(
       endpoints: {
         categories: '/woocommerce?endpoint=products/categories',
         attributes: '/woocommerce?endpoint=products/attributes',
-        products: '/woocommerce?endpoint=shop'
-      }
-    }
+        products: '/woocommerce?endpoint=shop',
+      },
+    },
   });
-  
+
   return prefetchUniversalFilters(queryClient, {
     preset: 'woocommerce',
     config: {
@@ -135,11 +139,11 @@ export async function prefetchWooCommerceFilters(
         endpoints: {
           categories: '/woocommerce?endpoint=products/categories',
           attributes: '/woocommerce?endpoint=products/attributes',
-          products: '/woocommerce?endpoint=shop'
-        }
+          products: '/woocommerce?endpoint=shop',
+        },
       },
-      ...overrides
-    }
+      ...overrides,
+    },
   });
 }
 
@@ -152,7 +156,7 @@ export async function prefetchShopifyFilters(
 ): Promise<void> {
   return prefetchUniversalFilters(queryClient, {
     preset: 'shopify',
-    config: overrides
+    config: overrides,
   });
 }
 
@@ -165,7 +169,7 @@ export async function prefetchCustomFilters(
 ): Promise<void> {
   return prefetchUniversalFilters(queryClient, {
     preset: 'custom',
-    config
+    config,
   });
 }
 
@@ -178,21 +182,24 @@ export async function prefetchAutoDetectedFilters(
 ): Promise<void> {
   try {
     // Try to detect API type
-    const response = await fetch(`${baseUrl}/api/woocommerce?endpoint=products/categories`, {
-      signal: AbortSignal.timeout(5000)
-    });
-    
+    const response = await fetch(
+      `${baseUrl}/api/woocommerce?endpoint=products/categories`,
+      {
+        signal: AbortSignal.timeout(5000),
+      }
+    );
+
     if (response.ok) {
       console.log('🔍 Detected WooCommerce API');
       return prefetchWooCommerceFilters(queryClient, {
-        api: { 
+        api: {
           baseUrl,
           endpoints: {
             categories: '/wp-json/wc/v3/products/categories',
             attributes: '/wp-json/wc/v3/products/attributes',
-            products: '/wp-json/wc/v3/products'
-          }
-        }
+            products: '/wp-json/wc/v3/products',
+          },
+        },
       });
     }
   } catch {
@@ -201,20 +208,20 @@ export async function prefetchAutoDetectedFilters(
 
   try {
     const response = await fetch(`${baseUrl}/api/shopify/collections`, {
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(5000),
     });
-    
+
     if (response.ok) {
       console.log('🔍 Detected Shopify API');
       return prefetchShopifyFilters(queryClient, {
-        api: { 
+        api: {
           baseUrl,
           endpoints: {
             categories: '/admin/api/2023-10/collections.json',
             attributes: '/admin/api/2023-10/products.json',
-            products: '/admin/api/2023-10/products.json'
-          }
-        }
+            products: '/admin/api/2023-10/products.json',
+          },
+        },
       });
     }
   } catch {
@@ -224,14 +231,14 @@ export async function prefetchAutoDetectedFilters(
   // Fallback to custom configuration
   console.log('🔍 Using custom configuration');
   return prefetchCustomFilters(queryClient, {
-    api: { 
+    api: {
       baseUrl,
       endpoints: {
         categories: '/api/categories',
         attributes: '/api/attributes',
-        products: '/api/products'
-      }
-    }
+        products: '/api/products',
+      },
+    },
   });
 }
 
@@ -247,7 +254,7 @@ export async function prefetchFiltersWithFallback(
     return true;
   } catch (error) {
     console.error('❌ Prefetching failed:', error);
-    
+
     // Try with basic configuration as fallback
     try {
       console.log('🔄 Trying fallback configuration...');
@@ -257,16 +264,19 @@ export async function prefetchFiltersWithFallback(
           ...options.config,
           cache: { staleTime: 5 * 60_000, gcTime: 15 * 60_000 }, // Shorter cache times
           api: {
-            baseUrl: options.baseUrl || process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://qvwltjhdjw.cfolks.pl',
+            baseUrl:
+              options.baseUrl ||
+              process.env.NEXT_PUBLIC_WORDPRESS_URL ||
+              'https://qvwltjhdjw.cfolks.pl',
             endpoints: {
               categories: '/wp-json/wc/v3/products/categories',
               attributes: '/wp-json/wc/v3/products/attributes',
-              products: '/wp-json/wc/v3/products'
+              products: '/wp-json/wc/v3/products',
             },
             ...options.config?.api,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        }
+            headers: { 'Content-Type': 'application/json' },
+          },
+        },
       });
       return true;
     } catch (fallbackError) {

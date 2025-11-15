@@ -146,7 +146,7 @@ const Threads: React.FC<ThreadsProps> = ({
     gl.clearColor(0, 0, 0, 0); // Transparent background
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    
+
     // Ensure canvas is transparent
     gl.canvas.style.background = 'transparent';
     gl.canvas.style.position = 'absolute';
@@ -154,7 +154,7 @@ const Threads: React.FC<ThreadsProps> = ({
     gl.canvas.style.left = '0';
     gl.canvas.style.width = '100%';
     gl.canvas.style.height = '100%';
-    
+
     container.appendChild(gl.canvas);
 
     const geometry = new Triangle(gl);
@@ -164,13 +164,17 @@ const Threads: React.FC<ThreadsProps> = ({
       uniforms: {
         iTime: { value: 0 },
         iResolution: {
-          value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height)
+          value: new Color(
+            gl.canvas.width,
+            gl.canvas.height,
+            gl.canvas.width / gl.canvas.height
+          ),
         },
         uColor: { value: new Color(...color) },
         uAmplitude: { value: amplitude },
         uDistance: { value: distance },
-        uMouse: { value: new Float32Array([0.5, 0.5]) }
-      }
+        uMouse: { value: new Float32Array([0.5, 0.5]) },
+      },
     });
 
     const mesh = new Mesh(gl, { geometry, program });
@@ -221,7 +225,8 @@ const Threads: React.FC<ThreadsProps> = ({
     animationFrameId.current = requestAnimationFrame(update);
 
     return () => {
-      if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+      if (animationFrameId.current)
+        cancelAnimationFrame(animationFrameId.current);
       window.removeEventListener('resize', resize);
 
       if (enableMouseInteraction) {
@@ -233,7 +238,9 @@ const Threads: React.FC<ThreadsProps> = ({
     };
   }, [color, amplitude, distance, enableMouseInteraction]);
 
-  return <div ref={containerRef} className="w-full h-full relative" {...rest} />;
+  return (
+    <div ref={containerRef} className="w-full h-full relative" {...rest} />
+  );
 };
 
 export default Threads;

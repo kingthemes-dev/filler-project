@@ -11,21 +11,39 @@ import {
   CheckCircle,
   ArrowLeft,
   Shield,
-  ChevronRight
+  ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
 import PageContainer from '@/components/ui/page-container';
 import PageHeader from '@/components/ui/page-header';
-import { useCartItems, useCartTotal, useCartActions } from '@/stores/cart-store';
+import {
+  useCartItems,
+  useCartTotal,
+  useCartActions,
+} from '@/stores/cart-store';
 import { formatPrice, formatPriceWithVAT } from '@/utils/format-price';
 import { SHIPPING_CONFIG, ENV } from '@/config/constants';
 import Link from 'next/link';
 import { PaymentMethod } from '@/services/mock-payment';
 import wooCommerceService from '@/services/woocommerce-optimized';
-import { useAuthUser, useAuthIsAuthenticated, useAuthActions, type User } from '@/stores/auth-store';
+import {
+  useAuthUser,
+  useAuthIsAuthenticated,
+  useAuthActions,
+  useAuthStore,
+  type User,
+} from '@/stores/auth-store';
 import RegisterModal from '@/components/ui/auth/register-modal';
-import { validateEmail, validatePhone, validatePostalCode, validateName, validateAddress } from '@/utils/validation';
+import {
+  validateEmail,
+  validatePhone,
+  validatePostalCode,
+  validateName,
+  validateAddress,
+} from '@/utils/validation';
 import { Button } from '@/components/ui/button';
 import { executeRecaptcha, verifyRecaptchaToken } from '@/utils/recaptcha';
+import { analytics } from '@/utils/analytics';
 
 interface CheckoutForm {
   // Billing Information
@@ -36,13 +54,13 @@ interface CheckoutForm {
   company: string;
   nip: string;
   invoiceRequest: boolean;
-  
+
   // Billing Address
   billingAddress: string;
   billingCity: string;
   billingPostcode: string;
   billingCountry: string;
-  
+
   // Shipping Information
   shippingSameAsBilling: boolean;
   shippingFirstName: string;
@@ -52,13 +70,18 @@ interface CheckoutForm {
   shippingCity: string;
   shippingPostcode: string;
   shippingCountry: string;
-  
+
   // Payment
   paymentMethod: 'google_pay' | 'apple_pay' | 'card' | 'transfer' | 'cash';
-  
+
   // Shipping
   shippingMethod: string;
-  
+
+  // Account Creation
+  createAccount: boolean;
+  password: string;
+  confirmPassword: string;
+
   // Terms
   acceptTerms: boolean;
   acceptNewsletter: boolean;
@@ -124,7 +147,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
 const getMetaValue = (user: AuthUserWithMeta | null, key: string): unknown =>
-  user?.meta_data?.find((entry) => entry.key === key)?.value;
+  user?.meta_data?.find(entry => entry.key === key)?.value;
 
 const interpretBoolean = (value: unknown): boolean => {
   if (typeof value === 'boolean') return value;
@@ -143,7 +166,8 @@ const pickString = (...values: Array<string | undefined | null>): string => {
   return '';
 };
 
-const asAuthUser = (user: User | null): AuthUserWithMeta | null => (user ? (user as AuthUserWithMeta) : null);
+const asAuthUser = (user: User | null): AuthUserWithMeta | null =>
+  user ? (user as AuthUserWithMeta) : null;
 
 const buildFormDefaultsFromUser = (user: AuthUserWithMeta | null) => {
   const billing = user?.billing ?? null;
@@ -154,7 +178,7 @@ const buildFormDefaultsFromUser = (user: AuthUserWithMeta | null) => {
   const nip = pickString(
     billing?.nip,
     typeof metaNip === 'string' ? metaNip : undefined,
-    user?._billing_nip,
+    user?._billing_nip
   );
 
   const invoiceRequest =
@@ -163,7 +187,11 @@ const buildFormDefaultsFromUser = (user: AuthUserWithMeta | null) => {
     Boolean(nip);
 
   return {
-    firstName: pickString(user?.firstName, user?.first_name, billing?.first_name),
+    firstName: pickString(
+      user?.firstName,
+      user?.first_name,
+      billing?.first_name
+    ),
     lastName: pickString(user?.lastName, user?.last_name, billing?.last_name),
     email: pickString(user?.email, billing?.email),
     phone: pickString(billing?.phone),
@@ -178,20 +206,20 @@ const buildFormDefaultsFromUser = (user: AuthUserWithMeta | null) => {
       shipping?.first_name,
       billing?.first_name,
       user?.firstName,
-      user?.first_name,
+      user?.first_name
     ),
     shippingLastName: pickString(
       shipping?.last_name,
       billing?.last_name,
       user?.lastName,
-      user?.last_name,
+      user?.last_name
     ),
     shippingCompany: pickString(shipping?.company, billing?.company),
     shippingAddress: pickString(
       shipping?.address,
       shipping?.address_1,
       billing?.address,
-      billing?.address_1,
+      billing?.address_1
     ),
     shippingCity: pickString(shipping?.city, billing?.city),
     shippingPostcode: pickString(shipping?.postcode, billing?.postcode),
@@ -201,7 +229,7 @@ const buildFormDefaultsFromUser = (user: AuthUserWithMeta | null) => {
 
 const applyUserDefaults = (
   prev: CheckoutForm,
-  defaults: ReturnType<typeof buildFormDefaultsFromUser>,
+  defaults: ReturnType<typeof buildFormDefaultsFromUser>
 ): CheckoutForm => ({
   ...prev,
   firstName: pickString(prev.firstName, defaults.firstName),
@@ -215,28 +243,40 @@ const applyUserDefaults = (
   billingCity: pickString(prev.billingCity, defaults.billingCity),
   billingPostcode: pickString(prev.billingPostcode, defaults.billingPostcode),
   billingCountry: pickString(prev.billingCountry, defaults.billingCountry),
-  shippingFirstName: pickString(prev.shippingFirstName, defaults.shippingFirstName),
-  shippingLastName: pickString(prev.shippingLastName, defaults.shippingLastName),
+  shippingFirstName: pickString(
+    prev.shippingFirstName,
+    defaults.shippingFirstName
+  ),
+  shippingLastName: pickString(
+    prev.shippingLastName,
+    defaults.shippingLastName
+  ),
   shippingCompany: pickString(prev.shippingCompany, defaults.shippingCompany),
   shippingAddress: pickString(prev.shippingAddress, defaults.shippingAddress),
   shippingCity: pickString(prev.shippingCity, defaults.shippingCity),
-  shippingPostcode: pickString(prev.shippingPostcode, defaults.shippingPostcode),
+  shippingPostcode: pickString(
+    prev.shippingPostcode,
+    defaults.shippingPostcode
+  ),
   shippingCountry: pickString(prev.shippingCountry, defaults.shippingCountry),
 });
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   isRecord(value) ? (value as Record<string, unknown>) : undefined;
 
-const getRecordString = (record: Record<string, unknown> | undefined, key: string): string =>
-  typeof record?.[key] === 'string' ? (record[key] as string) : '';
+const getRecordString = (
+  record: Record<string, unknown> | undefined,
+  key: string
+): string => (typeof record?.[key] === 'string' ? (record[key] as string) : '');
 
 const extractErrorDetails = (details: unknown): string[] => {
   if (!Array.isArray(details)) return [];
   return details
-    .map((detail) => {
+    .map(detail => {
       if (typeof detail === 'string') return detail;
       if (isRecord(detail)) {
-        const message = typeof detail.message === 'string' ? detail.message : '';
+        const message =
+          typeof detail.message === 'string' ? detail.message : '';
         const path = Array.isArray(detail.path) ? detail.path.join('.') : '';
         if (message && path) return `${path}: ${message}`;
         if (message) return message;
@@ -257,7 +297,8 @@ const extractErrorMessage = (data: unknown): string | null => {
   }
 
   if (isRecord(errorField)) {
-    const message = typeof errorField.message === 'string' ? errorField.message : '';
+    const message =
+      typeof errorField.message === 'string' ? errorField.message : '';
     const validationMessages = extractErrorDetails(errorField.details);
     if (message && validationMessages.length) {
       return `${message}: ${validationMessages.join(', ')}`;
@@ -272,9 +313,10 @@ const extractErrorMessage = (data: unknown): string | null => {
 
   if (Array.isArray(data.errors)) {
     const messages = data.errors
-      .map((err) => {
+      .map(err => {
         if (typeof err === 'string') return err;
-        if (isRecord(err) && typeof err.message === 'string') return err.message;
+        if (isRecord(err) && typeof err.message === 'string')
+          return err.message;
         return null;
       })
       .filter((value): value is string => Boolean(value));
@@ -307,25 +349,27 @@ const mapGatewayIdToPaymentMethodId = (gatewayId: string): PaymentMethodId => {
   return 'card';
 };
 
-const getRecordBoolean = (record: Record<string, unknown> | undefined, key: string): boolean =>
-  interpretBoolean(record?.[key]);
+const getRecordBoolean = (
+  record: Record<string, unknown> | undefined,
+  key: string
+): boolean => interpretBoolean(record?.[key]);
 
 function CheckoutPageInner() {
   const items = useCartItems();
   const total = useCartTotal();
   const { clearCart } = useCartActions();
-  
+
   // Debug total value
   // Checkout total debug removed
   const searchParams = useSearchParams();
   const user = useAuthUser();
   const isAuthenticated = useAuthIsAuthenticated();
-  const { fetchUserProfile } = useAuthActions();
+  const { fetchUserProfile, register: registerUser } = useAuthActions();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
-  
+
   const [form, setForm] = useState<CheckoutForm>({
     firstName: '',
     lastName: '',
@@ -348,8 +392,11 @@ function CheckoutPageInner() {
     shippingCountry: 'PL',
     paymentMethod: 'google_pay',
     shippingMethod: '',
+    createAccount: false,
+    password: '',
+    confirmPassword: '',
     acceptTerms: false,
-    acceptNewsletter: false
+    acceptNewsletter: false,
   });
 
   // Payment state
@@ -359,7 +406,7 @@ function CheckoutPageInner() {
     expiryMonth: '',
     expiryYear: '',
     cvv: '',
-    cardholderName: ''
+    cardholderName: '',
   });
   const [_paymentError, setPaymentError] = useState<string | null>(null);
   const [_isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -367,6 +414,7 @@ function CheckoutPageInner() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [hasNewUserDiscount, setHasNewUserDiscount] = useState(false);
   const [discountCode, setDiscountCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<{
@@ -375,37 +423,37 @@ function CheckoutPageInner() {
     value: number;
   } | null>(null);
   const [discountLoading, setDiscountLoading] = useState(false);
-  
+
   const handlePaymentMethodChange = (value: string) => {
     const mapped = URL_PAYMENT_METHOD_MAP[value];
     if (!mapped) return;
-    setForm((prev) => ({ ...prev, paymentMethod: mapped }));
+    setForm(prev => ({ ...prev, paymentMethod: mapped }));
     setQuickPaymentSelected(QUICK_PAYMENT_METHODS.includes(mapped));
   };
-  
+
   // Helper functions
   const getPaymentMethodTitle = (method: string) => {
     const titles: Record<string, string> = {
-      'google_pay': 'Google Pay',
-      'apple_pay': 'Apple Pay',
-      'card': 'Karta płatnicza',
-      'transfer': 'Przelew bankowy',
-      'cash': 'Płatność przy odbiorze'
+      google_pay: 'Google Pay',
+      apple_pay: 'Apple Pay',
+      card: 'Karta płatnicza',
+      transfer: 'Przelew bankowy',
+      cash: 'Płatność przy odbiorze',
     };
     return titles[method] || method;
   };
 
   const getShippingMethodTitle = (method: string) => {
     const titles: Record<string, string> = {
-      'free_shipping': 'Darmowa dostawa',
-      'flat_rate': 'Dostawa standardowa',
-      'local_pickup': 'Odbiór osobisty'
+      free_shipping: 'Darmowa dostawa',
+      flat_rate: 'Dostawa standardowa',
+      local_pickup: 'Odbiór osobisty',
     };
     return titles[method] || method;
   };
 
   // removed unused helper getSelectedShippingMethod
-  
+
   // Shipping state
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [_isLoadingShipping, setIsLoadingShipping] = useState(false);
@@ -421,15 +469,20 @@ function CheckoutPageInner() {
         form.shippingCity,
         form.shippingPostcode
       );
-      const methodsList: ShippingMethod[] = response.success && Array.isArray(response.methods)
-        ? response.methods
-        : [];
+      const methodsList: ShippingMethod[] =
+        response.success && Array.isArray(response.methods)
+          ? response.methods
+          : [];
 
       setShippingMethods(methodsList);
 
       if (methodsList.length > 0) {
         const firstMethod = methodsList[0];
-        setForm((prev) => (prev.shippingMethod ? prev : { ...prev, shippingMethod: firstMethod.method_id }));
+        setForm(prev =>
+          prev.shippingMethod
+            ? prev
+            : { ...prev, shippingMethod: firstMethod.method_id }
+        );
       }
     } catch (error) {
       console.error('Error loading shipping methods:', error);
@@ -446,36 +499,42 @@ function CheckoutPageInner() {
       const res = await wooCommerceService.getPaymentGateways();
       if (res.success && res.gateways) {
         const mapped: PaymentMethod[] = res.gateways
-          .filter((gateway) => gateway.enabled)
-          .map((gateway) => ({
+          .filter(gateway => gateway.enabled)
+          .map(gateway => ({
             id: mapGatewayIdToPaymentMethodId(gateway.id),
             name: gateway.title,
             description: gateway.description || '',
             icon: gateway.id === 'cod' ? 'truck' : 'credit-card',
             processingTime: gateway.id === 'cod' ? 0 : 3000,
             successRate: gateway.id === 'cod' ? 1 : 0.95,
+            // Store original gateway ID for unique key
+            gatewayId: gateway.id,
           }));
         setPaymentMethods(mapped);
       }
     })();
-    
+
     // Handle payment method from URL
     const paymentParam = searchParams.get('payment');
-    const mappedPaymentMethod = paymentParam ? URL_PAYMENT_METHOD_MAP[paymentParam] : undefined;
+    const mappedPaymentMethod = paymentParam
+      ? URL_PAYMENT_METHOD_MAP[paymentParam]
+      : undefined;
 
     if (mappedPaymentMethod) {
-      setForm((prev) => ({ ...prev, paymentMethod: mappedPaymentMethod }));
-      setQuickPaymentSelected(QUICK_PAYMENT_METHODS.includes(mappedPaymentMethod));
-      
+      setForm(prev => ({ ...prev, paymentMethod: mappedPaymentMethod }));
+      setQuickPaymentSelected(
+        QUICK_PAYMENT_METHODS.includes(mappedPaymentMethod)
+      );
+
       // TRUE QUICK PAYMENT - skip to payment step and use defaults
       if (QUICK_PAYMENT_METHODS.includes(mappedPaymentMethod)) {
         setCurrentStep(2); // Go to shipping and payment step
-        
+
         // Set user data for quick payment (or defaults if not logged in)
         const extendedUser = asAuthUser(user);
         const defaults = buildFormDefaultsFromUser(extendedUser);
-        
-        setForm((prev) => {
+
+        setForm(prev => {
           const merged = applyUserDefaults(prev, defaults);
           return {
             ...merged,
@@ -483,7 +542,7 @@ function CheckoutPageInner() {
             acceptTerms: true,
           };
         });
-        
+
         // Load shipping methods for quick payment
         setTimeout(() => {
           loadShippingMethods();
@@ -496,14 +555,15 @@ function CheckoutPageInner() {
   useEffect(() => {
     if (isAuthenticated && user) {
       // Check if billing data is empty or missing key fields
-      const hasEmptyBilling = !user.billing || 
-        !user.billing.address || 
-        !user.billing.city || 
+      const hasEmptyBilling =
+        !user.billing ||
+        !user.billing.address ||
+        !user.billing.city ||
         !user.billing.phone ||
         Object.values(user.billing).every(value => !value || value === 'PL');
-      
+
       // Checkout: Checking billing data debug removed
-      
+
       if (hasEmptyBilling) {
         // Checkout: User data incomplete debug removed
         fetchUserProfile();
@@ -514,16 +574,16 @@ function CheckoutPageInner() {
   // Prefill from authenticated user profile
   useEffect(() => {
     // Checkout useEffect - auth check debug removed
-    
+
     // Add small delay to ensure auth store is fully loaded
     const timer = setTimeout(() => {
       if (!isAuthenticated || !user) return;
       const extendedUser = asAuthUser(user);
       const defaults = buildFormDefaultsFromUser(extendedUser);
 
-      setForm((prev) => applyUserDefaults(prev, defaults));
+      setForm(prev => applyUserDefaults(prev, defaults));
     }, 100); // 100ms delay
-    
+
     return () => clearTimeout(timer);
   }, [isAuthenticated, user]);
 
@@ -536,7 +596,7 @@ function CheckoutPageInner() {
     const nip = pickString(
       getRecordString(record, 'nip'),
       getRecordString(record, '_billing_nip'),
-      getRecordString(billingRecord, 'nip'),
+      getRecordString(billingRecord, 'nip')
     );
 
     const invoiceRequestFlag =
@@ -544,10 +604,18 @@ function CheckoutPageInner() {
       getRecordBoolean(billingRecord, 'invoiceRequest') ||
       Boolean(nip);
 
-    setForm((prev) => ({
+    setForm(prev => ({
       ...prev,
-      firstName: pickString(prev.firstName, getRecordString(record, 'first_name'), getRecordString(record, 'firstName')),
-      lastName: pickString(prev.lastName, getRecordString(record, 'last_name'), getRecordString(record, 'lastName')),
+      firstName: pickString(
+        prev.firstName,
+        getRecordString(record, 'first_name'),
+        getRecordString(record, 'firstName')
+      ),
+      lastName: pickString(
+        prev.lastName,
+        getRecordString(record, 'last_name'),
+        getRecordString(record, 'lastName')
+      ),
       email: pickString(prev.email, getRecordString(record, 'email')),
       phone: pickString(prev.phone, getRecordString(record, 'phone')),
       company: pickString(prev.company, getRecordString(record, 'company')),
@@ -557,50 +625,70 @@ function CheckoutPageInner() {
         prev.billingAddress,
         getRecordString(record, 'billingAddress'),
         getRecordString(billingRecord, 'address'),
-        getRecordString(billingRecord, 'address_1'),
+        getRecordString(billingRecord, 'address_1')
       ),
       billingCity: pickString(
         prev.billingCity,
         getRecordString(record, 'billingCity'),
-        getRecordString(billingRecord, 'city'),
+        getRecordString(billingRecord, 'city')
       ),
       billingPostcode: pickString(
         prev.billingPostcode,
         getRecordString(record, 'billingPostcode'),
-        getRecordString(billingRecord, 'postcode'),
+        getRecordString(billingRecord, 'postcode')
       ),
       billingCountry: pickString(
         prev.billingCountry,
         getRecordString(record, 'billingCountry'),
         getRecordString(billingRecord, 'country'),
-        'PL',
+        'PL'
       ),
-      shippingFirstName: pickString(prev.shippingFirstName, getRecordString(shippingRecord, 'first_name'), getRecordString(record, 'first_name'), getRecordString(record, 'firstName')),
-      shippingLastName: pickString(prev.shippingLastName, getRecordString(shippingRecord, 'last_name'), getRecordString(record, 'last_name'), getRecordString(record, 'lastName')),
-      shippingCompany: pickString(prev.shippingCompany, getRecordString(shippingRecord, 'company'), getRecordString(record, 'company')),
+      shippingFirstName: pickString(
+        prev.shippingFirstName,
+        getRecordString(shippingRecord, 'first_name'),
+        getRecordString(record, 'first_name'),
+        getRecordString(record, 'firstName')
+      ),
+      shippingLastName: pickString(
+        prev.shippingLastName,
+        getRecordString(shippingRecord, 'last_name'),
+        getRecordString(record, 'last_name'),
+        getRecordString(record, 'lastName')
+      ),
+      shippingCompany: pickString(
+        prev.shippingCompany,
+        getRecordString(shippingRecord, 'company'),
+        getRecordString(record, 'company')
+      ),
       shippingAddress: pickString(
         prev.shippingAddress,
         getRecordString(shippingRecord, 'address'),
         getRecordString(shippingRecord, 'address_1'),
         getRecordString(billingRecord, 'address'),
-        getRecordString(billingRecord, 'address_1'),
+        getRecordString(billingRecord, 'address_1')
       ),
-      shippingCity: pickString(prev.shippingCity, getRecordString(shippingRecord, 'city')),
-      shippingPostcode: pickString(prev.shippingPostcode, getRecordString(shippingRecord, 'postcode')),
+      shippingCity: pickString(
+        prev.shippingCity,
+        getRecordString(shippingRecord, 'city')
+      ),
+      shippingPostcode: pickString(
+        prev.shippingPostcode,
+        getRecordString(shippingRecord, 'postcode')
+      ),
       shippingCountry: pickString(
         prev.shippingCountry,
         getRecordString(shippingRecord, 'country'),
         getRecordString(billingRecord, 'country'),
-        'PL',
+        'PL'
       ),
     }));
-    
+
     // Close modal and show success message
     setShowRegisterModal(false);
-    
+
     // Activate new user discount
     setHasNewUserDiscount(true);
-    
+
     // Show success toast notification with discount info
     setShowSuccessToast(true);
     setTimeout(() => {
@@ -611,34 +699,39 @@ function CheckoutPageInner() {
   // Apply discount code
   const handleApplyDiscount = async () => {
     if (!discountCode.trim()) return;
-    
+
     setDiscountLoading(true);
     try {
-      const response = await fetch(`/api/woocommerce?endpoint=coupons&code=${encodeURIComponent(discountCode)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
+      const response = await fetch(
+        `/api/woocommerce?endpoint=coupons&code=${encodeURIComponent(discountCode)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
       const result = await response.json();
-      
+
       if (result.success && result.coupon) {
         const coupon = result.coupon;
-        
+
         // Check minimum amount if specified - compare netto with netto
         const nettoTotal = total / 1.23; // Convert total (with VAT) to netto
         // Debug discount validation removed
-        
+
         if (coupon.minimum_amount && nettoTotal < coupon.minimum_amount) {
-          alert(`❌ Minimalna wartość zamówienia dla tego kodu to ${formatPrice(coupon.minimum_amount)} (netto)`);
+          alert(
+            `❌ Minimalna wartość zamówienia dla tego kodu to ${formatPrice(coupon.minimum_amount)} (netto)`
+          );
           return;
         }
-        
+
         setAppliedDiscount({
           code: coupon.code,
           type: coupon.discount_type === 'percent' ? 'percentage' : 'fixed',
-          value: coupon.amount
+          value: coupon.amount,
         });
         setDiscountCode(''); // Clear input
       } else {
@@ -675,7 +768,12 @@ function CheckoutPageInner() {
     if (form.shippingCountry && form.shippingCity) {
       loadShippingMethods();
     }
-  }, [form.shippingCountry, form.shippingCity, form.shippingPostcode, loadShippingMethods]);
+  }, [
+    form.shippingCountry,
+    form.shippingCity,
+    form.shippingPostcode,
+    loadShippingMethods,
+  ]);
 
   // Load shipping methods when user reaches step 2
   useEffect(() => {
@@ -691,9 +789,17 @@ function CheckoutPageInner() {
     }
   }, [items, orderComplete]);
 
-  const handleInputChange = (field: keyof CheckoutForm, value: string | boolean) => {
+  const handleInputChange = (
+    field: keyof CheckoutForm,
+    value: string | boolean
+  ) => {
     setForm(prev => ({ ...prev, [field]: value }));
     
+    // Clear registration error when email changes
+    if (field === 'email' && registrationError) {
+      setRegistrationError(null);
+    }
+
     // Auto-fill shipping if same as billing
     if (field === 'shippingSameAsBilling' && value === true) {
       setForm(prev => ({
@@ -704,57 +810,69 @@ function CheckoutPageInner() {
         shippingAddress: prev.billingAddress,
         shippingCity: prev.billingCity,
         shippingPostcode: prev.billingPostcode,
-        shippingCountry: prev.billingCountry
+        shippingCountry: prev.billingCountry,
       }));
     }
   };
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-    
+
     // Validate first name
     const firstNameValidation = validateName(form.firstName, 'Imię');
     if (!firstNameValidation.isValid) {
       errors.firstName = firstNameValidation.message || 'Nieprawidłowe imię';
     }
-    
+
     // Validate last name
     const lastNameValidation = validateName(form.lastName, 'Nazwisko');
     if (!lastNameValidation.isValid) {
       errors.lastName = lastNameValidation.message || 'Nieprawidłowe nazwisko';
     }
-    
+
     // Validate email
     const emailValidation = validateEmail(form.email);
     if (!emailValidation.isValid) {
       errors.email = emailValidation.message || 'Nieprawidłowy email';
     }
-    
+
     // Validate phone
     const phoneValidation = validatePhone(form.phone);
     if (!phoneValidation.isValid) {
       errors.phone = phoneValidation.message || 'Nieprawidłowy numer telefonu';
     }
-    
+
     // Validate billing address
     const addressValidation = validateAddress(form.billingAddress, 'Adres');
     if (!addressValidation.isValid) {
-      errors.billingAddress = addressValidation.message || 'Nieprawidłowy adres';
+      errors.billingAddress =
+        addressValidation.message || 'Nieprawidłowy adres';
     }
-    
+
     // Validate city
     if (!form.billingCity || form.billingCity.trim().length < 2) {
       errors.billingCity = 'Miasto musi mieć co najmniej 2 znaki';
     }
-    
+
     // Validate postal code
     const postalCodeValidation = validatePostalCode(form.billingPostcode);
     if (!postalCodeValidation.isValid) {
-      errors.billingPostcode = postalCodeValidation.message || 'Nieprawidłowy kod pocztowy';
+      errors.billingPostcode =
+        postalCodeValidation.message || 'Nieprawidłowy kod pocztowy';
     }
-    
+
+    // Validate password if creating account
+    if (form.createAccount && !isAuthenticated) {
+      if (!form.password || form.password.length < 8) {
+        errors.password = 'Hasło musi mieć co najmniej 8 znaków';
+      }
+      if (form.password !== form.confirmPassword) {
+        errors.confirmPassword = 'Hasła nie są zgodne';
+      }
+    }
+
     setFieldErrors(errors);
-    
+
     // Debug: show errors
     if (Object.keys(errors).length > 0) {
       // Validation errors debug removed
@@ -762,14 +880,27 @@ function CheckoutPageInner() {
       const firstError = Object.values(errors)[0];
       alert(`❌ ${firstError}`);
     }
-    
+
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
+
+    // Track begin_checkout event
+    analytics.track('begin_checkout', {
+      currency: 'PLN',
+      value: total,
+      items: items.map(item => ({
+        item_id: item.id.toString(),
+        item_name: item.name,
+        category: item.category || 'Uncategorized',
+        price: item.price,
+        quantity: item.quantity,
+      })),
+    });
 
     // FIX: reCAPTCHA verification
     if (ENV.RECAPTCHA_ENABLED) {
@@ -778,7 +909,9 @@ function CheckoutPageInner() {
         if (recaptchaToken) {
           const isValid = await verifyRecaptchaToken(recaptchaToken);
           if (!isValid) {
-            alert('❌ Weryfikacja bezpieczeństwa nie powiodła się. Spróbuj ponownie.');
+            alert(
+              '❌ Weryfikacja bezpieczeństwa nie powiodła się. Spróbuj ponownie.'
+            );
             return;
           }
         }
@@ -790,7 +923,13 @@ function CheckoutPageInner() {
 
     // Validate card details if card payment
     if (form.paymentMethod === 'card') {
-      if (!cardDetails.cardNumber || !cardDetails.expiryMonth || !cardDetails.expiryYear || !cardDetails.cvv || !cardDetails.cardholderName) {
+      if (
+        !cardDetails.cardNumber ||
+        !cardDetails.expiryMonth ||
+        !cardDetails.expiryYear ||
+        !cardDetails.cvv ||
+        !cardDetails.cardholderName
+      ) {
         setPaymentError('Proszę wypełnić wszystkie dane karty.');
         return;
       }
@@ -805,8 +944,120 @@ function CheckoutPageInner() {
     setLoading(true);
     setIsProcessingPayment(true);
     setPaymentError(null);
-    
+
     try {
+      // Register user if checkbox is checked and user is not authenticated
+      let registeredUserId: number | undefined = undefined;
+      if (form.createAccount && !isAuthenticated && form.password) {
+        try {
+          const registrationResult = await registerUser({
+            email: form.email,
+            password: form.password,
+            firstName: form.firstName,
+            lastName: form.lastName,
+            phone: form.phone,
+            company: form.company,
+            nip: form.nip,
+            marketingConsent: form.acceptNewsletter,
+          });
+
+          if (registrationResult) {
+            // Fetch user profile to get ID
+            await fetchUserProfile();
+            // Get updated user from store
+            const authStoreState = useAuthStore.getState();
+            registeredUserId = authStoreState.user?.id;
+
+            // Activate new user discount
+            setHasNewUserDiscount(true);
+
+            // Create discount coupon and send email to new user
+            try {
+              // Combine firstName and lastName into name for newsletter schema
+              const fullName = [form.firstName, form.lastName]
+                .filter(Boolean)
+                .join(' ')
+                .trim() || undefined;
+
+              const couponResponse = await fetch('/api/newsletter/subscribe', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  email: form.email,
+                  name: fullName, // Schema expects 'name', not 'firstName'/'lastName'
+                  consent: form.acceptNewsletter,
+                  source: 'registration',
+                }),
+              });
+
+              if (couponResponse.ok) {
+                const couponResult = await couponResponse.json();
+                console.log(
+                  '✅ Discount coupon created and email sent:',
+                  couponResult.discountCode
+                );
+              } else if (couponResponse.status === 409) {
+                // Email already exists in Brevo - this is expected, just log it
+                const errorData = await couponResponse.json().catch(() => ({}));
+                console.log(
+                  'ℹ️ Email already subscribed to newsletter:',
+                  errorData.message || 'Email already exists'
+                );
+              } else {
+                const errorText = await couponResponse.text();
+                console.warn(
+                  '⚠️ Failed to create discount coupon:',
+                  errorText
+                );
+              }
+            } catch (couponError) {
+              console.error('❌ Error creating discount coupon:', couponError);
+              // Don't fail checkout if coupon creation fails
+            }
+
+            console.log('✅ Account created successfully during checkout', {
+              userId: registeredUserId,
+            });
+          }
+        } catch (registrationError) {
+          console.error(
+            '❌ Registration error during checkout:',
+            registrationError
+          );
+          // Check if email already exists
+          const errorMessage =
+            registrationError instanceof Error
+              ? registrationError.message
+              : String(registrationError);
+          if (
+            errorMessage.includes('already exists') ||
+            errorMessage.includes('already registered') ||
+            errorMessage.includes('email')
+          ) {
+            // Set error message to show in UI instead of alert
+            setRegistrationError(
+              'Ten email jest już zarejestrowany. Zaloguj się aby kontynuować.'
+            );
+          } else {
+            setRegistrationError(
+              `Nie udało się utworzyć konta: ${errorMessage}. Możesz kontynuować bez konta.`
+            );
+          }
+          // Continue with checkout as guest
+          setForm(prev => ({
+            ...prev,
+            createAccount: false,
+            password: '',
+            confirmPassword: '',
+          }));
+        }
+      }
+
+      // Get current user ID (either from registration or existing authentication)
+      const currentUserId = registeredUserId || user?.id;
+
       // Create order in WooCommerce
       const orderData = {
         billing: {
@@ -818,17 +1069,19 @@ function CheckoutPageInner() {
           address: form.billingAddress,
           city: form.billingCity,
           postcode: form.billingPostcode,
-          country: form.billingCountry
+          country: form.billingCountry,
         },
-        shipping: form.shippingSameAsBilling ? null : {
-          firstName: form.shippingFirstName,
-          lastName: form.shippingLastName,
-          company: form.shippingCompany,
-          address: form.shippingAddress,
-          city: form.shippingCity,
-          postcode: form.shippingPostcode,
-          country: form.shippingCountry
-        },
+        shipping: form.shippingSameAsBilling
+          ? null
+          : {
+              firstName: form.shippingFirstName,
+              lastName: form.shippingLastName,
+              company: form.shippingCompany,
+              address: form.shippingAddress,
+              city: form.shippingCity,
+              postcode: form.shippingPostcode,
+              country: form.shippingCountry,
+            },
         line_items: items.map((item): OrderLineItemPayload => {
           const lineItem: OrderLineItemPayload = {
             product_id: item.id,
@@ -850,19 +1103,22 @@ function CheckoutPageInner() {
         }),
         payment_method: form.paymentMethod,
         payment_method_title: getPaymentMethodTitle(form.paymentMethod),
-        shipping_lines: [{
-          method_id: form.shippingMethod,
-          method_title: getShippingMethodTitle(form.shippingMethod),
-          total: finalShippingCost.toFixed(2)
-        }],
-        customer_id: user?.id, // Dodaj customer_id dla zalogowanych użytkowników
-        coupon_lines: appliedDiscount ? [
-          { code: appliedDiscount.code }
-        ] : [],
+        shipping_lines: [
+          {
+            method_id: form.shippingMethod,
+            method_title: getShippingMethodTitle(form.shippingMethod),
+            total: finalShippingCost.toFixed(2),
+          },
+        ],
+        customer_id: currentUserId, // Dodaj customer_id dla zalogowanych użytkowników lub nowo zarejestrowanych
+        coupon_lines: appliedDiscount ? [{ code: appliedDiscount.code }] : [],
         meta_data: [
           { key: '_billing_nip', value: form.nip },
-          { key: '_invoice_request', value: form.invoiceRequest ? 'yes' : 'no' }
-        ]
+          {
+            key: '_invoice_request',
+            value: form.invoiceRequest ? 'yes' : 'no',
+          },
+        ],
       };
 
       const orderResponse = await fetch('/api/woocommerce?endpoint=orders', {
@@ -877,7 +1133,7 @@ function CheckoutPageInner() {
       if (!orderResponse.ok) {
         let errorText = '';
         let parsedError: unknown = {};
-        
+
         try {
           // Try to get response as text first
           errorText = await orderResponse.clone().text();
@@ -890,33 +1146,41 @@ function CheckoutPageInner() {
             error: `HTTP ${orderResponse.status}: Nie udało się odczytać odpowiedzi serwera`,
           };
         }
-        
+
         // Extract error message from different possible formats
         // Handle AppError format: { error: { message: "...", details: [...] } }
         const extractedMessage = extractErrorMessage(parsedError);
         const errorMessage =
           extractedMessage ||
-          (typeof errorText === 'string' && errorText.trim() ? errorText : null) ||
+          (typeof errorText === 'string' && errorText.trim()
+            ? errorText
+            : null) ||
           `HTTP ${orderResponse.status}: Nie udało się utworzyć zamówienia`;
-        
+
         console.error('❌ Order creation HTTP error:', {
           status: orderResponse.status,
           statusText: orderResponse.statusText,
           errorData: parsedError,
           errorText,
-          errorMessage
+          errorMessage,
         });
-        
+
         throw new Error(errorMessage);
       }
 
       const orderResult = await orderResponse.json();
       console.log('📦 Order creation response:', orderResult);
-      
+
       // Handle different response formats
-      if (!orderResult || (typeof orderResult === 'object' && Object.keys(orderResult).length === 0)) {
+      if (
+        !orderResult ||
+        (typeof orderResult === 'object' &&
+          Object.keys(orderResult).length === 0)
+      ) {
         console.error('❌ Empty order result');
-        throw new Error('Nie udało się utworzyć zamówienia - pusta odpowiedź z serwera');
+        throw new Error(
+          'Nie udało się utworzyć zamówienia - pusta odpowiedź z serwera'
+        );
       }
 
       if (!orderResult.success) {
@@ -926,7 +1190,10 @@ function CheckoutPageInner() {
           if (typeof orderResult.error === 'string') {
             errorMessage = orderResult.error;
           } else if (typeof orderResult.error === 'object') {
-            errorMessage = orderResult.error.message || orderResult.error.error || JSON.stringify(orderResult.error);
+            errorMessage =
+              orderResult.error.message ||
+              orderResult.error.error ||
+              JSON.stringify(orderResult.error);
           }
         } else if (orderResult.message) {
           errorMessage = orderResult.message;
@@ -938,45 +1205,52 @@ function CheckoutPageInner() {
       // Ensure order object exists
       if (!orderResult.order) {
         console.error('❌ Order object missing in response:', orderResult);
-        throw new Error('Nie udało się utworzyć zamówienia - brak danych zamówienia');
+        throw new Error(
+          'Nie udało się utworzyć zamówienia - brak danych zamówienia'
+        );
       }
 
       const newOrderNumber = orderResult.order.number;
       setOrderNumber(newOrderNumber);
-      
-      // Automatically save billing data to user profile if logged in
-      if (isAuthenticated && user?.id) {
+
+      // Automatically save billing data to user profile if logged in or newly registered
+      if ((isAuthenticated || registeredUserId) && currentUserId) {
         try {
-          const profileResponse = await fetch('/api/woocommerce?endpoint=customer/update-profile', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              customer_id: user.id,
-              profile_data: {
-                firstName: form.firstName,
-                lastName: form.lastName,
-                billing: {
-                  company: form.company,
-                  nip: form.nip,
-                  invoiceRequest: form.invoiceRequest,
-                  address: form.billingAddress,
-                  city: form.billingCity,
-                  postcode: form.billingPostcode,
-                  country: form.billingCountry,
-                  phone: form.phone
+          const profileResponse = await fetch(
+            '/api/woocommerce?endpoint=customer/update-profile',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                customer_id: currentUserId,
+                profile_data: {
+                  firstName: form.firstName,
+                  lastName: form.lastName,
+                  billing: {
+                    company: form.company,
+                    nip: form.nip,
+                    invoiceRequest: form.invoiceRequest,
+                    address: form.billingAddress,
+                    city: form.billingCity,
+                    postcode: form.billingPostcode,
+                    country: form.billingCountry,
+                    phone: form.phone,
+                  },
+                  shipping: form.shippingSameAsBilling
+                    ? null
+                    : {
+                        address: form.shippingAddress,
+                        city: form.shippingCity,
+                        postcode: form.shippingPostcode,
+                        country: form.shippingCountry,
+                      },
                 },
-                shipping: form.shippingSameAsBilling ? null : {
-                  address: form.shippingAddress,
-                  city: form.shippingCity,
-                  postcode: form.shippingPostcode,
-                  country: form.shippingCountry
-                }
-              }
-            }),
-          });
-          
+              }),
+            }
+          );
+
           if (!profileResponse.ok) {
             const errorData = await profileResponse.json().catch(() => ({}));
             console.warn('⚠️ Failed to update user profile:', errorData);
@@ -988,86 +1262,32 @@ function CheckoutPageInner() {
           // Don't fail the checkout if profile update fails
         }
       }
-      
-      // Send order confirmation email
-      try {
-        const _orderEmailData = {
-          orderNumber: newOrderNumber,
-          customerName: `${form.firstName} ${form.lastName}`,
-          customerEmail: form.email,
-          orderDate: new Date().toLocaleDateString('pl-PL'),
-          total: finalTotal,
-          items: items.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.sale_price || item.price,
-            total: (item.sale_price || item.price) * item.quantity
-          })),
-          billingAddress: {
-            address: form.billingAddress,
-            city: form.billingCity,
-            postcode: form.billingPostcode,
-            country: form.billingCountry
-          },
-          shippingAddress: {
-            address: form.shippingSameAsBilling ? form.billingAddress : form.shippingAddress,
-            city: form.shippingSameAsBilling ? form.billingCity : form.shippingCity,
-            postcode: form.shippingSameAsBilling ? form.billingPostcode : form.shippingPostcode,
-            country: form.shippingSameAsBilling ? form.billingCountry : form.shippingCountry
-          },
-          paymentMethod: form.paymentMethod
-        };
 
-        // WYŚLIJ EMAIL BEZPOŚREDNIO
-        try {
-          // Wysyłam email bezpośrednio debug removed
-          
-          const orderId = orderResult.order.id;
-          if (!orderId) {
-            // Brak ID zamówienia debug removed
-            return;
-          }
-          
-          const emailResponse = await fetch('/api/send-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              type: 'order_confirmation',
-              order_id: orderId,
-              customer_email: form.email,
-              customer_name: `${form.firstName} ${form.lastName}`,
-              order_number: String(orderId),
-              total: finalTotal,
-              items: items.map(item => ({
-                name: item.name,
-                quantity: item.quantity,
-                price: item.sale_price || item.price
-              }))
-            }),
-          });
-          
-          if (emailResponse.ok) {
-            // Email wysłany pomyślnie debug removed
-          } else {
-            const _errorText = await emailResponse.text();
-            // Błąd wysyłania emaila debug removed
-          }
-        } catch (error) {
-          console.error('❌ Błąd email:', error);
-        }
-      } catch (error) {
-        console.error('❌ Błąd email service:', error);
-      }
-      
+      // NOTE: Order confirmation email is automatically sent by WooCommerce
+      // No need to manually trigger email - WooCommerce handles it via standard hooks
+      // Removing manual email sending to prevent duplicate emails
+
+      // Track purchase event
+      analytics.trackPurchase({
+        transaction_id: newOrderNumber.toString(),
+        value: total,
+        currency: 'PLN',
+        items: items.map(item => ({
+          item_id: item.id.toString(),
+          item_name: item.name,
+          category: item.category || 'Uncategorized',
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      });
+
       // Clear cart, discount, and show success
       clearCart();
       setAppliedDiscount(null);
       setDiscountCode('');
       setOrderComplete(true);
       setCurrentStep(4);
-      
+
       // Refresh user profile to sync invoice fields (NIP, invoiceRequest) after order creation
       // This ensures that if user checked "Chcę fakturę" in checkout, it's saved to user meta
       if (isAuthenticated && user && fetchUserProfile) {
@@ -1075,14 +1295,20 @@ function CheckoutPageInner() {
           await fetchUserProfile();
           console.log('✅ User profile refreshed after order creation');
         } catch (profileError) {
-          console.warn('⚠️ Failed to refresh user profile after order creation:', profileError);
+          console.warn(
+            '⚠️ Failed to refresh user profile after order creation:',
+            profileError
+          );
           // Don't fail order completion if profile refresh fails
         }
       }
-      
     } catch (error) {
       console.error('Error processing order:', error);
-      setPaymentError(error instanceof Error ? error.message : 'Wystąpił błąd podczas przetwarzania zamówienia. Spróbuj ponownie.');
+      setPaymentError(
+        error instanceof Error
+          ? error.message
+          : 'Wystąpił błąd podczas przetwarzania zamówienia. Spróbuj ponownie.'
+      );
     } finally {
       setLoading(false);
       setIsProcessingPayment(false);
@@ -1091,46 +1317,53 @@ function CheckoutPageInner() {
 
   // Calculate shipping cost based on selected method and cart total
   const calculateShippingCost = () => {
-    const selectedMethod = shippingMethods.find(m => m.method_id === form.shippingMethod);
+    const selectedMethod = shippingMethods.find(
+      m => m.method_id === form.shippingMethod
+    );
     if (!selectedMethod) return 0;
-    
+
     // Calculating shipping cost debug removed
-    
+
     // Check for free shipping conditions
     if (selectedMethod.free_shipping_threshold > 0) {
       // Convert total (with VAT) to netto for comparison with threshold
       const nettoTotal = total / 1.23;
-      const shippingCost = nettoTotal >= selectedMethod.free_shipping_threshold ? 0 : selectedMethod.cost * 1.23;
+      const shippingCost =
+        nettoTotal >= selectedMethod.free_shipping_threshold
+          ? 0
+          : selectedMethod.cost * 1.23;
       // Shipping cost with free shipping check debug removed
       return shippingCost;
     }
-    
+
     const shippingCost = selectedMethod.cost * 1.23; // Add VAT to netto cost
     // Shipping cost (regular) debug removed
     return shippingCost;
   };
-  
+
   const finalShippingCost = calculateShippingCost();
-  
+
   // Calculate discount for new users (10% off first order)
-  const newUserDiscountAmount = hasNewUserDiscount ? Math.floor(total * 0.1) : 0;
-  
+  const newUserDiscountAmount = hasNewUserDiscount
+    ? Math.floor(total * 0.1)
+    : 0;
+
   // Calculate applied discount
-  const appliedDiscountAmount = appliedDiscount 
-    ? appliedDiscount.type === 'percentage' 
+  const appliedDiscountAmount = appliedDiscount
+    ? appliedDiscount.type === 'percentage'
       ? Math.floor(total * (appliedDiscount.value / 100))
       : appliedDiscount.value // Already in PLN
     : 0;
-  
+
   // Total discount (new user + applied code)
   const totalDiscountAmount = newUserDiscountAmount + appliedDiscountAmount;
   const subtotal = total - totalDiscountAmount;
-  
+
   const finalTotal = subtotal + (form.shippingMethod ? finalShippingCost : 0);
 
   if (orderComplete) {
-  return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-8 pb-16">
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center py-8 pb-16">
         <div className="max-w-2xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -1150,18 +1383,15 @@ function CheckoutPageInner() {
               <p className="text-lg font-bold text-gray-900">{orderNumber}</p>
             </div>
             <p className="text-gray-600 mb-8">
-              Potwierdzenie zostało wysłane na adres email: <strong>{form.email}</strong>
+              Potwierdzenie zostało wysłane na adres email:{' '}
+              <strong>{form.email}</strong>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild>
-                <Link href="/">
-                  Wróć do sklepu
-                </Link>
+                <Link href="/">Wróć do sklepu</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/moje-zamowienia">
-                  Moje zamówienia
-                </Link>
+                <Link href="/moje-zamowienia">Moje zamówienia</Link>
               </Button>
             </div>
           </motion.div>
@@ -1173,7 +1403,6 @@ function CheckoutPageInner() {
   return (
     <div className="min-h-screen bg-white">
       <PageContainer className="pb-12">
-        
         {/* Quick Payment Banner */}
         {quickPaymentSelected && (
           <motion.div
@@ -1186,23 +1415,42 @@ function CheckoutPageInner() {
                 <div className="w-8 h-8 flex items-center justify-center">
                   {form.paymentMethod === 'google_pay' ? (
                     <svg viewBox="0 0 24 24" className="w-6 h-6">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      />
                     </svg>
                   ) : (
                     <svg viewBox="0 0 24 24" className="w-6 h-6">
-                      <path fill="#000" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                      <path
+                        fill="#000"
+                        d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"
+                      />
                     </svg>
                   )}
                 </div>
                 <h3 className="text-lg font-semibold text-blue-900">
-                  Szybka płatność: {form.paymentMethod === 'google_pay' ? 'Google Pay' : 'Apple Pay'}
+                  Szybka płatność:{' '}
+                  {form.paymentMethod === 'google_pay'
+                    ? 'Google Pay'
+                    : 'Apple Pay'}
                 </h3>
               </div>
               <p className="text-sm text-blue-700">
-                Pominięto kroki wypełniania danych! Użyto domyślnych wartości. Możesz je zmienić lub od razu zapłacić.
+                Pominięto kroki wypełniania danych! Użyto domyślnych wartości.
+                Możesz je zmienić lub od razu zapłacić.
               </p>
               <div className="flex space-x-3">
                 <button
@@ -1222,15 +1470,15 @@ function CheckoutPageInner() {
           </motion.div>
         )}
         {/* Header */}
-        <PageHeader 
+        <PageHeader
           title="Finalizacja zamówienia"
           breadcrumbs={[
             { label: 'Strona główna', href: '/' },
             { label: 'Koszyk', href: '/koszyk' },
-            { label: 'Kasa', href: '/checkout' }
+            { label: 'Kasa', href: '/checkout' },
           ]}
         />
-        
+
         <div className="mb-6">
           <Link
             href="/koszyk"
@@ -1250,7 +1498,11 @@ function CheckoutPageInner() {
                 <div className="flex items-center">
                   {[
                     { number: 1, label: 'Dane osobowe', icon: UserIcon },
-                    { number: 2, label: 'Dostawa i Płatność', icon: CreditCard }
+                    {
+                      number: 2,
+                      label: 'Dostawa i Płatność',
+                      icon: CreditCard,
+                    },
                   ].map((step, index) => (
                     <div key={step.number} className="flex items-center">
                       <div className="flex items-center">
@@ -1258,15 +1510,23 @@ function CheckoutPageInner() {
                           {currentStep > step.number ? (
                             <CheckCircle className="w-6 h-6 text-green-500" />
                           ) : (
-                            <step.icon className={`w-6 h-6 ${
-                              currentStep >= step.number ? 'text-gray-900' : 'text-gray-400'
-                            }`} />
+                            <step.icon
+                              className={`w-6 h-6 ${
+                                currentStep >= step.number
+                                  ? 'text-gray-900'
+                                  : 'text-gray-400'
+                              }`}
+                            />
                           )}
                         </div>
                         <div className="ml-4">
-                          <div className={`text-lg font-semibold ${
-                            currentStep >= step.number ? 'text-gray-900' : 'text-gray-900'
-                          }`}>
+                          <div
+                            className={`text-lg font-semibold ${
+                              currentStep >= step.number
+                                ? 'text-gray-900'
+                                : 'text-gray-900'
+                            }`}
+                          >
                             {step.label}
                           </div>
                         </div>
@@ -1291,50 +1551,6 @@ function CheckoutPageInner() {
                     className="space-y-6"
                   >
                     <div className="mb-6">
-                      {/* Guest Benefits Section */}
-                      {!isAuthenticated && (
-                        <div className="space-y-4 mb-6">
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">%</span>
-                                </div>
-                                <h3 className="text-lg font-semibold text-green-900">
-                                  Oszczędź 10% na pierwszym zamówieniu!
-                                </h3>
-                              </div>
-                              <p className="text-sm text-green-700 mb-3">
-                                Załóż konto i otrzymaj rabat 10% na pierwsze zakupy. 
-                                Dodatkowo będziesz mógł śledzić zamówienia i szybciej robić zakupy w przyszłości.
-                              </p>
-                              <div className="flex items-center space-x-4">
-                                <button
-                                  type="button"
-                                  onClick={() => setShowRegisterModal(true)}
-                                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
-                                >
-                                  <UserIcon className="w-4 h-4 mr-2" />
-                                  Załóż konto za darmo
-                                </button>
-                                <div className="text-xs text-green-600">
-                                  <div className="flex items-center space-x-1">
-                                    <CheckCircle className="w-3 h-3" />
-                                    <span>Rabat 10%</span>
-                                  </div>
-                                  <div className="flex items-center space-x-1">
-                                    <CheckCircle className="w-3 h-3" />
-                                    <span>Śledzenie zamówień</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          </div>
-                        </div>
-                      )}
-                      
                       {/* Logged in user info */}
                       {isAuthenticated && user && (
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -1353,53 +1569,116 @@ function CheckoutPageInner() {
                           </div>
                         </div>
                       )}
+
+                      {/* Login/Register prompt for unauthenticated users - Senior UX */}
+                      {!isAuthenticated && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <UserIcon className="w-4 h-4 text-white" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  Masz już konto?
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  Zaloguj się aby szybciej wypełnić formularz
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  window.dispatchEvent(new CustomEvent('openLogin'));
+                                }}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors duration-200 whitespace-nowrap"
+                              >
+                                Zaloguj się
+                              </button>
+                              <span className="text-gray-400 text-sm">lub</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  window.dispatchEvent(new CustomEvent('openRegister'));
+                                }}
+                                className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-colors duration-200 whitespace-nowrap"
+                              >
+                                Zarejestruj się
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Billing minimal required fields */}
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Adres rozliczeniowy *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Adres rozliczeniowy *
+                        </label>
                         <input
                           type="text"
                           value={form.billingAddress}
-                          onChange={(e) => handleInputChange('billingAddress', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('billingAddress', e.target.value)
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
                         {fieldErrors.billingAddress && (
-                          <p className="text-xs text-red-600 mt-1">{fieldErrors.billingAddress}</p>
+                          <p className="text-xs text-red-600 mt-1">
+                            {fieldErrors.billingAddress}
+                          </p>
                         )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Miasto *</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Miasto *
+                          </label>
                           <input
                             type="text"
                             value={form.billingCity}
-                            onChange={(e) => handleInputChange('billingCity', e.target.value)}
+                            onChange={e =>
+                              handleInputChange('billingCity', e.target.value)
+                            }
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                             required
                           />
                           {fieldErrors.billingCity && (
-                            <p className="text-xs text-red-600 mt-1">{fieldErrors.billingCity}</p>
+                            <p className="text-xs text-red-600 mt-1">
+                              {fieldErrors.billingCity}
+                            </p>
                           )}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Kod pocztowy *</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Kod pocztowy *
+                          </label>
                           <input
                             type="text"
                             value={form.billingPostcode}
-                            onChange={(e) => handleInputChange('billingPostcode', e.target.value)}
+                            onChange={e =>
+                              handleInputChange(
+                                'billingPostcode',
+                                e.target.value
+                              )
+                            }
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                             required
                           />
                           {fieldErrors.billingPostcode && (
-                            <p className="text-xs text-red-600 mt-1">{fieldErrors.billingPostcode}</p>
+                            <p className="text-xs text-red-600 mt-1">
+                              {fieldErrors.billingPostcode}
+                            </p>
                           )}
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1408,12 +1687,16 @@ function CheckoutPageInner() {
                         <input
                           type="text"
                           value={form.firstName}
-                          onChange={(e) => handleInputChange('firstName', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('firstName', e.target.value)
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
                         {fieldErrors.firstName && (
-                          <p className="text-xs text-red-600 mt-1">{fieldErrors.firstName}</p>
+                          <p className="text-xs text-red-600 mt-1">
+                            {fieldErrors.firstName}
+                          </p>
                         )}
                       </div>
                       <div>
@@ -1423,12 +1706,16 @@ function CheckoutPageInner() {
                         <input
                           type="text"
                           value={form.lastName}
-                          onChange={(e) => handleInputChange('lastName', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('lastName', e.target.value)
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
                         {fieldErrors.lastName && (
-                          <p className="text-xs text-red-600 mt-1">{fieldErrors.lastName}</p>
+                          <p className="text-xs text-red-600 mt-1">
+                            {fieldErrors.lastName}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -1441,12 +1728,16 @@ function CheckoutPageInner() {
                         <input
                           type="email"
                           value={form.email}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('email', e.target.value)
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
                         {fieldErrors.email && (
-                          <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>
+                          <p className="text-xs text-red-600 mt-1">
+                            {fieldErrors.email}
+                          </p>
                         )}
                       </div>
                       <div>
@@ -1456,12 +1747,16 @@ function CheckoutPageInner() {
                         <input
                           type="tel"
                           value={form.phone}
-                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('phone', e.target.value)
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           required
                         />
                         {fieldErrors.phone && (
-                          <p className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p>
+                          <p className="text-xs text-red-600 mt-1">
+                            {fieldErrors.phone}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -1473,7 +1768,9 @@ function CheckoutPageInner() {
                       <input
                         type="text"
                         value={form.company}
-                        onChange={(e) => handleInputChange('company', e.target.value)}
+                        onChange={e =>
+                          handleInputChange('company', e.target.value)
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                       />
                     </div>
@@ -1486,7 +1783,9 @@ function CheckoutPageInner() {
                         <input
                           type="text"
                           value={form.nip}
-                          onChange={(e) => handleInputChange('nip', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('nip', e.target.value)
+                          }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                           placeholder="1234567890"
                           maxLength={10}
@@ -1497,7 +1796,12 @@ function CheckoutPageInner() {
                           <input
                             type="checkbox"
                             checked={form.invoiceRequest}
-                            onChange={(e) => handleInputChange('invoiceRequest', e.target.checked)}
+                            onChange={e =>
+                              handleInputChange(
+                                'invoiceRequest',
+                                e.target.checked
+                              )
+                            }
                             className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
                           />
                           <span className="text-sm text-gray-700">
@@ -1518,10 +1822,18 @@ function CheckoutPageInner() {
                           type="checkbox"
                           id="sameAsBilling"
                           checked={form.shippingSameAsBilling}
-                          onChange={(e) => handleInputChange('shippingSameAsBilling', e.target.checked)}
+                          onChange={e =>
+                            handleInputChange(
+                              'shippingSameAsBilling',
+                              e.target.checked
+                            )
+                          }
                           className="mr-3"
                         />
-                        <label htmlFor="sameAsBilling" className="text-sm text-gray-700">
+                        <label
+                          htmlFor="sameAsBilling"
+                          className="text-sm text-gray-700"
+                        >
                           Adres dostawy taki sam jak rozliczeniowy
                         </label>
                       </div>
@@ -1536,7 +1848,12 @@ function CheckoutPageInner() {
                               <input
                                 type="text"
                                 value={form.shippingFirstName}
-                                onChange={(e) => handleInputChange('shippingFirstName', e.target.value)}
+                                onChange={e =>
+                                  handleInputChange(
+                                    'shippingFirstName',
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                                 required
                               />
@@ -1548,7 +1865,12 @@ function CheckoutPageInner() {
                               <input
                                 type="text"
                                 value={form.shippingLastName}
-                                onChange={(e) => handleInputChange('shippingLastName', e.target.value)}
+                                onChange={e =>
+                                  handleInputChange(
+                                    'shippingLastName',
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                                 required
                               />
@@ -1562,7 +1884,12 @@ function CheckoutPageInner() {
                             <input
                               type="text"
                               value={form.shippingCompany}
-                              onChange={(e) => handleInputChange('shippingCompany', e.target.value)}
+                              onChange={e =>
+                                handleInputChange(
+                                  'shippingCompany',
+                                  e.target.value
+                                )
+                              }
                               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                             />
                           </div>
@@ -1574,7 +1901,12 @@ function CheckoutPageInner() {
                             <input
                               type="text"
                               value={form.shippingAddress}
-                              onChange={(e) => handleInputChange('shippingAddress', e.target.value)}
+                              onChange={e =>
+                                handleInputChange(
+                                  'shippingAddress',
+                                  e.target.value
+                                )
+                              }
                               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                               required
                             />
@@ -1588,7 +1920,12 @@ function CheckoutPageInner() {
                               <input
                                 type="text"
                                 value={form.shippingCity}
-                                onChange={(e) => handleInputChange('shippingCity', e.target.value)}
+                                onChange={e =>
+                                  handleInputChange(
+                                    'shippingCity',
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                                 required
                               />
@@ -1600,7 +1937,12 @@ function CheckoutPageInner() {
                               <input
                                 type="text"
                                 value={form.shippingPostcode}
-                                onChange={(e) => handleInputChange('shippingPostcode', e.target.value)}
+                                onChange={e =>
+                                  handleInputChange(
+                                    'shippingPostcode',
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                                 required
                               />
@@ -1611,7 +1953,12 @@ function CheckoutPageInner() {
                               </label>
                               <select
                                 value={form.shippingCountry}
-                                onChange={(e) => handleInputChange('shippingCountry', e.target.value)}
+                                onChange={e =>
+                                  handleInputChange(
+                                    'shippingCountry',
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                               >
                                 <option value="PL">Polska</option>
@@ -1624,6 +1971,150 @@ function CheckoutPageInner() {
                         </div>
                       )}
                     </div>
+
+                    {/* Account Creation Section - Only for guests - Senior UX in Step 1 */}
+                    {!isAuthenticated && (
+                      <div className="border-t pt-6 space-y-4">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                          <label className="flex items-start cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={form.createAccount}
+                              onChange={e => {
+                                handleInputChange(
+                                  'createAccount',
+                                  e.target.checked
+                                );
+                                if (!e.target.checked) {
+                                  // Clear password fields when unchecked
+                                  setForm(prev => ({
+                                    ...prev,
+                                    password: '',
+                                    confirmPassword: '',
+                                  }));
+                                  setFieldErrors(prev => {
+                                    const newErrors = { ...prev };
+                                    delete newErrors.password;
+                                    delete newErrors.confirmPassword;
+                                    return newErrors;
+                                  });
+                                  // Clear registration error
+                                  setRegistrationError(null);
+                                }
+                              }}
+                              className="mr-3 mt-1 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white text-xs font-bold">
+                                    %
+                                  </span>
+                                </div>
+                                <span className="text-sm font-semibold text-green-900">
+                                  Załóż konto i odbierz 10% na następne zakupy
+                                </span>
+                              </div>
+                              <p className="text-xs text-green-700 ml-7">
+                                Będziesz mógł śledzić zamówienia i szybciej
+                                robić zakupy w przyszłości
+                              </p>
+                            </div>
+                          </label>
+
+                          {/* Registration Error Message */}
+                          {registrationError && (
+                            <div className="mt-4 ml-8 p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-start">
+                                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5 mr-2" />
+                                <div className="flex-1">
+                                  <p className="text-sm text-red-800 font-medium mb-2">
+                                    {registrationError}
+                                  </p>
+                                  {registrationError.includes('zarejestrowany') && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        // Open login modal
+                                        window.dispatchEvent(new CustomEvent('openLogin'));
+                                        setRegistrationError(null);
+                                        setForm(prev => ({
+                                          ...prev,
+                                          createAccount: false,
+                                          password: '',
+                                          confirmPassword: '',
+                                        }));
+                                      }}
+                                      className="text-sm text-red-700 hover:text-red-900 underline font-semibold"
+                                    >
+                                      Zaloguj się teraz
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Password fields - shown when checkbox is checked */}
+                          {form.createAccount && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="mt-4 ml-8 space-y-3"
+                            >
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Hasło *
+                                </label>
+                                <input
+                                  type="password"
+                                  value={form.password}
+                                  onChange={e =>
+                                    handleInputChange(
+                                      'password',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                                  placeholder="Minimum 8 znaków"
+                                  minLength={8}
+                                />
+                                {fieldErrors.password && (
+                                  <p className="text-xs text-red-600 mt-1">
+                                    {fieldErrors.password}
+                                  </p>
+                                )}
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Potwierdź hasło *
+                                </label>
+                                <input
+                                  type="password"
+                                  value={form.confirmPassword}
+                                  onChange={e =>
+                                    handleInputChange(
+                                      'confirmPassword',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                                  placeholder="Powtórz hasło"
+                                  minLength={8}
+                                />
+                                {fieldErrors.confirmPassword && (
+                                  <p className="text-xs text-red-600 mt-1">
+                                    {fieldErrors.confirmPassword}
+                                  </p>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="pt-4">
                       <Button
@@ -1655,51 +2146,67 @@ function CheckoutPageInner() {
                         <ChevronRight className="w-5 h-5 mr-2" />
                         Metoda dostawy
                       </h3>
-                      
+
                       <div className="space-y-3">
-                          {shippingMethods.length === 0 ? (
-                            <div className="text-sm text-gray-500 p-4 border border-gray-300 rounded-lg">
-                              Ładowanie metod dostawy...
-                            </div>
-                          ) : (
-                            shippingMethods.map((method) => (
-                            <label key={method.id} className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                        {shippingMethods.length === 0 ? (
+                          <div className="text-sm text-gray-500 p-4 border border-gray-300 rounded-lg">
+                            Ładowanie metod dostawy...
+                          </div>
+                        ) : (
+                          shippingMethods.map(method => (
+                            <label
+                              key={method.id}
+                              className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                            >
                               <input
                                 type="radio"
                                 name="shippingMethod"
                                 value={method.method_id}
-                                checked={form.shippingMethod === method.method_id}
-                                onChange={(e) => {
-                                  setForm(prev => ({ ...prev, shippingMethod: e.target.value }));
+                                checked={
+                                  form.shippingMethod === method.method_id
+                                }
+                                onChange={e => {
+                                  setForm(prev => ({
+                                    ...prev,
+                                    shippingMethod: e.target.value,
+                                  }));
                                 }}
                                 className="mr-3"
                               />
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <div className="text-sm text-gray-900">{method.method_title}</div>
+                                    <div className="text-sm text-gray-900">
+                                      {method.method_title}
+                                    </div>
                                   </div>
                                   <div className="text-right">
-                                  <div className="font-semibold text-gray-900">
-                                      {method.free_shipping_threshold > 0 && (total / 1.23) >= method.free_shipping_threshold
-                                        ? 'Gratis' 
+                                    <div className="font-semibold text-gray-900">
+                                      {method.free_shipping_threshold > 0 &&
+                                      total / 1.23 >=
+                                        method.free_shipping_threshold
+                                        ? 'Gratis'
                                         : method.cost > 0
                                           ? `${formatPrice(method.cost * 1.23)} (z VAT)`
-                                          : 'Gratis'
-                                      }
+                                          : 'Gratis'}
                                     </div>
-                                    {method.free_shipping_threshold > 0 && (total / 1.23) < method.free_shipping_threshold && (
-                                      <div className="text-xs text-green-600">
-                                        Darmowa dostawa od {formatPrice(method.free_shipping_threshold)}
-                                      </div>
-                                    )}
+                                    {method.free_shipping_threshold > 0 &&
+                                      total / 1.23 <
+                                        method.free_shipping_threshold && (
+                                        <div className="text-xs text-green-600">
+                                          Darmowa dostawa od{' '}
+                                          {formatPrice(
+                                            method.free_shipping_threshold
+                                          )}
+                                        </div>
+                                      )}
                                   </div>
                                 </div>
                               </div>
                             </label>
                           ))
-                          )}
-                        </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Payment Methods Section */}
@@ -1726,32 +2233,41 @@ function CheckoutPageInner() {
                           paymentMethods
                             .filter(method => {
                               // Hide Google Pay and Apple Pay for unauthenticated users
-                              if (!isAuthenticated && (method.id === 'google_pay' || method.id === 'apple_pay')) {
+                              if (
+                                !isAuthenticated &&
+                                (method.id === 'google_pay' ||
+                                  method.id === 'apple_pay')
+                              ) {
                                 return false;
                               }
                               return true;
                             })
-                            .map((method) => (
-                          <label key={method.id} className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              value={method.id}
-                              checked={form.paymentMethod === method.id}
-                              onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                              className="mr-3"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center">
-                                <div>
-                                  <div className="text-sm text-gray-900">
-                                    {method.name}
+                            .map(method => (
+                              <label
+                                key={method.gatewayId || method.id}
+                                className="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                              >
+                                <input
+                                  type="radio"
+                                  name="paymentMethod"
+                                  value={method.id}
+                                  checked={form.paymentMethod === method.id}
+                                  onChange={e =>
+                                    handlePaymentMethodChange(e.target.value)
+                                  }
+                                  className="mr-3"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center">
+                                    <div>
+                                      <div className="text-sm text-gray-900">
+                                        {method.name}
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </div>
-                          </label>
-                        ))
+                              </label>
+                            ))
                         )}
                       </div>
                     </div>
@@ -1762,28 +2278,51 @@ function CheckoutPageInner() {
                         <input
                           type="checkbox"
                           checked={form.acceptTerms}
-                          onChange={(e) => handleInputChange('acceptTerms', e.target.checked)}
+                          onChange={e =>
+                            handleInputChange('acceptTerms', e.target.checked)
+                          }
                           className="mr-3 mt-1"
                           required
                         />
                         <div className="text-sm text-gray-700">
-                          Akceptuję <Link href="/regulamin" className="text-black underline hover:no-underline">regulamin</Link> oraz{' '}
-                          <Link href="/polityka-prywatnosci" className="text-black underline hover:no-underline">politykę prywatności</Link> *
+                          Akceptuję{' '}
+                          <Link
+                            href="/regulamin"
+                            className="text-black underline hover:no-underline"
+                          >
+                            regulamin
+                          </Link>{' '}
+                          oraz{' '}
+                          <Link
+                            href="/polityka-prywatnosci"
+                            className="text-black underline hover:no-underline"
+                          >
+                            politykę prywatności
+                          </Link>{' '}
+                          *
                         </div>
                       </label>
                       {fieldErrors.acceptTerms && (
-                        <p className="text-xs text-red-600">{fieldErrors.acceptTerms}</p>
+                        <p className="text-xs text-red-600">
+                          {fieldErrors.acceptTerms}
+                        </p>
                       )}
 
                       <label className="flex items-start">
                         <input
                           type="checkbox"
                           checked={form.acceptNewsletter}
-                          onChange={(e) => handleInputChange('acceptNewsletter', e.target.checked)}
+                          onChange={e =>
+                            handleInputChange(
+                              'acceptNewsletter',
+                              e.target.checked
+                            )
+                          }
                           className="mr-3 mt-1"
                         />
                         <div className="text-sm text-gray-700">
-                          Chcę otrzymywać informacje o nowościach i promocjach (można zrezygnować w każdej chwili)
+                          Chcę otrzymywać informacje o nowościach i promocjach
+                          (można zrezygnować w każdej chwili)
                         </div>
                       </label>
                     </div>
@@ -1833,7 +2372,9 @@ function CheckoutPageInner() {
                   <input
                     type="text"
                     value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                    onChange={e =>
+                      setDiscountCode(e.target.value.toUpperCase())
+                    }
                     placeholder="Wpisz kod rabatowy"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm h-10"
                     disabled={discountLoading || !!appliedDiscount}
@@ -1862,7 +2403,7 @@ function CheckoutPageInner() {
                     </Button>
                   )}
                 </div>
-                
+
                 {/* Applied Discount Display */}
                 {appliedDiscount && (
                   <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
@@ -1874,10 +2415,9 @@ function CheckoutPageInner() {
                         </span>
                       </div>
                       <span className="text-sm text-green-600 font-semibold">
-                        {appliedDiscount.type === 'percentage' 
+                        {appliedDiscount.type === 'percentage'
                           ? `-${appliedDiscount.value}%`
-                          : `-${formatPrice(appliedDiscount.value)}`
-                        }
+                          : `-${formatPrice(appliedDiscount.value)}`}
                       </span>
                     </div>
                   </div>
@@ -1887,7 +2427,10 @@ function CheckoutPageInner() {
               {/* Order Items */}
               <div className="space-y-4 mb-6">
                 {items.map((item, index) => (
-                  <div key={`${item.id}-${item.variant?.id || 'default'}-${index}`} className="flex items-center space-x-3">
+                  <div
+                    key={`${item.id}-${item.variant?.id || 'default'}-${index}`}
+                    className="flex items-center space-x-3"
+                  >
                     <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
                       {item.image ? (
                         <Image
@@ -1917,7 +2460,9 @@ function CheckoutPageInner() {
                       </p>
                     </div>
                     <div className="text-sm font-medium text-gray-900">
-                      {formatPriceWithVAT((item.sale_price || item.price) * item.quantity)}
+                      {formatPriceWithVAT(
+                        (item.sale_price || item.price) * item.quantity
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1925,7 +2470,6 @@ function CheckoutPageInner() {
 
               {/* Order Totals */}
               <div className="border-t border-gray-200 pt-4 space-y-3">
-                
                 {/* Enhanced Total Section */}
                 <div className="pt-4">
                   {/* Original Total */}
@@ -1933,25 +2477,35 @@ function CheckoutPageInner() {
                     <span>Wartość produktów:</span>
                     <span>{formatPrice(total)} (z VAT)</span>
                   </div>
-                  
+
                   {/* Discount Info */}
                   {(hasNewUserDiscount || appliedDiscount) && (
                     <div className="flex justify-end text-sm text-green-600 mb-3">
-                      <span className="font-semibold">-{formatPrice(totalDiscountAmount)}</span>
+                      <span className="font-semibold">
+                        -{formatPrice(totalDiscountAmount)}
+                      </span>
                     </div>
                   )}
-                  
+
                   {/* Free Shipping Progress */}
                   {(() => {
-                    const FREE_SHIPPING_THRESHOLD = SHIPPING_CONFIG.FREE_SHIPPING_THRESHOLD;
+                    const FREE_SHIPPING_THRESHOLD =
+                      SHIPPING_CONFIG.FREE_SHIPPING_THRESHOLD;
                     const nettoTotal = total / SHIPPING_CONFIG.VAT_RATE;
-                    const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - nettoTotal);
-                    
+                    const remainingForFreeShipping = Math.max(
+                      0,
+                      FREE_SHIPPING_THRESHOLD - nettoTotal
+                    );
+
                     if (remainingForFreeShipping > 0) {
                       return (
                         <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                           <p className="text-xs text-green-700">
-                            Dodaj produkty za <span className="font-semibold">{formatPrice(remainingForFreeShipping * 1.23)}</span> aby otrzymać darmową dostawę!
+                            Dodaj produkty za{' '}
+                            <span className="font-semibold">
+                              {formatPrice(remainingForFreeShipping * 1.23)}
+                            </span>{' '}
+                            aby otrzymać darmową dostawę!
                           </p>
                         </div>
                       );
@@ -1965,19 +2519,25 @@ function CheckoutPageInner() {
                       );
                     }
                   })()}
-                  
+
                   {/* Shipping */}
                   {form.shippingMethod && (
                     <div className="flex justify-between text-sm text-gray-500 mb-3">
                       <span>Dostawa:</span>
-                      <span>{finalShippingCost === 0 ? 'Gratis' : `${formatPrice(finalShippingCost)} (z VAT)`}</span>
+                      <span>
+                        {finalShippingCost === 0
+                          ? 'Gratis'
+                          : `${formatPrice(finalShippingCost)} (z VAT)`}
+                      </span>
                     </div>
                   )}
-                  
+
                   {/* Final Total */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-gray-900">Do zapłaty:</span>
+                      <span className="text-lg font-bold text-gray-900">
+                        Do zapłaty:
+                      </span>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-blue-600">
                           {formatPrice(finalTotal)}

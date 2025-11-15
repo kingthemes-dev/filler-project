@@ -10,7 +10,10 @@ declare global {
   interface Window {
     grecaptcha: {
       ready: (callback: () => void) => void;
-      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      execute: (
+        siteKey: string,
+        options: { action: string }
+      ) => Promise<string>;
     };
   }
 }
@@ -30,17 +33,17 @@ export function loadRecaptchaScript(): Promise<void> {
     script.src = `https://www.google.com/recaptcha/api.js?render=${env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`;
     script.async = true;
     script.defer = true;
-    
+
     script.onload = () => {
       window.grecaptcha.ready(() => {
         resolve();
       });
     };
-    
+
     script.onerror = () => {
       reject(new Error('Failed to load reCAPTCHA script'));
     };
-    
+
     document.head.appendChild(script);
   });
 }
@@ -52,7 +55,7 @@ export function loadRecaptchaScript(): Promise<void> {
  */
 export async function executeRecaptcha(action: string): Promise<string> {
   const siteKey = env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-  
+
   if (!siteKey) {
     logger.warn('reCAPTCHA: Site key not configured');
     return '';
@@ -63,7 +66,7 @@ export async function executeRecaptcha(action: string): Promise<string> {
     await loadRecaptchaScript();
 
     // Wait for grecaptcha to be ready
-    await new Promise<void>((resolve) => {
+    await new Promise<void>(resolve => {
       window.grecaptcha.ready(() => {
         resolve();
       });
@@ -102,4 +105,3 @@ export async function verifyRecaptchaToken(token: string): Promise<boolean> {
     return false;
   }
 }
-

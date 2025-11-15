@@ -36,8 +36,14 @@ export interface AdvancedDropdownProps {
   emptyMessage?: string;
   onSearch?: (query: string) => void;
   onClear?: () => void;
-  renderOption?: (option: DropdownOption, isSelected: boolean) => React.ReactNode;
-  renderTrigger?: (selectedOptions: DropdownOption[], isOpen: boolean) => React.ReactNode;
+  renderOption?: (
+    option: DropdownOption,
+    isSelected: boolean
+  ) => React.ReactNode;
+  renderTrigger?: (
+    selectedOptions: DropdownOption[],
+    isOpen: boolean
+  ) => React.ReactNode;
 }
 
 const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
@@ -66,7 +72,7 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  
+
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -81,104 +87,120 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
   // Filter options based on search
   const filteredOptions = React.useMemo(() => {
     if (!searchQuery) return options;
-    return options.filter(option =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      option.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    return options.filter(
+      option =>
+        option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        option.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [options, searchQuery]);
 
   // Group options if groupBy is specified
   const groupedOptions = React.useMemo(() => {
     if (!groupBy) return { '': filteredOptions };
-    
-    return filteredOptions.reduce((groups, option) => {
-      const group = option.group || '';
-      if (!groups[group]) groups[group] = [];
-      groups[group].push(option);
-      return groups;
-    }, {} as Record<string, DropdownOption[]>);
+
+    return filteredOptions.reduce(
+      (groups, option) => {
+        const group = option.group || '';
+        if (!groups[group]) groups[group] = [];
+        groups[group].push(option);
+        return groups;
+      },
+      {} as Record<string, DropdownOption[]>
+    );
   }, [filteredOptions, groupBy]);
 
   // Handle option selection
-  const handleOptionSelect = useCallback((option: DropdownOption) => {
-    if (option.disabled) return;
+  const handleOptionSelect = useCallback(
+    (option: DropdownOption) => {
+      if (option.disabled) return;
 
-    if (multiSelect) {
-      const currentValues = Array.isArray(value) ? value : [];
-      const isSelected = currentValues.includes(option.value);
-      
-      if (isSelected) {
-        onChange(currentValues.filter(v => v !== option.value));
+      if (multiSelect) {
+        const currentValues = Array.isArray(value) ? value : [];
+        const isSelected = currentValues.includes(option.value);
+
+        if (isSelected) {
+          onChange(currentValues.filter(v => v !== option.value));
+        } else {
+          onChange([...currentValues, option.value]);
+        }
       } else {
-        onChange([...currentValues, option.value]);
+        onChange(option.value);
+        setIsOpen(false);
+        setSearchQuery('');
       }
-    } else {
-      onChange(option.value);
-      setIsOpen(false);
-      setSearchQuery('');
-    }
-  }, [value, onChange, multiSelect]);
+    },
+    [value, onChange, multiSelect]
+  );
 
   // Handle clear
-  const handleClear = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (multiSelect) {
-      onChange([]);
-    } else {
-      onChange('');
-    }
-    onClear?.();
-  }, [onChange, multiSelect, onClear]);
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (multiSelect) {
+        onChange([]);
+      } else {
+        onChange('');
+      }
+      onClear?.();
+    },
+    [onChange, multiSelect, onClear]
+  );
 
   // Handle search
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    onSearch?.(query);
-  }, [onSearch]);
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      onSearch?.(query);
+    },
+    [onSearch]
+  );
 
   // Keyboard navigation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!isOpen) {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        setIsOpen(true);
-      }
-      return;
-    }
-
-    const visibleOptions = Object.values(groupedOptions).flat();
-    
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setFocusedIndex(prev => 
-          prev < visibleOptions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setFocusedIndex(prev => 
-          prev > 0 ? prev - 1 : visibleOptions.length - 1
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (focusedIndex >= 0 && focusedIndex < visibleOptions.length) {
-          handleOptionSelect(visibleOptions[focusedIndex]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!isOpen) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          setIsOpen(true);
         }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setIsOpen(false);
-        setSearchQuery('');
-        triggerRef.current?.focus();
-        break;
-      case 'Tab':
-        setIsOpen(false);
-        setSearchQuery('');
-        break;
-    }
-  }, [isOpen, groupedOptions, focusedIndex, handleOptionSelect]);
+        return;
+      }
+
+      const visibleOptions = Object.values(groupedOptions).flat();
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedIndex(prev =>
+            prev < visibleOptions.length - 1 ? prev + 1 : 0
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedIndex(prev =>
+            prev > 0 ? prev - 1 : visibleOptions.length - 1
+          );
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (focusedIndex >= 0 && focusedIndex < visibleOptions.length) {
+            handleOptionSelect(visibleOptions[focusedIndex]);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setIsOpen(false);
+          setSearchQuery('');
+          triggerRef.current?.focus();
+          break;
+        case 'Tab':
+          setIsOpen(false);
+          setSearchQuery('');
+          break;
+      }
+    },
+    [isOpen, groupedOptions, focusedIndex, handleOptionSelect]
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -213,7 +235,9 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
   // Scroll focused option into view
   useEffect(() => {
     if (focusedIndex >= 0 && contentRef.current) {
-      const focusedElement = contentRef.current.querySelector(`[data-option-index="${focusedIndex}"]`);
+      const focusedElement = contentRef.current.querySelector(
+        `[data-option-index="${focusedIndex}"]`
+      );
       if (focusedElement) {
         focusedElement.scrollIntoView({ block: 'nearest' });
       }
@@ -240,9 +264,7 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
     <div className="flex items-center justify-between w-full">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {option.icon && (
-          <div className="flex-shrink-0 text-gray-400">
-            {option.icon}
-          </div>
+          <div className="flex-shrink-0 text-gray-400">{option.icon}</div>
         )}
         <div className="flex-1 min-w-0">
           <div className="font-medium text-gray-900 truncate">
@@ -261,19 +283,22 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
             {option.count}
           </span>
         )}
-        {isSelected && (
-          <Check className="w-4 h-4 text-blue-600" />
-        )}
+        {isSelected && <Check className="w-4 h-4 text-blue-600" />}
       </div>
     </div>
   );
 
-  const defaultRenderTrigger = (selectedOptions: DropdownOption[], isOpen: boolean) => (
+  const defaultRenderTrigger = (
+    selectedOptions: DropdownOption[],
+    isOpen: boolean
+  ) => (
     <div className="flex items-center justify-between w-full">
-      <span className={cn(
-        "truncate",
-        selectedOptions.length === 0 && "text-gray-500"
-      )}>
+      <span
+        className={cn(
+          'truncate',
+          selectedOptions.length === 0 && 'text-gray-500'
+        )}
+      >
         {getDisplayText()}
       </span>
       <div className="flex items-center gap-1 ml-2">
@@ -286,16 +311,18 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
             <X className="w-3 h-3 text-gray-400" />
           </button>
         )}
-        <ChevronDown className={cn(
-          "w-4 h-4 text-gray-400 transition-transform duration-200",
-          isOpen && "rotate-180"
-        )} />
+        <ChevronDown
+          className={cn(
+            'w-4 h-4 text-gray-400 transition-transform duration-200',
+            isOpen && 'rotate-180'
+          )}
+        />
       </div>
     </div>
   );
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn('relative', className)}>
       {/* Trigger */}
       <button
         ref={triggerRef}
@@ -304,23 +331,28 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         className={cn(
-          "w-full px-4 py-3 text-left bg-white border border-gray-200 rounded-xl",
-          "hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          "transition-all duration-200",
-          error && "border-red-300 focus:ring-red-500/20 focus:border-red-500",
+          'w-full px-4 py-3 text-left bg-white border border-gray-200 rounded-xl',
+          'hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+          'disabled:opacity-50 disabled:cursor-not-allowed',
+          'transition-all duration-200',
+          error && 'border-red-300 focus:ring-red-500/20 focus:border-red-500',
           triggerClassName
         )}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-describedby={error ? `${triggerRef.current?.id}-error` : undefined}
       >
-        {renderTrigger ? renderTrigger(selectedOptions, isOpen) : defaultRenderTrigger(selectedOptions, isOpen)}
+        {renderTrigger
+          ? renderTrigger(selectedOptions, isOpen)
+          : defaultRenderTrigger(selectedOptions, isOpen)}
       </button>
 
       {/* Error message */}
       {error && (
-        <p id={`${triggerRef.current?.id}-error`} className="mt-1 text-sm text-red-600">
+        <p
+          id={`${triggerRef.current?.id}-error`}
+          className="mt-1 text-sm text-red-600"
+        >
           {error}
         </p>
       )}
@@ -335,9 +367,9 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className={cn(
-              "absolute top-full left-0 right-0 z-50 mt-1",
-              "bg-white border border-gray-200 rounded-xl shadow-lg",
-              "overflow-hidden",
+              'absolute top-full left-0 right-0 z-50 mt-1',
+              'bg-white border border-gray-200 rounded-xl shadow-lg',
+              'overflow-hidden',
               contentClassName
             )}
             style={{ maxHeight: `${maxHeight}px` }}
@@ -351,7 +383,7 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
                     ref={searchRef}
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
+                    onChange={e => handleSearch(e.target.value)}
                     placeholder="Szukaj..."
                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
@@ -360,7 +392,10 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
             )}
 
             {/* Options */}
-            <div className="overflow-y-auto" style={{ maxHeight: `${maxHeight - (searchable ? 60 : 0)}px` }}>
+            <div
+              className="overflow-y-auto"
+              style={{ maxHeight: `${maxHeight - (searchable ? 60 : 0)}px` }}
+            >
               {Object.keys(groupedOptions).length === 0 ? (
                 <div className="px-4 py-8 text-center text-gray-500">
                   {loading ? (
@@ -373,42 +408,47 @@ const AdvancedDropdown: React.FC<AdvancedDropdownProps> = ({
                   )}
                 </div>
               ) : (
-                Object.entries(groupedOptions).map(([groupName, groupOptions]) => (
-                  <div key={groupName}>
-                    {/* Group Header */}
-                    {groupBy && groupName && (
-                      <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-                        {groupName}
-                      </div>
-                    )}
+                Object.entries(groupedOptions).map(
+                  ([groupName, groupOptions]) => (
+                    <div key={groupName}>
+                      {/* Group Header */}
+                      {groupBy && groupName && (
+                        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
+                          {groupName}
+                        </div>
+                      )}
 
-                    {/* Group Options */}
-                    {groupOptions.map((option, index) => {
-                      const isSelectedOption = isSelected(option);
-                      const isFocused = index === focusedIndex;
-                      
-                      return (
-                        <button
-                          key={option.id}
-                          data-option-index={index}
-                          type="button"
-                          disabled={option.disabled}
-                          onClick={() => handleOptionSelect(option)}
-                          className={cn(
-                            "w-full px-4 py-3 text-left transition-colors",
-                            "hover:bg-gray-50 focus:bg-gray-50 focus:outline-none",
-                            isFocused && "bg-blue-50",
-                            isSelectedOption && "bg-blue-50",
-                            option.disabled && "opacity-50 cursor-not-allowed",
-                            "border-b border-gray-100 last:border-b-0"
-                          )}
-                        >
-                          {renderOption ? renderOption(option, isSelectedOption) : defaultRenderOption(option, isSelectedOption)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))
+                      {/* Group Options */}
+                      {groupOptions.map((option, index) => {
+                        const isSelectedOption = isSelected(option);
+                        const isFocused = index === focusedIndex;
+
+                        return (
+                          <button
+                            key={option.id}
+                            data-option-index={index}
+                            type="button"
+                            disabled={option.disabled}
+                            onClick={() => handleOptionSelect(option)}
+                            className={cn(
+                              'w-full px-4 py-3 text-left transition-colors',
+                              'hover:bg-gray-50 focus:bg-gray-50 focus:outline-none',
+                              isFocused && 'bg-blue-50',
+                              isSelectedOption && 'bg-blue-50',
+                              option.disabled &&
+                                'opacity-50 cursor-not-allowed',
+                              'border-b border-gray-100 last:border-b-0'
+                            )}
+                          >
+                            {renderOption
+                              ? renderOption(option, isSelectedOption)
+                              : defaultRenderOption(option, isSelectedOption)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )
+                )
               )}
             </div>
           </motion.div>

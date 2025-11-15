@@ -70,35 +70,21 @@ jobs:
         run: npm install -g @lhci/cli
       
       - name: Run Lighthouse CI (Mobile)
+        id: lighthouse-mobile
         working-directory: apps/web
         run: |
           lhci autorun \
-            --collect.url=http://localhost:3000 \
-            --collect.url=http://localhost:3000/produkt/test-product \
-            --collect.url=http://localhost:3000/koszyk \
-            --collect.numberOfRuns=3 \
-            --collect.settings.preset=mobile \
-            --assert.assertions.performance=95 \
-            --assert.assertions.accessibility=95 \
-            --assert.assertions.best-practices=95 \
-            --assert.assertions.seo=95 \
-            --upload.target=temporary-public-storage || true
+            --config=.lighthouserc.js \
+            --collect.settings.preset=mobile || true
         continue-on-error: true
       
       - name: Run Lighthouse CI (Desktop)
+        id: lighthouse-desktop
         working-directory: apps/web
         run: |
           lhci autorun \
-            --collect.url=http://localhost:3000 \
-            --collect.url=http://localhost:3000/produkt/test-product \
-            --collect.url=http://localhost:3000/koszyk \
-            --collect.numberOfRuns=3 \
-            --collect.settings.preset=desktop \
-            --assert.assertions.performance=95 \
-            --assert.assertions.accessibility=95 \
-            --assert.assertions.best-practices=95 \
-            --assert.assertions.seo=95 \
-            --upload.target=temporary-public-storage || true
+            --config=.lighthouserc.js \
+            --collect.settings.preset=desktop || true
         continue-on-error: true
       
       - name: Upload Lighthouse results
@@ -110,7 +96,7 @@ jobs:
             apps/web/.lighthouseci/**
           retention-days: 7
       
-      - name: Comment PR with results
+      - name: Parse and comment PR results
         if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
         with:
@@ -118,15 +104,160 @@ jobs:
             const fs = require('fs');
             const path = require('path');
             
+            function findAllJsonFiles(dir, fileList = []) {
+              const files = fs.readdirSync(dir, { withFileTypes: true });
+              
+              files.forEach(file => {
+                const filePath = path.join(dir, file.name);
+                if (file.isDirectory()) {
+                  findAllJsonFiles(filePath, fileList);
+                } else if (file.name.endsWith('.report.json')) {
+                  fileList.push(filePath);
+                }
+              });
+              
+              return fileList;
+            }
+            
+            function parseLighthouseResults() {
+              const resultsDir = 'apps/web/.lighthouseci';
+              const results = {
+                mobile: {},
+                desktop: {},
+              };
+              
+              try {
+                // Find all JSON result files
+                if (!fs.existsSync(resultsDir)) {
+                  return results;
+                }
+                
+                const jsonFiles = findAllJsonFiles(resultsDir);
+                
+                jsonFiles.forEach(file => {
+                  try {
+                    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+                    const url = data.finalUrl || data.requestedUrl || '';
+                    const preset = data.configSettings?.preset || 'desktop';
+                    const category = preset === 'mobile' ? 'mobile' : 'desktop';
+                    
+                    // Extract scores
+                    const scores = {
+                      performance: Math.round((data.categories?.performance?.score || 0) * 100),
+                      accessibility: Math.round((data.categories?.accessibility?.score || 0) * 100),
+                      bestPractices: Math.round((data.categories?.['best-practices']?.score || 0) * 100),
+                      seo: Math.round((data.categories?.seo?.score || 0) * 100),
+                    };
+                    
+                    // Extract Core Web Vitals
+                    const metrics = {
+                      lcp: data.audits?.['largest-contentful-paint']?.numericValue || 0,
+                      fid: data.audits?.['max-potential-fid']?.numericValue || 0,
+                      cls: data.audits?.['cumulative-layout-shift']?.numericValue || 0,
+                      fcp: data.audits?.['first-contentful-paint']?.numericValue || 0,
+                      tbt: data.audits?.['total-blocking-time']?.numericValue || 0,
+                    };
+                    
+                    // Map URL to page name
+                    let pageName = 'Unknown';
+                    if (url.includes('localhost:3000/')) {
+                      const page = url.split('localhost:3000')[1] || '/';
+                      if (page === '/' || page === '') pageName = 'Home';
+                      else if (page.includes('/sklep')) pageName = 'Shop';
+                      else if (page.includes('/produkt/')) pageName = 'Product';
+                      else if (page.includes('/koszyk')) pageName = 'Cart';
+                      else pageName = page;
+                    }
+                    
+                    if (!results[category][pageName]) {
+                      results[category][pageName] = {
+                        scores,
+                        metrics,
+                        url: pageName,
+                      };
+                    }
+                  } catch (err) {
+                    console.warn(`Error parsing ${file}:`, err.message);
+                  }
+                });
+              } catch (err) {
+                console.warn('Error reading results:', err.message);
+              }
+              
+              return results;
+            }
+            
+            function formatScore(score, threshold = 90) {
+              if (score === undefined) return 'N/A';
+              const emoji = score >= threshold ? '✅' : '❌';
+              const color = score >= threshold ? 'green' : 'red';
+              return `${emoji} **${score}**`;
+            }
+            
+            function formatMetric(value, unit, good, needsImprovement) {
+              if (!value) return 'N/A';
+              let emoji = '⚠️';
+              if (value <= good) emoji = '✅';
+              else if (value > needsImprovement) emoji = '❌';
+              return `${emoji} ${(value / 1000).toFixed(2)}${unit}`;
+            }
+            
+            const results = parseLighthouseResults();
+            
             let comment = '## 🚀 Lighthouse Performance Audit\n\n';
-            comment += '### Critical Pages\n\n';
-            comment += '| Page | Mobile | Desktop |\n';
-            comment += '|------|--------|---------|\n';
-            comment += '| Home (/) | ⏳ | ⏳ |\n';
-            comment += '| Product | ⏳ | ⏳ |\n';
-            comment += '| Checkout | ⏳ | ⏳ |\n\n';
-            comment += '📁 Full results available in artifacts.\n';
-            comment += '**Threshold**: Performance ≥ 95 (mobile/desktop)';
+            comment += '### 📊 Overall Scores\n\n';
+            
+            // Mobile results
+            if (Object.keys(results.mobile).length > 0) {
+              comment += '#### 📱 Mobile\n\n';
+              comment += '| Page | Performance | Accessibility | Best Practices | SEO |\n';
+              comment += '|------|------------|--------------|---------------|-----|\n';
+              
+              Object.entries(results.mobile).forEach(([page, data]) => {
+                comment += `| ${page} | ${formatScore(data.scores.performance, 90)} | ${formatScore(data.scores.accessibility, 95)} | ${formatScore(data.scores.bestPractices, 95)} | ${formatScore(data.scores.seo, 95)} |\n`;
+              });
+              
+              comment += '\n**Core Web Vitals (Mobile):**\n';
+              const firstMobile = Object.values(results.mobile)[0];
+              if (firstMobile) {
+                comment += `- **LCP**: ${formatMetric(firstMobile.metrics.lcp, 's', 2500, 4000)} (target: <2.5s)\n`;
+                comment += `- **FID**: ${formatMetric(firstMobile.metrics.fid, 'ms', 100, 300)} (target: <100ms)\n`;
+                comment += `- **CLS**: ${(firstMobile.metrics.cls || 0).toFixed(3)} ${firstMobile.metrics.cls <= 0.1 ? '✅' : '❌'} (target: <0.1)\n`;
+                comment += `- **FCP**: ${formatMetric(firstMobile.metrics.fcp, 's', 1800, 3000)} (target: <1.8s)\n`;
+                comment += `- **TBT**: ${formatMetric(firstMobile.metrics.tbt, 'ms', 200, 600)} (target: <300ms)\n`;
+              }
+              comment += '\n';
+            }
+            
+            // Desktop results
+            if (Object.keys(results.desktop).length > 0) {
+              comment += '#### 💻 Desktop\n\n';
+              comment += '| Page | Performance | Accessibility | Best Practices | SEO |\n';
+              comment += '|------|------------|--------------|---------------|-----|\n';
+              
+              Object.entries(results.desktop).forEach(([page, data]) => {
+                comment += `| ${page} | ${formatScore(data.scores.performance, 90)} | ${formatScore(data.scores.accessibility, 95)} | ${formatScore(data.scores.bestPractices, 95)} | ${formatScore(data.scores.seo, 95)} |\n`;
+              });
+              
+              comment += '\n**Core Web Vitals (Desktop):**\n';
+              const firstDesktop = Object.values(results.desktop)[0];
+              if (firstDesktop) {
+                comment += `- **LCP**: ${formatMetric(firstDesktop.metrics.lcp, 's', 2500, 4000)} (target: <2.5s)\n`;
+                comment += `- **FID**: ${formatMetric(firstDesktop.metrics.fid, 'ms', 100, 300)} (target: <100ms)\n`;
+                comment += `- **CLS**: ${(firstDesktop.metrics.cls || 0).toFixed(3)} ${firstDesktop.metrics.cls <= 0.1 ? '✅' : '❌'} (target: <0.1)\n`;
+                comment += `- **FCP**: ${formatMetric(firstDesktop.metrics.fcp, 's', 1800, 3000)} (target: <1.8s)\n`;
+                comment += `- **TBT**: ${formatMetric(firstDesktop.metrics.tbt, 'ms', 200, 600)} (target: <300ms)\n`;
+              }
+              comment += '\n';
+            }
+            
+            comment += '---\n\n';
+            comment += '📁 **Full detailed reports** available in workflow artifacts.\n\n';
+            comment += '**Thresholds:**\n';
+            comment += '- Performance: ≥ 90\n';
+            comment += '- Accessibility: ≥ 95\n';
+            comment += '- Best Practices: ≥ 95\n';
+            comment += '- SEO: ≥ 95\n';
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,

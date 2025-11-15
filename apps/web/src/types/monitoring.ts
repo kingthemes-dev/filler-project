@@ -34,7 +34,12 @@ export interface AnalyticsEvent {
 }
 
 export interface EcommerceEvent {
-  event_name: 'purchase' | 'add_to_cart' | 'remove_from_cart' | 'view_item' | 'begin_checkout';
+  event_name:
+    | 'purchase'
+    | 'add_to_cart'
+    | 'remove_from_cart'
+    | 'view_item'
+    | 'begin_checkout';
   ecommerce: {
     transaction_id?: string;
     value?: number;
@@ -107,10 +112,29 @@ declare global {
       getSessionId: () => string;
     };
     analytics?: {
-      trackEvent: (eventName: string, parameters?: Record<string, unknown>) => void;
-      trackPurchase: (transactionId: string, value: number, items: Array<Record<string, unknown>>, currency?: string) => void;
-      trackAddToCart: (itemId: string, itemName: string, itemCategory: string, price: number, quantity?: number) => void;
-      trackViewItem: (itemId: string, itemName: string, itemCategory: string, price: number) => void;
+      trackEvent: (
+        eventName: string,
+        parameters?: Record<string, unknown>
+      ) => void;
+      trackPurchase: (
+        transactionId: string,
+        value: number,
+        items: Array<Record<string, unknown>>,
+        currency?: string
+      ) => void;
+      trackAddToCart: (
+        itemId: string,
+        itemName: string,
+        itemCategory: string,
+        price: number,
+        quantity?: number
+      ) => void;
+      trackViewItem: (
+        itemId: string,
+        itemName: string,
+        itemCategory: string,
+        price: number
+      ) => void;
       setUserId: (userId: string) => void;
       getStats: () => { events: number; sessionId: string; userId?: string };
       getSessionId: () => string;

@@ -51,7 +51,8 @@ interface DynamicAttributeFiltersProps {
   dynamicFiltersData?: DynamicFiltersData;
   contextualAttributes?: ContextualAttributes; // Contextual attributes na podstawie wybranych kategorii
   contextualLoading?: boolean; // Loading state dla contextual attributes
-  currentFilters?: { // Dodaj aktualne filtry
+  currentFilters?: {
+    // Dodaj aktualne filtry
     categories: string[];
     search?: string;
     minPrice?: number;
@@ -61,25 +62,33 @@ interface DynamicAttributeFiltersProps {
   };
 }
 
-export default function DynamicAttributeFilters({ 
-  onFilterChange, 
+export default function DynamicAttributeFilters({
+  onFilterChange,
   selectedFilters,
   totalProducts: _totalProducts,
   dynamicFiltersData,
   contextualAttributes,
   contextualLoading,
-  currentFilters = { categories: [] }
+  currentFilters = { categories: [] },
 }: DynamicAttributeFiltersProps) {
-  const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(new Set());
+  const [expandedAttributes, setExpandedAttributes] = useState<Set<string>>(
+    new Set()
+  );
 
   // Użyj prefetchowanych danych jeśli dostępne, w przeciwnym razie React Query
   const attributesQuery = useQuery<AttributesResponse>({
-    queryKey: ['shop','attributes',{ categories: [], search: '', min: 0, max: 10000, selected: [] }],
+    queryKey: [
+      'shop',
+      'attributes',
+      { categories: [], search: '', min: 0, max: 10000, selected: [] },
+    ],
     queryFn: async () => {
       // attributesQuery queryFn called - fetching all attributes
       const params = new URLSearchParams();
       params.append('endpoint', 'attributes');
-      const res = await fetch(`/api/woocommerce?${params.toString()}`, { cache: 'no-cache' });
+      const res = await fetch(`/api/woocommerce?${params.toString()}`, {
+        cache: 'no-cache',
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       // attributesQuery data received
@@ -93,14 +102,18 @@ export default function DynamicAttributeFilters({
   const attributes = useMemo<PreparedAttributeMap>(() => {
     // Priorytet: contextual attributes (tylko gdy są kategorie) > React Query (gdy brak kategorii) > prefetchowane dane
     const attributesData =
-      (currentFilters.categories.length > 0 ? contextualAttributes?.attributes : null) ||
-      (currentFilters.categories.length === 0 ? attributesQuery.data?.attributes : null) ||
+      (currentFilters.categories.length > 0
+        ? contextualAttributes?.attributes
+        : null) ||
+      (currentFilters.categories.length === 0
+        ? attributesQuery.data?.attributes
+        : null) ||
       dynamicFiltersData?.attributes;
-    
+
     // DynamicAttributeFilters attributes debug removed
-    
+
     if (!attributesData) return {};
-    
+
     const attributesMap: PreparedAttributeMap = {};
     Object.entries(attributesData).forEach(([attrSlug, attrData]) => {
       const cleanName = (attrData.name || attrSlug)
@@ -114,7 +127,12 @@ export default function DynamicAttributeFilters({
       };
     });
     return attributesMap;
-  }, [contextualAttributes?.attributes, currentFilters.categories.length, attributesQuery.data?.attributes, dynamicFiltersData?.attributes]);
+  }, [
+    contextualAttributes?.attributes,
+    currentFilters.categories.length,
+    attributesQuery.data?.attributes,
+    dynamicFiltersData?.attributes,
+  ]);
 
   // Usunięto główny loading state - dane są prefetchowane
   // Zostaw tylko contextual loading dla dynamicznych aktualizacji
@@ -131,25 +149,33 @@ export default function DynamicAttributeFilters({
     });
   };
 
-  const handleAttributeTermClick = (attributeSlug: string, termSlug: string) => {
+  const handleAttributeTermClick = (
+    attributeSlug: string,
+    termSlug: string
+  ) => {
     // Ensure filterKey starts with pa_ (attributeSlug may already have it)
-    const filterKey = attributeSlug.startsWith('pa_') ? attributeSlug : `pa_${attributeSlug}`;
+    const filterKey = attributeSlug.startsWith('pa_')
+      ? attributeSlug
+      : `pa_${attributeSlug}`;
     onFilterChange(filterKey, termSlug);
   };
 
-  const isAttributeExpanded = (attributeSlug: string) => expandedAttributes.has(attributeSlug);
+  const isAttributeExpanded = (attributeSlug: string) =>
+    expandedAttributes.has(attributeSlug);
   const isTermSelected = (attributeSlug: string, termSlug: string) => {
     // Ensure filterKey starts with pa_ (attributeSlug may already have it)
-    const filterKey = attributeSlug.startsWith('pa_') ? attributeSlug : `pa_${attributeSlug}`;
+    const filterKey = attributeSlug.startsWith('pa_')
+      ? attributeSlug
+      : `pa_${attributeSlug}`;
     const filterValue = selectedFilters[filterKey];
     let terms: string[] = [];
-    
+
     if (Array.isArray(filterValue)) {
       terms = filterValue;
     } else if (typeof filterValue === 'string') {
       terms = filterValue.split(',').filter(v => v.trim());
     }
-    
+
     // isTermSelected check debug removed
     return terms.includes(termSlug);
   };
@@ -174,12 +200,17 @@ export default function DynamicAttributeFilters({
       {contextualLoading && currentFilters.categories.length > 0 && (
         <div className="flex items-center justify-center py-2">
           <div className="w-4 h-4 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-          <span className="ml-2 text-xs text-gray-500">Aktualizacja atrybutów...</span>
+          <span className="ml-2 text-xs text-gray-500">
+            Aktualizacja atrybutów...
+          </span>
         </div>
       )}
-      
+
       {attributeEntries.map(([attributeSlug, attribute]) => (
-        <div key={attributeSlug} className="border border-gray-100 rounded-lg overflow-hidden">
+        <div
+          key={attributeSlug}
+          className="border border-gray-100 rounded-lg overflow-hidden"
+        >
           {/* Nagłówek atrybutu */}
           <div className="bg-gray-50">
             <button
@@ -187,8 +218,12 @@ export default function DynamicAttributeFilters({
               className="flex items-center justify-between w-full p-3 hover:bg-gray-100 transition-colors"
             >
               <div className="flex items-center">
-                <span className="text-sm font-semibold text-gray-800">{attribute.name}</span>
-                <span className="ml-2 text-xs text-gray-500">({attribute.terms.length})</span>
+                <span className="text-sm font-semibold text-gray-800">
+                  {attribute.name}
+                </span>
+                <span className="ml-2 text-xs text-gray-500">
+                  ({attribute.terms.length})
+                </span>
               </div>
               {isAttributeExpanded(attributeSlug) ? (
                 <ChevronUp className="w-4 h-4 text-gray-500" />
@@ -209,37 +244,52 @@ export default function DynamicAttributeFilters({
                 className="overflow-hidden bg-white"
               >
                 <div className="border-t border-gray-100">
-            {(() => {
-              const items = attribute.terms
-                .filter(term => term.count > 0)
-                .sort((a, b) => b.count - a.count);
-              const Row = ({ index, style }: ListChildComponentProps) => {
-                const term = items[index];
-                return (
-                  <div style={style}>
-                    <label className="flex items-center px-2 sm:px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0 min-w-0">
-                      <input
-                        type="checkbox"
-                        name={attributeSlug}
-                        value={term.slug}
-                        checked={isTermSelected(attributeSlug, term.slug)}
-                        onChange={() => handleAttributeTermClick(attributeSlug, term.slug)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                      />
-                      <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700 text-left truncate">{term.name}</span>
-                      <span className="ml-auto text-xs text-gray-500">({term.count})</span>
-                    </label>
-                  </div>
-                );
-              };
-              const itemSize = 44; // px per row
-              const height = Math.min(8, items.length) * itemSize; // show up to 8 rows without scroll
-              return (
-                <List height={height} width={'100%'} itemCount={items.length} itemSize={itemSize} overscanCount={8}>
-                  {Row}
-                </List>
-              );
-            })()}
+                  {(() => {
+                    const items = attribute.terms
+                      .filter(term => term.count > 0)
+                      .sort((a, b) => b.count - a.count);
+                    const Row = ({ index, style }: ListChildComponentProps) => {
+                      const term = items[index];
+                      return (
+                        <div style={style}>
+                          <label className="flex items-center px-2 sm:px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0 min-w-0">
+                            <input
+                              type="checkbox"
+                              name={attributeSlug}
+                              value={term.slug}
+                              checked={isTermSelected(attributeSlug, term.slug)}
+                              onChange={() =>
+                                handleAttributeTermClick(
+                                  attributeSlug,
+                                  term.slug
+                                )
+                              }
+                              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                            />
+                            <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700 text-left truncate">
+                              {term.name}
+                            </span>
+                            <span className="ml-auto text-xs text-gray-500">
+                              ({term.count})
+                            </span>
+                          </label>
+                        </div>
+                      );
+                    };
+                    const itemSize = 44; // px per row
+                    const height = Math.min(8, items.length) * itemSize; // show up to 8 rows without scroll
+                    return (
+                      <List
+                        height={height}
+                        width={'100%'}
+                        itemCount={items.length}
+                        itemSize={itemSize}
+                        overscanCount={8}
+                      >
+                        {Row}
+                      </List>
+                    );
+                  })()}
                 </div>
               </motion.div>
             )}

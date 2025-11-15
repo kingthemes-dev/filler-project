@@ -3,15 +3,15 @@
  */
 
 export enum CircuitState {
-  CLOSED = 'CLOSED',     // Normal operation
-  OPEN = 'OPEN',         // Circuit is open, requests fail fast
-  HALF_OPEN = 'HALF_OPEN' // Testing if service is back
+  CLOSED = 'CLOSED', // Normal operation
+  OPEN = 'OPEN', // Circuit is open, requests fail fast
+  HALF_OPEN = 'HALF_OPEN', // Testing if service is back
 }
 
 export interface CircuitBreakerOptions {
-  failureThreshold: number;    // Number of failures before opening circuit
-  recoveryTimeout: number;     // Time to wait before trying again (ms)
-  monitoringPeriod: number;    // Time window for failure counting (ms)
+  failureThreshold: number; // Number of failures before opening circuit
+  recoveryTimeout: number; // Time to wait before trying again (ms)
+  monitoringPeriod: number; // Time window for failure counting (ms)
   expectedFailureRate: number; // Expected failure rate (0-1)
 }
 
@@ -27,7 +27,7 @@ export class CircuitBreaker {
       failureThreshold: 5,
       recoveryTimeout: 60000, // 1 minute
       monitoringPeriod: 60000, // 1 minute
-      expectedFailureRate: 0.5
+      expectedFailureRate: 0.5,
     }
   ) {}
 
@@ -57,7 +57,7 @@ export class CircuitBreaker {
    */
   private onSuccess(): void {
     this.successCount++;
-    
+
     if (this.state === CircuitState.HALF_OPEN) {
       this.state = CircuitState.CLOSED;
       this.resetCounters();
@@ -82,7 +82,7 @@ export class CircuitBreaker {
    */
   private shouldOpenCircuit(): boolean {
     const totalRequests = this.failureCount + this.successCount;
-    
+
     if (totalRequests < this.options.failureThreshold) {
       return false;
     }
@@ -119,7 +119,8 @@ export class CircuitBreaker {
     nextAttempt: number;
   } {
     const totalRequests = this.failureCount + this.successCount;
-    const failureRate = totalRequests > 0 ? this.failureCount / totalRequests : 0;
+    const failureRate =
+      totalRequests > 0 ? this.failureCount / totalRequests : 0;
 
     return {
       state: this.state,
@@ -128,7 +129,7 @@ export class CircuitBreaker {
       totalRequests,
       failureRate,
       lastFailureTime: this.lastFailureTime,
-      nextAttempt: this.nextAttempt
+      nextAttempt: this.nextAttempt,
     };
   }
 
@@ -149,22 +150,22 @@ export const circuitBreakers = {
     failureThreshold: 3,
     recoveryTimeout: 30000, // 30 seconds
     monitoringPeriod: 60000, // 1 minute
-    expectedFailureRate: 0.6
+    expectedFailureRate: 0.6,
   }),
-  
+
   api: new CircuitBreaker({
     failureThreshold: 5,
     recoveryTimeout: 60000, // 1 minute
     monitoringPeriod: 120000, // 2 minutes
-    expectedFailureRate: 0.5
+    expectedFailureRate: 0.5,
   }),
 
   external: new CircuitBreaker({
     failureThreshold: 2,
     recoveryTimeout: 120000, // 2 minutes
     monitoringPeriod: 300000, // 5 minutes
-    expectedFailureRate: 0.7
-  })
+    expectedFailureRate: 0.7,
+  }),
 };
 
 // Utility function to wrap API calls with circuit breaker
@@ -186,13 +187,15 @@ export async function safeWordPressRequest<T>(
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': 'Filler-Store/1.0',
-        ...options.headers
+        ...options.headers,
       },
-      signal: AbortSignal.timeout(10000) // 10s timeout
+      signal: AbortSignal.timeout(10000), // 10s timeout
     });
 
     if (!response.ok) {
-      throw new Error(`WordPress API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `WordPress API error: ${response.status} ${response.statusText}`
+      );
     }
 
     return response.json();
@@ -207,7 +210,7 @@ export async function safeApiRequest<T>(
   return withCircuitBreaker('api', async () => {
     const response = await fetch(url, {
       ...options,
-      signal: AbortSignal.timeout(15000) // 15s timeout
+      signal: AbortSignal.timeout(15000), // 15s timeout
     });
 
     if (!response.ok) {
@@ -218,5 +221,39 @@ export async function safeApiRequest<T>(
   });
 }
 
-export default CircuitBreaker;
+/**
+ * Get state of all circuit breakers for monitoring
+ */
+export function getCircuitBreakerState(): Record<
+  string,
+  {
+    state: CircuitState;
+    failureCount: number;
+    successCount: number;
+    totalRequests: number;
+    failureRate: number;
+    lastFailureTime: number;
+    nextAttempt: number;
+  }
+> {
+  const states: Record<
+    string,
+    {
+      state: CircuitState;
+      failureCount: number;
+      successCount: number;
+      totalRequests: number;
+      failureRate: number;
+      lastFailureTime: number;
+      nextAttempt: number;
+    }
+  > = {};
 
+  for (const [service, breaker] of Object.entries(circuitBreakers)) {
+    states[service] = breaker.getStats();
+  }
+
+  return states;
+}
+
+export default CircuitBreaker;

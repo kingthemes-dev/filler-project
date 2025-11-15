@@ -33,7 +33,7 @@ interface KingHeroRoundedProps {
 export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
   // ARCHITECTURE FIX: Convert to Server Component - no client-side state or effects
   // Data is already provided from parent Server Component
-  
+
   // Server-side product selection logic
   const selectFeaturedProduct = (): Product | null => {
     try {
@@ -42,17 +42,17 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
         // Deterministyczny wybór pierwszego elementu (bez losowości i logów)
         return data.promocje[0];
       }
-      
+
       // Priority 2: Featured products
       if (data?.polecane && data.polecane.length > 0) {
         return data.polecane[0];
       }
-      
+
       // Priority 3: New products
       if (data?.nowosci && data.nowosci.length > 0) {
         return data.nowosci[0];
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error selecting featured product:', error);
@@ -67,7 +67,6 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
   const formatPriceInline = (price: string) => {
     return `${parseFloat(price).toFixed(2)} PLN`;
   };
-
 
   return (
     <section className="relative h-auto min-h-[400px] sm:min-h-[450px] lg:min-h-[500px] rounded-2xl sm:rounded-3xl overflow-hidden">
@@ -86,24 +85,30 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
             {/* Overlay */}
             <div className="absolute inset-0 bg-black/60 z-10" />
           </div>
-          
+
           {/* Content */}
           <div className="relative z-20 h-full flex flex-col justify-center md:justify-start items-center md:items-start text-center md:text-left px-4 sm:px-6 md:px-8 lg:px-12 pt-0 md:pt-[50px]">
             {/* Text Content - Centered on mobile, Left aligned on desktop */}
             <div className="text-white space-y-3 sm:space-y-4 md:space-y-3 max-w-4xl md:max-w-2xl">
               <h1 className="text-xl sm:text-2xl md:text-2xl lg:text-3xl font-semibold leading-tight tracking-tight uppercase">
-                Hurtownia produktów<br />
+                Hurtownia produktów
+                <br />
                 medycyny estetycznej
               </h1>
 
               <p className="content-text text-white/85 max-w-3xl md:max-w-2xl mx-auto md:mx-0 leading-relaxed">
-                Profesjonalne produkty do medycyny estetycznej, mezoterapii i zabiegów kosmetycznych.
+                Profesjonalne produkty do medycyny estetycznej, mezoterapii i
+                zabiegów kosmetycznych.
                 <br />
                 Najwyższa jakość, certyfikowane preparaty, kompleksowa obsługa.
               </p>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 justify-center md:justify-start">
-                <Button size="lg" asChild className="bg-white/90 backdrop-blur-sm text-black border border-white/70 hover:bg-white hover:border-white text-sm sm:text-base md:text-base px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 font-medium hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+                <Button
+                  size="lg"
+                  asChild
+                  className="bg-white/90 backdrop-blur-sm text-black border border-white/70 hover:bg-white hover:border-white text-sm sm:text-base md:text-base px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 font-medium hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                >
                   <Link href="/sklep">
                     <span className="inline-flex items-center gap-3">
                       <ShoppingBag className="w-5 h-5" />
@@ -118,63 +123,100 @@ export default function KingHeroRounded({ data }: KingHeroRoundedProps) {
             <div className="hidden md:flex justify-center lg:justify-end absolute bottom-4 right-4 lg:bottom-6 lg:right-6">
               {featuredProduct ? (
                 <div className="group block">
-                  <Link href={`/produkt/${featuredProduct.slug}`} className="group block">
-                  <Card className="w-45 md:w-51 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 group-hover:-translate-y-0.5">
-                    <CardContent className="px-4 md:px-6 pt-1 pb-1">
-                      {/* Product Name */}
-                      <h2 className="text-xs md:text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-3 md:mb-4">
-                        {featuredProduct?.name || 'Produkt'}
-                      </h2>
+                  <Link
+                    href={`/produkt/${featuredProduct.slug}`}
+                    className="group block"
+                  >
+                    <Card className="w-45 md:w-51 bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 group-hover:-translate-y-0.5">
+                      <CardContent className="px-4 md:px-6 pt-1 pb-1">
+                        {/* Product Name */}
+                        <h2 className="text-xs md:text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-3 md:mb-4">
+                          {featuredProduct?.name || 'Produkt'}
+                        </h2>
 
-                    {/* Product Image */}
-                    <div className="relative mb-3 md:mb-4">
-                      <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden">
-                                 <Image
-                                   src={(() => {
-                                     const imageUrl = featuredProduct?.images?.[0]?.src || featuredProduct?.image || '/placeholder-product.jpg';
-                                     // Convert to higher quality image by replacing size suffix
-                                     if (imageUrl.includes('-300x300.')) {
-                                       return imageUrl.replace('-300x300.', '-600x600.');
-                                     } else if (imageUrl.includes('-150x150.')) {
-                                       return imageUrl.replace('-150x150.', '-600x600.');
-                                     } else if (imageUrl.includes('-100x100.')) {
-                                       return imageUrl.replace('-100x100.', '-600x600.');
-                                     }
-                                     return imageUrl;
-                                   })()}
-                          alt={featuredProduct?.name || 'Produkt'}
-                          width={300}
-                          height={300}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                        {/* Product Image */}
+                        <div className="relative mb-3 md:mb-4">
+                          <div className="aspect-square bg-gray-50 rounded-xl overflow-hidden">
+                            <Image
+                              src={(() => {
+                                const imageUrl =
+                                  featuredProduct?.images?.[0]?.src ||
+                                  featuredProduct?.image ||
+                                  '/placeholder-product.jpg';
+                                // Convert to higher quality image by replacing size suffix
+                                if (imageUrl.includes('-300x300.')) {
+                                  return imageUrl.replace(
+                                    '-300x300.',
+                                    '-600x600.'
+                                  );
+                                } else if (imageUrl.includes('-150x150.')) {
+                                  return imageUrl.replace(
+                                    '-150x150.',
+                                    '-600x600.'
+                                  );
+                                } else if (imageUrl.includes('-100x100.')) {
+                                  return imageUrl.replace(
+                                    '-100x100.',
+                                    '-600x600.'
+                                  );
+                                }
+                                return imageUrl;
+                              })()}
+                              alt={featuredProduct?.name || 'Produkt'}
+                              width={300}
+                              height={300}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
 
-                      {/* Discount Badge */}
-                      {featuredProduct?.regular_price && featuredProduct?.sale_price && (
-                        <div className="absolute top-2 right-2">
-                          <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: '#dc2626' }}>
-                            -{Math.round(((parseFloat(featuredProduct.regular_price) - parseFloat(featuredProduct.sale_price)) / parseFloat(featuredProduct.regular_price)) * 100)}%
-                          </span>
+                          {/* Discount Badge */}
+                          {featuredProduct?.regular_price &&
+                            featuredProduct?.sale_price && (
+                              <div className="absolute top-2 right-2">
+                                <span
+                                  className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full"
+                                  style={{ backgroundColor: '#dc2626' }}
+                                >
+                                  -
+                                  {Math.round(
+                                    ((parseFloat(
+                                      featuredProduct.regular_price
+                                    ) -
+                                      parseFloat(featuredProduct.sale_price)) /
+                                      parseFloat(
+                                        featuredProduct.regular_price
+                                      )) *
+                                      100
+                                  )}
+                                  %
+                                </span>
+                              </div>
+                            )}
+
+                          {/* Note: Favorites functionality moved to client components */}
                         </div>
-                      )}
 
-                      {/* Note: Favorites functionality moved to client components */}
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center gap-2 mb-0">
-                      <span className="text-xs md:text-sm font-bold text-gray-900">
-                        {featuredProduct && formatPriceInline(featuredProduct.sale_price || featuredProduct.price)}
-                      </span>
-                      {featuredProduct?.regular_price && featuredProduct?.sale_price && (
-                        <span className="text-xs text-gray-500 line-through">
-                          {formatPriceInline(featuredProduct.regular_price)}
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                </Link>
+                        {/* Price */}
+                        <div className="flex items-center gap-2 mb-0">
+                          <span className="text-xs md:text-sm font-bold text-gray-900">
+                            {featuredProduct &&
+                              formatPriceInline(
+                                featuredProduct.sale_price ||
+                                  featuredProduct.price
+                              )}
+                          </span>
+                          {featuredProduct?.regular_price &&
+                            featuredProduct?.sale_price && (
+                              <span className="text-xs text-gray-500 line-through">
+                                {formatPriceInline(
+                                  featuredProduct.regular_price
+                                )}
+                              </span>
+                            )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 </div>
               ) : (
                 <div className="w-80 h-96 bg-white/10 rounded-2xl flex items-center justify-center">

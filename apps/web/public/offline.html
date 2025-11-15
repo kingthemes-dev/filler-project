@@ -1,133 +1,132 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Brak połączenia - Filler.pl</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
-        }
-        
-        .container {
-            max-width: 400px;
-            padding: 2rem;
-        }
-        
-        .icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 2rem;
-            background: #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-        }
-        
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
-        
-        p {
-            color: #ccc;
-            margin-bottom: 2rem;
-            line-height: 1.5;
-        }
-        
-        .retry-btn {
-            background: #fff;
-            color: #000;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        
-        .retry-btn:hover {
-            opacity: 0.9;
-        }
-        
-        .retry-btn:active {
-            opacity: 0.8;
-        }
-        
-        .features {
-            margin-top: 2rem;
-            text-align: left;
-        }
-        
-        .feature {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.5rem;
-            color: #ccc;
-            font-size: 0.9rem;
-        }
-        
-        .feature::before {
-            content: "✓";
-            color: #fff;
-            margin-right: 0.5rem;
-            font-weight: bold;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #000;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+      }
+
+      .container {
+        max-width: 400px;
+        padding: 2rem;
+      }
+
+      .icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 2rem;
+        background: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+
+      p {
+        color: #ccc;
+        margin-bottom: 2rem;
+        line-height: 1.5;
+      }
+
+      .retry-btn {
+        background: #fff;
+        color: #000;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      .retry-btn:hover {
+        opacity: 0.9;
+      }
+
+      .retry-btn:active {
+        opacity: 0.8;
+      }
+
+      .features {
+        margin-top: 2rem;
+        text-align: left;
+      }
+
+      .feature {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        color: #ccc;
+        font-size: 0.9rem;
+      }
+
+      .feature::before {
+        content: '✓';
+        color: #fff;
+        margin-right: 0.5rem;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="icon">📱</div>
-        
-        <h1>Brak połączenia internetowego</h1>
-        
-        <p>
-            Sprawdź swoje połączenie internetowe i spróbuj ponownie.
-        </p>
-        
-        <button class="retry-btn" onclick="window.location.reload()">
-            Spróbuj ponownie
-        </button>
-        
-        <div class="features">
-            <div class="feature">Przeglądaj produkty offline</div>
-            <div class="feature">Dodawaj do ulubionych</div>
-            <div class="feature">Synchronizacja po połączeniu</div>
-        </div>
+      <div class="icon">📱</div>
+
+      <h1>Brak połączenia internetowego</h1>
+
+      <p>Sprawdź swoje połączenie internetowe i spróbuj ponownie.</p>
+
+      <button class="retry-btn" onclick="window.location.reload()">
+        Spróbuj ponownie
+      </button>
+
+      <div class="features">
+        <div class="feature">Przeglądaj produkty offline</div>
+        <div class="feature">Dodawaj do ulubionych</div>
+        <div class="feature">Synchronizacja po połączeniu</div>
+      </div>
     </div>
-    
+
     <script>
-        // Auto-retry when connection is restored
-        window.addEventListener('online', () => {
-            window.location.reload();
-        });
-        
-        // Show connection status
-        function updateConnectionStatus() {
-            if (navigator.onLine) {
-                window.location.reload();
-            }
+      // Auto-retry when connection is restored
+      window.addEventListener('online', () => {
+        window.location.reload();
+      });
+
+      // Show connection status
+      function updateConnectionStatus() {
+        if (navigator.onLine) {
+          window.location.reload();
         }
-        
-        // Check connection every 5 seconds
-        setInterval(updateConnectionStatus, 5000);
+      }
+
+      // Check connection every 5 seconds
+      setInterval(updateConnectionStatus, 5000);
     </script>
-</body>
+  </body>
 </html>

@@ -24,11 +24,13 @@
 ## 🔍 Analiza Impact na Lighthouse
 
 ### Pytanie użytkownika
+
 > Czy implementacja systemu zarządzania stylami (czcionki, przyciski, kolory, presety branżowe) obniży wyniki Lighthouse?
 
 ### Odpowiedź: **NIE - ZERO IMPACT**
 
 **Dlaczego**:
+
 - ✅ Konfiguracja motywu jest wbudowana w build, nie w runtime JavaScript
 - ✅ Next.js 15 kompiluje wszystko podczas builda → CSS variables, font loading
 - ✅ Tailwind CSS variables są optymalizowane w kompilacji
@@ -37,6 +39,7 @@
 ### Szczegółowa analiza
 
 #### 1. **Build-time Generation**
+
 ```typescript
 // next.config.ts - Generate theme at build time
 const config: NextConfig = {
@@ -47,62 +50,68 @@ const config: NextConfig = {
 };
 ```
 
-**Impact**: 
+**Impact**:
+
 - CSS variables kompilowane do statycznego CSS
 - Fonts preloaded podczas builda
 - Brak runtime JavaScript dla motywów
 
 #### 2. **Tailwind CSS Variables**
+
 ```css
 /* globals.css - Multi-theme support */
 @layer base {
-  :root[data-theme="beauty"] {
-    --primary: #D8B4A0;
+  :root[data-theme='beauty'] {
+    --primary: #d8b4a0;
     --font: 'Playfair Display';
   }
-  
-  :root[data-theme="gym"] {
-    --primary: #E74C3C;
+
+  :root[data-theme='gym'] {
+    --primary: #e74c3c;
     --font: 'Roboto';
   }
 }
 ```
 
-**Impact**: 
+**Impact**:
+
 - CSS kompilowany przez Tailwind → zero JavaScript
 - Variables w DOM → natychmiastowy dostęp
 - Lighthouse nie wykrywa overhead
 
 #### 3. **Font Loading (już zaimplementowane)**
+
 ```typescript
 // layout.tsx
 const montserrat = Raleway({
-  variable: "--font-raleway",
-  subsets: ["latin"],
-  display: "swap", // ✅ Już jest!
-  preload: true,   // ✅ Już jest!
+  variable: '--font-raleway',
+  subsets: ['latin'],
+  display: 'swap', // ✅ Już jest!
+  preload: true, // ✅ Już jest!
   fallback: ['system-ui', 'arial'],
 });
 ```
 
-**Impact**: 
+**Impact**:
+
 - Fonts preloaded podczas SSR
 - `display: swap` → zero layout shift
 - Brak render-blocking (już zaimplementowane)
 
 ### Metryki oczekiwane
 
-| Metryka | Przed | Po dodaniu motywów | Impact |
-|---------|-------|-------------------|--------|
-| **Performance** | 56-80 | 56-80 | ✅ **Zero** |
-| **LCP** | 1.5-2s | 1.5-2s | ✅ **Zero** |
-| **FCP** | 1-1.5s | 1-1.5s | ✅ **Zero** |
-| **Bundle Size** | 353 kB | 353 kB | ✅ **Zero** |
-| **CLS** | 0 | 0 | ✅ **Zero** |
+| Metryka         | Przed  | Po dodaniu motywów | Impact      |
+| --------------- | ------ | ------------------ | ----------- |
+| **Performance** | 56-80  | 56-80              | ✅ **Zero** |
+| **LCP**         | 1.5-2s | 1.5-2s             | ✅ **Zero** |
+| **FCP**         | 1-1.5s | 1-1.5s             | ✅ **Zero** |
+| **Bundle Size** | 353 kB | 353 kB             | ✅ **Zero** |
+| **CLS**         | 0      | 0                  | ✅ **Zero** |
 
 ### Wnioski
 
 **System motywów NIE wpłynie na Lighthouse scores**, ponieważ:
+
 1. ✅ CSS Variables są kompilowane w builda
 2. ✅ Fonts preloaded (już zaimplementowane)
 3. ✅ Zero runtime JavaScript overhead
@@ -125,10 +134,23 @@ const montserrat = Raleway({
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type FontFamily = 'raleway' | 'inter' | 'poppins' | 'montserrat' | 'playfair' | 'roboto';
+export type FontFamily =
+  | 'raleway'
+  | 'inter'
+  | 'poppins'
+  | 'montserrat'
+  | 'playfair'
+  | 'roboto';
 export type ButtonStyle = 'rounded' | 'square' | 'pill' | 'rounded-outline';
 export type MenuStyle = 'rounded' | 'square' | 'minimal';
-export type IndustryPreset = 'beauty' | 'real-estate' | 'gym' | 'fashion' | 'tech' | 'minimal' | 'custom';
+export type IndustryPreset =
+  | 'beauty'
+  | 'real-estate'
+  | 'gym'
+  | 'fashion'
+  | 'tech'
+  | 'minimal'
+  | 'custom';
 
 export interface ThemeConfig {
   fontFamily: FontFamily;
@@ -214,7 +236,7 @@ export const useThemeStore = create<ThemeConfig>()(
       menuStyle: 'rounded',
       industryPreset: 'beauty',
       customColors: undefined,
-      
+
       setTheme: (config: Partial<ThemeConfig>) => set(config),
       applyPreset: (preset: IndustryPreset) => {
         const presetConfig = industryPresets[preset];
@@ -254,7 +276,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const root = document.documentElement;
-    
+
     // Apply font
     root.style.setProperty('--theme-font', fontMap[fontFamily]);
 
@@ -353,7 +375,7 @@ export default function VisualBuilderPage() {
               }`}
             >
               <div className="font-semibold capitalize mb-2">
-                {preset === 'real-estate' ? 'Real Estate' : 
+                {preset === 'real-estate' ? 'Real Estate' :
                  preset === 'beauty' ? 'Beauty' :
                  preset === 'fashion' ? 'Fashion' :
                  preset === 'tech' ? 'Tech' :
@@ -549,6 +571,7 @@ export default function VisualBuilderPage() {
 ### Wymagania użytkownika
 
 > Auto-instalator headless WooCommerce (jak auto-instalator WordPress na hostingach):
+>
 > - Tworzenie AI kontent
 > - Wybór stylu
 > - Konfiguracja wszystkich API
@@ -621,17 +644,20 @@ async function generateSite(config: BrandConfig) {
     .replace('{{WP_URL}}', config.api?.wordpressUrl || '')
     .replace('{{WC_KEY}}', config.api?.wcKey || '')
     .replace('{{WC_SECRET}}', config.api?.wcSecret || '');
-  
+
   await fs.writeFile('.env.local', envContent);
 
   // 2. Generate globals.css with theme
-  const themeTemplate = await fs.readFile(`templates/${config.industry}/globals.css`, 'utf8');
+  const themeTemplate = await fs.readFile(
+    `templates/${config.industry}/globals.css`,
+    'utf8'
+  );
   const cssContent = themeTemplate
     .replace('{{PRIMARY}}', config.theme.colors.primary)
     .replace('{{SECONDARY}}', config.theme.colors.secondary)
     .replace('{{ACCENT}}', config.theme.colors.accent)
     .replace('{{FONT}}', config.theme.font);
-  
+
   await fs.writeFile('apps/web/src/app/globals.css', cssContent);
 
   // 3. Generate components with selected styles
@@ -640,7 +666,7 @@ async function generateSite(config: BrandConfig) {
   // 4. Build static site
   console.log('Building site...');
   // await exec('npm run build');
-  
+
   // 5. Package
   console.log('Packaging...');
   // await exec('docker build -t headless-woo:latest .');
@@ -650,7 +676,7 @@ async function generateSite(config: BrandConfig) {
 const args = process.argv.slice(2);
 const brandConfig: BrandConfig = {
   name: args[0] || 'My Brand',
-  industry: args[1] as BrandConfig['industry'] || 'minimal',
+  industry: (args[1] as BrandConfig['industry']) || 'minimal',
   theme: {
     colors: {
       primary: args[2] || '#000000',
@@ -728,26 +754,26 @@ if (!defined('ABSPATH')) {
 }
 
 class KingVisualEditor {
-    
+
     private $frontend_url;
     private $cache_duration = 300; // 5 minutes
-    
+
     public function __construct() {
         $this->frontend_url = defined('HEADLESS_FRONTEND_URL') ? HEADLESS_FRONTEND_URL : 'https://frontend.example.com';
-        
+
         // Register REST API endpoints
         add_action('rest_api_init', array($this, 'register_routes'));
-        
+
         // Register Gutenberg blocks
         add_action('init', array($this, 'register_blocks'));
-        
+
         // Add admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
-        
+
         // Enqueue editor scripts
         add_action('enqueue_block_editor_assets', array($this, 'enqueue_editor_assets'));
     }
-    
+
     /**
      * Register REST API routes
      */
@@ -758,21 +784,21 @@ class KingVisualEditor {
             'callback' => array($this, 'get_layout'),
             'permission_callback' => array($this, 'check_permissions'),
         ));
-        
+
         // Update layout structure
         register_rest_route('king-editor/v1', '/layout', array(
             'methods' => 'POST',
             'callback' => array($this, 'update_layout'),
             'permission_callback' => array($this, 'check_permissions'),
         ));
-        
+
         // Preview changes
         register_rest_route('king-editor/v1', '/preview', array(
             'methods' => 'POST',
             'callback' => array($this, 'preview_changes'),
             'permission_callback' => array($this, 'check_permissions'),
         ));
-        
+
         // Publish changes
         register_rest_route('king-editor/v1', '/publish', array(
             'methods' => 'POST',
@@ -780,7 +806,7 @@ class KingVisualEditor {
             'permission_callback' => array($this, 'check_permissions'),
         ));
     }
-    
+
     /**
      * Register Gutenberg blocks for visual editing
      */
@@ -799,7 +825,7 @@ class KingVisualEditor {
             ),
             'render_callback' => array($this, 'render_hero_block'),
         ));
-        
+
         // Product Grid Block
         register_block_type('king/product-grid', array(
             'title' => 'Product Grid',
@@ -814,7 +840,7 @@ class KingVisualEditor {
             'render_callback' => array($this, 'render_product_grid_block'),
         ));
     }
-    
+
     /**
      * Add admin menu for Visual Editor
      */
@@ -829,7 +855,7 @@ class KingVisualEditor {
             30
         );
     }
-    
+
     /**
      * Get current layout structure
      */
@@ -838,62 +864,62 @@ class KingVisualEditor {
             'version' => '1.0',
             'sections' => array(),
         ));
-        
+
         return rest_ensure_response($layout);
     }
-    
+
     /**
      * Update layout structure
      */
     public function update_layout($request) {
         $layout = $request->get_json_params();
-        
+
         // Validate layout structure
         if (!isset($layout['sections']) || !is_array($layout['sections'])) {
             return new WP_Error('invalid_layout', 'Invalid layout structure', array('status' => 400));
         }
-        
+
         // Save layout
         update_option('king_site_layout', $layout);
-        
+
         // Clear frontend cache
         $this->clear_frontend_cache();
-        
+
         return rest_ensure_response(array(
             'success' => true,
             'message' => 'Layout updated successfully',
         ));
     }
-    
+
     /**
      * Publish changes
      */
     public function publish_changes($request) {
         $layout = $request->get_json_params();
-        
+
         // Update production layout
         update_option('king_site_layout', $layout);
-        
+
         // Clear all caches
         $this->clear_frontend_cache();
         $this->clear_wp_cache();
-        
+
         // Trigger deployment webhook (Vercel/Netlify)
         $this->trigger_deployment();
-        
+
         return rest_ensure_response(array(
             'success' => true,
             'message' => 'Changes published successfully',
         ));
     }
-    
+
     /**
      * Check permissions
      */
     public function check_permissions($request) {
         return current_user_can('edit_pages');
     }
-    
+
     /**
      * Clear frontend cache
      */
@@ -909,7 +935,7 @@ class KingVisualEditor {
             )
         );
     }
-    
+
     /**
      * Clear WordPress cache
      */
@@ -918,17 +944,17 @@ class KingVisualEditor {
             wp_cache_flush();
         }
     }
-    
+
     /**
      * Trigger deployment
      */
     private function trigger_deployment() {
         $webhook_url = get_option('king_deployment_webhook', '');
-        
+
         if (!$webhook_url) {
             return;
         }
-        
+
         wp_remote_post($webhook_url, array(
             'body' => json_encode(array(
                 'type' => 'layout_update',
@@ -1076,27 +1102,37 @@ export class AIContentGenerator {
     const prompt = `Create a compelling hero section headline for a ${industry} e-commerce store in ${locale}. 
     Keep it professional, engaging, and SEO-optimized. 
     Max 60 characters.`;
-    
+
     const completion = await this.openai.chat.completions.create({
-      model: "gpt-4",
+      model: 'gpt-4',
       messages: [
-        { role: "system", content: "You are a professional copywriter specializing in e-commerce." },
-        { role: "user", content: prompt }
+        {
+          role: 'system',
+          content:
+            'You are a professional copywriter specializing in e-commerce.',
+        },
+        { role: 'user', content: prompt },
       ],
     });
 
     return completion.choices[0].message.content || '';
   }
 
-  async generatePolicy(type: 'privacy' | 'terms', locale: string = 'pl'): Promise<string> {
+  async generatePolicy(
+    type: 'privacy' | 'terms',
+    locale: string = 'pl'
+  ): Promise<string> {
     const prompt = `Generate a GDPR-compliant ${type} policy in ${locale} for an e-commerce store. 
     Include all required sections: data collection, cookies, user rights, contact information.`;
-    
+
     // ... similar API call
     return '';
   }
 
-  async generateProductDescriptions(products: any[], industry: string): Promise<any[]> {
+  async generateProductDescriptions(
+    products: any[],
+    industry: string
+  ): Promise<any[]> {
     // Generate descriptions for products
     return products;
   }
@@ -1110,6 +1146,7 @@ export class AIContentGenerator {
 ### Phase 2: WordPress Plugin Integration
 
 **WordPress plugin**, który:
+
 - ✅ Auto-instalacja headless configuration
 - ✅ Sync z WooCommerce data
 - ✅ Konfiguracja CRON jobs
@@ -1120,6 +1157,7 @@ export class AIContentGenerator {
 ### Phase 3: Self-Hosted Deployment
 
 **On-premise deployment**:
+
 - Docker Compose setups
 - VPS deployment scripts
 - Kubernetes manifests
@@ -1129,6 +1167,7 @@ export class AIContentGenerator {
 ### Phase 4: Multi-Brand Support
 
 **Single stack dla wielu brandów**:
+
 - Subdomain routing
 - Per-brand database
 - Centralized admin panel
@@ -1138,6 +1177,7 @@ export class AIContentGenerator {
 ### Phase 5: Advanced Features
 
 **A/B Testing**:
+
 - UI variants
 - Analytics dashboard
 - Automatic optimizations
@@ -1147,6 +1187,7 @@ export class AIContentGenerator {
 ### Phase 6: Visual Editor Enhancement
 
 **Dodatkowe funkcje**:
+
 - ✅ Real-time preview
 - ✅ Component library expansion
 - ✅ Version history
@@ -1191,18 +1232,21 @@ export class AIContentGenerator {
 ### Następne kroki
 
 #### Priority 1: MVP Implementation
+
 1. Implementacja Theme Store
 2. Theme Provider
 3. Visual Builder UI
 4. Build-time generator
 
 #### Priority 2: Advanced Features
+
 1. Setup wizard UI
 2. AI content generator integration
 3. WordPress Visual Editor plugin
 4. Deployment automation
 
 #### Priority 3: Production Ready
+
 1. Testing & QA
 2. Performance optimization
 3. Documentation
@@ -1211,17 +1255,20 @@ export class AIContentGenerator {
 ### ROI & Timeline
 
 **MVP** (2-3 tygodnie):
+
 - ✅ System motywów working
 - ✅ Visual Builder UI
 - ✅ Build-time generator
 - ✅ 6 industry presets
 
 **Phase 1.5** (+ 1-2 tygodnie):
+
 - ✅ Setup wizard
 - ✅ AI generation
 - ✅ Brand presets expansion
 
 **Phase 2+** (opcjonalne):
+
 - ✅ WordPress plugin
 - ✅ Multi-brand support
 - ✅ Advanced features
@@ -1233,42 +1280,47 @@ export class AIContentGenerator {
 ### Dlaczego to będzie rewolucja?
 
 #### 1. **Zero-Config Auto-Installer**
+
 - ✅ **WordPress**: Sklonuj WP → setupy → działamy
 - ✅ **Szopify**: Tygodnie setupu + wysoka cena
 - ✅ **This System**: 5 min → wszystko gotowe (preset + AI content + API setup)
 
 #### 2. **Performance-First Architecture**
+
 - ✅ **Lighthouse**: 80-90+ (razem z motywami)
 - ✅ **Shopify**: 50-70 (często bloki JavaScript)
 - ✅ **WooCommerce**: 30-60 (stare motywy)
 - ✅ **This System**: Build-time CSS → zero runtime overhead
 
 #### 3. **Visual Editor Integration**
+
 - ✅ **Elementor**: WordPress plugin (ciężki, 30s+ load time)
 - ✅ **Gutenberg**: Ograniczone opcje stylizowania
 - ✅ **This System**: Headless + WordPress admin (React/Next.js)
 
 #### 4. **AI-Native Content**
+
 - ✅ Shopify: brak generowania treści
 - ✅ WooCommerce: pluginy + konfiguracja
 - ✅ **This System**: wbudowana generacja treści/opisów
 
 #### 5. **Deployment Speed**
+
 - ✅ WordPress: lokalny dev → staging → produkcja
 - ✅ Shopify: ograniczony deployment
 - ✅ **This System**: 1-click Vercel/VPS/CDN, cache w chmurze, Edge
 
 ### Business Impact
 
-| Metric | Traditional WooCommerce | Shopify | **Headless WooCommerce AI** |
-|--------|------------------------|---------|----------------------------|
-| **Time to Market** | 4-8 tygodni | 2-4 tygodnie | ✅ **1 dzień** |
-| **Setup Cost** | $5,000-15,000 | $2,000-10,000 | ✅ **$500** |
-| **Monthly Cost** | $100-300 | $300-2,000+ | ✅ **$50** |
-| **Performance Score** | 30-60 | 50-70 | ✅ **80-90** |
-| **Customization** | Ograniczona | Ograniczona | ✅ **Full control** |
-| **AI Content** | Brak | Brak | ✅ **Built-in** |
-| **SEO** | Średnie | Slabe | ✅ **Doskonałe** |
+| Metric                | Traditional WooCommerce | Shopify       | **Headless WooCommerce AI** |
+| --------------------- | ----------------------- | ------------- | --------------------------- |
+| **Time to Market**    | 4-8 tygodni             | 2-4 tygodnie  | ✅ **1 dzień**              |
+| **Setup Cost**        | $5,000-15,000           | $2,000-10,000 | ✅ **$500**                 |
+| **Monthly Cost**      | $100-300                | $300-2,000+   | ✅ **$50**                  |
+| **Performance Score** | 30-60                   | 50-70         | ✅ **80-90**                |
+| **Customization**     | Ograniczona             | Ograniczona   | ✅ **Full control**         |
+| **AI Content**        | Brak                    | Brak          | ✅ **Built-in**             |
+| **SEO**               | Średnie                 | Slabe         | ✅ **Doskonałe**            |
 
 ### Unique Selling Points
 
@@ -1303,4 +1355,3 @@ export class AIContentGenerator {
 **Autor**: Senior Dev Team  
 **Następny krok**: Implementacja MVP Theme System  
 **Market Potential**: 🌟 Rewolucja w e-commerce 2025
-

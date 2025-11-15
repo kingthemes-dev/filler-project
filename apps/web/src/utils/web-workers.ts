@@ -77,7 +77,7 @@ export class WebWorkerManager {
   constructor(workerCount: number = navigator.hardwareConcurrency || 4) {
     this.workerCount = workerCount;
     this.isSupported = typeof Worker !== 'undefined';
-    
+
     if (this.isSupported) {
       this.initializeWorkers();
     } else {
@@ -89,14 +89,15 @@ export class WebWorkerManager {
     for (let i = 0; i < this.workerCount; i++) {
       const workerId = `worker-${i}`;
       const worker = new Worker('/workers/compute-worker.js');
-      
-      worker.onmessage = (event: MessageEvent<WorkerMessage<unknown, unknown>>) =>
-        this.handleWorkerMessage(event.data);
-      worker.onerror = (error) => this.handleWorkerError(workerId, error);
-      
+
+      worker.onmessage = (
+        event: MessageEvent<WorkerMessage<unknown, unknown>>
+      ) => this.handleWorkerMessage(event.data);
+      worker.onerror = error => this.handleWorkerError(workerId, error);
+
       this.workers.set(workerId, worker);
     }
-    
+
     logger.info('Web Workers initialized', { workerCount: this.workerCount });
   }
 
@@ -109,23 +110,23 @@ export class WebWorkerManager {
 
     const taskId = this.generateTaskId();
     const workerId = this.getAvailableWorker();
-    
+
     return new Promise<R>((resolve, reject) => {
       const task: WorkerTask<T, R> = {
         id: taskId,
         type,
         data,
         resolve,
-        reject
+        reject,
       };
       this.tasks.set(taskId, task as WorkerTask<unknown, unknown>);
-      
+
       const worker = this.workers.get(workerId);
       if (worker) {
         worker.postMessage({
           id: taskId,
           type,
-          data
+          data,
         });
       } else {
         reject(new Error('No available worker'));
@@ -148,15 +149,16 @@ export class WebWorkerManager {
 
   private handleWorkerError(workerId: string, error: ErrorEvent) {
     logger.error('Worker error', { workerId, error: error.message });
-    
+
     // Restart worker
     const worker = this.workers.get(workerId);
     if (worker) {
       worker.terminate();
       const newWorker = new Worker('/workers/compute-worker.js');
-      newWorker.onmessage = (event: MessageEvent<WorkerMessage<unknown, unknown>>) =>
-        this.handleWorkerMessage(event.data);
-      newWorker.onerror = (error) => this.handleWorkerError(workerId, error);
+      newWorker.onmessage = (
+        event: MessageEvent<WorkerMessage<unknown, unknown>>
+      ) => this.handleWorkerMessage(event.data);
+      newWorker.onerror = error => this.handleWorkerError(workerId, error);
       this.workers.set(workerId, newWorker);
     }
   }
@@ -175,14 +177,20 @@ export class WebWorkerManager {
   // Fallback execution on main thread
   private async executeOnMainThread<T, R>(type: string, data: T): Promise<R> {
     logger.info('Executing task on main thread', { type });
-    
+
     switch (type) {
       case 'image-processing':
-        return this.processImageOnMainThread(data as ImageProcessingPayload) as unknown as R;
+        return this.processImageOnMainThread(
+          data as ImageProcessingPayload
+        ) as unknown as R;
       case 'data-processing':
-        return this.processDataOnMainThread(data as DataProcessingPayload<unknown>) as unknown as R;
+        return this.processDataOnMainThread(
+          data as DataProcessingPayload<unknown>
+        ) as unknown as R;
       case 'calculation':
-        return this.performCalculationOnMainThread(data as CalculationPayload) as unknown as R;
+        return this.performCalculationOnMainThread(
+          data as CalculationPayload
+        ) as unknown as R;
       default:
         throw new Error(`Unknown task type: ${type}`);
     }
@@ -193,18 +201,22 @@ export class WebWorkerManager {
   ): Promise<ImageProcessingResult> {
     // Simple image processing simulation
     const { width, height, pixels } = data;
-    const sourcePixels = pixels instanceof Uint8ClampedArray ? pixels : Uint8ClampedArray.from(pixels);
+    const sourcePixels =
+      pixels instanceof Uint8ClampedArray
+        ? pixels
+        : Uint8ClampedArray.from(pixels);
     const processedPixels = new Uint8Array(sourcePixels.length);
-    
+
     for (let i = 0; i < sourcePixels.length; i += 4) {
       // Simple grayscale conversion
-      const gray = (sourcePixels[i] + sourcePixels[i + 1] + sourcePixels[i + 2]) / 3;
+      const gray =
+        (sourcePixels[i] + sourcePixels[i + 1] + sourcePixels[i + 2]) / 3;
       processedPixels[i] = gray;
       processedPixels[i + 1] = gray;
       processedPixels[i + 2] = gray;
       processedPixels[i + 3] = sourcePixels[i + 3];
     }
-    
+
     return { width, height, pixels: processedPixels };
   }
 
@@ -214,7 +226,7 @@ export class WebWorkerManager {
     // Simple data processing simulation
     const { items, operation } = data;
     const clonedItems = [...items];
-    
+
     switch (operation) {
       case 'sort':
         return {
@@ -236,7 +248,7 @@ export class WebWorkerManager {
         };
       case 'map':
         return {
-          result: clonedItems.map((item) => {
+          result: clonedItems.map(item => {
             if (typeof item === 'number') {
               return (item * 2) as unknown as T;
             }
@@ -245,8 +257,10 @@ export class WebWorkerManager {
         };
       case 'process-products':
         return {
-          result: clonedItems.map((item) =>
-            typeof item === 'object' && item !== null ? { ...(item as UnknownRecord) } as T : item
+          result: clonedItems.map(item =>
+            typeof item === 'object' && item !== null
+              ? ({ ...(item as UnknownRecord) } as T)
+              : item
           ),
         };
       case 'search-optimization': {
@@ -255,7 +269,7 @@ export class WebWorkerManager {
           return { result: clonedItems };
         }
         return {
-          result: clonedItems.filter((item) => {
+          result: clonedItems.filter(item => {
             if (typeof item === 'string') {
               return item.toLowerCase().includes(query);
             }
@@ -280,7 +294,7 @@ export class WebWorkerManager {
   ): Promise<CalculationResult> {
     // Simple calculation simulation
     const { operation, values } = data;
-    
+
     switch (operation) {
       case 'sum':
         return { result: values.reduce((a, b) => a + b, 0) };
@@ -310,12 +324,18 @@ export const webWorkerManager = new WebWorkerManager();
 // Utility functions for common tasks
 export class WorkerUtils {
   // Image processing
-  static async processImage(imageData: ImageData, operation: string): Promise<ImageData> {
-    const result = await webWorkerManager.executeTask<ImageProcessingPayload, ImageProcessingResult>('image-processing', {
+  static async processImage(
+    imageData: ImageData,
+    operation: string
+  ): Promise<ImageData> {
+    const result = await webWorkerManager.executeTask<
+      ImageProcessingPayload,
+      ImageProcessingResult
+    >('image-processing', {
       width: imageData.width,
       height: imageData.height,
       pixels: Array.from(imageData.data),
-      operation
+      operation,
     });
     return new ImageData(
       new Uint8ClampedArray(result.pixels),
@@ -325,44 +345,61 @@ export class WorkerUtils {
   }
 
   // Data processing
-  static async processData<T>(data: T[], operation: DataOperation): Promise<T[]> {
-    const result = await webWorkerManager.executeTask<DataProcessingPayload<T>, DataProcessingResult<T>>('data-processing', {
+  static async processData<T>(
+    data: T[],
+    operation: DataOperation
+  ): Promise<T[]> {
+    const result = await webWorkerManager.executeTask<
+      DataProcessingPayload<T>,
+      DataProcessingResult<T>
+    >('data-processing', {
       items: data,
-      operation
+      operation,
     });
     return result.result;
   }
 
   // Mathematical calculations
-  static async calculate(values: number[], operation: CalculationOperation): Promise<number> {
-    const result = await webWorkerManager.executeTask<CalculationPayload, CalculationResult>('calculation', {
+  static async calculate(
+    values: number[],
+    operation: CalculationOperation
+  ): Promise<number> {
+    const result = await webWorkerManager.executeTask<
+      CalculationPayload,
+      CalculationResult
+    >('calculation', {
       values,
-      operation
+      operation,
     });
     return result.result;
   }
 
   // Product data processing
-  static async processProductData(products: UnknownRecord[]): Promise<UnknownRecord[]> {
+  static async processProductData(
+    products: UnknownRecord[]
+  ): Promise<UnknownRecord[]> {
     const result = await webWorkerManager.executeTask<
       DataProcessingPayload<UnknownRecord>,
       DataProcessingResult<UnknownRecord>
     >('data-processing', {
       items: products,
-      operation: 'process-products'
+      operation: 'process-products',
     });
     return result.result;
   }
 
   // Search optimization
-  static async optimizeSearch(query: string, products: UnknownRecord[]): Promise<UnknownRecord[]> {
+  static async optimizeSearch(
+    query: string,
+    products: UnknownRecord[]
+  ): Promise<UnknownRecord[]> {
     const result = await webWorkerManager.executeTask<
       DataProcessingPayload<UnknownRecord>,
       DataProcessingResult<UnknownRecord>
     >('data-processing', {
       items: products,
       operation: 'search-optimization',
-      query
+      query,
     });
     return result.result;
   }
@@ -375,7 +412,7 @@ export function useWebWorker() {
     processData: WorkerUtils.processData,
     calculate: WorkerUtils.calculate,
     processProductData: WorkerUtils.processProductData,
-    optimizeSearch: WorkerUtils.optimizeSearch
+    optimizeSearch: WorkerUtils.optimizeSearch,
   };
 }
 

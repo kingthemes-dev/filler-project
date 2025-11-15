@@ -8,7 +8,11 @@ import { logger } from '@/utils/logger';
 import { hposCache } from '@/lib/hpos-cache';
 import { hposPerformanceMonitor } from './hpos-performance-monitor';
 import { httpAgent } from '@/utils/http-agent';
-import { getTimeoutConfig, createTimeoutSignal, getRetryDelay } from '@/utils/timeout-config';
+import {
+  getTimeoutConfig,
+  createTimeoutSignal,
+  getRetryDelay,
+} from '@/utils/timeout-config';
 import type { WooCommerceOrder } from '@/types/api';
 
 type UnknownRecord = Record<string, unknown>;
@@ -75,7 +79,12 @@ class HPOSApiService {
   }
 
   private getAuthHeader(): string {
-    return 'Basic ' + Buffer.from(`${this.config.consumerKey}:${this.config.consumerSecret}`).toString('base64');
+    return (
+      'Basic ' +
+      Buffer.from(
+        `${this.config.consumerKey}:${this.config.consumerSecret}`
+      ).toString('base64')
+    );
   }
 
   private async makeRequest<T>(
@@ -89,7 +98,9 @@ class HPOSApiService {
 
     // Check cache first
     if (useCache && options.method === 'GET') {
-      const cached = this.cache.get(_cacheKey) as { data: T; expires: number } | undefined;
+      const cached = this.cache.get(_cacheKey) as
+        | { data: T; expires: number }
+        | undefined;
       if (cached && cached.expires > Date.now()) {
         logger.info('HPOS cache hit', { endpoint });
         hposPerformanceMonitor.recordCacheHit();
@@ -99,21 +110,26 @@ class HPOSApiService {
     }
 
     // Get adaptive timeout for this endpoint
-    const endpointPath = endpoint.replace(/^\/wp-json\/wc\/v3\//, '').replace(/^\//, '');
-    const timeoutConfig = getTimeoutConfig(endpointPath, options.method || 'GET');
-    
+    const endpointPath = endpoint
+      .replace(/^\/wp-json\/wc\/v3\//, '')
+      .replace(/^\//, '');
+    const timeoutConfig = getTimeoutConfig(
+      endpointPath,
+      options.method || 'GET'
+    );
+
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= timeoutConfig.maxRetries; attempt++) {
       try {
         // Create new timeout signal for each attempt
         const timeoutSignal = createTimeoutSignal(timeoutConfig.timeout);
-        
+
         const requestOptions: RequestInit = {
           ...options,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': this.getAuthHeader(),
+            Authorization: this.getAuthHeader(),
             'User-Agent': 'HeadlessWoo-HPOS/1.0',
             'X-HPOS-Enabled': 'true', // Signal HPOS compatibility
             ...options.headers,
@@ -121,49 +137,53 @@ class HPOSApiService {
           signal: timeoutSignal, // Use adaptive timeout
         };
 
-        logger.info('HPOS API request', { 
-          endpoint, 
+        logger.info('HPOS API request', {
+          endpoint,
           url,
           baseUrl: this.config.baseUrl,
-          attempt, 
+          attempt,
           method: options.method || 'GET',
-          timeout: timeoutConfig.timeout
+          timeout: timeoutConfig.timeout,
         });
 
         // Use HTTP agent for connection pooling
         const response = await httpAgent.fetch(url, requestOptions);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(`HPOS API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        
+
         // Cache successful responses
         if (useCache && options.method === 'GET') {
           this.cache.set(_cacheKey, {
             data: data as unknown,
-            expires: Date.now() + (5 * 60 * 1000), // 5 minutes cache
+            expires: Date.now() + 5 * 60 * 1000, // 5 minutes cache
           });
         }
 
-        logger.info('HPOS API success', { 
-          endpoint, 
-          attempt, 
-          status: response.status 
+        logger.info('HPOS API success', {
+          endpoint,
+          attempt,
+          status: response.status,
         });
 
         // Record performance metrics
-        hposPerformanceMonitor.recordApiCall(true, Date.now() - requestStartTime, true);
+        hposPerformanceMonitor.recordApiCall(
+          true,
+          Date.now() - requestStartTime,
+          true
+        );
 
         return data;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        logger.warn('HPOS API attempt failed', { 
-          endpoint, 
-          attempt, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        logger.warn('HPOS API attempt failed', {
+          endpoint,
+          attempt,
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
 
         if (attempt < timeoutConfig.maxRetries) {
@@ -182,7 +202,7 @@ class HPOSApiService {
    */
   async getOrders(query: HPOSOrderQuery = {}): Promise<HPOSOrder[]> {
     // removed unused cacheKey variable
-    
+
     const cacheParams = Object.fromEntries(
       Object.entries(query).filter(([, value]) => value !== undefined)
     );
@@ -194,7 +214,7 @@ class HPOSApiService {
     }
 
     const params = new URLSearchParams();
-    
+
     // HPOS-optimized query parameters
     if (query.customer) params.append('customer', query.customer.toString());
     if (query.status) params.append('status', query.status);
@@ -206,14 +226,23 @@ class HPOSApiService {
     if (query.before) params.append('before', query.before);
     if (query.search) params.append('search', query.search);
 
-    // HPOS-specific optimizations
-    params.append('_fields', 'id,number,status,date_created,date_modified,total,currency,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id,payment_url,checkout_payment_url');
-    
-    const orders = await this.makeRequest<HPOSOrder[]>(`/wp-json/wc/v3/orders?${params}`);
-    
+    // OPTIMIZATION: Optimized _fields - exclude unnecessary line_items details
+    // Only include essential fields for orders list to reduce payload
+    params.append(
+      '_fields',
+      'id,number,status,date_created,date_modified,total,currency,customer_id,billing,shipping,line_items.id,line_items.name,line_items.quantity,line_items.total,meta_data,payment_method,payment_method_title,transaction_id,payment_url,checkout_payment_url'
+    );
+
+    const orders = await this.makeRequest<HPOSOrder[]>(
+      `/wp-json/wc/v3/orders?${params}`
+    );
+
     // Cache the result
-    await hposCache.set('orders', 'list', orders, cacheParams, ['orders', 'customer']);
-    
+    await hposCache.set('orders', 'list', orders, cacheParams, [
+      'orders',
+      'customer',
+    ]);
+
     return orders;
   }
 
@@ -222,9 +251,14 @@ class HPOSApiService {
    */
   async getOrder(orderId: number): Promise<HPOSOrder> {
     const params = new URLSearchParams();
-    params.append('_fields', 'id,number,status,date_created,date_modified,total,currency,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id,payment_url,checkout_payment_url');
-    
-    return this.makeRequest<HPOSOrder>(`/wp-json/wc/v3/orders/${orderId}?${params}`);
+    params.append(
+      '_fields',
+      'id,number,status,date_created,date_modified,total,currency,customer_id,billing,shipping,line_items,meta_data,payment_method,payment_method_title,transaction_id,payment_url,checkout_payment_url'
+    );
+
+    return this.makeRequest<HPOSOrder>(
+      `/wp-json/wc/v3/orders/${orderId}?${params}`
+    );
   }
 
   /**
@@ -235,67 +269,97 @@ class HPOSApiService {
     // If it does, use just /orders, otherwise use full path
     const baseUrlEndsWithApi = this.config.baseUrl.endsWith('/wp-json/wc/v3');
     const endpoint = baseUrlEndsWithApi ? '/orders' : '/wp-json/wc/v3/orders';
-    
-    logger.info('Creating order', { 
-      baseUrl: this.config.baseUrl, 
+
+    logger.info('Creating order', {
+      baseUrl: this.config.baseUrl,
       endpoint,
-      willCall: `${this.config.baseUrl}${endpoint}`
+      willCall: `${this.config.baseUrl}${endpoint}`,
     });
-    
-    return this.makeRequest<HPOSOrder>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(orderData),
-      headers: {
-        'Content-Type': 'application/json',
+
+    return this.makeRequest<HPOSOrder>(
+      endpoint,
+      {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    }, false); // Don't cache POST requests
+      false
+    ); // Don't cache POST requests
   }
 
   /**
    * Update order with HPOS compatibility
    */
-  async updateOrder(orderId: number, orderData: UnknownRecord): Promise<HPOSOrder> {
-    return this.makeRequest<HPOSOrder>(`/wp-json/wc/v3/orders/${orderId}`, {
-      method: 'PUT',
-      body: JSON.stringify(orderData),
-    }, false); // Don't cache PUT requests
+  async updateOrder(
+    orderId: number,
+    orderData: UnknownRecord
+  ): Promise<HPOSOrder> {
+    return this.makeRequest<HPOSOrder>(
+      `/wp-json/wc/v3/orders/${orderId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(orderData),
+      },
+      false
+    ); // Don't cache PUT requests
   }
 
   /**
    * Get order notes with HPOS optimization
    */
   async getOrderNotes(orderId: number): Promise<UnknownRecord[]> {
-    return this.makeRequest<UnknownRecord[]>(`/wp-json/wc/v3/orders/${orderId}/notes`);
+    return this.makeRequest<UnknownRecord[]>(
+      `/wp-json/wc/v3/orders/${orderId}/notes`
+    );
   }
 
   /**
    * Add order note with HPOS compatibility
    */
-  async addOrderNote(orderId: number, note: string, customerNote: boolean = false): Promise<UnknownRecord> {
-    return this.makeRequest<UnknownRecord>(`/wp-json/wc/v3/orders/${orderId}/notes`, {
-      method: 'POST',
-      body: JSON.stringify({
-        note,
-        customer_note: customerNote,
-      }),
-    }, false);
+  async addOrderNote(
+    orderId: number,
+    note: string,
+    customerNote: boolean = false
+  ): Promise<UnknownRecord> {
+    return this.makeRequest<UnknownRecord>(
+      `/wp-json/wc/v3/orders/${orderId}/notes`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          note,
+          customer_note: customerNote,
+        }),
+      },
+      false
+    );
   }
 
   /**
    * Get order refunds with HPOS optimization
    */
   async getOrderRefunds(orderId: number): Promise<UnknownRecord[]> {
-    return this.makeRequest<UnknownRecord[]>(`/wp-json/wc/v3/orders/${orderId}/refunds`);
+    return this.makeRequest<UnknownRecord[]>(
+      `/wp-json/wc/v3/orders/${orderId}/refunds`
+    );
   }
 
   /**
    * Create order refund with HPOS compatibility
    */
-  async createOrderRefund(orderId: number, refundData: UnknownRecord): Promise<UnknownRecord> {
-    return this.makeRequest<UnknownRecord>(`/wp-json/wc/v3/orders/${orderId}/refunds`, {
-      method: 'POST',
-      body: JSON.stringify(refundData),
-    }, false);
+  async createOrderRefund(
+    orderId: number,
+    refundData: UnknownRecord
+  ): Promise<UnknownRecord> {
+    return this.makeRequest<UnknownRecord>(
+      `/wp-json/wc/v3/orders/${orderId}/refunds`,
+      {
+        method: 'POST',
+        body: JSON.stringify(refundData),
+      },
+      false
+    );
   }
 
   /**
@@ -304,8 +368,10 @@ class HPOSApiService {
   async getOrderStats(customerId?: number): Promise<UnknownRecord> {
     const params = new URLSearchParams();
     if (customerId) params.append('customer', customerId.toString());
-    
-    return this.makeRequest<UnknownRecord>(`/wp-json/wc/v3/orders/stats?${params}`);
+
+    return this.makeRequest<UnknownRecord>(
+      `/wp-json/wc/v3/orders/stats?${params}`
+    );
   }
 
   /**

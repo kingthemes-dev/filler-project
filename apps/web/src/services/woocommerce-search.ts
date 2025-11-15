@@ -20,10 +20,14 @@ const getFromCache = <T>(key: string): T | null => {
   return null;
 };
 
-const setToCache = (key: string, value: unknown, ttlSeconds: number = 300): void => {
-  const expires = Date.now() + (ttlSeconds * 1000);
+const setToCache = (
+  key: string,
+  value: unknown,
+  ttlSeconds: number = 300
+): void => {
+  const expires = Date.now() + ttlSeconds * 1000;
   memoryCache.set(key, { value, expires });
-  
+
   // Clean up old entries
   if (memoryCache.size > 1000) {
     const oldestKey = memoryCache.keys().next().value;
@@ -77,9 +81,12 @@ export class WooCommerceSearchService {
   /**
    * Search products using WooCommerce API with Redis cache
    */
-  async searchProducts(query: string, limit: number = 6): Promise<WooSearchResponse> {
+  async searchProducts(
+    query: string,
+    limit: number = 6
+  ): Promise<WooSearchResponse> {
     const cacheKey = this.getSearchCacheKey(query, limit);
-    
+
     try {
       // Try to get from cache first
       const cached = getFromCache<WooSearchResponse>(cacheKey);
@@ -93,7 +100,7 @@ export class WooCommerceSearchService {
         search: query,
         per_page: limit,
         orderby: 'popularity',
-        order: 'desc'
+        order: 'desc',
       });
 
       const result: WooSearchResponse = {
@@ -101,16 +108,16 @@ export class WooCommerceSearchService {
         total: response.total || 0,
         page: 1,
         totalPages: Math.ceil((response.total || 0) / limit),
-        query
+        query,
       };
 
       // Cache for 5 minutes
       setToCache(cacheKey, result, 300);
-      
-      logger.info('Search cache miss, stored new result', { 
-        query, 
-        limit, 
-        resultsCount: result.products.length 
+
+      logger.info('Search cache miss, stored new result', {
+        query,
+        limit,
+        resultsCount: result.products.length,
       });
 
       return result;
@@ -121,7 +128,7 @@ export class WooCommerceSearchService {
         total: 0,
         page: 1,
         totalPages: 0,
-        query
+        query,
       };
     }
   }
@@ -129,7 +136,10 @@ export class WooCommerceSearchService {
   /**
    * Get search suggestions based on actual product names with Redis cache
    */
-  async getSearchSuggestions(query: string, limit: number = 5): Promise<string[]> {
+  async getSearchSuggestions(
+    query: string,
+    limit: number = 5
+  ): Promise<string[]> {
     if (!query || query.length < 2) return [];
 
     const cacheKey = this.getSuggestionsCacheKey(query);
@@ -147,20 +157,23 @@ export class WooCommerceSearchService {
         search: query,
         per_page: 50, // Get more products for better suggestions
         orderby: 'popularity',
-        order: 'desc'
+        order: 'desc',
       });
 
       // Extract unique product names and categories
       const suggestions = new Set<string>();
-      
+
       (response.data || []).forEach(product => {
         // Add product name
         suggestions.add(product.name);
-        
+
         // Add category names
         if (product.categories && product.categories.length > 0) {
           product.categories.forEach(cat => {
-            if (cat.name && cat.name.toLowerCase().includes(query.toLowerCase())) {
+            if (
+              cat.name &&
+              cat.name.toLowerCase().includes(query.toLowerCase())
+            ) {
               suggestions.add(cat.name);
             }
           });
@@ -177,27 +190,27 @@ export class WooCommerceSearchService {
         if (!this.popularSearchesLoaded) {
           await this.loadPopularSearchesFromWooCommerce();
         }
-        
-        result = this.popularSearches.filter(search =>
-          search.toLowerCase().includes(query.toLowerCase())
-        ).slice(0, limit);
+
+        result = this.popularSearches
+          .filter(search => search.toLowerCase().includes(query.toLowerCase()))
+          .slice(0, limit);
       }
 
       // Cache for 10 minutes
       setToCache(cacheKey, result, 600);
-      
-      logger.info('Suggestions cache miss, stored new result', { 
-        query, 
-        suggestionsCount: result.length 
+
+      logger.info('Suggestions cache miss, stored new result', {
+        query,
+        suggestionsCount: result.length,
       });
 
       return result;
     } catch (error) {
       logger.error('Error getting search suggestions:', { error });
       // Fall back to popular searches on error
-      return this.popularSearches.filter(search =>
-        search.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, limit);
+      return this.popularSearches
+        .filter(search => search.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, limit);
     }
   }
 
@@ -221,7 +234,7 @@ export class WooCommerceSearchService {
 
       // Cache for 1 hour
       setToCache(cacheKey, this.popularSearches, 3600);
-      
+
       return this.popularSearches.slice(0, limit);
     } catch (error) {
       logger.error('Error getting popular searches:', { error });
@@ -234,7 +247,7 @@ export class WooCommerceSearchService {
         'wypełniacze',
         'botoks',
         'derma roller',
-        'radiofrekwencja'
+        'radiofrekwencja',
       ];
       return fallbackSearches.slice(0, limit);
     }
@@ -250,13 +263,13 @@ export class WooCommerceSearchService {
         per_page: 50,
         orderby: 'popularity',
         order: 'desc',
-        status: 'publish'
+        status: 'publish',
       });
 
       if (response.data && response.data.length > 0) {
         // Extract search terms from product names and categories
         const searchTerms = new Set<string>();
-        
+
         response.data.forEach(product => {
           // Add product name as search term
           if (product.name) {
@@ -264,9 +277,13 @@ export class WooCommerceSearchService {
             const nameTerms = product.name
               .toLowerCase()
               .split(/[\s,\-()]+/)
-              .filter(term => term.length > 3 && !['krem', 'serum', 'maska', 'tonik'].includes(term))
+              .filter(
+                term =>
+                  term.length > 3 &&
+                  !['krem', 'serum', 'maska', 'tonik'].includes(term)
+              )
               .slice(0, 2); // Take first 2 meaningful terms
-            
+
             nameTerms.forEach(term => searchTerms.add(term));
           }
 
@@ -283,14 +300,16 @@ export class WooCommerceSearchService {
         // Convert to array and limit
         this.popularSearches = Array.from(searchTerms).slice(0, 20);
         this.popularSearchesLoaded = true;
-        
-        logger.info('Loaded popular searches from WooCommerce', { 
+
+        logger.info('Loaded popular searches from WooCommerce', {
           count: this.popularSearches.length,
-          searches: this.popularSearches.slice(0, 5)
+          searches: this.popularSearches.slice(0, 5),
         });
       }
     } catch (error) {
-      logger.error('Error loading popular searches from WooCommerce:', { error });
+      logger.error('Error loading popular searches from WooCommerce:', {
+        error,
+      });
       // Set basic fallback searches
       this.popularSearches = [
         'kwas hialuronowy',
@@ -300,7 +319,7 @@ export class WooCommerceSearchService {
         'wypełniacze',
         'botoks',
         'derma roller',
-        'radiofrekwencja'
+        'radiofrekwencja',
       ];
       this.popularSearchesLoaded = true;
     }
@@ -329,11 +348,11 @@ export class WooCommerceSearchService {
       onSale,
       sortBy = 'relevance',
       page = 1,
-      limit = 20
+      limit = 20,
     } = params;
 
     const cacheKey = getCacheKey('advanced_search', JSON.stringify(params));
-    
+
     try {
       // Try to get from cache first
       const cached = getFromCache<WooSearchResponse>(cacheKey);
@@ -347,18 +366,25 @@ export class WooCommerceSearchService {
         search: query,
         per_page: limit,
         page: page,
-        orderby: sortBy === 'price_asc' ? 'price' : 
-                sortBy === 'price_desc' ? 'price' : 
-                sortBy === 'rating' ? 'rating' : 
-                sortBy === 'newest' ? 'date' : 'popularity',
-        order: sortBy === 'price_desc' ? 'desc' : 'asc'
+        orderby:
+          sortBy === 'price_asc'
+            ? 'price'
+            : sortBy === 'price_desc'
+              ? 'price'
+              : sortBy === 'rating'
+                ? 'rating'
+                : sortBy === 'newest'
+                  ? 'date'
+                  : 'popularity',
+        order: sortBy === 'price_desc' ? 'desc' : 'asc',
       };
 
       // Add filters
       if (category) searchParams.category = category;
       if (minPrice !== undefined) searchParams.min_price = minPrice;
       if (maxPrice !== undefined) searchParams.max_price = maxPrice;
-      if (inStock !== undefined) searchParams.stock_status = inStock ? 'instock' : 'outofstock';
+      if (inStock !== undefined)
+        searchParams.stock_status = inStock ? 'instock' : 'outofstock';
       if (onSale !== undefined) searchParams.on_sale = onSale;
 
       const response = await wooCommerceService.getProducts(searchParams);
@@ -368,16 +394,16 @@ export class WooCommerceSearchService {
         total: response.total || 0,
         page: page,
         totalPages: Math.ceil((response.total || 0) / limit),
-        query
+        query,
       };
 
       // Cache for 5 minutes
       setToCache(cacheKey, result, 300);
-      
-      logger.info('Advanced search cache miss, stored new result', { 
-        query, 
+
+      logger.info('Advanced search cache miss, stored new result', {
+        query,
         resultsCount: result.products.length,
-        params 
+        params,
       });
 
       return result;
@@ -388,7 +414,7 @@ export class WooCommerceSearchService {
         total: 0,
         page: page,
         totalPages: 0,
-        query
+        query,
       };
     }
   }
@@ -419,7 +445,7 @@ export class WooCommerceSearchService {
         totalSearches: 0,
         popularQueries: [],
         averageResults: 0,
-        cacheHitRate: 0
+        cacheHitRate: 0,
       };
     } catch (error) {
       logger.error('Error getting search analytics:', { error });
@@ -427,7 +453,7 @@ export class WooCommerceSearchService {
         totalSearches: 0,
         popularQueries: [],
         averageResults: 0,
-        cacheHitRate: 0
+        cacheHitRate: 0,
       };
     }
   }
@@ -442,9 +468,9 @@ export class WooCommerceSearchService {
       const searchKeys = keys.filter(key => key.startsWith('search:'));
       const suggestionKeys = keys.filter(key => key.startsWith('suggestions:'));
       const popularKeys = keys.filter(key => key.startsWith('popular:'));
-      
+
       const allKeys = [...searchKeys, ...suggestionKeys, ...popularKeys];
-      
+
       if (allKeys.length > 0) {
         allKeys.forEach(key => memoryCache.delete(key));
         logger.info('Search cache cleared', { keysCount: allKeys.length });

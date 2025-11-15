@@ -1,6 +1,6 @@
 /**
  * Shop Data Prefetcher Component
- * 
+ *
  * Komponent odpowiedzialny za prefetchowanie danych sklepu
  * przy inicjalizacji aplikacji. Uruchamia się w tle i nie
  * wyświetla żadnego UI.
@@ -17,13 +17,13 @@ interface ShopDataPrefetcherProps {
    * @default true
    */
   immediate?: boolean;
-  
+
   /**
    * Opóźnienie przed prefetchowaniem (w ms)
    * @default 0
    */
   delay?: number;
-  
+
   /**
    * Czy prefetchować tylko jeśli nie ma danych w cache
    * @default true
@@ -31,17 +31,19 @@ interface ShopDataPrefetcherProps {
   onlyIfEmpty?: boolean;
 }
 
-export default function ShopDataPrefetcher({ 
-  immediate = true, 
+export default function ShopDataPrefetcher({
+  immediate = true,
   delay = 0,
-  onlyIfEmpty = true 
+  onlyIfEmpty = true,
 }: ShopDataPrefetcherProps) {
   const { initialize, hasData, isDataFresh } = useShopDataStore();
 
   useEffect(() => {
     // Sprawdź czy prefetchowanie jest potrzebne
     if (onlyIfEmpty && hasData && isDataFresh()) {
-      console.log('🚀 Shop data already available and fresh, skipping prefetch');
+      console.log(
+        '🚀 Shop data already available and fresh, skipping prefetch'
+      );
       return;
     }
 
@@ -77,7 +79,9 @@ export function useShopDataPrefetch(options: ShopDataPrefetcherProps = {}) {
 
   const prefetch = async () => {
     if (options.onlyIfEmpty && hasData && isDataFresh()) {
-      console.log('🚀 Shop data already available and fresh, skipping prefetch');
+      console.log(
+        '🚀 Shop data already available and fresh, skipping prefetch'
+      );
       return;
     }
 
@@ -93,6 +97,6 @@ export function useShopDataPrefetch(options: ShopDataPrefetcherProps = {}) {
   return {
     prefetch,
     hasData,
-    isDataFresh: isDataFresh()
+    isDataFresh: isDataFresh(),
   };
 }

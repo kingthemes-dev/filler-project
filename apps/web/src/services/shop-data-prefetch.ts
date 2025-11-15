@@ -90,13 +90,16 @@ class ShopDataPrefetchService {
    * Pobiera dane sklepu z cache lub API
    */
   async getShopData(options: PrefetchOptions = {}): Promise<ShopData> {
-    const { forceRefresh = false, cacheTimeout = this.defaultCacheTimeout } = options;
+    const { forceRefresh = false, cacheTimeout = this.defaultCacheTimeout } =
+      options;
 
     // Sprawdź cache jeśli nie wymuszamy odświeżenia
     if (!forceRefresh) {
       const cachedData = this.getCachedData();
       if (cachedData && this.isCacheValid(cachedData, cacheTimeout)) {
-        logger.debug('Shop data loaded from cache', { cacheKey: this.cacheKey });
+        logger.debug('Shop data loaded from cache', {
+          cacheKey: this.cacheKey,
+        });
         return cachedData;
       }
     }
@@ -131,18 +134,23 @@ class ShopDataPrefetchService {
    */
   private async fetchShopData(): Promise<ShopData> {
     logger.debug('Fetching shop data from API');
-    
+
     try {
       const isBrowser = typeof window !== 'undefined';
-      const base = isBrowser ? '' : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+      const base = isBrowser
+        ? ''
+        : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
       const makeUrl = (qs: string) => `${base}/api/woocommerce?${qs}`;
 
       // Pobierz wszystkie dane równolegle (toleruj błędy)
-      const [categoriesResult, attributesResult, productsResult] = await Promise.allSettled([
-        fetch(makeUrl('endpoint=products/categories&per_page=100'), { cache: 'no-store' }),
-        fetch(makeUrl('endpoint=attributes'), { cache: 'no-store' }),
-        fetch(makeUrl('endpoint=products&per_page=1'), { cache: 'no-store' })
-      ]);
+      const [categoriesResult, attributesResult, productsResult] =
+        await Promise.allSettled([
+          fetch(makeUrl('endpoint=products/categories&per_page=100'), {
+            cache: 'no-store',
+          }),
+          fetch(makeUrl('endpoint=attributes'), { cache: 'no-store' }),
+          fetch(makeUrl('endpoint=products&per_page=1'), { cache: 'no-store' }),
+        ]);
 
       // Parsowanie z bezpiecznymi fallbackami (bez przerywania całego prefetchu)
       let categoriesData: ShopCategory[] = [];
@@ -153,8 +161,10 @@ class ShopDataPrefetchService {
             const rawCategories = (await r.json()) as RawCategory[];
             categoriesData = Array.isArray(rawCategories)
               ? rawCategories
-                  .filter((cat): cat is ShopCategory => Boolean(cat?.id && cat?.name && cat?.slug))
-                  .map((cat) => ({
+                  .filter((cat): cat is ShopCategory =>
+                    Boolean(cat?.id && cat?.name && cat?.slug)
+                  )
+                  .map(cat => ({
                     id: Number(cat.id),
                     name: String(cat.name),
                     slug: String(cat.slug),
@@ -164,46 +174,60 @@ class ShopDataPrefetchService {
               : [];
           } else if (r.status === 502 || r.status === 503 || r.status === 504) {
             // Fallback do Store API jeśli WooCommerce API zwraca 502/503/504
-            logger.warn('Categories API error, attempting Store API fallback', { status: r.status });
+            logger.warn('Categories API error, attempting Store API fallback', {
+              status: r.status,
+            });
             try {
               const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_URL;
               if (wpUrl) {
                 const storeUrl = `${wpUrl}/wp-json/wc/store/v1/products/categories?per_page=100`;
                 const storeResp = await fetch(storeUrl, {
-                  headers: { Accept: 'application/json', 'User-Agent': 'Filler-Store/1.0' },
+                  headers: {
+                    Accept: 'application/json',
+                    'User-Agent': 'Filler-Store/1.0',
+                  },
                   cache: 'no-store',
-                  signal: AbortSignal.timeout(5000)
+                  signal: AbortSignal.timeout(5000),
                 });
                 if (storeResp.ok) {
                   const storeData = (await storeResp.json()) as RawCategory[];
                   // Normalize Store API response to match WooCommerce API format
                   categoriesData = Array.isArray(storeData)
                     ? storeData
-                        .filter((cat): cat is ShopCategory => Boolean(cat?.id && cat?.name && cat?.slug))
-                        .map((cat) => ({
+                        .filter((cat): cat is ShopCategory =>
+                          Boolean(cat?.id && cat?.name && cat?.slug)
+                        )
+                        .map(cat => ({
                           id: Number(cat.id),
                           name: String(cat.name),
                           slug: String(cat.slug),
                           count: typeof cat.count === 'number' ? cat.count : 0,
-                          parent: typeof cat.parent === 'number' ? cat.parent : 0,
+                          parent:
+                            typeof cat.parent === 'number' ? cat.parent : 0,
                         }))
                     : [];
                   logger.info('Categories loaded from Store API fallback', {
                     count: categoriesData.length,
                   });
                 } else {
-                  logger.warn('Store API fallback failed', { status: storeResp.status });
+                  logger.warn('Store API fallback failed', {
+                    status: storeResp.status,
+                  });
                   categoriesData = [];
                 }
               } else {
                 categoriesData = [];
               }
             } catch (fallbackError) {
-              logger.error('Store API fallback error', { error: fallbackError });
+              logger.error('Store API fallback error', {
+                error: fallbackError,
+              });
               categoriesData = [];
             }
           } else {
-            logger.warn('Categories API returned non-success status', { status: r.status });
+            logger.warn('Categories API returned non-success status', {
+              status: r.status,
+            });
             categoriesData = [];
           }
         }
@@ -219,18 +243,23 @@ class ShopDataPrefetchService {
           if (r.ok) {
             const rawData = await r.json();
             // API zwraca {success: true, attributes: {...}} lub bezpośrednio attributes
-            attributesData = rawData?.attributes ? { attributes: rawData.attributes } : rawData;
+            attributesData = rawData?.attributes
+              ? { attributes: rawData.attributes }
+              : rawData;
             logger.debug('Attributes loaded', {
               hasAttributes: Boolean(attributesData.attributes),
               brands: attributesData.attributes?.marka?.terms?.length ?? 0,
-              zastosowanie: attributesData.attributes?.zastosowanie?.terms?.length ?? 0,
+              zastosowanie:
+                attributesData.attributes?.zastosowanie?.terms?.length ?? 0,
             });
           } else {
             logger.warn('Attributes API error', { status: r.status });
             attributesData = {};
           }
         } else {
-          logger.warn('Attributes fetch failed', { reason: attributesResult.reason });
+          logger.warn('Attributes fetch failed', {
+            reason: attributesResult.reason,
+          });
         }
       } catch (error) {
         logger.error('Attributes parsing error', { error });
@@ -241,7 +270,9 @@ class ShopDataPrefetchService {
       try {
         if (productsResult.status === 'fulfilled') {
           const r = productsResult.value;
-          totalProducts = r.ok ? parseInt(r.headers.get('X-WP-Total') || '0') : 0;
+          totalProducts = r.ok
+            ? parseInt(r.headers.get('X-WP-Total') || '0')
+            : 0;
           if (!r.ok) logger.warn('Products API error', { status: r.status });
         }
       } catch (productError) {
@@ -251,14 +282,14 @@ class ShopDataPrefetchService {
 
       // Przetwórz kategorie
       const categories: ShopCategory[] = categoriesData;
-      
+
       // Log jeśli brak kategorii
       if (categories.length === 0) {
         logger.warn('No categories loaded, check API endpoint');
       } else {
         logger.info('Categories loaded', {
           total: categories.length,
-          main: categories.filter((c) => (c.parent || 0) === 0).length,
+          main: categories.filter(c => (c.parent || 0) === 0).length,
         });
       }
 
@@ -266,14 +297,14 @@ class ShopDataPrefetchService {
       const attributes: ShopAttributes = {
         brands: attributesData.attributes?.marka?.terms ?? [],
         capacities: attributesData.attributes?.pojemnosc?.terms ?? [],
-        zastosowanie: attributesData.attributes?.zastosowanie?.terms ?? []
+        zastosowanie: attributesData.attributes?.zastosowanie?.terms ?? [],
       };
 
       const shopData: ShopData = {
         categories,
         attributes,
         totalProducts,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
 
       logger.info('Shop data fetched successfully', {
@@ -285,10 +316,9 @@ class ShopDataPrefetchService {
       });
 
       return shopData;
-
     } catch (error) {
       logger.error('Error fetching shop data', { error });
-      
+
       // Zwróć fallback data jeśli API nie działa
       return this.getFallbackData();
     }
@@ -300,7 +330,7 @@ class ShopDataPrefetchService {
   private getCachedData(): ShopData | null {
     try {
       if (typeof window === 'undefined') return null;
-      
+
       const cached = sessionStorage.getItem(this.cacheKey);
       if (!cached) return null;
 
@@ -318,9 +348,11 @@ class ShopDataPrefetchService {
   private cacheData(data: ShopData): void {
     try {
       if (typeof window === 'undefined') return;
-      
+
       sessionStorage.setItem(this.cacheKey, JSON.stringify(data));
-      logger.debug('Shop data cached successfully', { cacheKey: this.cacheKey });
+      logger.debug('Shop data cached successfully', {
+        cacheKey: this.cacheKey,
+      });
     } catch (error) {
       logger.warn('Error caching shop data', { error });
     }
@@ -331,12 +363,12 @@ class ShopDataPrefetchService {
    */
   private isCacheValid(data: ShopData, timeout: number): boolean {
     const now = Date.now();
-    const isValid = (now - data.lastUpdated) < timeout;
-    
+    const isValid = now - data.lastUpdated < timeout;
+
     if (!isValid) {
       logger.debug('Shop data cache expired', { cacheKey: this.cacheKey });
     }
-    
+
     return isValid;
   }
 
@@ -345,13 +377,31 @@ class ShopDataPrefetchService {
    */
   private getFallbackData(): ShopData {
     logger.warn('Using fallback shop data');
-    
+
     return {
       categories: [
-        { id: 1, name: 'Wypełniacze', slug: 'wypelniacze', count: 8, parent: 0 },
-        { id: 2, name: 'Stymulatory', slug: 'stymulatory', count: 43, parent: 0 },
-        { id: 3, name: 'Mezoterapia', slug: 'mezoterapia', count: 11, parent: 0 },
-        { id: 4, name: 'Peelingi', slug: 'peelingi', count: 6, parent: 0 }
+        {
+          id: 1,
+          name: 'Wypełniacze',
+          slug: 'wypelniacze',
+          count: 8,
+          parent: 0,
+        },
+        {
+          id: 2,
+          name: 'Stymulatory',
+          slug: 'stymulatory',
+          count: 43,
+          parent: 0,
+        },
+        {
+          id: 3,
+          name: 'Mezoterapia',
+          slug: 'mezoterapia',
+          count: 11,
+          parent: 0,
+        },
+        { id: 4, name: 'Peelingi', slug: 'peelingi', count: 6, parent: 0 },
       ],
       attributes: {
         brands: [
@@ -364,14 +414,14 @@ class ShopDataPrefetchService {
           { id: 7, name: 'Sculptra', slug: 'sculptra' },
           { id: 8, name: 'Radiesse', slug: 'radiesse' },
           { id: 9, name: 'Belotero', slug: 'belotero' },
-          { id: 10, name: 'Ellanse', slug: 'ellanse' }
+          { id: 10, name: 'Ellanse', slug: 'ellanse' },
         ],
         capacities: [
           { id: 1, name: '0.5ml', slug: '0-5ml' },
           { id: 2, name: '1ml', slug: '1ml' },
           { id: 3, name: '1.5ml', slug: '1-5ml' },
           { id: 4, name: '2ml', slug: '2ml' },
-          { id: 5, name: '3ml', slug: '3ml' }
+          { id: 5, name: '3ml', slug: '3ml' },
         ],
         zastosowanie: [
           { id: 1, name: 'Twarz', slug: 'twarz' },
@@ -379,11 +429,11 @@ class ShopDataPrefetchService {
           { id: 3, name: 'Nos', slug: 'nos' },
           { id: 4, name: 'Policzki', slug: 'policzki' },
           { id: 5, name: 'Broda', slug: 'broda' },
-          { id: 6, name: 'Skronie', slug: 'skronie' }
-        ]
+          { id: 6, name: 'Skronie', slug: 'skronie' },
+        ],
       },
       totalProducts: 68,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     };
   }
 
@@ -393,7 +443,7 @@ class ShopDataPrefetchService {
   clearCache(): void {
     try {
       if (typeof window === 'undefined') return;
-      
+
       sessionStorage.removeItem(this.cacheKey);
       logger.info('Shop data cache cleared');
     } catch (error) {
@@ -418,14 +468,20 @@ class ShopDataPrefetchService {
   /**
    * Pobiera podkategorie dla danej kategorii głównej
    */
-  getSubCategories(categories: ShopCategory[], parentId: number): ShopCategory[] {
+  getSubCategories(
+    categories: ShopCategory[],
+    parentId: number
+  ): ShopCategory[] {
     return categories.filter(cat => cat.parent === parentId);
   }
 
   /**
    * Pobiera marki z limitem (dla modala)
    */
-  getBrandsForModal(attributes: ShopAttributes, limit: number = 36): ShopAttribute[] {
+  getBrandsForModal(
+    attributes: ShopAttributes,
+    limit: number = 36
+  ): ShopAttribute[] {
     return attributes.brands.slice(0, limit);
   }
 

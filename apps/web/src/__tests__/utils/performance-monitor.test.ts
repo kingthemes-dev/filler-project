@@ -18,7 +18,7 @@ describe('PerformanceMonitor', () => {
   describe('Performance Monitoring', () => {
     it('should generate performance report', () => {
       const report = performanceMonitor.generateReport();
-      
+
       expect(report).toHaveProperty('timestamp');
       expect(report).toHaveProperty('url');
       expect(report).toHaveProperty('metrics');
@@ -32,7 +32,7 @@ describe('PerformanceMonitor', () => {
 
     it('should calculate performance score', () => {
       const score = performanceMonitor.getPerformanceScore();
-      
+
       expect(typeof score).toBe('number');
       expect(score).toBeGreaterThanOrEqual(0);
       expect(score).toBeLessThanOrEqual(100);
@@ -40,7 +40,7 @@ describe('PerformanceMonitor', () => {
 
     it('should provide recommendations', () => {
       const recommendations = performanceMonitor.getRecommendations();
-      
+
       expect(Array.isArray(recommendations)).toBe(true);
       recommendations.forEach(rec => {
         expect(typeof rec).toBe('string');
@@ -50,7 +50,7 @@ describe('PerformanceMonitor', () => {
 
     it('should return stats', () => {
       const stats = performanceMonitor.getStats();
-      
+
       expect(stats).toHaveProperty('totalMetrics');
       expect(stats).toHaveProperty('performanceScore');
       expect(stats).toHaveProperty('failedBudgets');
@@ -61,9 +61,9 @@ describe('PerformanceMonitor', () => {
   describe('Performance Budgets', () => {
     it('should have performance budgets configured', () => {
       const report = performanceMonitor.generateReport();
-      
+
       expect(report.budgets.length).toBeGreaterThan(0);
-      
+
       const budgetNames = report.budgets.map(budget => budget.budget.metric);
       expect(budgetNames).toContain('LCP');
       expect(budgetNames).toContain('FID');
@@ -74,7 +74,7 @@ describe('PerformanceMonitor', () => {
 
     it('should categorize budgets by severity', () => {
       const report = performanceMonitor.generateReport();
-      
+
       const severities = report.budgets.map(budget => budget.budget.severity);
       expect(severities).toContain('error');
       expect(severities).toContain('warning');
@@ -84,7 +84,7 @@ describe('PerformanceMonitor', () => {
   describe('Performance Metrics', () => {
     it('should track various performance metrics', () => {
       const report = performanceMonitor.generateReport();
-      
+
       expect(Array.isArray(report.metrics)).toBe(true);
     });
   });

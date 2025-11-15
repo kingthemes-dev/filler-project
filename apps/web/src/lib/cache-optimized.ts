@@ -39,7 +39,7 @@ const CACHE_CONFIG = {
   PRODUCT_TTL: 600, // 10 minutes
   CATEGORY_TTL: 1800, // 30 minutes
   USER_TTL: 900, // 15 minutes
-  MAX_MEMORY_ITEMS: 1000
+  MAX_MEMORY_ITEMS: 1000,
 };
 
 interface CacheOptions {
@@ -51,7 +51,7 @@ interface CacheOptions {
 class CacheManager {
   private async getFromRedis<T>(key: string): Promise<T | null> {
     if (!redis) return null;
-    
+
     try {
       const value = await redis.get(key);
       return value ? (JSON.parse(value) as T) : null;
@@ -61,9 +61,13 @@ class CacheManager {
     }
   }
 
-  private async setInRedis(key: string, value: unknown, ttl: number): Promise<void> {
+  private async setInRedis(
+    key: string,
+    value: unknown,
+    ttl: number
+  ): Promise<void> {
     if (!redis) return;
-    
+
     try {
       await redis.setex(key, ttl, JSON.stringify(value));
     } catch (error) {
@@ -73,7 +77,7 @@ class CacheManager {
 
   private async deleteFromRedis(key: string): Promise<void> {
     if (!redis) return;
-    
+
     try {
       await redis.del(key);
     } catch (error) {
@@ -84,12 +88,12 @@ class CacheManager {
   private getFromMemory<T>(key: string): T | null {
     const item = memoryCache.get(key);
     if (!item) return null;
-    
+
     if (Date.now() > item.expires) {
       memoryCache.delete(key);
       return null;
     }
-    
+
     return item.value as T;
   }
 
@@ -103,10 +107,10 @@ class CacheManager {
         }
       }
     }
-    
+
     memoryCache.set(key, {
       value,
-      expires: Date.now() + (ttl * 1000)
+      expires: Date.now() + ttl * 1000,
     });
   }
 
@@ -134,22 +138,26 @@ class CacheManager {
     return null;
   }
 
-  async set<T>(key: string, value: T, options: CacheOptions = {}): Promise<void> {
+  async set<T>(
+    key: string,
+    value: T,
+    options: CacheOptions = {}
+  ): Promise<void> {
     const ttl = options.ttl || CACHE_CONFIG.DEFAULT_TTL;
-    
+
     // Set in Redis
     await this.setInRedis(key, value, ttl);
-    
+
     // Set in memory as backup
     this.setInMemory(key, value, ttl);
-    
+
     logger.debug('Cache set', { key, ttl });
   }
 
   async delete(key: string): Promise<void> {
     await this.deleteFromRedis(key);
     this.deleteFromMemory(key);
-    
+
     logger.debug('Cache delete', { key });
   }
 
@@ -171,10 +179,12 @@ class CacheManager {
   productsKey(params: Record<string, unknown>): string {
     const sortedParams = Object.keys(params)
       .sort()
-      .map((key) => {
+      .map(key => {
         const value = params[key];
         const serializedValue =
-          typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+          typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean'
             ? String(value)
             : JSON.stringify(value);
         return `${key}=${serializedValue}`;
@@ -215,12 +225,16 @@ export function withCache<T>(
   keyGenerator: (...args: unknown[]) => string,
   options: CacheOptions = {}
 ) {
-  return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: unknown,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
     const method = descriptor.value as (...args: unknown[]) => Promise<T> | T;
 
     descriptor.value = async function (...args: unknown[]) {
       const key = keyGenerator(...args);
-      
+
       // Try to get from cache
       const cached = await cache.get<T>(key);
       if (cached !== null) {
@@ -229,10 +243,10 @@ export function withCache<T>(
 
       // Execute original method
       const result = await method.apply(this, args);
-      
+
       // Cache the result
       await cache.set(key, result, options);
-      
+
       return result;
     };
 
@@ -254,10 +268,10 @@ export async function withApiCache<T>(
 
   // Fetch fresh data
   const data = await fetcher();
-  
+
   // Cache the result
   await cache.set(key, data, options);
-  
+
   return data;
 }
 
@@ -276,7 +290,7 @@ export const cacheInvalidation = {
   categories: () => cache.delete(cache.categoriesKey()),
   user: (id: number) => cache.delete(cache.userKey(id)),
   orders: (customerId: number) => cache.delete(cache.ordersKey(customerId)),
-  order: (id: number) => cache.delete(cache.orderKey(id))
+  order: (id: number) => cache.delete(cache.orderKey(id)),
 };
 
 export default cache;

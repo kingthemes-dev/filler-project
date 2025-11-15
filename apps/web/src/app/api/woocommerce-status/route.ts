@@ -38,7 +38,7 @@ interface WooCommerceStatus {
 export async function GET(_request: NextRequest): Promise<NextResponse> {
   try {
     const _startTime = Date.now();
-    
+
     // Get environment variables
     const wcUrl = env.NEXT_PUBLIC_WC_URL;
     const consumerKey = env.WC_CONSUMER_KEY;
@@ -46,15 +46,18 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     const webhookSecret = env.WOOCOMMERCE_WEBHOOK_SECRET;
 
     if (!wcUrl || !consumerKey || !consumerSecret) {
-      return NextResponse.json({
-        error: 'WooCommerce configuration missing',
-        integration: {
-          url: wcUrl || 'Not Set',
-          consumerKey: consumerKey ? 'Set' : 'Not Set',
-          consumerSecret: consumerSecret ? 'Set' : 'Not Set',
-          webhookSecret: webhookSecret ? 'Set' : 'Not Set',
-        }
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'WooCommerce configuration missing',
+          integration: {
+            url: wcUrl || 'Not Set',
+            consumerKey: consumerKey ? 'Set' : 'Not Set',
+            consumerSecret: consumerSecret ? 'Set' : 'Not Set',
+            webhookSecret: webhookSecret ? 'Set' : 'Not Set',
+          },
+        },
+        { status: 400 }
+      );
     }
 
     // Test API connection
@@ -66,12 +69,12 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
       const apiStart = Date.now();
       const apiResponse = await fetch(`${wcUrl}/system_status`, {
         headers: {
-          'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
-          'Accept': 'application/json',
+          Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
+          Accept: 'application/json',
         },
       });
       responseTime = Date.now() - apiStart;
-      
+
       if (apiResponse.ok) {
         const apiData = await apiResponse.json();
         apiStatus = 'ok';
@@ -85,18 +88,25 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     let products = { total: 0, published: 0, featured: 0 };
     try {
       // OPTIMIZATION: Use _fields to reduce payload (we only need headers, not data)
-      const productsResponse = await fetch(`${wcUrl}/products?per_page=1&_fields=id`, {
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
-          'Accept': 'application/json',
-        },
-      });
-      
+      const productsResponse = await fetch(
+        `${wcUrl}/products?per_page=1&_fields=id`,
+        {
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
+            Accept: 'application/json',
+          },
+        }
+      );
+
       if (productsResponse.ok) {
         const _productsData = await productsResponse.json();
-        const _totalPages = parseInt(productsResponse.headers.get('X-WP-TotalPages') || '0');
-        const total = parseInt(productsResponse.headers.get('X-WP-Total') || '0');
-        
+        const _totalPages = parseInt(
+          productsResponse.headers.get('X-WP-TotalPages') || '0'
+        );
+        const total = parseInt(
+          productsResponse.headers.get('X-WP-Total') || '0'
+        );
+
         products = {
           total,
           published: total, // Simplified - in real app you'd count published separately
@@ -111,13 +121,16 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     let orders = { total: 0, pending: 0, completed: 0 };
     try {
       // OPTIMIZATION: Use _fields to reduce payload (we only need headers, not data)
-      const ordersResponse = await fetch(`${wcUrl}/orders?per_page=1&_fields=id`, {
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
-          'Accept': 'application/json',
-        },
-      });
-      
+      const ordersResponse = await fetch(
+        `${wcUrl}/orders?per_page=1&_fields=id`,
+        {
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
+            Accept: 'application/json',
+          },
+        }
+      );
+
       if (ordersResponse.ok) {
         const total = parseInt(ordersResponse.headers.get('X-WP-Total') || '0');
         orders = {
@@ -134,15 +147,20 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     let customers = { total: 0, active: 0 };
     try {
       // OPTIMIZATION: Use _fields to reduce payload (we only need headers, not data)
-      const customersResponse = await fetch(`${wcUrl}/customers?per_page=1&_fields=id`, {
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
-          'Accept': 'application/json',
-        },
-      });
-      
+      const customersResponse = await fetch(
+        `${wcUrl}/customers?per_page=1&_fields=id`,
+        {
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
+            Accept: 'application/json',
+          },
+        }
+      );
+
       if (customersResponse.ok) {
-        const total = parseInt(customersResponse.headers.get('X-WP-Total') || '0');
+        const total = parseInt(
+          customersResponse.headers.get('X-WP-Total') || '0'
+        );
         customers = {
           total,
           active: total, // Simplified
@@ -156,15 +174,20 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     let webhooks = { status: 'unknown', count: 0 };
     try {
       // OPTIMIZATION: Use _fields to reduce payload (we only need headers, not data)
-      const webhooksResponse = await fetch(`${wcUrl}/webhooks?per_page=1&_fields=id`, {
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
-          'Accept': 'application/json',
-        },
-      });
-      
+      const webhooksResponse = await fetch(
+        `${wcUrl}/webhooks?per_page=1&_fields=id`,
+        {
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
+            Accept: 'application/json',
+          },
+        }
+      );
+
       if (webhooksResponse.ok) {
-        const total = parseInt(webhooksResponse.headers.get('X-WP-Total') || '0');
+        const total = parseInt(
+          webhooksResponse.headers.get('X-WP-Total') || '0'
+        );
         webhooks = {
           status: total > 0 ? 'active' : 'inactive',
           count: total,
@@ -194,13 +217,12 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     };
 
     return NextResponse.json(status);
-
   } catch (error) {
     console.error('WooCommerce status check failed:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to check WooCommerce status',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

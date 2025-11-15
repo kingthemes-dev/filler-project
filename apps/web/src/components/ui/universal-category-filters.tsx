@@ -28,14 +28,16 @@ interface UniversalCategoryFiltersProps {
   preset?: 'woocommerce' | 'shopify' | 'custom';
 }
 
-export default function UniversalCategoryFilters({ 
-  onCategoryChange, 
+export default function UniversalCategoryFilters({
+  onCategoryChange,
   selectedCategories,
   totalProducts,
   config,
-  preset = 'woocommerce'
+  preset = 'woocommerce',
 }: UniversalCategoryFiltersProps) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
 
   // 🚀 USE PREFETCHED DATA - No loading, instant display!
   const categoriesQuery = useQuery<CategoryNode[]>({
@@ -68,8 +70,10 @@ export default function UniversalCategoryFilters({
 
   // removed unused handleCategoryClick helper
 
-  const isCategoryExpanded = (categoryId: string | number) => expandedCategories.has(String(categoryId));
-  const isCategorySelected = (categorySlug: string) => selectedCategories.includes(categorySlug);
+  const isCategoryExpanded = (categoryId: string | number) =>
+    expandedCategories.has(String(categoryId));
+  const isCategorySelected = (categorySlug: string) =>
+    selectedCategories.includes(categorySlug);
 
   if (loading) {
     return (
@@ -96,18 +100,25 @@ export default function UniversalCategoryFilters({
             onChange={() => onCategoryChange('')}
             className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
           />
-          <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">Wszystkie kategorie</span>
-          <span className="ml-auto text-xs text-gray-500">({totalProducts})</span>
+          <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">
+            Wszystkie kategorie
+          </span>
+          <span className="ml-auto text-xs text-gray-500">
+            ({totalProducts})
+          </span>
         </label>
       </div>
 
       {/* Dynamic categories from API */}
-      {categories.map((category) => (
-        <div key={category.id} className="border border-gray-100 rounded-lg overflow-hidden">
+      {categories.map(category => (
+        <div
+          key={category.id}
+          className="border border-gray-100 rounded-lg overflow-hidden"
+        >
           {/* Main category */}
           <div className="bg-gray-50">
             <div className="flex items-center p-2 sm:p-3 hover:bg-gray-100 transition-colors">
-              <div 
+              <div
                 className="flex items-center flex-1 cursor-pointer"
                 onClick={() => {
                   if (category.subcategories.length > 0) {
@@ -124,14 +135,16 @@ export default function UniversalCategoryFilters({
                   checked={isCategorySelected(category.slug)}
                   onChange={() => onCategoryChange(category.slug)}
                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
                 />
                 <span className="ml-3 text-xs sm:text-sm font-semibold text-gray-800 hover:text-gray-600 transition-colors">
                   {category.name}
                 </span>
-                <span className="ml-2 text-xs text-gray-500">({category.count})</span>
+                <span className="ml-2 text-xs text-gray-500">
+                  ({category.count})
+                </span>
               </div>
-              
+
               {category.subcategories.length > 0 && (
                 <button
                   onClick={() => toggleCategory(category.id)}
@@ -149,45 +162,54 @@ export default function UniversalCategoryFilters({
 
           {/* Subcategories */}
           <AnimatePresence>
-            {isCategoryExpanded(category.id) && category.subcategories.length > 0 && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="overflow-hidden bg-white"
-              >
-                <div className="border-t border-gray-100">
-                  {category.subcategories.map((subcategory, index) => (
-                    <motion.label
-                      key={subcategory.id}
-                      className="flex items-center p-2 sm:p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <input
-                        type="checkbox"
-                        name="categories"
-                        value={subcategory.slug}
-                        checked={isCategorySelected(subcategory.slug)}
-                        onChange={() => onCategoryChange(category.slug, subcategory.slug)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
-                      />
-                      <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">{subcategory.name}</span>
-                      <span className="ml-auto text-xs text-gray-500">({subcategory.count})</span>
-                    </motion.label>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+            {isCategoryExpanded(category.id) &&
+              category.subcategories.length > 0 && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="overflow-hidden bg-white"
+                >
+                  <div className="border-t border-gray-100">
+                    {category.subcategories.map((subcategory, index) => (
+                      <motion.label
+                        key={subcategory.id}
+                        className="flex items-center p-2 sm:p-3 pl-8 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <input
+                          type="checkbox"
+                          name="categories"
+                          value={subcategory.slug}
+                          checked={isCategorySelected(subcategory.slug)}
+                          onChange={() =>
+                            onCategoryChange(category.slug, subcategory.slug)
+                          }
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                        />
+                        <span className="ml-3 text-xs sm:text-sm font-medium text-gray-700">
+                          {subcategory.name}
+                        </span>
+                        <span className="ml-auto text-xs text-gray-500">
+                          ({subcategory.count})
+                        </span>
+                      </motion.label>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
           </AnimatePresence>
         </div>
       ))}
 
       {categories.length === 0 && !loading && (
         <div className="text-center py-4">
-          <p className="text-sm text-gray-500">Brak kategorii do wyświetlenia</p>
+          <p className="text-sm text-gray-500">
+            Brak kategorii do wyświetlenia
+          </p>
         </div>
       )}
     </div>

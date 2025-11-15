@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Modale (smoke)', () => {
-  test('Quick view / Search nie wywala błędów przy otwarciu i zamknięciu', async ({ page, baseURL }) => {
+  test('Quick view / Search nie wywala błędów przy otwarciu i zamknięciu', async ({
+    page,
+    baseURL,
+  }) => {
     await page.goto(`${baseURL || ''}/`, { waitUntil: 'domcontentloaded' });
 
     // Jeśli jest przycisk wyszukiwarki, spróbuj otworzyć modal
@@ -24,5 +27,3 @@ test.describe('Modale (smoke)', () => {
     await expect(page).toHaveTitle(/.+/);
   });
 });
-
-

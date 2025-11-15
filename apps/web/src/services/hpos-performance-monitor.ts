@@ -88,12 +88,19 @@ class HPOSPerformanceMonitor {
 
   private startPeriodicReporting(): void {
     // Report metrics every 5 minutes
-    setInterval(() => {
-      this.reportMetrics();
-    }, 5 * 60 * 1000);
+    setInterval(
+      () => {
+        this.reportMetrics();
+      },
+      5 * 60 * 1000
+    );
   }
 
-  private addTimeSeriesData(key: string, value: number, metadata?: Record<string, unknown>): void {
+  private addTimeSeriesData(
+    key: string,
+    value: number,
+    metadata?: Record<string, unknown>
+  ): void {
     const entry: MetricEntry = {
       timestamp: Date.now(),
       value,
@@ -119,9 +126,13 @@ class HPOSPerformanceMonitor {
   }
 
   // API Call Metrics
-  recordApiCall(success: boolean, responseTime: number, hposEnabled: boolean = true): void {
+  recordApiCall(
+    success: boolean,
+    responseTime: number,
+    hposEnabled: boolean = true
+  ): void {
     this.metrics.apiCalls.total++;
-    
+
     if (success) {
       this.metrics.apiCalls.successful++;
     } else {
@@ -133,10 +144,17 @@ class HPOSPerformanceMonitor {
     }
 
     // Update average response time
-    const totalTime = this.metrics.apiCalls.averageResponseTime * (this.metrics.apiCalls.total - 1) + responseTime;
-    this.metrics.apiCalls.averageResponseTime = totalTime / this.metrics.apiCalls.total;
+    const totalTime =
+      this.metrics.apiCalls.averageResponseTime *
+        (this.metrics.apiCalls.total - 1) +
+      responseTime;
+    this.metrics.apiCalls.averageResponseTime =
+      totalTime / this.metrics.apiCalls.total;
 
-    this.addTimeSeriesData('api_response_time', responseTime, { success, hposEnabled });
+    this.addTimeSeriesData('api_response_time', responseTime, {
+      success,
+      hposEnabled,
+    });
   }
 
   // Cache Metrics
@@ -154,7 +172,8 @@ class HPOSPerformanceMonitor {
 
   private updateCacheHitRate(): void {
     const total = this.metrics.cache.hits + this.metrics.cache.misses;
-    this.metrics.cache.hitRate = total > 0 ? (this.metrics.cache.hits / total) * 100 : 0;
+    this.metrics.cache.hitRate =
+      total > 0 ? (this.metrics.cache.hits / total) * 100 : 0;
   }
 
   setCompressionEnabled(enabled: boolean): void {
@@ -164,10 +183,14 @@ class HPOSPerformanceMonitor {
   // Order Metrics
   recordOrderCreated(processingTime: number): void {
     this.metrics.orders.created++;
-    
+
     // Update average processing time
-    const totalTime = this.metrics.orders.averageProcessingTime * (this.metrics.orders.created - 1) + processingTime;
-    this.metrics.orders.averageProcessingTime = totalTime / this.metrics.orders.created;
+    const totalTime =
+      this.metrics.orders.averageProcessingTime *
+        (this.metrics.orders.created - 1) +
+      processingTime;
+    this.metrics.orders.averageProcessingTime =
+      totalTime / this.metrics.orders.created;
 
     this.addTimeSeriesData('order_created', 1, { processingTime });
   }
@@ -191,7 +214,10 @@ class HPOSPerformanceMonitor {
 
   recordSessionCleaned(count: number): void {
     this.metrics.sessions.cleaned += count;
-    this.metrics.sessions.active = Math.max(0, this.metrics.sessions.active - count);
+    this.metrics.sessions.active = Math.max(
+      0,
+      this.metrics.sessions.active - count
+    );
     this.addTimeSeriesData('session_cleaned', count);
   }
 
@@ -214,7 +240,7 @@ class HPOSPerformanceMonitor {
   // Reporting
   private reportMetrics(): void {
     const uptime = Date.now() - this.startTime;
-    
+
     logger.info('HPOS Performance Metrics', {
       uptime: Math.round(uptime / 1000),
       metrics: this.metrics,
@@ -226,15 +252,19 @@ class HPOSPerformanceMonitor {
     return { ...this.metrics };
   }
 
-  getTimeSeriesData(key: string, timeRange?: { start: number; end: number }): MetricEntry[] {
+  getTimeSeriesData(
+    key: string,
+    timeRange?: { start: number; end: number }
+  ): MetricEntry[] {
     const series = this.timeSeries.get(key) || [];
-    
+
     if (!timeRange) {
       return [...series];
     }
 
-    return series.filter(entry => 
-      entry.timestamp >= timeRange.start && entry.timestamp <= timeRange.end
+    return series.filter(
+      entry =>
+        entry.timestamp >= timeRange.start && entry.timestamp <= timeRange.end
     );
   }
 
@@ -247,32 +277,46 @@ class HPOSPerformanceMonitor {
     recommendations: string[];
   } {
     const uptime = Date.now() - this.startTime;
-    const apiSuccessRate = this.metrics.apiCalls.total > 0 
-      ? (this.metrics.apiCalls.successful / this.metrics.apiCalls.total) * 100 
-      : 0;
-    const orderSuccessRate = (this.metrics.orders.created + this.metrics.orders.failed) > 0
-      ? (this.metrics.orders.created / (this.metrics.orders.created + this.metrics.orders.failed)) * 100
-      : 0;
-    const webhookSuccessRate = this.metrics.webhooks.received > 0
-      ? (this.metrics.webhooks.processed / this.metrics.webhooks.received) * 100
-      : 0;
+    const apiSuccessRate =
+      this.metrics.apiCalls.total > 0
+        ? (this.metrics.apiCalls.successful / this.metrics.apiCalls.total) * 100
+        : 0;
+    const orderSuccessRate =
+      this.metrics.orders.created + this.metrics.orders.failed > 0
+        ? (this.metrics.orders.created /
+            (this.metrics.orders.created + this.metrics.orders.failed)) *
+          100
+        : 0;
+    const webhookSuccessRate =
+      this.metrics.webhooks.received > 0
+        ? (this.metrics.webhooks.processed / this.metrics.webhooks.received) *
+          100
+        : 0;
 
     const recommendations: string[] = [];
 
     if (apiSuccessRate < 95) {
-      recommendations.push('API success rate is below 95%, consider investigating failed requests');
+      recommendations.push(
+        'API success rate is below 95%, consider investigating failed requests'
+      );
     }
 
     if (this.metrics.cache.hitRate < 80) {
-      recommendations.push('Cache hit rate is below 80%, consider optimizing cache strategy');
+      recommendations.push(
+        'Cache hit rate is below 80%, consider optimizing cache strategy'
+      );
     }
 
     if (this.metrics.orders.limitExceeded > 0) {
-      recommendations.push('Order limits are being exceeded, consider adjusting limits or investigating abuse');
+      recommendations.push(
+        'Order limits are being exceeded, consider adjusting limits or investigating abuse'
+      );
     }
 
     if (this.metrics.apiCalls.averageResponseTime > 2000) {
-      recommendations.push('Average API response time is above 2s, consider performance optimization');
+      recommendations.push(
+        'Average API response time is above 2s, consider performance optimization'
+      );
     }
 
     return {
@@ -320,7 +364,7 @@ class HPOSPerformanceMonitor {
 
     this.timeSeries.clear();
     this.startTime = Date.now();
-    
+
     logger.info('HPOS Performance Monitor: Metrics reset');
   }
 }

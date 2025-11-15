@@ -16,7 +16,9 @@ interface EnvConfig {
   SENDINBLUE_LIST_ID?: string;
   
   // Analytics
-  NEXT_PUBLIC_GA_ID?: string;
+  NEXT_PUBLIC_GA_ID?: string; // Legacy, use NEXT_PUBLIC_GA4_ID
+  NEXT_PUBLIC_GA4_ID?: string;
+  NEXT_PUBLIC_GTM_ID?: string;
   
   // App
   NODE_ENV: 'development' | 'production' | 'test';
@@ -40,7 +42,9 @@ const REQUIRED_CLIENT_ENV_VARS = [
 const OPTIONAL_ENV_VARS = [
   'SENDINBLUE_API_KEY',
   'SENDINBLUE_LIST_ID',
-  'NEXT_PUBLIC_GA_ID'
+  'NEXT_PUBLIC_GA_ID',
+  'NEXT_PUBLIC_GA4_ID',
+  'NEXT_PUBLIC_GTM_ID'
 ] as const;
 
 // Validate environment variables
@@ -60,6 +64,8 @@ function validateEnv(): EnvConfig {
       SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,
       SENDINBLUE_LIST_ID: process.env.SENDINBLUE_LIST_ID,
       NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,
+      NEXT_PUBLIC_GA4_ID: process.env.NEXT_PUBLIC_GA4_ID,
+      NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID,
       NODE_ENV: (process.env.NODE_ENV as EnvConfig['NODE_ENV']) || 'development'
     };
   }
@@ -108,6 +114,8 @@ function validateEnv(): EnvConfig {
     SENDINBLUE_API_KEY: process.env.SENDINBLUE_API_KEY,
     SENDINBLUE_LIST_ID: process.env.SENDINBLUE_LIST_ID,
     NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,
+    NEXT_PUBLIC_GA4_ID: process.env.NEXT_PUBLIC_GA4_ID,
+    NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID,
     NODE_ENV: nodeEnv
   };
 }
@@ -122,7 +130,7 @@ export const isTest = env.NODE_ENV === 'test';
 
 // Feature flags based on environment
 export const features = {
-  analytics: !!env.NEXT_PUBLIC_GA_ID,
+  analytics: !!(env.NEXT_PUBLIC_GA4_ID || env.NEXT_PUBLIC_GA_ID),
   newsletter: !!env.SENDINBLUE_API_KEY,
   debugMode: isDevelopment
 } as const;

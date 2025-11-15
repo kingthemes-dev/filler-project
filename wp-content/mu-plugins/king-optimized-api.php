@@ -573,16 +573,28 @@ class KingOptimizedAPI {
         // Get related products (same category, limit 4)
         $related_products = array();
         if (!empty($categories)) {
-            $related_ids = $wpdb->get_col($wpdb->prepare("
-                SELECT DISTINCT p.ID FROM {$wpdb->posts} p
-                INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-                INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-                WHERE tt.term_id IN (" . implode(',', array_map('intval', wp_list_pluck($categories, 'term_id'))) . ")
-                AND p.ID != %d
-                AND p.post_type = 'product'
-                AND p.post_status = 'publish'
-                LIMIT 4
-            ", $product_id));
+            // SECURITY: Use $wpdb->prepare with placeholders for term IDs (prevent SQL injection)
+            $term_ids = array_map('intval', wp_list_pluck($categories, 'term_id'));
+            $term_ids = array_filter($term_ids, function($id) { return $id > 0; }); // Ensure positive integers
+            
+            if (!empty($term_ids)) {
+                // Create placeholders for IN clause
+                $placeholders = implode(',', array_fill(0, count($term_ids), '%d'));
+                $query = $wpdb->prepare("
+                    SELECT DISTINCT p.ID FROM {$wpdb->posts} p
+                    INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+                    INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+                    WHERE tt.term_id IN ({$placeholders})
+                    AND p.ID != %d
+                    AND p.post_type = 'product'
+                    AND p.post_status = 'publish'
+                    LIMIT 4
+                ", array_merge($term_ids, array($product_id)));
+                
+                $related_ids = $wpdb->get_col($query);
+            } else {
+                $related_ids = array();
+            }
             
             foreach ($related_ids as $related_id) {
                 $related_product = wc_get_product($related_id);

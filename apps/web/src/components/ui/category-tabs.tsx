@@ -7,10 +7,14 @@ interface CategoryTabsProps {
   selectedCategories: string[];
 }
 
-export default function CategoryTabs({ onCategoryChange, selectedCategories }: CategoryTabsProps) {
+export default function CategoryTabs({
+  onCategoryChange,
+  selectedCategories,
+}: CategoryTabsProps) {
   // Mapowanie starych selectedCategories na nową strukturę
-  const selectedCategory = selectedCategories.length > 0 ? selectedCategories[0] : undefined;
-  
+  const selectedCategory =
+    selectedCategories.length > 0 ? selectedCategories[0] : undefined;
+
   const handleCategoryChange = (categoryId: string, subcategoryId?: string) => {
     if (subcategoryId) {
       // Jeśli wybrano podkategorię, przekaż jej ID

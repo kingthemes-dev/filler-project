@@ -18,5 +18,3 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
 export async function HEAD(): Promise<NextResponse> {
   return new NextResponse(null, { status: 200 });
 }
-
-

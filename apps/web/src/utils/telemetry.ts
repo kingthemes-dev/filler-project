@@ -24,7 +24,7 @@ export const TELEMETRY_CONFIG = {
   enabled: process.env.NODE_ENV === 'production',
   serviceName: 'headless-woo',
   serviceVersion: '1.0.0',
-  environment: process.env.NODE_ENV || 'development'
+  environment: process.env.NODE_ENV || 'development',
 };
 
 // Performance metrics tracking
@@ -39,10 +39,10 @@ export class TelemetryTracker {
 
   private initialize() {
     if (!this.isEnabled) return;
-    
+
     logger.info('OpenTelemetry initialized', {
       serviceName: TELEMETRY_CONFIG.serviceName,
-      environment: TELEMETRY_CONFIG.environment
+      environment: TELEMETRY_CONFIG.environment,
     });
   }
 
@@ -54,15 +54,15 @@ export class TelemetryTracker {
     if (!this.metrics.has(metricKey)) {
       this.metrics.set(metricKey, []);
     }
-    
+
     this.metrics.get(metricKey)!.push(value);
-    
+
     // Log metric for external collection
     logger.info('Metric tracked', {
       name,
       value,
       tags,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -70,23 +70,28 @@ export class TelemetryTracker {
   trackTiming(name: string, startTime: number, endTime?: number) {
     const duration = endTime ? endTime - startTime : Date.now() - startTime;
     this.trackMetric(`timing.${name}`, duration, {
-      unit: 'milliseconds'
+      unit: 'milliseconds',
     });
   }
 
   // Track API calls
-  trackApiCall(method: string, endpoint: string, statusCode: number, duration: number) {
+  trackApiCall(
+    method: string,
+    endpoint: string,
+    statusCode: number,
+    duration: number
+  ) {
     this.trackMetric('api.calls', 1, {
       method,
       endpoint: endpoint.replace(/\d+/g, ':id'), // Anonymize IDs
       status_code: statusCode.toString(),
-      status_class: Math.floor(statusCode / 100).toString() + 'xx'
+      status_class: Math.floor(statusCode / 100).toString() + 'xx',
     });
-    
+
     this.trackMetric('api.duration', duration, {
       method,
       endpoint: endpoint.replace(/\d+/g, ':id'),
-      status_code: statusCode.toString()
+      status_code: statusCode.toString(),
     });
   }
 
@@ -94,39 +99,47 @@ export class TelemetryTracker {
   trackDatabaseQuery(query: string, duration: number, rowCount?: number) {
     this.trackMetric('database.queries', 1, {
       query_type: this.getQueryType(query),
-      table: this.getTableName(query)
+      table: this.getTableName(query),
     });
-    
+
     this.trackMetric('database.duration', duration, {
-      query_type: this.getQueryType(query)
+      query_type: this.getQueryType(query),
     });
 
     if (rowCount !== undefined) {
       this.trackMetric('database.rows', rowCount, {
-        query_type: this.getQueryType(query)
+        query_type: this.getQueryType(query),
       });
     }
   }
 
   // Track cache operations
-  trackCacheOperation(operation: 'hit' | 'miss' | 'set' | 'delete', key: string, duration?: number) {
+  trackCacheOperation(
+    operation: 'hit' | 'miss' | 'set' | 'delete',
+    key: string,
+    duration?: number
+  ) {
     this.trackMetric('cache.operations', 1, {
       operation,
-      key_prefix: key.split(':')[0]
+      key_prefix: key.split(':')[0],
     });
 
     if (duration !== undefined) {
       this.trackMetric('cache.duration', duration, {
-        operation
+        operation,
       });
     }
   }
 
   // Track business metrics
-  trackBusinessMetric(event: string, value: number, metadata?: BusinessMetadata) {
+  trackBusinessMetric(
+    event: string,
+    value: number,
+    metadata?: BusinessMetadata
+  ) {
     this.trackMetric(`business.${event}`, value, {
       ...metadata,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -135,32 +148,36 @@ export class TelemetryTracker {
     this.trackMetric('errors.count', 1, {
       error_type: error.constructor.name,
       error_message: error.message.substring(0, 100),
-      ...context
+      ...context,
     });
 
     logger.error('Error tracked', {
       error: error.message,
       stack: error.stack,
-      context
+      context,
     });
   }
 
   // Track user actions
-  trackUserAction(action: string, userId?: string, metadata?: BusinessMetadata) {
+  trackUserAction(
+    action: string,
+    userId?: string,
+    metadata?: BusinessMetadata
+  ) {
     this.trackMetric('user.actions', 1, {
       action,
       user_id: userId || 'anonymous',
-      ...metadata
+      ...metadata,
     });
   }
 
   // Get metrics summary
   getMetricsSummary(): Record<string, MetricSummary> {
     const summary: Record<string, MetricSummary> = {};
-    
+
     for (const [key, values] of this.metrics.entries()) {
       if (values.length === 0) continue;
-      
+
       summary[key] = {
         count: values.length,
         min: Math.min(...values),
@@ -168,10 +185,10 @@ export class TelemetryTracker {
         avg: values.reduce((a, b) => a + b, 0) / values.length,
         p50: this.percentile(values, 0.5),
         p95: this.percentile(values, 0.95),
-        p99: this.percentile(values, 0.99)
+        p99: this.percentile(values, 0.99),
       };
     }
-    
+
     return summary;
   }
 
@@ -198,13 +215,17 @@ export class TelemetryTracker {
 
   // Export metrics for external monitoring
   exportMetrics(): string {
-    return JSON.stringify({
-      timestamp: new Date().toISOString(),
-      service: TELEMETRY_CONFIG.serviceName,
-      version: TELEMETRY_CONFIG.serviceVersion,
-      environment: TELEMETRY_CONFIG.environment,
-      metrics: this.getMetricsSummary()
-    }, null, 2);
+    return JSON.stringify(
+      {
+        timestamp: new Date().toISOString(),
+        service: TELEMETRY_CONFIG.serviceName,
+        version: TELEMETRY_CONFIG.serviceVersion,
+        environment: TELEMETRY_CONFIG.environment,
+        metrics: this.getMetricsSummary(),
+      },
+      null,
+      2
+    );
   }
 }
 
@@ -221,7 +242,7 @@ export function trackPerformance(name: string) {
     const method = descriptor.value;
     if (!method) return descriptor;
 
-    descriptor.value = (async function (this: unknown, ...args: unknown[]) {
+    descriptor.value = async function (this: unknown, ...args: unknown[]) {
       const startTime = Date.now();
       try {
         const result = await method.apply(this, args);
@@ -232,7 +253,7 @@ export function trackPerformance(name: string) {
         telemetry.trackError(error as Error, { method: name });
         throw error;
       }
-    }) as T;
+    } as T;
     return descriptor;
   };
 }
@@ -247,7 +268,7 @@ export function trackApiCall(method: string, endpoint: string) {
     const originalMethod = descriptor.value;
     if (!originalMethod) return descriptor;
 
-    descriptor.value = (async function (this: unknown, ...args: unknown[]) {
+    descriptor.value = async function (this: unknown, ...args: unknown[]) {
       const startTime = Date.now();
       try {
         const result = await originalMethod.apply(this, args);
@@ -264,7 +285,7 @@ export function trackApiCall(method: string, endpoint: string) {
         telemetry.trackError(error as Error, { method, endpoint });
         throw error;
       }
-    }) as T;
+    } as T;
     return descriptor;
   };
 }
@@ -279,16 +300,19 @@ export function trackBusinessMetric(event: string) {
     const originalMethod = descriptor.value;
     if (!originalMethod) return descriptor;
 
-    descriptor.value = (async function (this: unknown, ...args: unknown[]) {
+    descriptor.value = async function (this: unknown, ...args: unknown[]) {
       try {
         const result = await originalMethod.apply(this, args);
         telemetry.trackBusinessMetric(event, 1, { success: true });
         return result;
       } catch (error) {
-        telemetry.trackBusinessMetric(event, 1, { success: false, error: (error as Error).message });
+        telemetry.trackBusinessMetric(event, 1, {
+          success: false,
+          error: (error as Error).message,
+        });
         throw error;
       }
-    }) as T;
+    } as T;
     return descriptor;
   };
 }

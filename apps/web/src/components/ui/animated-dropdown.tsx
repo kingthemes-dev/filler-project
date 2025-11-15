@@ -38,8 +38,14 @@ export interface AnimatedDropdownProps {
   emptyMessage?: string;
   onSearch?: (query: string) => void;
   onClear?: () => void;
-  renderOption?: (option: AnimatedDropdownOption, isSelected: boolean) => React.ReactNode;
-  renderTrigger?: (selectedOptions: AnimatedDropdownOption[], isOpen: boolean) => React.ReactNode;
+  renderOption?: (
+    option: AnimatedDropdownOption,
+    isSelected: boolean
+  ) => React.ReactNode;
+  renderTrigger?: (
+    selectedOptions: AnimatedDropdownOption[],
+    isOpen: boolean
+  ) => React.ReactNode;
   variant?: 'default' | 'minimal' | 'outlined' | 'filled';
   size?: 'sm' | 'md' | 'lg';
   animation?: 'fade' | 'slide' | 'scale' | 'bounce';
@@ -75,7 +81,7 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [isHovered, setIsHovered] = useState(false);
-  
+
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -91,90 +97,103 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
   // Filter options based on search
   const filteredOptions = React.useMemo(() => {
     if (!searchQuery) return options;
-    return options.filter(option =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      option.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    return options.filter(
+      option =>
+        option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        option.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [options, searchQuery]);
 
   // Handle option selection
-  const handleOptionSelect = useCallback((option: AnimatedDropdownOption) => {
-    if (option.disabled) return;
+  const handleOptionSelect = useCallback(
+    (option: AnimatedDropdownOption) => {
+      if (option.disabled) return;
 
-    if (multiSelect) {
-      const currentValues = Array.isArray(value) ? value : [];
-      const isSelected = currentValues.includes(option.value);
-      
-      if (isSelected) {
-        onChange(currentValues.filter(v => v !== option.value));
+      if (multiSelect) {
+        const currentValues = Array.isArray(value) ? value : [];
+        const isSelected = currentValues.includes(option.value);
+
+        if (isSelected) {
+          onChange(currentValues.filter(v => v !== option.value));
+        } else {
+          onChange([...currentValues, option.value]);
+        }
       } else {
-        onChange([...currentValues, option.value]);
+        onChange(option.value);
+        setIsOpen(false);
+        setSearchQuery('');
       }
-    } else {
-      onChange(option.value);
-      setIsOpen(false);
-      setSearchQuery('');
-    }
-  }, [value, onChange, multiSelect]);
+    },
+    [value, onChange, multiSelect]
+  );
 
   // Handle clear
-  const handleClear = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (multiSelect) {
-      onChange([]);
-    } else {
-      onChange('');
-    }
-    onClear?.();
-  }, [onChange, multiSelect, onClear]);
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (multiSelect) {
+        onChange([]);
+      } else {
+        onChange('');
+      }
+      onClear?.();
+    },
+    [onChange, multiSelect, onClear]
+  );
 
   // Handle search
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    onSearch?.(query);
-  }, [onSearch]);
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      onSearch?.(query);
+    },
+    [onSearch]
+  );
 
   // Keyboard navigation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!isOpen) {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        setIsOpen(true);
-      }
-      return;
-    }
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setFocusedIndex(prev => 
-          prev < filteredOptions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setFocusedIndex(prev => 
-          prev > 0 ? prev - 1 : filteredOptions.length - 1
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (focusedIndex >= 0 && focusedIndex < filteredOptions.length) {
-          handleOptionSelect(filteredOptions[focusedIndex]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!isOpen) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          setIsOpen(true);
         }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setIsOpen(false);
-        setSearchQuery('');
-        triggerRef.current?.focus();
-        break;
-      case 'Tab':
-        setIsOpen(false);
-        setSearchQuery('');
-        break;
-    }
-  }, [isOpen, filteredOptions, focusedIndex, handleOptionSelect]);
+        return;
+      }
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedIndex(prev =>
+            prev < filteredOptions.length - 1 ? prev + 1 : 0
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedIndex(prev =>
+            prev > 0 ? prev - 1 : filteredOptions.length - 1
+          );
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (focusedIndex >= 0 && focusedIndex < filteredOptions.length) {
+            handleOptionSelect(filteredOptions[focusedIndex]);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setIsOpen(false);
+          setSearchQuery('');
+          triggerRef.current?.focus();
+          break;
+        case 'Tab':
+          setIsOpen(false);
+          setSearchQuery('');
+          break;
+      }
+    },
+    [isOpen, filteredOptions, focusedIndex, handleOptionSelect]
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -209,7 +228,9 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
   // Scroll focused option into view
   useEffect(() => {
     if (focusedIndex >= 0 && contentRef.current) {
-      const focusedElement = contentRef.current.querySelector(`[data-option-index="${focusedIndex}"]`);
+      const focusedElement = contentRef.current.querySelector(
+        `[data-option-index="${focusedIndex}"]`
+      );
       if (focusedElement) {
         focusedElement.scrollIntoView({ block: 'nearest' });
       }
@@ -223,25 +244,25 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
         return {
           initial: { opacity: 0, y: -10, scale: 0.95 },
           animate: { opacity: 1, y: 0, scale: 1 },
-          exit: { opacity: 0, y: -10, scale: 0.95 }
+          exit: { opacity: 0, y: -10, scale: 0.95 },
         };
       case 'scale':
         return {
           initial: { opacity: 0, scale: 0.8 },
           animate: { opacity: 1, scale: 1 },
-          exit: { opacity: 0, scale: 0.8 }
+          exit: { opacity: 0, scale: 0.8 },
         };
       case 'bounce':
         return {
           initial: { opacity: 0, y: -20, scale: 0.9 },
           animate: { opacity: 1, y: 0, scale: 1 },
-          exit: { opacity: 0, y: -20, scale: 0.9 }
+          exit: { opacity: 0, y: -20, scale: 0.9 },
         };
       default: // fade
         return {
           initial: { opacity: 0 },
           animate: { opacity: 1 },
-          exit: { opacity: 0 }
+          exit: { opacity: 0 },
         };
     }
   };
@@ -266,7 +287,7 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
   const sizeClasses = {
     sm: 'px-3 py-2 text-sm',
     md: 'px-4 py-3 text-sm',
-    lg: 'px-4 py-4 text-base'
+    lg: 'px-4 py-4 text-base',
   };
 
   // Variant classes
@@ -274,10 +295,13 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
     default: 'bg-white border border-gray-200 hover:border-gray-300',
     minimal: 'bg-transparent border-0 hover:bg-gray-50',
     outlined: 'bg-white border-2 border-gray-200 hover:border-gray-300',
-    filled: 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+    filled: 'bg-gray-50 border border-gray-200 hover:bg-gray-100',
   };
 
-  const defaultRenderOption = (option: AnimatedDropdownOption, isSelected: boolean) => (
+  const defaultRenderOption = (
+    option: AnimatedDropdownOption,
+    isSelected: boolean
+  ) => (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
@@ -286,9 +310,7 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {option.icon && (
-          <div className="flex-shrink-0 text-gray-400">
-            {option.icon}
-          </div>
+          <div className="flex-shrink-0 text-gray-400">{option.icon}</div>
         )}
         <div className="flex-1 min-w-0">
           <div className="font-medium text-gray-900 truncate">
@@ -303,10 +325,14 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         {option.badge && (
-          <span className={cn(
-            "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-            option.color ? `bg-${option.color}-100 text-${option.color}-800` : "bg-gray-100 text-gray-600"
-          )}>
+          <span
+            className={cn(
+              'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+              option.color
+                ? `bg-${option.color}-100 text-${option.color}-800`
+                : 'bg-gray-100 text-gray-600'
+            )}
+          >
             {option.badge}
           </span>
         )}
@@ -328,16 +354,21 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
     </motion.div>
   );
 
-  const defaultRenderTrigger = (selectedOptions: AnimatedDropdownOption[], isOpen: boolean) => (
+  const defaultRenderTrigger = (
+    selectedOptions: AnimatedDropdownOption[],
+    isOpen: boolean
+  ) => (
     <motion.div
       className="flex items-center justify-between w-full"
       animate={{ scale: isHovered ? 1.02 : 1 }}
       transition={{ duration: 0.1 }}
     >
-      <span className={cn(
-        "truncate",
-        selectedOptions.length === 0 && "text-gray-500"
-      )}>
+      <span
+        className={cn(
+          'truncate',
+          selectedOptions.length === 0 && 'text-gray-500'
+        )}
+      >
         {getDisplayText()}
       </span>
       <div className="flex items-center gap-1 ml-2">
@@ -363,7 +394,7 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
   );
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn('relative', className)}>
       {/* Label */}
       {label && (
         <motion.label
@@ -385,11 +416,11 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "w-full text-left rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-          "disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200",
+          'w-full text-left rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500',
+          'disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200',
           sizeClasses[size],
           variantClasses[variant],
-          error && "border-red-300 focus:ring-red-500/20 focus:border-red-500",
+          error && 'border-red-300 focus:ring-red-500/20 focus:border-red-500',
           triggerClassName
         )}
         aria-expanded={isOpen}
@@ -397,7 +428,9 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
         whileHover={{ scale: disabled ? 1 : 1.01 }}
         whileTap={{ scale: disabled ? 1 : 0.99 }}
       >
-        {renderTrigger ? renderTrigger(selectedOptions, isOpen) : defaultRenderTrigger(selectedOptions, isOpen)}
+        {renderTrigger
+          ? renderTrigger(selectedOptions, isOpen)
+          : defaultRenderTrigger(selectedOptions, isOpen)}
       </motion.button>
 
       {/* Error message */}
@@ -419,9 +452,9 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
             {...getAnimationVariants()}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className={cn(
-              "absolute top-full left-0 right-0 z-50 mt-1",
-              "bg-white border border-gray-200 rounded-xl shadow-lg",
-              "overflow-hidden backdrop-blur-sm",
+              'absolute top-full left-0 right-0 z-50 mt-1',
+              'bg-white border border-gray-200 rounded-xl shadow-lg',
+              'overflow-hidden backdrop-blur-sm',
               contentClassName
             )}
             style={{ maxHeight: `${maxHeight}px` }}
@@ -440,7 +473,7 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
                     ref={searchRef}
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
+                    onChange={e => handleSearch(e.target.value)}
                     placeholder="Szukaj..."
                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
@@ -449,7 +482,10 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
             )}
 
             {/* Options */}
-            <div className="overflow-y-auto" style={{ maxHeight: `${maxHeight - (searchable ? 60 : 0)}px` }}>
+            <div
+              className="overflow-y-auto"
+              style={{ maxHeight: `${maxHeight - (searchable ? 60 : 0)}px` }}
+            >
               {filteredOptions.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -469,7 +505,7 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
                 filteredOptions.map((option, index) => {
                   const isSelectedOption = isSelected(option);
                   const isFocused = index === focusedIndex;
-                  
+
                   return (
                     <motion.button
                       key={option.id}
@@ -481,16 +517,18 @@ const AnimatedDropdown: React.FC<AnimatedDropdownProps> = ({
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.02 }}
                       className={cn(
-                        "w-full px-4 py-3 text-left transition-all duration-200",
-                        "hover:bg-gray-50 focus:bg-gray-50 focus:outline-none",
-                        isFocused && "bg-blue-50",
-                        isSelectedOption && "bg-blue-50",
-                        option.disabled && "opacity-50 cursor-not-allowed",
-                        "border-b border-gray-100 last:border-b-0"
+                        'w-full px-4 py-3 text-left transition-all duration-200',
+                        'hover:bg-gray-50 focus:bg-gray-50 focus:outline-none',
+                        isFocused && 'bg-blue-50',
+                        isSelectedOption && 'bg-blue-50',
+                        option.disabled && 'opacity-50 cursor-not-allowed',
+                        'border-b border-gray-100 last:border-b-0'
                       )}
                       whileHover={{ x: 4 }}
                     >
-                      {renderOption ? renderOption(option, isSelectedOption) : defaultRenderOption(option, isSelectedOption)}
+                      {renderOption
+                        ? renderOption(option, isSelectedOption)
+                        : defaultRenderOption(option, isSelectedOption)}
                     </motion.button>
                   );
                 })

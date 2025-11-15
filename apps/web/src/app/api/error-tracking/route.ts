@@ -3,8 +3,19 @@ import { logger } from '@/utils/logger';
 import { errorTrackingSchema } from '@/lib/schemas/internal';
 import { validateApiInput } from '@/utils/request-validation';
 import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { checkApiRateLimit, addSecurityHeaders } from '@/utils/api-security';
 
 export async function POST(request: NextRequest) {
+  // Security check: rate limiting only (tracking endpoint, no CSRF)
+  const rateLimitCheck = await checkApiRateLimit(request);
+  
+  if (!rateLimitCheck.allowed) {
+    return rateLimitCheck.response || NextResponse.json(
+      { error: 'Rate limit exceeded' },
+      { status: 429 }
+    );
+  }
+  
   try {
     const body = await request.json();
     const sanitizedBody = validateApiInput(body);
@@ -12,7 +23,10 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.success) {
       return createErrorResponse(
-        new ValidationError('Nieprawidłowe dane raportu błędów', validationResult.error.errors),
+        new ValidationError(
+          'Nieprawidłowe dane raportu błędów',
+          validationResult.error.errors
+        ),
         { endpoint: 'error-tracking', method: 'POST' }
       );
     }
@@ -22,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (type === 'errors') {
       logger.error('Error Tracking Report', {
         count: data.length,
-        errors: data.map((error) => ({
+        errors: data.map(error => ({
           message: error.message,
           category: error.category,
           level: error.level,
@@ -41,8 +55,8 @@ export async function POST(request: NextRequest) {
             message: error.message,
             url: error.url,
             timestamp: error.timestamp,
-            metadata: error.metadata ? '[metadata]' : undefined
-          }))
+            metadata: error.metadata ? '[metadata]' : undefined,
+          })),
         });
       }
     } else if (type === 'performance') {
@@ -53,25 +67,28 @@ export async function POST(request: NextRequest) {
 
       if (process.env.NODE_ENV === 'development') {
         logger.debug('Dev performance metrics (console mirror)', {
-          entries: data.map((metric, index) => ({ index, metric }))
+          entries: data.map((metric, index) => ({ index, metric })),
         });
       }
     }
 
-    return NextResponse.json({ success: true, processed: data.length });
+    const response = NextResponse.json({ success: true, processed: data.length });
+    return addSecurityHeaders(response);
   } catch (error) {
     logger.error('Error tracking endpoint failed', { error });
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { success: false, error: 'Failed to process tracking data' },
       { status: 500 }
     );
+    return addSecurityHeaders(errorResponse);
   }
 }
 
 export async function GET() {
-  return NextResponse.json({
+  const response = NextResponse.json({
     status: 'active',
     features: ['error-tracking', 'performance-monitoring'],
     version: '1.0.0',
   });
+  return addSecurityHeaders(response);
 }

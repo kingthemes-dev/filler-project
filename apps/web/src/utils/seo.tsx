@@ -20,18 +20,22 @@ type OpenGraphType =
   | 'video.other';
 
 type StructuredData = Record<string, unknown>;
-type LayoutShiftEntry = PerformanceEntry & { value?: number; hadRecentInput?: boolean };
+type LayoutShiftEntry = PerformanceEntry & {
+  value?: number;
+  hadRecentInput?: boolean;
+};
 import { env } from '@/config/env';
 
 // Base SEO configuration
 export const SEO_CONFIG = {
   siteName: 'FILLER - Profesjonalne kosmetyki i urządzenia',
-  siteDescription: 'Sklep z profesjonalnymi kosmetykami koreańskimi, mezoterapią, nićmi, peelingami, stymulatorami, urządzeniami i wypełniaczami. Najwyższa jakość w najlepszych cenach.',
+  siteDescription:
+    'Sklep z profesjonalnymi kosmetykami koreańskimi, mezoterapią, nićmi, peelingami, stymulatorami, urządzeniami i wypełniaczami. Najwyższa jakość w najlepszych cenach.',
   siteUrl: env.NEXT_PUBLIC_BASE_URL,
   defaultImage: '/images/og-image.jpg',
   twitterHandle: '@filler_sklep',
   locale: 'pl_PL',
-  type: 'website'
+  type: 'website',
 };
 
 // Generate metadata for pages
@@ -41,7 +45,7 @@ export function generateMetadata({
   image,
   url,
   type = 'website',
-  noindex = false
+  noindex = false,
 }: {
   title?: string;
   description?: string;
@@ -50,10 +54,14 @@ export function generateMetadata({
   type?: OpenGraphType;
   noindex?: boolean;
 }): Metadata {
-  const fullTitle = title ? `${title} | ${SEO_CONFIG.siteName}` : SEO_CONFIG.siteName;
+  const fullTitle = title
+    ? `${title} | ${SEO_CONFIG.siteName}`
+    : SEO_CONFIG.siteName;
   const fullDescription = description || SEO_CONFIG.siteDescription;
   const fullUrl = url ? `${SEO_CONFIG.siteUrl}${url}` : SEO_CONFIG.siteUrl;
-  const fullImage = image ? `${SEO_CONFIG.siteUrl}${image}` : `${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`;
+  const fullImage = image
+    ? `${SEO_CONFIG.siteUrl}${image}`
+    : `${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`;
 
   return {
     title: fullTitle,
@@ -69,25 +77,25 @@ export function generateMetadata({
           url: fullImage,
           width: 1200,
           height: 630,
-          alt: fullTitle
-        }
+          alt: fullTitle,
+        },
       ],
       locale: SEO_CONFIG.locale,
-      type
+      type,
     },
     twitter: {
       card: 'summary_large_image',
       title: fullTitle,
       description: fullDescription,
       images: [fullImage],
-      creator: SEO_CONFIG.twitterHandle
+      creator: SEO_CONFIG.twitterHandle,
     },
     alternates: {
-      canonical: fullUrl
+      canonical: fullUrl,
     },
     other: {
-      'google-site-verification': process.env.GOOGLE_SITE_VERIFICATION || ''
-    }
+      'google-site-verification': process.env.GOOGLE_SITE_VERIFICATION || '',
+    },
   };
 }
 
@@ -112,7 +120,7 @@ export function generateProductStructuredData(product: {
     image: product.image,
     brand: {
       '@type': 'Brand',
-      name: product.brand || 'FILLER'
+      name: product.brand || 'FILLER',
     },
     sku: product.sku || product.id.toString(),
     category: product.category,
@@ -125,9 +133,9 @@ export function generateProductStructuredData(product: {
       seller: {
         '@type': 'Organization',
         name: SEO_CONFIG.siteName,
-        url: SEO_CONFIG.siteUrl
-      }
-    }
+        url: SEO_CONFIG.siteUrl,
+      },
+    },
   };
 }
 
@@ -143,26 +151,28 @@ export function generateOrganizationStructuredData() {
     address: {
       '@type': 'PostalAddress',
       addressCountry: 'PL',
-      addressLocality: 'Warszawa'
+      addressLocality: 'Warszawa',
     },
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+48-123-456-789',
       contactType: 'customer service',
-      availableLanguage: 'Polish'
+      availableLanguage: 'Polish',
     },
     sameAs: [
       'https://www.facebook.com/filler',
-      'https://www.instagram.com/filler'
-    ]
+      'https://www.instagram.com/filler',
+    ],
   };
 }
 
 // Generate structured data for breadcrumbs
-export function generateBreadcrumbStructuredData(breadcrumbs: Array<{
-  name: string;
-  url: string;
-}>) {
+export function generateBreadcrumbStructuredData(
+  breadcrumbs: Array<{
+    name: string;
+    url: string;
+  }>
+) {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -170,16 +180,18 @@ export function generateBreadcrumbStructuredData(breadcrumbs: Array<{
       '@type': 'ListItem',
       position: index + 1,
       name: breadcrumb.name,
-      item: `${SEO_CONFIG.siteUrl}${breadcrumb.url}`
-    }))
+      item: `${SEO_CONFIG.siteUrl}${breadcrumb.url}`,
+    })),
   };
 }
 
 // Generate structured data for FAQ
-export function generateFAQStructuredData(faqs: Array<{
-  question: string;
-  answer: string;
-}>) {
+export function generateFAQStructuredData(
+  faqs: Array<{
+    question: string;
+    answer: string;
+  }>
+) {
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -188,30 +200,43 @@ export function generateFAQStructuredData(faqs: Array<{
       name: faq.question,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: faq.answer
-      }
-    }))
+        text: faq.answer,
+      },
+    })),
   };
 }
 
 // Generate sitemap data
-export function generateSitemapData(pages: Array<{
-  url: string;
-  lastModified?: string;
-  changeFrequency?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
-  priority?: number;
-}>) {
+export function generateSitemapData(
+  pages: Array<{
+    url: string;
+    lastModified?: string;
+    changeFrequency?:
+      | 'always'
+      | 'hourly'
+      | 'daily'
+      | 'weekly'
+      | 'monthly'
+      | 'yearly'
+      | 'never';
+    priority?: number;
+  }>
+) {
   const baseUrl = SEO_CONFIG.siteUrl;
-  
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${pages.map(page => `
+${pages
+  .map(
+    page => `
   <url>
     <loc>${baseUrl}${page.url}</loc>
     ${page.lastModified ? `<lastmod>${page.lastModified}</lastmod>` : ''}
     ${page.changeFrequency ? `<changefreq>${page.changeFrequency}</changefreq>` : ''}
     ${page.priority ? `<priority>${page.priority}</priority>` : ''}
-  </url>`).join('')}
+  </url>`
+  )
+  .join('')}
 </urlset>`;
 }
 
@@ -219,7 +244,7 @@ ${pages.map(page => `
 export function generateRobotsTxt(sitemapUrl?: string) {
   const baseUrl = SEO_CONFIG.siteUrl;
   const sitemap = sitemapUrl || `${baseUrl}/sitemap.xml`;
-  
+
   return `User-agent: *
 Allow: /
 
@@ -250,7 +275,7 @@ export function generateMetaTags({
   keywords,
   image,
   url,
-  type = 'website'
+  type = 'website',
 }: {
   title?: string;
   description?: string;
@@ -259,10 +284,14 @@ export function generateMetaTags({
   url?: string;
   type?: string;
 }) {
-  const fullTitle = title ? `${title} | ${SEO_CONFIG.siteName}` : SEO_CONFIG.siteName;
+  const fullTitle = title
+    ? `${title} | ${SEO_CONFIG.siteName}`
+    : SEO_CONFIG.siteName;
   const fullDescription = description || SEO_CONFIG.siteDescription;
   const fullUrl = url ? `${SEO_CONFIG.siteUrl}${url}` : SEO_CONFIG.siteUrl;
-  const fullImage = image ? `${SEO_CONFIG.siteUrl}${image}` : `${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`;
+  const fullImage = image
+    ? `${SEO_CONFIG.siteUrl}${image}`
+    : `${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`;
 
   return (
     <>
@@ -272,7 +301,7 @@ export function generateMetaTags({
       <meta name="author" content={SEO_CONFIG.siteName} />
       <meta name="robots" content="index,follow" />
       <link rel="canonical" href={fullUrl} />
-      
+
       {/* Open Graph */}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={fullDescription} />
@@ -283,14 +312,14 @@ export function generateMetaTags({
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:locale" content={SEO_CONFIG.locale} />
-      
+
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={fullDescription} />
       <meta name="twitter:image" content={fullImage} />
       <meta name="twitter:creator" content={SEO_CONFIG.twitterHandle} />
-      
+
       {/* Additional SEO */}
       <meta name="theme-color" content="#000000" />
       <meta name="msapplication-TileColor" content="#000000" />
@@ -305,7 +334,7 @@ export function trackSEOMetrics() {
     // Track Core Web Vitals
     const trackWebVitals = () => {
       // First Contentful Paint
-      new PerformanceObserver((list) => {
+      new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           if (entry.name === 'first-contentful-paint') {
             console.log('FCP:', entry.startTime);
@@ -314,22 +343,25 @@ export function trackSEOMetrics() {
       }).observe({ entryTypes: ['paint'] });
 
       // Largest Contentful Paint
-      new PerformanceObserver((list) => {
+      new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           console.log('LCP:', entry.startTime);
         }
       }).observe({ entryTypes: ['largest-contentful-paint'] });
 
       // First Input Delay
-      new PerformanceObserver((list) => {
+      new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           const eventTiming = entry as PerformanceEventTiming;
-          console.log('FID:', eventTiming.processingStart - eventTiming.startTime);
+          console.log(
+            'FID:',
+            eventTiming.processingStart - eventTiming.startTime
+          );
         }
       }).observe({ entryTypes: ['first-input'] });
 
       // Cumulative Layout Shift
-      new PerformanceObserver((list) => {
+      new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           const layoutShift = entry as LayoutShiftEntry;
           if (!layoutShift.hadRecentInput) {
@@ -370,6 +402,6 @@ const seoExports = {
   generateSEOFriendlyUrl,
   generateMetaTags,
   trackSEOMetrics,
-  SEOStructuredData
+  SEOStructuredData,
 };
 export default seoExports;

@@ -9,16 +9,17 @@ export function LogoutButton() {
 
   const handleLogout = () => {
     // Clear admin token cookie
-    document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    
+    document.cookie =
+      'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+
     // Redirect to login page
     router.push('/admin/king');
   };
 
   return (
-    <Button 
+    <Button
       onClick={handleLogout}
-      variant="outline" 
+      variant="outline"
       className="w-full justify-start"
     >
       <LogOut className="h-4 w-4 mr-2" />

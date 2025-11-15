@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import {
+  RefreshCw,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 
 interface PerformanceStats {
   totalMetrics: number;
@@ -28,7 +34,8 @@ interface HealthStatus {
 }
 
 export default function PerformanceDashboard() {
-  const [performanceStats, setPerformanceStats] = useState<PerformanceStats | null>(null);
+  const [performanceStats, setPerformanceStats] =
+    useState<PerformanceStats | null>(null);
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -36,7 +43,7 @@ export default function PerformanceDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch performance stats
       const perfResponse = await fetch('/api/performance/stats');
       if (perfResponse.ok) {
@@ -79,7 +86,11 @@ export default function PerformanceDashboard() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ok':
-        return <Badge variant="default" className="bg-green-500">OK</Badge>;
+        return (
+          <Badge variant="default" className="bg-green-500">
+            OK
+          </Badge>
+        );
       case 'error':
         return <Badge variant="destructive">Error</Badge>;
       default:
@@ -98,7 +109,7 @@ export default function PerformanceDashboard() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 Bytes';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   if (loading && !performanceStats) {
@@ -125,7 +136,9 @@ export default function PerformanceDashboard() {
             Last updated: {lastUpdate.toLocaleTimeString()}
           </span>
           <Button onClick={fetchData} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
         </div>
@@ -147,7 +160,7 @@ export default function PerformanceDashboard() {
               </div>
               <div className="flex-1">
                 <div className="w-full bg-gray-200 rounded-full h-4">
-                  <div 
+                  <div
                     className="bg-blue-600 h-4 rounded-full transition-all duration-300"
                     style={{ width: `${performanceStats.performanceScore}%` }}
                   />
@@ -205,7 +218,8 @@ export default function PerformanceDashboard() {
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Memory Usage</span>
                   <span className="text-sm text-gray-600">
-                    {formatBytes(healthStatus.performance.memory.used)} / {formatBytes(healthStatus.performance.memory.total)}
+                    {formatBytes(healthStatus.performance.memory.used)} /{' '}
+                    {formatBytes(healthStatus.performance.memory.total)}
                     <span className="ml-2 text-xs">
                       ({healthStatus.performance.memory.percentage}%)
                     </span>
@@ -291,7 +305,9 @@ export default function PerformanceDashboard() {
               {performanceStats.recommendations.map((recommendation, index) => (
                 <li key={index} className="flex items-start">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">{recommendation}</span>
+                  <span className="text-sm text-gray-700">
+                    {recommendation}
+                  </span>
                 </li>
               ))}
             </ul>

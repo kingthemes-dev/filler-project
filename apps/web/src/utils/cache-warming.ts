@@ -19,12 +19,14 @@ class CacheWarmer {
   /**
    * Warm cache with essential data
    */
-  async warmCache(config: CacheWarmingConfig = {
-    products: true,
-    categories: true,
-    homeFeed: true,
-    search: false,
-  }): Promise<void> {
+  async warmCache(
+    config: CacheWarmingConfig = {
+      products: true,
+      categories: true,
+      homeFeed: true,
+      search: false,
+    }
+  ): Promise<void> {
     if (this.isRunning) {
       logger.warn('Cache warming already in progress');
       return;
@@ -70,8 +72,10 @@ class CacheWarmer {
   private async warmCategories(): Promise<void> {
     try {
       const categoriesUrl = '/api/woocommerce?endpoint=products/categories';
-      const response = await fetch(`${process.env.WP_BASE_URL}${categoriesUrl}`);
-      
+      const response = await fetch(
+        `${process.env.WP_BASE_URL}${categoriesUrl}`
+      );
+
       if (response.ok) {
         const categories = await response.json();
         await redisCache.set(
@@ -97,8 +101,10 @@ class CacheWarmer {
 
       for (const page of pages) {
         const productsUrl = `/api/woocommerce?endpoint=shop&per_page=${perPage}&page=${page}`;
-        const response = await fetch(`${process.env.WP_BASE_URL}${productsUrl}`);
-        
+        const response = await fetch(
+          `${process.env.WP_BASE_URL}${productsUrl}`
+        );
+
         if (response.ok) {
           const products = await response.json();
           await redisCache.set(
@@ -106,7 +112,9 @@ class CacheWarmer {
             products,
             cacheTTL.products
           );
-          logger.info(`Warmed products cache: page ${page}, ${products.products?.length || 0} products`);
+          logger.info(
+            `Warmed products cache: page ${page}, ${products.products?.length || 0} products`
+          );
         }
       }
     } catch (error) {
@@ -121,14 +129,10 @@ class CacheWarmer {
     try {
       const homeFeedUrl = '/api/home-feed';
       const response = await fetch(`${process.env.WP_BASE_URL}${homeFeedUrl}`);
-      
+
       if (response.ok) {
         const homeFeed = await response.json();
-        await redisCache.set(
-          cacheKeys.homeFeed(),
-          homeFeed,
-          cacheTTL.homeFeed
-        );
+        await redisCache.set(cacheKeys.homeFeed(), homeFeed, cacheTTL.homeFeed);
         logger.info('Warmed home feed cache');
       }
     } catch (error) {
@@ -155,7 +159,7 @@ class CacheWarmer {
       for (const query of popularQueries) {
         const searchUrl = `/api/woocommerce?endpoint=shop&search=${encodeURIComponent(query)}`;
         const response = await fetch(`${process.env.WP_BASE_URL}${searchUrl}`);
-        
+
         if (response.ok) {
           const results = await response.json();
           await redisCache.set(
@@ -179,7 +183,7 @@ class CacheWarmer {
     lastRun: Date | null;
     nextRun: Date | null;
   } {
-    const nextRun = this.lastRun 
+    const nextRun = this.lastRun
       ? new Date(this.lastRun.getTime() + 15 * 60 * 1000) // 15 minutes
       : null;
 
@@ -194,9 +198,12 @@ class CacheWarmer {
    * Schedule automatic cache warming
    */
   scheduleWarming(intervalMinutes: number = 15): void {
-    setInterval(() => {
-      this.warmCache();
-    }, intervalMinutes * 60 * 1000);
+    setInterval(
+      () => {
+        this.warmCache();
+      },
+      intervalMinutes * 60 * 1000
+    );
 
     logger.info(`Scheduled cache warming every ${intervalMinutes} minutes`);
   }
@@ -221,4 +228,3 @@ export function scheduleCacheWarming(intervalMinutes?: number): void {
 }
 
 export default cacheWarmer;
-

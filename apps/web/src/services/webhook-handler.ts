@@ -10,6 +10,7 @@ import { orderLimitHandler } from '@/services/order-limit-handler';
 import { logger } from '@/utils/logger';
 import { z } from 'zod';
 import { validateApiInput } from '@/utils/request-validation';
+import { addSecurityHeaders } from '@/utils/api-security';
 
 type RedisClient = import('ioredis').Redis;
 type WebhookData = Record<string, unknown>;
@@ -39,7 +40,9 @@ async function initializeRedis(): Promise<void> {
   try {
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) {
-      logger.debug('WebhookHandler: Redis not configured for idempotency, using in-memory store');
+      logger.debug(
+        'WebhookHandler: Redis not configured for idempotency, using in-memory store'
+      );
       return;
     }
 
@@ -58,7 +61,10 @@ async function initializeRedis(): Promise<void> {
 
     redisClient.on('error', (error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      logger.warn('WebhookHandler: Redis connection failed, using in-memory idempotency', { error: message });
+      logger.warn(
+        'WebhookHandler: Redis connection failed, using in-memory idempotency',
+        { error: message }
+      );
       redisClient = null;
     });
 
@@ -66,7 +72,9 @@ async function initializeRedis(): Promise<void> {
       redisClient = null;
     });
   } catch (error) {
-    logger.warn('WebhookHandler: Failed to initialize Redis for idempotency', { error });
+    logger.warn('WebhookHandler: Failed to initialize Redis for idempotency', {
+      error,
+    });
     redisClient = null;
   }
 }
@@ -88,7 +96,10 @@ async function isWebhookProcessed(deliveryId: string): Promise<boolean> {
       return exists === 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.warn('WebhookHandler: Redis idempotency check failed, falling back to memory', { error: message });
+      logger.warn(
+        'WebhookHandler: Redis idempotency check failed, falling back to memory',
+        { error: message }
+      );
     }
   }
 
@@ -120,7 +131,10 @@ async function markWebhookProcessed(deliveryId: string): Promise<void> {
       return;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.warn('WebhookHandler: Redis idempotency mark failed, falling back to memory', { error: message });
+      logger.warn(
+        'WebhookHandler: Redis idempotency mark failed, falling back to memory',
+        { error: message }
+      );
     }
   }
 
@@ -161,12 +175,17 @@ function getStringField(data: WebhookData, key: string): string | undefined {
   return extractString(data[key]);
 }
 
-function normalizeWebhookPayload(raw: z.infer<typeof webhookPayloadSchema>): WebhookPayload | null {
+function normalizeWebhookPayload(
+  raw: z.infer<typeof webhookPayloadSchema>
+): WebhookPayload | null {
   const id = extractNumber(raw.id);
   if (id === undefined) {
     return null;
   }
-  const data = raw.data && typeof raw.data === 'object' && raw.data !== null ? (raw.data as WebhookData) : {};
+  const data =
+    raw.data && typeof raw.data === 'object' && raw.data !== null
+      ? (raw.data as WebhookData)
+      : {};
   const timestamp = extractString(raw.timestamp) ?? new Date().toISOString();
   return {
     id,
@@ -231,7 +250,9 @@ class WebhookHandler {
       return crypto.timingSafeEqual(providedBuffer, expectedBuffer);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.error('WebhookHandler: Signature verification failed', { error: message });
+      logger.error('WebhookHandler: Signature verification failed', {
+        error: message,
+      });
       return false;
     }
   }
@@ -334,10 +355,10 @@ class WebhookHandler {
   private async handleOrderCreated(order: WebhookData): Promise<void> {
     const orderId = getNumericField(order, 'id');
     logger.info('WebhookHandler: Order created', { orderId });
-    
+
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
-    
+
     // Reset order attempts for customer
     const customerId = getNumericField(order, 'customer_id');
     if (typeof customerId === 'number') {
@@ -348,7 +369,7 @@ class WebhookHandler {
   private async handleOrderUpdated(order: WebhookData): Promise<void> {
     const orderId = getNumericField(order, 'id');
     logger.info('WebhookHandler: Order updated', { orderId });
-    
+
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
@@ -356,7 +377,7 @@ class WebhookHandler {
   private async handleOrderDeleted(order: WebhookData): Promise<void> {
     const orderId = getNumericField(order, 'id');
     logger.info('WebhookHandler: Order deleted', { orderId });
-    
+
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
@@ -364,11 +385,11 @@ class WebhookHandler {
   private async handleOrderStatusChanged(order: WebhookData): Promise<void> {
     const orderId = getNumericField(order, 'id');
     const status = getStringField(order, 'status');
-    logger.info('WebhookHandler: Order status changed', { 
-      orderId, 
-      status 
+    logger.info('WebhookHandler: Order status changed', {
+      orderId,
+      status,
     });
-    
+
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
@@ -376,7 +397,7 @@ class WebhookHandler {
   private async handleOrderPaymentComplete(order: WebhookData): Promise<void> {
     const orderId = getNumericField(order, 'id');
     logger.info('WebhookHandler: Order payment complete', { orderId });
-    
+
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
@@ -384,7 +405,7 @@ class WebhookHandler {
   private async handleOrderRefunded(order: WebhookData): Promise<void> {
     const orderId = getNumericField(order, 'id');
     logger.info('WebhookHandler: Order refunded', { orderId });
-    
+
     // Invalidate order cache
     await hposCache.invalidateByTag('orders');
   }
@@ -434,15 +455,25 @@ class WebhookHandler {
       };
       const headersResult = webhookHeadersSchema.safeParse(rawHeaders);
       if (!headersResult.success) {
-        logger.warn('WebhookHandler: Invalid headers', { errors: headersResult.error.flatten() });
-        return NextResponse.json({ error: 'Invalid webhook headers' }, { status: 400 });
+        logger.warn('WebhookHandler: Invalid headers', {
+          errors: headersResult.error.flatten(),
+        });
+        const errorResponse = NextResponse.json(
+          { error: 'Invalid webhook headers' },
+          { status: 400 }
+        );
+        return addSecurityHeaders(errorResponse);
       }
       const headers = headersResult.data;
 
       const payloadBody = await req.text();
 
       if (!this.verifySignature(payloadBody, headers.signature)) {
-        return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+        const errorResponse = NextResponse.json(
+          { error: 'Invalid webhook signature' },
+          { status: 401 }
+        );
+        return addSecurityHeaders(errorResponse);
       }
 
       const { deliveryId } = headers;
@@ -450,11 +481,19 @@ class WebhookHandler {
       if (deliveryId) {
         const alreadyProcessed = await isWebhookProcessed(deliveryId);
         if (alreadyProcessed) {
-          logger.info('WebhookHandler: Webhook already processed (idempotency)', {
-            deliveryId,
-            topic: headers.topic,
+          logger.info(
+            'WebhookHandler: Webhook already processed (idempotency)',
+            {
+              deliveryId,
+              topic: headers.topic,
+            }
+          );
+          const response = NextResponse.json({
+            success: true,
+            message: 'Webhook already processed',
+            idempotent: true,
           });
-          return NextResponse.json({ success: true, message: 'Webhook already processed', idempotent: true });
+          return addSecurityHeaders(response);
         }
       }
 
@@ -462,22 +501,39 @@ class WebhookHandler {
       try {
         parsedPayload = JSON.parse(payloadBody);
       } catch (parseError) {
-        const message = parseError instanceof Error ? parseError.message : String(parseError);
-        logger.warn('WebhookHandler: Failed to parse webhook payload', { error: message });
-        return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+        const message =
+          parseError instanceof Error ? parseError.message : String(parseError);
+        logger.warn('WebhookHandler: Failed to parse webhook payload', {
+          error: message,
+        });
+        const errorResponse = NextResponse.json(
+          { error: 'Invalid webhook payload' },
+          { status: 400 }
+        );
+        return addSecurityHeaders(errorResponse);
       }
 
       const sanitizedPayload = validateApiInput(parsedPayload);
       const payloadResult = webhookPayloadSchema.safeParse(sanitizedPayload);
       if (!payloadResult.success) {
-        logger.warn('WebhookHandler: Payload validation failed', { errors: payloadResult.error.flatten() });
-        return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+        logger.warn('WebhookHandler: Payload validation failed', {
+          errors: payloadResult.error.flatten(),
+        });
+        const errorResponse = NextResponse.json(
+          { error: 'Invalid webhook payload' },
+          { status: 400 }
+        );
+        return addSecurityHeaders(errorResponse);
       }
 
       const payload = normalizeWebhookPayload(payloadResult.data);
       if (!payload) {
         logger.warn('WebhookHandler: Invalid webhook payload structure');
-        return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+        const errorResponse = NextResponse.json(
+          { error: 'Invalid webhook payload' },
+          { status: 400 }
+        );
+        return addSecurityHeaders(errorResponse);
       }
 
       const topic = headers.topic;
@@ -502,11 +558,18 @@ class WebhookHandler {
         await markWebhookProcessed(deliveryId);
       }
 
-      return NextResponse.json({ success: true });
+      const response = NextResponse.json({ success: true });
+      return addSecurityHeaders(response);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.error('WebhookHandler: Error processing webhook', { error: message });
-      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      logger.error('WebhookHandler: Error processing webhook', {
+        error: message,
+      });
+      const errorResponse = NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      );
+      return addSecurityHeaders(errorResponse);
     }
   }
 }

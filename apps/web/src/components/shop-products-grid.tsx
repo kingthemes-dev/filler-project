@@ -35,8 +35,15 @@ const MemoizedProductCard = memo(KingProductCard);
  * Używa Suspense dla progressive rendering - pierwsze produkty widoczne natychmiast
  */
 function ProductsGridContent({ products, refreshing }: ShopProductsGridProps) {
+  // Jeśli jest tylko jeden produkt, nie używaj items-stretch (rozciąga kartę na całą wysokość)
+  // Gdy są 2+ produkty w rzędzie, items-stretch zapewnia równą wysokość kart w rzędzie
+  const shouldStretch = products.length >= 2;
+  const isSingleProduct = products.length === 1;
+
   return (
-    <div className="grid mobile-grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 relative min-h-[60vh]">
+    <div
+      className={`grid mobile-grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 relative ${shouldStretch ? 'items-stretch' : 'items-start'}`}
+    >
       {/* PRO: Subtle refreshing indicator */}
       {refreshing && (
         <div className="absolute top-0 right-0 z-10 bg-white/80 backdrop-blur-sm rounded-lg p-2">
@@ -45,12 +52,18 @@ function ProductsGridContent({ products, refreshing }: ShopProductsGridProps) {
       )}
       {/* 🚀 LCP Optimization: Renderuj produkty progresywnie */}
       {products.map((product, index) => (
-        <MemoizedProductCard
+        <div
           key={product.id}
-          product={product}
-          variant="default"
-          priority={index < 4} // 🚀 PRIORITY 1: Priority dla pierwszych 4 produktów (above-the-fold)
-        />
+          className={
+            isSingleProduct ? '[&_.group]:!h-auto [&_.group]:!self-start' : ''
+          }
+        >
+          <MemoizedProductCard
+            product={product}
+            variant="default"
+            priority={index < 4} // 🚀 PRIORITY 1: Priority dla pierwszych 4 produktów (above-the-fold)
+          />
+        </div>
       ))}
     </div>
   );
@@ -60,7 +73,10 @@ function ProductsGridContent({ products, refreshing }: ShopProductsGridProps) {
  * 🚀 LCP Optimization: Shop Products Grid z Suspense boundary
  * Streaming SSR - pierwsze produkty renderują się natychmiast, reszta w tle
  */
-export default function ShopProductsGrid({ products, refreshing }: ShopProductsGridProps) {
+export default function ShopProductsGrid({
+  products,
+  refreshing,
+}: ShopProductsGridProps) {
   // Jeśli brak produktów, pokaż skeleton
   if (products.length === 0) {
     return <ProductsSkeleton count={16} />;
@@ -69,9 +85,10 @@ export default function ShopProductsGrid({ products, refreshing }: ShopProductsG
   // 🚀 LCP Optimization: Suspense dla progressive rendering
   // Pierwsze produkty renderują się natychmiast, reszta w tle
   return (
-      <Suspense fallback={<ProductsSkeleton count={Math.min(products.length, 16)} />}>
+    <Suspense
+      fallback={<ProductsSkeleton count={Math.min(products.length, 16)} />}
+    >
       <ProductsGridContent products={products} refreshing={refreshing} />
     </Suspense>
   );
 }
-

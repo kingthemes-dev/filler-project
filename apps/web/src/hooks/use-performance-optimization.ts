@@ -24,7 +24,7 @@ export function useLCPOptimization() {
     if (typeof window === 'undefined') return;
 
     // Create LCP observer
-    observerRef.current = new PerformanceObserver((list) => {
+    observerRef.current = new PerformanceObserver(list => {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1] as PerformanceEntry & {
         element?: Element;
@@ -34,12 +34,15 @@ export function useLCPOptimization() {
       if (lastEntry) {
         setLcpElement(lastEntry.element || null);
         setLcpTime(lastEntry.startTime);
-        
+
         // Log LCP for debugging
         console.log('🎯 LCP detected:', {
           element: lastEntry.element?.tagName,
           time: lastEntry.startTime,
-          url: lastEntry.element instanceof HTMLImageElement ? lastEntry.element.src : 'N/A'
+          url:
+            lastEntry.element instanceof HTMLImageElement
+              ? lastEntry.element.src
+              : 'N/A',
         });
       }
     });
@@ -70,7 +73,7 @@ export function useCLSOptimization() {
     let clsValue = 0;
     const layoutShifts: LayoutShiftEntry[] = [];
 
-    observerRef.current = new PerformanceObserver((list) => {
+    observerRef.current = new PerformanceObserver(list => {
       for (const entry of list.getEntries()) {
         // Only count layout shifts without recent user input
         const layoutShift = entry as LayoutShiftEntry;
@@ -88,7 +91,7 @@ export function useCLSOptimization() {
         console.warn('⚠️ CLS detected:', {
           score: clsValue,
           entries: layoutShifts.length,
-          threshold: 0.1
+          threshold: 0.1,
         });
       }
     });
@@ -115,14 +118,14 @@ export function useFIDOptimization() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    observerRef.current = new PerformanceObserver((list) => {
+    observerRef.current = new PerformanceObserver(list => {
       for (const entry of list.getEntries()) {
         const fidEntry = entry as PerformanceEventTiming;
         setFidTime(fidEntry.processingStart - fidEntry.startTime);
-        
+
         console.log('🎯 FID detected:', {
           time: fidEntry.processingStart - fidEntry.startTime,
-          eventType: fidEntry.name
+          eventType: fidEntry.name,
         });
       }
     });
@@ -149,15 +152,17 @@ export function useTTFBOptimization() {
     if (typeof window === 'undefined') return;
 
     // Get TTFB from navigation timing
-    const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    
+    const navigationEntry = performance.getEntriesByType(
+      'navigation'
+    )[0] as PerformanceNavigationTiming;
+
     if (navigationEntry) {
       const ttfb = navigationEntry.responseStart - navigationEntry.requestStart;
       setTtfbTime(ttfb);
-      
+
       console.log('🎯 TTFB detected:', {
         time: ttfb,
-        threshold: 600
+        threshold: 600,
       });
     }
   }, []);
@@ -176,19 +181,23 @@ export function usePageLoadOptimization() {
     if (typeof window === 'undefined') return;
 
     const handleLoad = () => {
-      const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      
+      const navigationEntry = performance.getEntriesByType(
+        'navigation'
+      )[0] as PerformanceNavigationTiming;
+
       if (navigationEntry) {
-        const loadTime = navigationEntry.loadEventEnd - navigationEntry.fetchStart;
-        const domContentLoaded = navigationEntry.domContentLoadedEventEnd - navigationEntry.fetchStart;
-        
+        const loadTime =
+          navigationEntry.loadEventEnd - navigationEntry.fetchStart;
+        const domContentLoaded =
+          navigationEntry.domContentLoadedEventEnd - navigationEntry.fetchStart;
+
         setLoadTime(loadTime);
         setDomContentLoaded(domContentLoaded);
-        
+
         console.log('🎯 Page load detected:', {
           loadTime,
           domContentLoaded,
-          threshold: 3000
+          threshold: 3000,
         });
       }
     };
@@ -213,47 +222,56 @@ export function usePageLoadOptimization() {
 export function useResourcePreloading() {
   const preloadedRef = useRef<Set<string>>(new Set());
 
-  const preloadResource = useCallback((url: string, type: 'image' | 'script' | 'style' | 'font' = 'image') => {
-    if (preloadedRef.current.has(url)) return;
+  const preloadResource = useCallback(
+    (url: string, type: 'image' | 'script' | 'style' | 'font' = 'image') => {
+      if (preloadedRef.current.has(url)) return;
 
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.href = url;
-    
-    switch (type) {
-      case 'image':
-        link.as = 'image';
-        break;
-      case 'script':
-        link.as = 'script';
-        break;
-      case 'style':
-        link.as = 'style';
-        break;
-      case 'font':
-        link.as = 'font';
-        link.crossOrigin = 'anonymous';
-        break;
-    }
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.href = url;
 
-    document.head.appendChild(link);
-    preloadedRef.current.add(url);
+      switch (type) {
+        case 'image':
+          link.as = 'image';
+          break;
+        case 'script':
+          link.as = 'script';
+          break;
+        case 'style':
+          link.as = 'style';
+          break;
+        case 'font':
+          link.as = 'font';
+          link.crossOrigin = 'anonymous';
+          break;
+      }
 
-    console.log('🚀 Resource preloaded:', { url, type });
-  }, []);
+      document.head.appendChild(link);
+      preloadedRef.current.add(url);
 
-  const preloadCriticalImages = useCallback((imageUrls: string[]) => {
-    imageUrls.forEach(url => preloadResource(url, 'image'));
-  }, [preloadResource]);
+      console.log('🚀 Resource preloaded:', { url, type });
+    },
+    []
+  );
 
-  const preloadCriticalScripts = useCallback((scriptUrls: string[]) => {
-    scriptUrls.forEach(url => preloadResource(url, 'script'));
-  }, [preloadResource]);
+  const preloadCriticalImages = useCallback(
+    (imageUrls: string[]) => {
+      imageUrls.forEach(url => preloadResource(url, 'image'));
+    },
+    [preloadResource]
+  );
+
+  const preloadCriticalScripts = useCallback(
+    (scriptUrls: string[]) => {
+      scriptUrls.forEach(url => preloadResource(url, 'script'));
+    },
+    [preloadResource]
+  );
 
   return {
     preloadResource,
     preloadCriticalImages,
-    preloadCriticalScripts
+    preloadCriticalScripts,
   };
 }
 
@@ -264,45 +282,51 @@ export function useImageOptimization() {
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
-  const loadImage = useCallback((src: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      if (loadedImages.has(src)) {
-        resolve(new Image());
-        return;
+  const loadImage = useCallback(
+    (src: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        if (loadedImages.has(src)) {
+          resolve(new Image());
+          return;
+        }
+
+        const img = new Image();
+
+        img.onload = () => {
+          setLoadedImages(prev => new Set([...prev, src]));
+          resolve(img);
+        };
+
+        img.onerror = () => {
+          setFailedImages(prev => new Set([...prev, src]));
+          reject(new Error(`Failed to load image: ${src}`));
+        };
+
+        img.src = src;
+      });
+    },
+    [loadedImages]
+  );
+
+  const preloadImages = useCallback(
+    async (imageUrls: string[]) => {
+      const promises = imageUrls.map(url => loadImage(url));
+
+      try {
+        await Promise.allSettled(promises);
+        console.log('🚀 Images preloaded:', imageUrls);
+      } catch (error) {
+        console.warn('⚠️ Some images failed to preload:', error);
       }
-
-      const img = new Image();
-      
-      img.onload = () => {
-        setLoadedImages(prev => new Set([...prev, src]));
-        resolve(img);
-      };
-      
-      img.onerror = () => {
-        setFailedImages(prev => new Set([...prev, src]));
-        reject(new Error(`Failed to load image: ${src}`));
-      };
-      
-      img.src = src;
-    });
-  }, [loadedImages]);
-
-  const preloadImages = useCallback(async (imageUrls: string[]) => {
-    const promises = imageUrls.map(url => loadImage(url));
-    
-    try {
-      await Promise.allSettled(promises);
-      console.log('🚀 Images preloaded:', imageUrls);
-    } catch (error) {
-      console.warn('⚠️ Some images failed to preload:', error);
-    }
-  }, [loadImage]);
+    },
+    [loadImage]
+  );
 
   return {
     loadImage,
     preloadImages,
     loadedImages,
-    failedImages
+    failedImages,
   };
 }
 
@@ -312,29 +336,35 @@ export function useImageOptimization() {
 export function useBundleOptimization() {
   const [loadedChunks, setLoadedChunks] = useState<Set<string>>(new Set());
 
-  const loadChunk = useCallback(async (chunkName: string) => {
-    if (loadedChunks.has(chunkName)) return;
+  const loadChunk = useCallback(
+    async (chunkName: string) => {
+      if (loadedChunks.has(chunkName)) return;
 
-    try {
-      // Dynamic import for code splitting - remove invalid import
-      console.log('🚀 Chunk loading not implemented:', chunkName);
-      setLoadedChunks(prev => new Set([...prev, chunkName]));
-      
-      console.log('🚀 Chunk loaded:', chunkName);
-    } catch (error) {
-      console.warn('⚠️ Failed to load chunk:', chunkName, error);
-    }
-  }, [loadedChunks]);
+      try {
+        // Dynamic import for code splitting - remove invalid import
+        console.log('🚀 Chunk loading not implemented:', chunkName);
+        setLoadedChunks(prev => new Set([...prev, chunkName]));
 
-  const preloadChunks = useCallback(async (chunkNames: string[]) => {
-    const promises = chunkNames.map(name => loadChunk(name));
-    await Promise.allSettled(promises);
-  }, [loadChunk]);
+        console.log('🚀 Chunk loaded:', chunkName);
+      } catch (error) {
+        console.warn('⚠️ Failed to load chunk:', chunkName, error);
+      }
+    },
+    [loadedChunks]
+  );
+
+  const preloadChunks = useCallback(
+    async (chunkNames: string[]) => {
+      const promises = chunkNames.map(name => loadChunk(name));
+      await Promise.allSettled(promises);
+    },
+    [loadChunk]
+  );
 
   return {
     loadChunk,
     preloadChunks,
-    loadedChunks
+    loadedChunks,
   };
 }
 
@@ -347,7 +377,7 @@ export function usePerformanceMonitoring() {
     cls: 0,
     fid: 0,
     ttfb: 0,
-    loadTime: 0
+    loadTime: 0,
   });
 
   const { lcpTime } = useLCPOptimization();
@@ -362,7 +392,7 @@ export function usePerformanceMonitoring() {
       cls: clsScore,
       fid: fidTime,
       ttfb: ttfbTime,
-      loadTime
+      loadTime,
     });
   }, [lcpTime, clsScore, fidTime, ttfbTime, loadTime]);
 
@@ -389,6 +419,6 @@ export function usePerformanceMonitoring() {
 
   return {
     metrics,
-    sendMetrics
+    sendMetrics,
   };
 }

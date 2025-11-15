@@ -49,7 +49,7 @@ export default function PerformanceTracker() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            metrics: [metric]
+            metrics: [metric],
           }),
         });
       } catch (error) {
@@ -68,15 +68,21 @@ export default function PerformanceTracker() {
           timestamp: Date.now().toString(),
           url: window.location.href,
           metadata: {
-            domContentLoaded: performance.timing?.domContentLoadedEventEnd && performance.timing?.domContentLoadedEventStart
-              ? performance.timing.domContentLoadedEventEnd - performance.timing.domContentLoadedEventStart
-              : undefined,
-            loadComplete: performance.timing?.loadEventEnd && performance.timing?.loadEventStart
-              ? performance.timing.loadEventEnd - performance.timing.loadEventStart
-              : undefined,
+            domContentLoaded:
+              performance.timing?.domContentLoadedEventEnd &&
+              performance.timing?.domContentLoadedEventStart
+                ? performance.timing.domContentLoadedEventEnd -
+                  performance.timing.domContentLoadedEventStart
+                : undefined,
+            loadComplete:
+              performance.timing?.loadEventEnd &&
+              performance.timing?.loadEventStart
+                ? performance.timing.loadEventEnd -
+                  performance.timing.loadEventStart
+                : undefined,
           },
         };
-        
+
         // Send to server
         sendMetricToServer(metric);
       };
@@ -85,7 +91,7 @@ export default function PerformanceTracker() {
       const trackFCP = () => {
         if ('PerformanceObserver' in window) {
           try {
-            const observer = new PerformanceObserver((list) => {
+            const observer = new PerformanceObserver(list => {
               for (const entry of list.getEntries()) {
                 if ((entry as PaintEntry).name === 'first-contentful-paint') {
                   const paintEntry = entry as PaintEntry;
@@ -113,7 +119,7 @@ export default function PerformanceTracker() {
       const trackLCP = () => {
         if ('PerformanceObserver' in window) {
           try {
-            const observer = new PerformanceObserver((list) => {
+            const observer = new PerformanceObserver(list => {
               for (const entry of list.getEntries()) {
                 const lcpEntry = entry as LargestContentfulPaintEntry;
                 const metric: PerformanceMetric = {
@@ -141,7 +147,7 @@ export default function PerformanceTracker() {
       const trackFID = () => {
         if ('PerformanceObserver' in window) {
           try {
-            const observer = new PerformanceObserver((list) => {
+            const observer = new PerformanceObserver(list => {
               for (const entry of list.getEntries()) {
                 const fidEntry = entry as PerformanceEventTiming;
                 const fid = fidEntry.processingStart - fidEntry.startTime;
@@ -170,7 +176,7 @@ export default function PerformanceTracker() {
         if ('PerformanceObserver' in window) {
           try {
             let clsValue = 0;
-            const observer = new PerformanceObserver((list) => {
+            const observer = new PerformanceObserver(list => {
               for (const entry of list.getEntries()) {
                 const layoutShiftEntry = entry as LayoutShiftEntry;
                 if (!layoutShiftEntry.hadRecentInput) {
@@ -198,7 +204,9 @@ export default function PerformanceTracker() {
       // Track Time to First Byte
       const trackTTFB = () => {
         if (performance.timing) {
-          const ttfb = performance.timing.responseStart - performance.timing.navigationStart;
+          const ttfb =
+            performance.timing.responseStart -
+            performance.timing.navigationStart;
           const metric = {
             name: 'TTFB',
             value: ttfb,

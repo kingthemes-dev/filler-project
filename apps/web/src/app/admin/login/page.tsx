@@ -79,7 +79,7 @@ export default function AdminLogin() {
                     id="admin-token"
                     type={showToken ? 'text' : 'password'}
                     value={token}
-                    onChange={(e) => setToken(e.target.value)}
+                    onChange={e => setToken(e.target.value)}
                     placeholder="Wprowadź token administratora"
                     required
                     className="pr-10"
@@ -115,10 +115,14 @@ export default function AdminLogin() {
                 Informacje dla deweloperów:
               </h4>
               <p className="text-xs text-gray-600">
-                Domyślny token: <code className="bg-gray-200 px-1 rounded">admin-2024-secure-token</code>
+                Domyślny token:{' '}
+                <code className="bg-gray-200 px-1 rounded">
+                  admin-2024-secure-token
+                </code>
               </p>
               <p className="text-xs text-gray-600 mt-1">
-                Można go zmienić w zmiennej środowiskowej <code className="bg-gray-200 px-1 rounded">ADMIN_TOKEN</code>
+                Można go zmienić w zmiennej środowiskowej{' '}
+                <code className="bg-gray-200 px-1 rounded">ADMIN_TOKEN</code>
               </p>
             </div>
           </CardContent>

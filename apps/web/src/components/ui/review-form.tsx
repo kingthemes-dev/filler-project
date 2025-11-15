@@ -18,32 +18,39 @@ interface UploadedImage {
   preview?: string;
 }
 
-export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormProps) {
+export default function ReviewForm({
+  productId,
+  onReviewSubmitted,
+}: ReviewFormProps) {
   const [formData, setFormData] = useState({
     reviewer: '',
     reviewer_email: '',
     review: '',
-    rating: 0
+    rating: 0,
   });
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<
+    'idle' | 'success' | 'error'
+  >('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleRatingClick = (rating: number) => {
     setFormData(prev => ({
       ...prev,
-      rating
+      rating,
     }));
   };
 
@@ -62,7 +69,7 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
     setErrorMessage('');
 
     try {
-      const uploadPromises = Array.from(files).map(async (file) => {
+      const uploadPromises = Array.from(files).map(async file => {
         // Validate file type
         if (!file.type.startsWith('image/')) {
           throw new Error(`Plik ${file.name} nie jest obrazem`);
@@ -91,7 +98,7 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
         }
 
         const result = await response.json();
-        
+
         // Clean up preview URL
         URL.revokeObjectURL(preview);
 
@@ -106,7 +113,9 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
       setImages(prev => [...prev, ...uploadedImages]);
     } catch (error) {
       console.error('Error uploading images:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Błąd podczas uploadu zdjęć');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Błąd podczas uploadu zdjęć'
+      );
       setSubmitStatus('error');
     } finally {
       setIsUploading(false);
@@ -123,8 +132,13 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.reviewer || !formData.reviewer_email || !formData.review || formData.rating === 0) {
+
+    if (
+      !formData.reviewer ||
+      !formData.reviewer_email ||
+      !formData.review ||
+      formData.rating === 0
+    ) {
       setErrorMessage('Wszystkie pola są wymagane');
       setSubmitStatus('error');
       return;
@@ -144,7 +158,7 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
         reviewer: formData.reviewer,
         reviewer_email: formData.reviewer_email,
         rating: formData.rating,
-        images: imageIds.length > 0 ? imageIds : undefined
+        images: imageIds.length > 0 ? imageIds : undefined,
       });
 
       if (!result.success) {
@@ -156,7 +170,7 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
         reviewer: '',
         reviewer_email: '',
         review: '',
-        rating: 0
+        rating: 0,
       });
       setImages([]);
 
@@ -167,7 +181,11 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
     } catch (error) {
       console.error('Error submitting review:', error);
       setSubmitStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Wystąpił błąd podczas dodawania opinii. Spróbuj ponownie.');
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Wystąpił błąd podczas dodawania opinii. Spróbuj ponownie.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -198,14 +216,14 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Dodaj swoją opinię
         </h3>
-        
+
         {/* Rating */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Ocena *
           </label>
           <div className="flex space-x-1">
-            {[1, 2, 3, 4, 5].map((rating) => (
+            {[1, 2, 3, 4, 5].map(rating => (
               <button
                 key={rating}
                 type="button"
@@ -216,9 +234,11 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
                     : 'text-gray-300 hover:text-yellow-300'
                 }`}
               >
-                <Star className={`w-6 h-6 ${
-                  rating <= formData.rating ? 'fill-current' : ''
-                }`} />
+                <Star
+                  className={`w-6 h-6 ${
+                    rating <= formData.rating ? 'fill-current' : ''
+                  }`}
+                />
               </button>
             ))}
           </div>
@@ -235,7 +255,10 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
 
         {/* Name */}
         <div className="mb-4">
-          <label htmlFor="reviewer" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="reviewer"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Imię i nazwisko *
           </label>
           <input
@@ -252,7 +275,10 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
 
         {/* Email */}
         <div className="mb-4">
-          <label htmlFor="reviewer_email" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="reviewer_email"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Adres e-mail *
           </label>
           <input
@@ -269,7 +295,10 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
 
         {/* Review */}
         <div className="mb-4">
-          <label htmlFor="review" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="review"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Twoja opinia *
           </label>
           <textarea
@@ -308,7 +337,11 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
             }`}
           >
             <ImageIcon className="w-4 h-4 mr-2" />
-            {isUploading ? 'Uploadowanie...' : images.length >= 5 ? 'Osiągnięto limit (5)' : 'Dodaj zdjęcia'}
+            {isUploading
+              ? 'Uploadowanie...'
+              : images.length >= 5
+                ? 'Osiągnięto limit (5)'
+                : 'Dodaj zdjęcia'}
           </label>
           {images.length > 0 && (
             <div className="mt-3 grid grid-cols-5 gap-2">
@@ -335,7 +368,8 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
             </div>
           )}
           <p className="text-xs text-gray-500 mt-1">
-            Możesz dodać maksymalnie 5 zdjęć (JPEG, PNG, GIF, WebP, max 5MB każdy)
+            Możesz dodać maksymalnie 5 zdjęć (JPEG, PNG, GIF, WebP, max 5MB
+            każdy)
           </p>
         </div>
 

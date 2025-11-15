@@ -52,7 +52,9 @@ class CartPersistenceService {
         });
         console.log('✅ Cart Persistence: Redis connected');
       } else {
-        console.warn('⚠️ Cart Persistence: Redis not configured, using localStorage');
+        console.warn(
+          '⚠️ Cart Persistence: Redis not configured, using localStorage'
+        );
       }
     } catch (error) {
       console.error('❌ Cart Persistence: Redis connection failed', error);
@@ -73,7 +75,9 @@ class CartPersistenceService {
         localStorage.setItem(key, data);
       }
 
-      console.log(`💾 Cart saved: ${cartData.sessionId} (${cartData.items.length} items)`);
+      console.log(
+        `💾 Cart saved: ${cartData.sessionId} (${cartData.items.length} items)`
+      );
     } catch (error) {
       console.error('Failed to save cart:', error);
     }
@@ -98,7 +102,7 @@ class CartPersistenceService {
       }
 
       const cart = JSON.parse(cartData) as CartData;
-      
+
       // Check if cart is expired
       if (new Date() > new Date(cart.expiresAt)) {
         await this.deleteCart(sessionId);
@@ -141,7 +145,7 @@ class CartPersistenceService {
 
       const items = Array.isArray(storeCart.items)
         ? storeCart.items
-            .map((item) => this.transformStoreCartItem(item))
+            .map(item => this.transformStoreCartItem(item))
             .filter((item): item is CartItem => item !== null)
         : [];
 
@@ -185,7 +189,10 @@ class CartPersistenceService {
     const quantityValue = record.quantity;
     const keyValue = record.key;
 
-    if (typeof productIdValue !== 'number' || typeof quantityValue !== 'number') {
+    if (
+      typeof productIdValue !== 'number' ||
+      typeof quantityValue !== 'number'
+    ) {
       return null;
     }
 
@@ -264,7 +271,9 @@ class CartPersistenceService {
         );
       }
 
-      console.log(`🔄 Cart restored: ${sessionId} (${cartData.items.length} items)`);
+      console.log(
+        `🔄 Cart restored: ${sessionId} (${cartData.items.length} items)`
+      );
       return true;
     } catch (error) {
       console.error('Failed to restore cart to Store API:', error);
@@ -275,7 +284,10 @@ class CartPersistenceService {
   /**
    * Merge carts from different sessions
    */
-  async mergeCarts(primarySessionId: string, secondarySessionId: string): Promise<CartData | null> {
+  async mergeCarts(
+    primarySessionId: string,
+    secondarySessionId: string
+  ): Promise<CartData | null> {
     try {
       const primaryCart = await this.loadCart(primarySessionId);
       const secondaryCart = await this.loadCart(secondarySessionId);
@@ -294,11 +306,12 @@ class CartPersistenceService {
 
       // Merge items
       const mergedItems = [...primaryCart.items];
-      
+
       for (const item of secondaryCart.items) {
-        const existingItem = mergedItems.find(i => 
-          i.productId === item.productId && 
-          JSON.stringify(i.variation) === JSON.stringify(item.variation)
+        const existingItem = mergedItems.find(
+          i =>
+            i.productId === item.productId &&
+            JSON.stringify(i.variation) === JSON.stringify(item.variation)
         );
 
         if (existingItem) {
@@ -311,7 +324,7 @@ class CartPersistenceService {
 
       // Calculate new totals
       const subtotal = mergedItems.reduce((sum, item) => sum + item.total, 0);
-      
+
       const mergedCart: CartData = {
         sessionId: primarySessionId,
         userId: primaryCart.userId,
@@ -319,7 +332,8 @@ class CartPersistenceService {
         totals: {
           ...primaryCart.totals,
           subtotal,
-          total: subtotal + primaryCart.totals.tax + primaryCart.totals.shipping,
+          total:
+            subtotal + primaryCart.totals.tax + primaryCart.totals.shipping,
         },
         lastUpdated: new Date(),
         createdAt: primaryCart.createdAt,
@@ -332,7 +346,9 @@ class CartPersistenceService {
       // Delete secondary cart
       await this.deleteCart(secondarySessionId);
 
-      console.log(`🔀 Carts merged: ${primarySessionId} + ${secondarySessionId}`);
+      console.log(
+        `🔀 Carts merged: ${primarySessionId} + ${secondarySessionId}`
+      );
       return mergedCart;
     } catch (error) {
       console.error('Failed to merge carts:', error);
@@ -425,7 +441,7 @@ class CartPersistenceService {
         if (cartData) {
           const cart = JSON.parse(cartData) as CartData;
           totalItems += cart.items.length;
-          
+
           if (new Date() > new Date(cart.expiresAt)) {
             expiredCarts++;
           } else {

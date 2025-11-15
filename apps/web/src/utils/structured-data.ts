@@ -59,71 +59,77 @@ export interface FAQStructuredData {
 /**
  * Generate Product JSON-LD
  */
-export function generateProductStructuredData(product: ProductStructuredData): object {
+export function generateProductStructuredData(
+  product: ProductStructuredData
+): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "Product",
+    '@context': 'https://schema.org',
+    '@type': 'Product',
     name: product.name,
     description: product.description,
     image: product.image,
     brand: {
-      "@type": "Brand",
-      name: product.brand.name
+      '@type': 'Brand',
+      name: product.brand.name,
     },
     offers: {
-      "@type": "Offer",
+      '@type': 'Offer',
       price: product.offers.price,
       priceCurrency: product.offers.priceCurrency,
       availability: product.offers.availability,
-      url: product.offers.url
+      url: product.offers.url,
     },
     ...(product.sku && { sku: product.sku }),
     ...(product.gtin && { gtin: product.gtin }),
-    ...(product.category && { category: product.category })
+    ...(product.category && { category: product.category }),
   };
 }
 
 /**
  * Generate Organization JSON-LD
  */
-export function generateOrganizationStructuredData(org: OrganizationStructuredData): object {
+export function generateOrganizationStructuredData(
+  org: OrganizationStructuredData
+): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "Organization",
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
     name: org.name,
     url: org.url,
     logo: org.logo,
     description: org.description,
     address: {
-      "@type": "PostalAddress",
+      '@type': 'PostalAddress',
       streetAddress: org.address.streetAddress,
       addressLocality: org.address.addressLocality,
       postalCode: org.address.postalCode,
-      addressCountry: org.address.addressCountry
+      addressCountry: org.address.addressCountry,
     },
     contactPoint: {
-      "@type": "ContactPoint",
+      '@type': 'ContactPoint',
       telephone: org.contactPoint.telephone,
       contactType: org.contactPoint.contactType,
-      email: org.contactPoint.email
+      email: org.contactPoint.email,
     },
-    sameAs: org.sameAs
+    sameAs: org.sameAs,
   };
 }
 
 /**
  * Generate Breadcrumb JSON-LD
  */
-export function generateBreadcrumbStructuredData(breadcrumb: BreadcrumbStructuredData): object {
+export function generateBreadcrumbStructuredData(
+  breadcrumb: BreadcrumbStructuredData
+): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
     itemListElement: breadcrumb.itemListElement.map(item => ({
-      "@type": "ListItem",
+      '@type': 'ListItem',
       position: item.position,
       name: item.name,
-      item: item.item
-    }))
+      item: item.item,
+    })),
   };
 }
 
@@ -132,36 +138,39 @@ export function generateBreadcrumbStructuredData(breadcrumb: BreadcrumbStructure
  */
 export function generateFAQStructuredData(faq: FAQStructuredData): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
     mainEntity: faq.mainEntity.map(item => ({
-      "@type": "Question",
+      '@type': 'Question',
       name: item.name,
       acceptedAnswer: {
-        "@type": "Answer",
-        text: item.acceptedAnswer.text
-      }
-    }))
+        '@type': 'Answer',
+        text: item.acceptedAnswer.text,
+      },
+    })),
   };
 }
 
 /**
  * Generate Website JSON-LD
  */
-export function generateWebsiteStructuredData(siteUrl: string, siteName: string): object {
+export function generateWebsiteStructuredData(
+  siteUrl: string,
+  siteName: string
+): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
     name: siteName,
     url: siteUrl,
     potentialAction: {
-      "@type": "SearchAction",
+      '@type': 'SearchAction',
       target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${siteUrl}/wyszukiwanie?q={search_term_string}`
+        '@type': 'EntryPoint',
+        urlTemplate: `${siteUrl}/wyszukiwanie?q={search_term_string}`,
       },
-      "query-input": "required name=search_term_string"
-    }
+      'query-input': 'required name=search_term_string',
+    },
   };
 }
 
@@ -183,21 +192,21 @@ export function generateLocalBusinessStructuredData(business: {
   priceRange: string;
 }): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
     name: business.name,
     description: business.description,
     url: business.url,
     telephone: business.telephone,
     address: {
-      "@type": "PostalAddress",
+      '@type': 'PostalAddress',
       streetAddress: business.address.streetAddress,
       addressLocality: business.address.addressLocality,
       postalCode: business.address.postalCode,
-      addressCountry: business.address.addressCountry
+      addressCountry: business.address.addressCountry,
     },
     openingHours: business.openingHours,
-    priceRange: business.priceRange
+    priceRange: business.priceRange,
   };
 }
 
@@ -213,18 +222,20 @@ export function generateWebPageStructuredData(page: {
   mainEntity?: Record<string, unknown> | Array<Record<string, unknown>>;
 }): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
     name: page.name,
     description: page.description,
     url: page.url,
     isPartOf: {
-      "@type": "WebSite",
-      name: "FILLER",
-      url: page.isPartOf
+      '@type': 'WebSite',
+      name: 'FILLER',
+      url: page.isPartOf,
     },
-    ...(page.breadcrumb && { breadcrumb: generateBreadcrumbStructuredData(page.breadcrumb) }),
-    ...(page.mainEntity && { mainEntity: page.mainEntity })
+    ...(page.breadcrumb && {
+      breadcrumb: generateBreadcrumbStructuredData(page.breadcrumb),
+    }),
+    ...(page.mainEntity && { mainEntity: page.mainEntity }),
   };
 }
 
@@ -239,24 +250,24 @@ export function structuredDataToScript(data: object): string {
  * Default organization data for FILLER
  */
 export const DEFAULT_ORGANIZATION: OrganizationStructuredData = {
-  name: "FILLER",
-  url: "https://filler.pl",
-  logo: "https://filler.pl/logo.png",
-  description: "Hurtownia Medycyny Estetycznej - TOP Produkty",
+  name: 'FILLER',
+  url: 'https://filler.pl',
+  logo: 'https://filler.pl/logo.png',
+  description: 'Hurtownia Medycyny Estetycznej - TOP Produkty',
   address: {
-    streetAddress: "ul. Przykładowa 123",
-    addressLocality: "Warszawa",
-    postalCode: "00-000",
-    addressCountry: "PL"
+    streetAddress: 'ul. Przykładowa 123',
+    addressLocality: 'Warszawa',
+    postalCode: '00-000',
+    addressCountry: 'PL',
   },
   contactPoint: {
-    telephone: "+48 123 456 789",
-    contactType: "customer service",
-    email: "kontakt@filler.pl"
+    telephone: '+48 123 456 789',
+    contactType: 'customer service',
+    email: 'kontakt@filler.pl',
   },
   sameAs: [
-    "https://www.facebook.com/filler",
-    "https://www.instagram.com/filler",
-    "https://www.linkedin.com/company/filler"
-  ]
+    'https://www.facebook.com/filler',
+    'https://www.instagram.com/filler',
+    'https://www.linkedin.com/company/filler',
+  ],
 };

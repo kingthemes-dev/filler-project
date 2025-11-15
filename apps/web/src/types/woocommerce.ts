@@ -81,8 +81,6 @@ export interface WooDimensions {
   height: string;
 }
 
-
-
 export interface WooTag {
   id: number;
   name: string;
@@ -129,8 +127,6 @@ export interface WooLinks {
 export interface WooLink {
   href: string;
 }
-
-
 
 // =========================================
 // WooCommerce Order Types
@@ -382,5 +378,3 @@ export interface WooProductQuery {
   orderby?: string;
   order?: 'asc' | 'desc';
 }
-
-

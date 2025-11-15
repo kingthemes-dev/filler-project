@@ -260,7 +260,9 @@ describe('WooCommerce Zod Schemas', () => {
       const result = orderSchema.safeParse(invalid);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0]?.message).toContain('At least one line item is required');
+        expect(result.error.issues[0]?.message).toContain(
+          'At least one line item is required'
+        );
       }
     });
 
@@ -331,7 +333,9 @@ describe('WooCommerce Zod Schemas', () => {
       const result = resetPasswordSchema.safeParse(invalid);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0]?.message).toContain('Nieprawidłowy klucz');
+        expect(result.error.issues[0]?.message).toContain(
+          'Nieprawidłowy klucz'
+        );
       }
     });
 
@@ -345,7 +349,9 @@ describe('WooCommerce Zod Schemas', () => {
       const result = resetPasswordSchema.safeParse(invalid);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0]?.message).toContain('co najmniej 8 znaków');
+        expect(result.error.issues[0]?.message).toContain(
+          'co najmniej 8 znaków'
+        );
       }
     });
   });
@@ -455,4 +461,3 @@ describe('WooCommerce Zod Schemas', () => {
     });
   });
 });
-

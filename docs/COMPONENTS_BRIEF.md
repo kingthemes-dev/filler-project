@@ -10,7 +10,7 @@
 | --- | --- |
 | `admin-nav.tsx` | AdminNav |
 | `conditional-footer.tsx` | ConditionalFooter |
-| `cookie-consent.tsx` | CookieConsent |
+| `cookie-consent.tsx` | CookieConsent, useCookieConsent |
 | `defer-client-ui.tsx` | DeferClientUI |
 | `error-boundary.tsx` | ErrorBoundary |
 | `king-hero-rounded.tsx` | KingHeroRounded |
@@ -20,9 +20,9 @@
 | `king-product-tabs.tsx` | KingProductTabs |
 | `logout-button.tsx` | LogoutButton |
 | `PerformanceTracker.tsx` | PerformanceTracker |
-| `product-image-server-preload.tsx` | ProductImageServerPreload |
-| `seo/search-tracking.tsx` | SearchTracking |
-| `shop-data-prefetcher.tsx` | ShopDataPrefetcher |
+| `product-image-server-preload.tsx` | getFirstProductImageUrl |
+| `seo/search-tracking.tsx` | SearchTracking, useSearchTracking |
+| `shop-data-prefetcher.tsx` | ShopDataPrefetcher, useShopDataPrefetch |
 | `shop-products-grid.tsx` | ShopProductsGrid |
 
 #### Komponenty UI / shadcn (`apps/web/src/components/ui`)
@@ -30,24 +30,24 @@
 | Plik | Eksporty |
 | --- | --- |
 | `ui/active-filters-bar.tsx` | ActiveFiltersBar |
-| `ui/advanced-dropdown.tsx` | AdvancedDropdown |
+| `ui/advanced-dropdown.tsx` | AdvancedDropdown, DropdownOption, AdvancedDropdownProps |
 | `ui/alert.tsx` | Alert, AlertDescription |
-| `ui/animated-dropdown.tsx` | AnimatedDropdown |
+| `ui/animated-dropdown.tsx` | AnimatedDropdown, AnimatedDropdownOption, AnimatedDropdownProps |
 | `ui/auth/auth-modal-manager.tsx` | AuthModalManager |
-| `ui/auth/auth-provider.tsx` | AuthProvider |
+| `ui/auth/auth-provider.tsx` | AuthProvider, useAuthModals |
 | `ui/auth/forgot-password-modal.tsx` | ForgotPasswordModal |
 | `ui/auth/login-modal.tsx` | LoginModal |
 | `ui/auth/register-modal.tsx` | RegisterModal |
-| `ui/badge.tsx` | Badge |
+| `ui/badge.tsx` | Badge, BadgeProps |
 | `ui/breadcrumbs.tsx` | Breadcrumbs |
 | `ui/button.tsx` | Button |
 | `ui/card.tsx` | Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent |
 | `ui/cart-drawer.tsx` | CartDrawer |
 | `ui/category-tabs.tsx` | CategoryTabs |
 | `ui/cls-optimizer.tsx` | CLSOptimizer, ImageCLSOptimizer, ProductCardCLSOptimizer, Skeleton |
-| `ui/dynamic-attribute-filters.tsx` | DynamicAttributeFilters |
+| `ui/dynamic-attribute-filters.tsx` | DynamicAttributeFilters, FilterValue, AttributeCollection, DynamicFiltersData, ContextualAttributes |
 | `ui/dynamic-category-filters.tsx` | DynamicCategoryFilters |
-| `ui/email/email-notification-center.tsx` | EmailNotificationCenter |
+| `ui/email/email-notification-center.tsx` | EmailNotificationCenter, openEmailNotificationCenter |
 | `ui/favorites-modal.tsx` | FavoritesModal |
 | `ui/favorites-sync-provider.tsx` | FavoritesSyncProvider |
 | `ui/footer.tsx` | Footer |
@@ -57,21 +57,21 @@
 | `ui/hierarchical-categories.tsx` | HierarchicalCategories |
 | `ui/hierarchical-category-filters.tsx` | HierarchicalCategoryFilters |
 | `ui/input.tsx` | Input |
-| `ui/invoice-pdf-generator.tsx` | InvoicePDFGenerator |
+| `ui/invoice-pdf-generator.tsx` | InvoicePDFGenerator, generateInvoicePDF |
 | `ui/label.tsx` | Label |
 | `ui/modal-close-button.tsx` | ModalCloseButton |
 | `ui/newsletter-form.tsx` | NewsletterForm |
 | `ui/page-container.tsx` | PageContainer |
 | `ui/page-header.tsx` | PageHeader |
-| `ui/pagination.tsx` | Pagination |
-| `ui/popup-chips-motion.tsx` | PopupChipsMotion |
+| `ui/pagination.tsx` | Pagination, usePagination |
+| `ui/popup-chips-motion.tsx` | PopupChipsMotion, PopupChipsMotionProps |
 | `ui/quick-view-modal.tsx` | QuickViewModal |
 | `ui/recaptcha-provider.tsx` | RecaptchaProvider |
 | `ui/review-form.tsx` | ReviewForm |
 | `ui/reviews-list.tsx` | ReviewsList |
 | `ui/search-modal.tsx` | SearchModal |
 | `ui/select.tsx` | Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectScrollDownButton, SelectScrollUpButton, SelectSeparator, SelectTrigger, SelectValue |
-| `ui/shop-dropdown.tsx` | ShopDropdown |
+| `ui/shop-dropdown.tsx` | ShopDropdown, ShopDropdownOption, ShopDropdownProps |
 | `ui/shop-explore-panel.tsx` | ShopExplorePanel |
 | `ui/shop-filters.tsx` | ShopFilters |
 | `ui/similar-products.tsx` | SimilarProducts |

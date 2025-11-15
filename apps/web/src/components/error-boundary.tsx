@@ -27,15 +27,16 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
         <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
           <AlertTriangle className="w-8 h-8 text-red-600" />
         </div>
-        
+
         <h1 className="text-xl font-bold text-gray-900 mb-2">
           Ups! Coś poszło nie tak
         </h1>
-        
+
         <p className="text-gray-600 mb-4">
-          Wystąpił nieoczekiwany błąd. Spróbuj odświeżyć stronę lub skontaktuj się z nami.
+          Wystąpił nieoczekiwany błąd. Spróbuj odświeżyć stronę lub skontaktuj
+          się z nami.
         </p>
-        
+
         {process.env.NODE_ENV === 'development' && error && (
           <details className="text-left bg-gray-100 p-3 rounded mb-4">
             <summary className="cursor-pointer font-medium text-gray-700">
@@ -47,7 +48,7 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
             </pre>
           </details>
         )}
-        
+
         <div className="flex gap-3 justify-center">
           <button
             onClick={resetError}
@@ -56,7 +57,7 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
             <RefreshCw className="w-4 h-4" />
             Spróbuj ponownie
           </button>
-          
+
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -69,7 +70,10 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
   );
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -95,9 +99,9 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         window.Sentry.captureException(error, {
           contexts: {
             react: {
-              componentStack: errorInfo.componentStack
-            }
-          }
+              componentStack: errorInfo.componentStack,
+            },
+          },
         });
       }
       // TODO: Send to error reporting service (Sentry, LogRocket, etc.) - Sentry już zaimplementowane
@@ -111,7 +115,12 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
-      return <FallbackComponent error={this.state.error} resetError={this.resetError} />;
+      return (
+        <FallbackComponent
+          error={this.state.error}
+          resetError={this.resetError}
+        />
+      );
     }
 
     return this.props.children;

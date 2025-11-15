@@ -1,6 +1,6 @@
 /**
  * HTTP Agent with Connection Pooling for WooCommerce REST API
- * 
+ *
  * Provides reusable HTTP connections with keep-alive for better performance.
  * Uses undici Agent for connection pooling in Node.js environment.
  */
@@ -48,7 +48,7 @@ class HttpAgent {
 
   private constructor(config: HttpAgentConfig = {}) {
     this.config = {
-      maxSockets: config.maxSockets || 50,
+      maxSockets: config.maxSockets || 100, // OPTIMIZATION: Increased from 50 to 100
       keepAlive: config.keepAlive ?? true,
       keepAliveMsecs: config.keepAliveMsecs || 30000,
       timeout: config.timeout || 30000,
@@ -84,22 +84,25 @@ class HttpAgent {
 
     try {
       const dispatcher = new undici.Agent({
-        connections: this.config.maxSockets || 50,
+        connections: this.config.maxSockets || 100, // OPTIMIZATION: Increased from 50 to 100
         pipelining: 1, // Disable pipelining for compatibility
         keepAliveTimeout: this.config.keepAliveMsecs || 30000,
         keepAliveMaxTimeout: (this.config.keepAliveMsecs || 30000) * 2,
       });
-      
+
       this.dispatchers.set(origin, dispatcher);
       logger.info('HTTP Agent: Created undici dispatcher', {
         origin,
         maxSockets: this.config.maxSockets || 50,
         keepAliveMsecs: this.config.keepAliveMsecs || 30000,
       });
-      
+
       return dispatcher;
     } catch (error) {
-      logger.warn('HTTP Agent: Failed to create undici dispatcher', { error, origin });
+      logger.warn('HTTP Agent: Failed to create undici dispatcher', {
+        error,
+        origin,
+      });
       return null;
     }
   }
@@ -119,19 +122,16 @@ class HttpAgent {
   /**
    * Fetch with connection pooling
    */
-  async fetch(
-    url: string | URL,
-    options: RequestInit = {}
-  ): Promise<Response> {
+  async fetch(url: string | URL, options: RequestInit = {}): Promise<Response> {
     const urlString = typeof url === 'string' ? url : url.toString();
     const origin = this.getOrigin(urlString);
-    
+
     // Prepare headers with keep-alive and compression
     const headers = new Headers(options.headers);
     if (this.config.keepAlive && !headers.has('Connection')) {
       headers.set('Connection', 'keep-alive');
     }
-    
+
     // Add compression support
     if (!headers.has('Accept-Encoding')) {
       headers.set('Accept-Encoding', 'gzip, br, deflate');
@@ -145,7 +145,9 @@ class HttpAgent {
         try {
           // Use undici.fetch with dispatcher for connection pooling
           // Remove 'next' property as it's not supported by undici.fetch
-          const { next, ...undiciOptions } = options as RequestInit & { next?: unknown };
+          const { next: _next, ...undiciOptions } = options as RequestInit & {
+            next?: unknown;
+          };
           // Type assertion needed because undici.fetch has different types than standard fetch
           const response = await undici.fetch(urlString, {
             ...undiciOptions,
@@ -155,10 +157,13 @@ class HttpAgent {
           // Convert undici.Response to standard Response via unknown
           return response as unknown as Response;
         } catch (error) {
-          logger.warn('HTTP Agent: undici fetch failed, falling back to native fetch', { 
-            error: error instanceof Error ? error.message : String(error),
-            url: urlString 
-          });
+          logger.warn(
+            'HTTP Agent: undici fetch failed, falling back to native fetch',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              url: urlString,
+            }
+          );
           // Fall through to native fetch
         }
       }
@@ -174,19 +179,30 @@ class HttpAgent {
   }
 
   /**
-   * Get agent statistics
+   * Get agent statistics with connection pool metrics
    */
   getStats(): {
     usingUndici: boolean;
     keepAlive: boolean;
     maxSockets: number;
     activeDispatchers: number;
+    // OPTIMIZATION: Connection pool usage metrics (placeholder - should be tracked)
+    metrics: {
+      totalConnections: number; // TODO: Track actual connection count
+      activeConnections: number; // TODO: Track active connections
+      connectionReuseRate: number; // TODO: Calculate reuse rate
+    };
   } {
     return {
       usingUndici: this.dispatchers.size > 0,
       keepAlive: this.config.keepAlive ?? true,
-      maxSockets: this.config.maxSockets || 50,
+      maxSockets: this.config.maxSockets || 100, // OPTIMIZATION: Increased from 50 to 100
       activeDispatchers: this.dispatchers.size,
+      metrics: {
+        totalConnections: 0, // TODO: Implement actual tracking
+        activeConnections: 0, // TODO: Implement actual tracking
+        connectionReuseRate: 0, // TODO: Calculate from metrics
+      },
     };
   }
 
@@ -200,16 +216,19 @@ class HttpAgent {
           await dispatcher.destroy();
         }
       } catch (error) {
-        logger.warn('HTTP Agent: Error destroying dispatcher', { error, origin });
+        logger.warn('HTTP Agent: Error destroying dispatcher', {
+          error,
+          origin,
+        });
       }
     }
     this.dispatchers.clear();
   }
 }
 
-// Export singleton instance
+// OPTIMIZATION: Export singleton instance with increased maxSockets
 export const httpAgent = HttpAgent.getInstance({
-  maxSockets: 50,
+  maxSockets: 100, // OPTIMIZATION: Increased from 50 to 100 for more parallel connections
   keepAlive: true,
   keepAliveMsecs: 30000,
 });
@@ -217,4 +236,3 @@ export const httpAgent = HttpAgent.getInstance({
 // Export class for testing
 export { HttpAgent };
 export type { HttpAgentConfig };
-

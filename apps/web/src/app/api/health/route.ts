@@ -168,7 +168,7 @@ class HealthChecker {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Basic ${Buffer.from(
+            Authorization: `Basic ${Buffer.from(
               `${env.WC_CONSUMER_KEY}:${env.WC_CONSUMER_SECRET}`
             ).toString('base64')}`,
           },
@@ -199,7 +199,11 @@ class HealthChecker {
   /**
    * Get memory usage
    */
-  private getMemoryUsage(): { used: number; total: number; percentage: number } {
+  private getMemoryUsage(): {
+    used: number;
+    total: number;
+    percentage: number;
+  } {
     if (typeof process !== 'undefined' && process.memoryUsage) {
       const memory = process.memoryUsage();
       const used = memory.heapUsed;
@@ -230,14 +234,38 @@ class HealthChecker {
       return {
         wordpress: circuitBreakers.wordpress.getStats(),
         api: circuitBreakers.api.getStats(),
-        external: circuitBreakers.external.getStats()
+        external: circuitBreakers.external.getStats(),
       };
     } catch (error) {
       console.warn('Circuit breaker stats not available:', error);
       return {
-        wordpress: { state: 'UNKNOWN', failureCount: 0, successCount: 0, totalRequests: 0, failureRate: 0, lastFailureTime: 0, nextAttempt: 0 },
-        api: { state: 'UNKNOWN', failureCount: 0, successCount: 0, totalRequests: 0, failureRate: 0, lastFailureTime: 0, nextAttempt: 0 },
-        external: { state: 'UNKNOWN', failureCount: 0, successCount: 0, totalRequests: 0, failureRate: 0, lastFailureTime: 0, nextAttempt: 0 }
+        wordpress: {
+          state: 'UNKNOWN',
+          failureCount: 0,
+          successCount: 0,
+          totalRequests: 0,
+          failureRate: 0,
+          lastFailureTime: 0,
+          nextAttempt: 0,
+        },
+        api: {
+          state: 'UNKNOWN',
+          failureCount: 0,
+          successCount: 0,
+          totalRequests: 0,
+          failureRate: 0,
+          lastFailureTime: 0,
+          nextAttempt: 0,
+        },
+        external: {
+          state: 'UNKNOWN',
+          failureCount: 0,
+          successCount: 0,
+          totalRequests: 0,
+          failureRate: 0,
+          lastFailureTime: 0,
+          nextAttempt: 0,
+        },
       };
     }
   }
@@ -267,7 +295,13 @@ class HealthChecker {
    * Perform comprehensive health check
    */
   async checkHealth(): Promise<HealthStatus> {
-    const [redisStatus, wordpressStatus, databaseStatus, circuitBreakers, cacheStatus] = await Promise.all([
+    const [
+      redisStatus,
+      wordpressStatus,
+      databaseStatus,
+      circuitBreakers,
+      cacheStatus,
+    ] = await Promise.all([
       this.checkRedis(),
       this.checkWordPress(),
       this.checkDatabase(),
@@ -281,7 +315,9 @@ class HealthChecker {
     // Determine overall status
     const serviceStatuses = [redisStatus, wordpressStatus, databaseStatus];
     const errorCount = serviceStatuses.filter(s => s.status === 'error').length;
-    const unknownCount = serviceStatuses.filter(s => s.status === 'unknown').length;
+    const unknownCount = serviceStatuses.filter(
+      s => s.status === 'unknown'
+    ).length;
 
     let overallStatus: 'ok' | 'degraded' | 'error';
     if (errorCount === 0) {
@@ -318,14 +354,14 @@ const healthChecker = new HealthChecker();
 export async function GET(_request: NextRequest): Promise<NextResponse> {
   try {
     const health = await healthChecker.checkHealth();
-    
-    const statusCode = health.status === 'ok' ? 200 : 
-                      health.status === 'degraded' ? 200 : 503;
+
+    const statusCode =
+      health.status === 'ok' ? 200 : health.status === 'degraded' ? 200 : 503;
 
     return NextResponse.json(health, { status: statusCode });
   } catch (error) {
     console.error('Health check failed:', error);
-    
+
     return NextResponse.json(
       {
         status: 'error',
@@ -343,7 +379,7 @@ export async function HEAD(_request: NextRequest): Promise<NextResponse> {
   try {
     const health = await healthChecker.checkHealth();
     const statusCode = health.status === 'ok' ? 200 : 503;
-    
+
     return new NextResponse(null, { status: statusCode });
   } catch {
     return new NextResponse(null, { status: 503 });

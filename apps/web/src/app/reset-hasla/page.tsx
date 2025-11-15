@@ -3,7 +3,14 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, CheckCircle, AlertCircle, Lock, ArrowLeft } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertCircle,
+  Lock,
+  ArrowLeft,
+} from 'lucide-react';
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -37,8 +44,10 @@ function ResetPasswordContent() {
 
   const getPasswordStrength = (password: string) => {
     if (password.length === 0) return { strength: 0, text: '', color: '' };
-    if (password.length < 6) return { strength: 25, text: 'Słabe', color: 'bg-red-500' };
-    if (password.length < 8) return { strength: 50, text: 'Średnie', color: 'bg-yellow-500' };
+    if (password.length < 6)
+      return { strength: 25, text: 'Słabe', color: 'bg-red-500' };
+    if (password.length < 8)
+      return { strength: 50, text: 'Średnie', color: 'bg-yellow-500' };
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
       return { strength: 75, text: 'Dobre', color: 'bg-blue-500' };
     }
@@ -47,7 +56,7 @@ function ResetPasswordContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!password || !confirmPassword) {
       setError('Wypełnij wszystkie pola');
       return;
@@ -68,25 +77,32 @@ function ResetPasswordContent() {
     setError('');
 
     try {
-      console.log('🔄 Password reset attempt:', { key: key?.substring(0, 10) + '...', login, passwordLength: password.length });
-      
+      console.log('🔄 Password reset attempt:', {
+        key: key?.substring(0, 10) + '...',
+        login,
+        passwordLength: password.length,
+      });
+
       if (!key || !login) {
         setError('Brak wymaganych parametrów do resetowania hasła');
         return;
       }
-      
+
       // Wywołaj WordPress API do resetowania hasła
-      const response = await fetch('/api/woocommerce?endpoint=customers/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          key: key,
-          login: login,
-          password: password
-        })
-      });
+      const response = await fetch(
+        '/api/woocommerce?endpoint=customers/reset-password',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            key: key,
+            login: login,
+            password: password,
+          }),
+        }
+      );
 
       console.log('🔄 Password reset response status:', response.status);
       const data = await response.json();
@@ -98,7 +114,11 @@ function ResetPasswordContent() {
           router.push('/moje-konto');
         }, 2000);
       } else {
-        setError(data.message || data.error || 'Wystąpił błąd podczas resetowania hasła');
+        setError(
+          data.message ||
+            data.error ||
+            'Wystąpił błąd podczas resetowania hasła'
+        );
       }
     } catch (error) {
       console.error('🚨 Password reset error:', error);
@@ -121,12 +141,18 @@ function ResetPasswordContent() {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Hasło zostało zmienione!</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Hasło zostało zmienione!
+          </h1>
           <p className="text-gray-600 mb-6">
-            Twoje hasło zostało pomyślnie zaktualizowane. Zostaniesz przekierowany do strony logowania.
+            Twoje hasło zostało pomyślnie zaktualizowane. Zostaniesz
+            przekierowany do strony logowania.
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-green-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+            <div
+              className="bg-green-500 h-2 rounded-full animate-pulse"
+              style={{ width: '100%' }}
+            ></div>
           </div>
         </motion.div>
       </div>
@@ -145,7 +171,9 @@ function ResetPasswordContent() {
           <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
             <Lock className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Ustaw nowe hasło</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Ustaw nowe hasło
+          </h1>
           <p className="text-gray-600">Wprowadź nowe hasło dla swojego konta</p>
         </div>
 
@@ -153,7 +181,10 @@ function ResetPasswordContent() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* New Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Nowe hasło
             </label>
             <div className="relative">
@@ -161,7 +192,7 @@ function ResetPasswordContent() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 placeholder="Wprowadź nowe hasło"
                 required
@@ -171,20 +202,28 @@ function ResetPasswordContent() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
               </button>
             </div>
-            
+
             {/* Password Strength */}
             {password && (
               <div className="mt-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-500">Siła hasła</span>
-                  <span className={`text-xs font-medium ${
-                    passwordStrength.strength < 50 ? 'text-red-600' :
-                    passwordStrength.strength < 75 ? 'text-yellow-600' :
-                    'text-green-600'
-                  }`}>
+                  <span
+                    className={`text-xs font-medium ${
+                      passwordStrength.strength < 50
+                        ? 'text-red-600'
+                        : passwordStrength.strength < 75
+                          ? 'text-yellow-600'
+                          : 'text-green-600'
+                    }`}
+                  >
                     {passwordStrength.text}
                   </span>
                 </div>
@@ -200,7 +239,10 @@ function ResetPasswordContent() {
 
           {/* Confirm Password */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Potwierdź hasło
             </label>
             <div className="relative">
@@ -208,7 +250,7 @@ function ResetPasswordContent() {
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
                 className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                 placeholder="Potwierdź nowe hasło"
                 required
@@ -218,7 +260,11 @@ function ResetPasswordContent() {
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showConfirmPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
               </button>
             </div>
           </div>
@@ -264,7 +310,9 @@ function ResetPasswordContent() {
 
         {/* Password Requirements */}
         <div className="mt-6 bg-gray-50 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Wymagania hasła:</h3>
+          <h3 className="text-sm font-medium text-gray-900 mb-2">
+            Wymagania hasła:
+          </h3>
           <ul className="text-xs text-gray-600 space-y-1">
             <li>• Co najmniej 8 znaków</li>
             <li>• Małe i wielkie litery</li>
@@ -279,14 +327,16 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Ładowanie...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
+            <p className="text-gray-600">Ładowanie...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <ResetPasswordContent />
     </Suspense>
   );

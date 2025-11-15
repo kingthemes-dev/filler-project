@@ -11,7 +11,9 @@ import { z } from 'zod';
 export const webhookHeadersSchema = z.object({
   'x-wc-webhook-signature': z.string().min(1, 'Webhook signature is required'),
   'x-wc-webhook-topic': z.string().min(1, 'Webhook topic is required'),
-  'x-wc-webhook-delivery-id': z.string().min(1, 'Webhook delivery ID is required'),
+  'x-wc-webhook-delivery-id': z
+    .string()
+    .min(1, 'Webhook delivery ID is required'),
   'x-wc-webhook-source': z.string().url('Invalid webhook source URL'),
 });
 
@@ -34,4 +36,3 @@ export const webhookPayloadSchema = z.object({
 
 export type WebhookHeaders = z.infer<typeof webhookHeadersSchema>;
 export type WebhookPayload = z.infer<typeof webhookPayloadSchema>;
-

@@ -2,10 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/config/env';
 import { adminAuthSchema } from '@/lib/schemas/internal';
 import { validateApiInput } from '@/utils/request-validation';
-import { createErrorResponse, ValidationError } from '@/lib/errors';
+import { createErrorResponse, ValidationError, InternalError } from '@/lib/errors';
 import { logger } from '@/utils/logger';
+import { checkApiSecurity, addSecurityHeaders } from '@/utils/api-security';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Security check: rate limiting and CSRF protection (strict for admin)
+  const securityCheck = await checkApiSecurity(request, {
+    enforceRateLimit: true,
+    enforceCSRF: true,
+  });
+  
+  if (!securityCheck.allowed) {
+    return securityCheck.response || NextResponse.json(
+      { success: false, error: 'Security check failed' },
+      { status: 403 }
+    );
+  }
+  
   try {
     const payload = await request.json();
     const sanitized = validateApiInput(payload);
@@ -13,7 +27,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!parsed.success) {
       return createErrorResponse(
-        new ValidationError('Nieprawidłowy token administracyjny', { issues: parsed.error.errors }),
+        new ValidationError('Nieprawidłowy token administracyjny', {
+          issues: parsed.error.errors,
+        }),
         { endpoint: 'admin/auth', method: 'POST' }
       );
     }
@@ -23,13 +39,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const expected = env.ADMIN_CACHE_TOKEN || process.env.ADMIN_TOKEN || '';
 
     if (expected && token === expected) {
-      return NextResponse.json({ success: true });
+      const response = NextResponse.json({ success: true });
+      return addSecurityHeaders(response);
     }
 
-    return NextResponse.json({ success: false, error: 'Nieprawidłowy token' }, { status: 401 });
+    const errorResponse = NextResponse.json(
+      { success: false, error: 'Nieprawidłowy token' },
+      { status: 401 }
+    );
+    return addSecurityHeaders(errorResponse);
   } catch (error) {
-    logger.error('Admin auth error', { error });
-    return NextResponse.json({ success: false, error: 'Błąd serwera' }, { status: 500 });
+    // Mask secrets in error before logging
+    const isProduction = process.env.NODE_ENV === 'production';
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const maskedMessage = isProduction
+      ? errorMessage.replace(/token|password|secret|key/gi, '***masked***')
+      : errorMessage;
+    
+    logger.error('Admin auth error', {
+      error: isProduction ? maskedMessage : error,
+    });
+    
+    // Use createErrorResponse for consistent error handling (masks secrets in production)
+    const errorResponse = createErrorResponse(
+      new InternalError(
+        'Błąd serwera',
+        isProduction ? undefined : { originalError: errorMessage }
+      ),
+      { endpoint: 'admin/auth', method: 'POST' }
+    );
+    return addSecurityHeaders(errorResponse);
   }
 }
 

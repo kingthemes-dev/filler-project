@@ -17,7 +17,7 @@ export default function Pagination({
   totalPages,
   onPageChange,
   showInfo = true,
-  className
+  className,
 }: PaginationProps) {
   // Generowanie zakresu stron do wyświetlenia
   const getVisiblePages = () => {
@@ -25,7 +25,11 @@ export default function Pagination({
     const range = [];
     const rangeWithDots = [];
 
-    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
       range.push(i);
     }
 
@@ -53,11 +57,17 @@ export default function Pagination({
   if (totalPages <= 1) return null;
 
   return (
-    <div className={cn("flex flex-col sm:flex-row items-center justify-between gap-4 py-6", className)}>
+    <div
+      className={cn(
+        'flex flex-col sm:flex-row items-center justify-between gap-4 py-6',
+        className
+      )}
+    >
       {/* Informacje o stronach */}
       {showInfo && (
         <div className="text-sm text-gray-600 order-2 sm:order-1">
-          Strona <span className="font-semibold text-gray-900">{currentPage}</span> z{' '}
+          Strona{' '}
+          <span className="font-semibold text-gray-900">{currentPage}</span> z{' '}
           <span className="font-semibold text-gray-900">{totalPages}</span>
         </div>
       )}
@@ -71,10 +81,10 @@ export default function Pagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={isFirstPage}
           className={cn(
-            "h-9 px-3 gap-2 font-medium transition-all duration-300",
-            "border-gray-300 text-gray-700 hover:bg-gray-50",
-            "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent",
-            "hover:border-gray-400 hover:text-gray-900"
+            'h-9 px-3 gap-2 font-medium transition-all duration-300',
+            'border-gray-300 text-gray-700 hover:bg-gray-50',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+            'hover:border-gray-400 hover:text-gray-900'
           )}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -101,14 +111,14 @@ export default function Pagination({
             return (
               <Button
                 key={pageNumber}
-                variant={isActive ? "default" : "ghost"}
+                variant={isActive ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => onPageChange(pageNumber)}
                 className={cn(
-                  "h-9 w-9 p-0 font-medium transition-all duration-300",
+                  'h-9 w-9 p-0 font-medium transition-all duration-300',
                   isActive
-                    ? "bg-gradient-to-r from-gray-900 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-800 hover:to-gray-900"
-                    : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                    ? 'bg-gradient-to-r from-gray-900 to-black text-white shadow-sm hover:bg-gradient-to-l hover:from-gray-800 hover:to-gray-900'
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                 )}
               >
                 {pageNumber}
@@ -124,10 +134,10 @@ export default function Pagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={isLastPage}
           className={cn(
-            "h-9 px-3 gap-2 font-medium transition-all duration-300",
-            "border-gray-300 text-gray-700 hover:bg-gray-50",
-            "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent",
-            "hover:border-gray-400 hover:text-gray-900"
+            'h-9 px-3 gap-2 font-medium transition-all duration-300',
+            'border-gray-300 text-gray-700 hover:bg-gray-50',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+            'hover:border-gray-400 hover:text-gray-900'
           )}
         >
           <span className="hidden sm:inline">Następna</span>
@@ -141,7 +151,7 @@ export default function Pagination({
 // Hook do zarządzania stanem paginacji
 export function usePagination<T>(totalItems: number, itemsPerPage: number) {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  
+
   return {
     totalPages,
     hasNextPage: (currentPage: number) => currentPage < totalPages,
@@ -150,6 +160,6 @@ export function usePagination<T>(totalItems: number, itemsPerPage: number) {
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       return allItems.slice(startIndex, endIndex);
-    }
+    },
   };
 }

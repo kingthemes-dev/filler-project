@@ -8,6 +8,7 @@ export interface PaymentMethod {
   icon: string;
   processingTime: number; // w milisekundach
   successRate: number; // 0-1 (100%)
+  gatewayId?: string; // Original gateway ID from WooCommerce (for unique keys)
 }
 
 export interface PaymentRequest {
@@ -36,7 +37,7 @@ export class MockPaymentService {
       description: 'Szybka i bezpieczna płatność',
       icon: 'google_pay',
       processingTime: 1500,
-      successRate: 0.98
+      successRate: 0.98,
     },
     {
       id: 'apple_pay',
@@ -44,7 +45,7 @@ export class MockPaymentService {
       description: 'Płatność przez Touch ID lub Face ID',
       icon: 'apple_pay',
       processingTime: 1500,
-      successRate: 0.98
+      successRate: 0.98,
     },
     {
       id: 'card',
@@ -52,7 +53,7 @@ export class MockPaymentService {
       description: 'Visa, Mastercard, American Express',
       icon: '💳',
       processingTime: 3000,
-      successRate: 0.95
+      successRate: 0.95,
     },
     {
       id: 'transfer',
@@ -60,7 +61,7 @@ export class MockPaymentService {
       description: 'Przelew online lub tradycyjny',
       icon: '🏦',
       processingTime: 5000,
-      successRate: 0.98
+      successRate: 0.98,
     },
     {
       id: 'cash',
@@ -68,8 +69,8 @@ export class MockPaymentService {
       description: 'Gotówka lub karta przy dostawie',
       icon: '💵',
       processingTime: 1000,
-      successRate: 1.0
-    }
+      successRate: 1.0,
+    },
   ];
 
   /**
@@ -93,45 +94,67 @@ export class MockPaymentService {
   async isApplePayAvailable(): Promise<boolean> {
     // W prawdziwej implementacji sprawdzamy czy Apple Pay jest dostępne
     if (typeof window === 'undefined') return false;
-    const applePaySupport = (window as { ApplePaySession?: { canMakePayments?: () => boolean } }).ApplePaySession;
-    return Boolean(applePaySupport && typeof applePaySupport.canMakePayments === 'function' && applePaySupport.canMakePayments());
+    const applePaySupport = (
+      window as { ApplePaySession?: { canMakePayments?: () => boolean } }
+    ).ApplePaySession;
+    return Boolean(
+      applePaySupport &&
+        typeof applePaySupport.canMakePayments === 'function' &&
+        applePaySupport.canMakePayments()
+    );
   }
 
   /**
    * Inicjalizuj Google Pay
    */
-  async initializeGooglePay(): Promise<{ isReadyToPay: boolean; paymentDataRequest: Record<string, unknown> } | null> {
+  async initializeGooglePay(): Promise<{
+    isReadyToPay: boolean;
+    paymentDataRequest: Record<string, unknown>;
+  } | null> {
     if (typeof window === 'undefined') return null;
-    
+
     // W prawdziwej implementacji inicjalizujemy Google Pay API
     return {
       isReadyToPay: true,
       paymentDataRequest: {
         apiVersion: 2,
         apiVersionMinor: 0,
-        allowedPaymentMethods: [{
-          type: 'CARD',
-          parameters: {
-            allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-            allowedCardNetworks: ['AMEX', 'DISCOVER', 'JCB', 'MASTERCARD', 'VISA']
-          }
-        }]
-      }
+        allowedPaymentMethods: [
+          {
+            type: 'CARD',
+            parameters: {
+              allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+              allowedCardNetworks: [
+                'AMEX',
+                'DISCOVER',
+                'JCB',
+                'MASTERCARD',
+                'VISA',
+              ],
+            },
+          },
+        ],
+      },
     };
   }
 
   /**
    * Inicjalizuj Apple Pay
    */
-  async initializeApplePay(): Promise<{ isReadyToPay: boolean; supportedNetworks: string[]; countryCode: string; currencyCode: string } | null> {
+  async initializeApplePay(): Promise<{
+    isReadyToPay: boolean;
+    supportedNetworks: string[];
+    countryCode: string;
+    currencyCode: string;
+  } | null> {
     if (typeof window === 'undefined') return null;
-    
+
     // W prawdziwej implementacji inicjalizujemy Apple Pay
     return {
       isReadyToPay: true,
       supportedNetworks: ['visa', 'masterCard', 'amex'],
       countryCode: 'PL',
-      currencyCode: 'PLN'
+      currencyCode: 'PLN',
     };
   }
 
@@ -140,7 +163,7 @@ export class MockPaymentService {
    */
   async processPayment(request: PaymentRequest): Promise<PaymentResponse> {
     const method = this.paymentMethods.find(m => m.id === request.method);
-    
+
     if (!method) {
       throw new Error('Nieznana metoda płatności');
     }
@@ -149,7 +172,7 @@ export class MockPaymentService {
     if (request.method === 'google_pay') {
       return await this.processGooglePay(request);
     }
-    
+
     if (request.method === 'apple_pay') {
       return await this.processApplePay(request);
     }
@@ -166,7 +189,7 @@ export class MockPaymentService {
         transactionId: this.generateTransactionId(),
         status: 'completed',
         message: 'Płatność zrealizowana pomyślnie',
-        processingTime: method.processingTime
+        processingTime: method.processingTime,
       };
     } else {
       return {
@@ -174,7 +197,7 @@ export class MockPaymentService {
         transactionId: this.generateTransactionId(),
         status: 'failed',
         message: 'Płatność nie została zrealizowana. Spróbuj ponownie.',
-        processingTime: method.processingTime
+        processingTime: method.processingTime,
       };
     }
   }
@@ -185,19 +208,19 @@ export class MockPaymentService {
   async processGooglePay(_request: PaymentRequest): Promise<PaymentResponse> {
     // Symuluj inicjalizację Google Pay
     await this.delay(500);
-    
+
     // Symuluj autoryzację biometryczną
     await this.delay(800);
-    
+
     // Symuluj przetwarzanie płatności
     await this.delay(200);
-    
+
     return {
       success: true,
       transactionId: this.generateTransactionId(),
       status: 'completed',
       message: 'Płatność Google Pay zrealizowana pomyślnie',
-      processingTime: 1500
+      processingTime: 1500,
     };
   }
 
@@ -207,37 +230,42 @@ export class MockPaymentService {
   async processApplePay(_request: PaymentRequest): Promise<PaymentResponse> {
     // Symuluj inicjalizację Apple Pay
     await this.delay(500);
-    
+
     // Symuluj Touch ID/Face ID
     await this.delay(800);
-    
+
     // Symuluj przetwarzanie płatności
     await this.delay(200);
-    
+
     return {
       success: true,
       transactionId: this.generateTransactionId(),
       status: 'completed',
       message: 'Płatność Apple Pay zrealizowana pomyślnie',
-      processingTime: 1500
+      processingTime: 1500,
     };
   }
 
   /**
    * Symuluj walidację karty kredytowej
    */
-  async validateCard(cardNumber: string, expiryMonth: string, expiryYear: string, cvv: string): Promise<boolean> {
+  async validateCard(
+    cardNumber: string,
+    expiryMonth: string,
+    expiryYear: string,
+    cvv: string
+  ): Promise<boolean> {
     // Symuluj walidację
     await this.delay(1000);
 
     // Proste sprawdzenie formatu
-    const isValidFormat = 
-      cardNumber.length >= 13 && 
+    const isValidFormat =
+      cardNumber.length >= 13 &&
       cardNumber.length <= 19 &&
-      parseInt(expiryMonth) >= 1 && 
+      parseInt(expiryMonth) >= 1 &&
       parseInt(expiryMonth) <= 12 &&
       parseInt(expiryYear) >= new Date().getFullYear() &&
-      cvv.length >= 3 && 
+      cvv.length >= 3 &&
       cvv.length <= 4;
 
     if (!isValidFormat) {
@@ -251,9 +279,12 @@ export class MockPaymentService {
   /**
    * Symuluj sprawdzenie salda karty
    */
-  async checkCardBalance(_cardNumber: string, _amount: number): Promise<boolean> {
+  async checkCardBalance(
+    _cardNumber: string,
+    _amount: number
+  ): Promise<boolean> {
     await this.delay(800);
-    
+
     // Symuluj sprawdzenie salda (90% szans na wystarczające saldo)
     return Math.random() > 0.1;
   }
@@ -263,7 +294,7 @@ export class MockPaymentService {
    */
   async authorizePayment(_amount: number, _method: string): Promise<boolean> {
     await this.delay(1200);
-    
+
     // Symuluj autoryzację (95% szans na sukces)
     return Math.random() > 0.05;
   }
@@ -273,7 +304,7 @@ export class MockPaymentService {
    */
   async confirmPayment(_transactionId: string): Promise<boolean> {
     await this.delay(500);
-    
+
     // Symuluj potwierdzenie (99% szans na sukces)
     return Math.random() > 0.01;
   }
@@ -281,15 +312,18 @@ export class MockPaymentService {
   /**
    * Symuluj zwrot pieniędzy
    */
-  async refundPayment(_transactionId: string, _amount: number): Promise<PaymentResponse> {
+  async refundPayment(
+    _transactionId: string,
+    _amount: number
+  ): Promise<PaymentResponse> {
     await this.delay(2000);
-    
+
     return {
       success: true,
       transactionId: this.generateTransactionId(),
       status: 'completed',
       message: 'Zwrot został przetworzony pomyślnie',
-      processingTime: 2000
+      processingTime: 2000,
     };
   }
 
@@ -298,19 +332,23 @@ export class MockPaymentService {
    */
   async getPaymentStatus(transactionId: string): Promise<PaymentResponse> {
     await this.delay(500);
-    
+
     // Symuluj różne statusy
-    const statuses: Array<'pending' | 'processing' | 'completed' | 'failed'> = 
-      ['pending', 'processing', 'completed', 'failed'];
-    
+    const statuses: Array<'pending' | 'processing' | 'completed' | 'failed'> = [
+      'pending',
+      'processing',
+      'completed',
+      'failed',
+    ];
+
     const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-    
+
     return {
       success: randomStatus === 'completed',
       transactionId,
       status: randomStatus,
       message: this.getStatusMessage(randomStatus),
-      processingTime: 500
+      processingTime: 500,
     };
   }
 
@@ -353,22 +391,24 @@ export class MockPaymentService {
    */
   async simulatePaymentError(errorType: string): Promise<PaymentResponse> {
     await this.delay(1000);
-    
+
     const errorMessages = {
-      'insufficient_funds': 'Niewystarczające saldo na karcie',
-      'card_expired': 'Karta wygasła',
-      'invalid_cvv': 'Nieprawidłowy kod CVV',
-      'card_declined': 'Karta została odrzucona',
-      'network_error': 'Błąd sieci. Spróbuj ponownie.',
-      'timeout': 'Przekroczono limit czasu. Spróbuj ponownie.'
+      insufficient_funds: 'Niewystarczające saldo na karcie',
+      card_expired: 'Karta wygasła',
+      invalid_cvv: 'Nieprawidłowy kod CVV',
+      card_declined: 'Karta została odrzucona',
+      network_error: 'Błąd sieci. Spróbuj ponownie.',
+      timeout: 'Przekroczono limit czasu. Spróbuj ponownie.',
     };
 
     return {
       success: false,
       transactionId: this.generateTransactionId(),
       status: 'failed',
-      message: errorMessages[errorType as keyof typeof errorMessages] || 'Nieznany błąd płatności',
-      processingTime: 1000
+      message:
+        errorMessages[errorType as keyof typeof errorMessages] ||
+        'Nieznany błąd płatności',
+      processingTime: 1000,
     };
   }
 }

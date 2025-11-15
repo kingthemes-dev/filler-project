@@ -27,11 +27,11 @@ export default function CacheStatus() {
   const fetchCacheStats = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch cache stats from health endpoint
       const response = await fetch('/api/health');
       const data = await response.json();
-      
+
       if (data.cache) {
         setStats({
           size: data.cache.size || 0,
@@ -42,8 +42,8 @@ export default function CacheStatus() {
           memoryUsage: {
             used: data.performance?.memory?.used || 0,
             total: data.performance?.memory?.total || 0,
-            percentage: data.performance?.memory?.percentage || 0
-          }
+            percentage: data.performance?.memory?.percentage || 0,
+          },
         });
       }
     } catch (error) {
@@ -104,7 +104,7 @@ export default function CacheStatus() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 Bytes';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   if (loading && !stats) {
@@ -127,12 +127,18 @@ export default function CacheStatus() {
           <p className="text-gray-600">Redis and memory cache monitoring</p>
         </div>
         <div className="flex space-x-2">
-          <Button onClick={handleClearCache} variant="outline" disabled={clearing}>
+          <Button
+            onClick={handleClearCache}
+            variant="outline"
+            disabled={clearing}
+          >
             <Trash2 className="h-4 w-4 mr-2" />
             Clear Cache
           </Button>
           <Button onClick={fetchCacheStats} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
         </div>
@@ -143,7 +149,9 @@ export default function CacheStatus() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cache Entries</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Cache Entries
+              </CardTitle>
               <Database className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -160,7 +168,9 @@ export default function CacheStatus() {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.hitRate}%</div>
+              <div className="text-2xl font-bold text-green-600">
+                {stats.hitRate}%
+              </div>
               <div className="text-xs text-muted-foreground">
                 Cache hit success rate
               </div>
@@ -173,7 +183,9 @@ export default function CacheStatus() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.missRate}%</div>
+              <div className="text-2xl font-bold text-red-600">
+                {stats.missRate}%
+              </div>
               <div className="text-xs text-muted-foreground">
                 Cache miss rate
               </div>
@@ -182,7 +194,9 @@ export default function CacheStatus() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Requests
+              </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -206,18 +220,21 @@ export default function CacheStatus() {
               <div className="flex justify-between items-center">
                 <span className="font-medium">Used Memory</span>
                 <span className="text-sm text-gray-600">
-                  {formatBytes(stats.memoryUsage.used)} / {formatBytes(stats.memoryUsage.total)}
+                  {formatBytes(stats.memoryUsage.used)} /{' '}
+                  {formatBytes(stats.memoryUsage.total)}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-4">
-                <div 
+                <div
                   className="bg-blue-600 h-4 rounded-full transition-all duration-300"
                   style={{ width: `${stats.memoryUsage.percentage}%` }}
                 />
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>0%</span>
-                <span className="font-medium">{stats.memoryUsage.percentage}%</span>
+                <span className="font-medium">
+                  {stats.memoryUsage.percentage}%
+                </span>
                 <span>100%</span>
               </div>
             </div>
@@ -267,15 +284,35 @@ export default function CacheStatus() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex flex-col" onClick={handleClearCache} disabled={clearing}>
+            <Button
+              variant="outline"
+              className="h-20 flex flex-col"
+              onClick={handleClearCache}
+              disabled={clearing}
+            >
               <Trash2 className="h-6 w-6 mb-2" />
-              <span className="text-sm">{clearing ? 'Clearing...' : 'Clear All Cache'}</span>
+              <span className="text-sm">
+                {clearing ? 'Clearing...' : 'Clear All Cache'}
+              </span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col" onClick={handleWarmCache} disabled={warming}>
-              <RefreshCw className={`h-6 w-6 mb-2 ${warming ? 'animate-spin' : ''}`} />
-              <span className="text-sm">{warming ? 'Warming...' : 'Warm Cache'}</span>
+            <Button
+              variant="outline"
+              className="h-20 flex flex-col"
+              onClick={handleWarmCache}
+              disabled={warming}
+            >
+              <RefreshCw
+                className={`h-6 w-6 mb-2 ${warming ? 'animate-spin' : ''}`}
+              />
+              <span className="text-sm">
+                {warming ? 'Warming...' : 'Warm Cache'}
+              </span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col" onClick={handleViewLogs}>
+            <Button
+              variant="outline"
+              className="h-20 flex flex-col"
+              onClick={handleViewLogs}
+            >
               <Activity className="h-6 w-6 mb-2" />
               <span className="text-sm">View Cache Logs</span>
             </Button>

@@ -14,24 +14,23 @@ export function getClientIP(request: NextRequest): string {
   const realIp = request.headers.get('x-real-ip');
   const cfConnectingIp = request.headers.get('cf-connecting-ip');
   const remoteAddr = request.headers.get('x-remote-addr');
-  
+
   // x-forwarded-for can contain multiple IPs, take the first one
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
-  
+
   if (realIp) {
     return realIp;
   }
-  
+
   if (cfConnectingIp) {
     return cfConnectingIp;
   }
-  
+
   if (remoteAddr) {
     return remoteAddr;
   }
-  
+
   return 'unknown';
 }
-
