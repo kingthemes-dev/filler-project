@@ -226,7 +226,9 @@ export class CookieManager {
     if (typeof document === 'undefined') return;
 
     const cookiesToClear = categories
-      ? this.config.cookie_list.filter(cookie => categories.includes(cookie.category))
+      ? this.config.cookie_list.filter(cookie => 
+          cookie.category !== 'necessary' && categories.includes(cookie.category as 'analytics' | 'marketing' | 'preferences')
+        )
       : this.config.cookie_list.filter(cookie => cookie.category !== 'necessary');
 
     cookiesToClear.forEach(cookie => {
