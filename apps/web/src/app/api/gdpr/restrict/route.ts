@@ -35,7 +35,7 @@ async function logGDPRRequest(
       created_at: new Date().toISOString(),
     };
 
-    logger.info('GDPR request logged', auditLog as Record<string, unknown>);
+    logger.info('GDPR request logged', auditLog as unknown as Record<string, unknown>);
   } catch (error) {
     logger.error('Failed to log GDPR request', { error });
   }
