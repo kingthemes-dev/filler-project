@@ -4831,7 +4831,7 @@ export async function POST(req: NextRequest) {
   // Security check: CSRF protection for mutating requests
   // Rate limiting is handled per-endpoint below
   const { checkApiCSRF, addSecurityHeaders } = await import('@/utils/api-security');
-  const csrfCheck = checkApiCSRF(req);
+  const csrfCheck = await checkApiCSRF(req);
   
   if (!csrfCheck.allowed) {
     debugLog('⛔ CSRF check failed', { endpoint });
