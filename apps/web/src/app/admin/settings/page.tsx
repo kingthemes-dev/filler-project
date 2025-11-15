@@ -122,7 +122,7 @@ export default function SettingsPage() {
           });
         }
       } catch (error) {
-        logger.error('Settings status: Error loading settings', { error });
+        console.error('Settings status: Error loading settings', error);
         // Fallback: use public env vars only
         setSettings({
           woocommerce: {
