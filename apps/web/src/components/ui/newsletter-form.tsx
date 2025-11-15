@@ -139,27 +139,18 @@ export default function NewsletterForm() {
           </div>
 
           {/* Premium Submit Button - In Line */}
-          <div className="relative group/btn">
+          <div className="relative">
             <button
               type="submit"
               disabled={isLoading}
-              className="h-16 px-8 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white border-0 font-bold text-base sm:text-lg hover:from-purple-500 hover:via-pink-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-2xl hover:shadow-pink-500/30 relative overflow-hidden rounded-2xl whitespace-nowrap"
+              className="h-16 px-8 bg-purple-600 text-white border-0 font-bold text-base sm:text-lg hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors duration-200 shadow-md hover:shadow-lg rounded-2xl whitespace-nowrap"
             >
-              {/* Animated shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-700 transform -skew-x-12 group-hover/btn:skew-x-12 group-hover/btn:translate-x-full" />
-              
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-pink-400/50 to-purple-400/0 blur-xl opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500" />
-
               {/* Content */}
-              <span className="relative z-10 flex items-center gap-2 whitespace-nowrap">
+              <span className="flex items-center gap-2 whitespace-nowrap">
                 {isLoading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <>
-                    <span className="font-bold">Zapisz się</span>
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  </>
+                  <span className="font-bold">Zapisz się</span>
                 )}
               </span>
             </button>
