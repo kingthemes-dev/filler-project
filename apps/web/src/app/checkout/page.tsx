@@ -1275,7 +1275,7 @@ function CheckoutPageInner() {
         items: items.map(item => ({
           item_id: item.id.toString(),
           item_name: item.name,
-          category: item.category || 'Uncategorized',
+          category: 'Uncategorized', // CartItem doesn't have category property
           price: item.price,
           quantity: item.quantity,
         })),
