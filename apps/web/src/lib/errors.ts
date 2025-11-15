@@ -90,7 +90,7 @@ export class AppError<TDetails = unknown> extends Error {
         severity: this.severity,
         retryable: this.retryable,
         timestamp: this.timestamp,
-        ...(maskedDetails && { details: maskedDetails }),
+        ...(maskedDetails ? { details: maskedDetails } : {}),
       },
     };
   }
