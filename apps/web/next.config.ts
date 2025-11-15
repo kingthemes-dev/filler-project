@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import path from 'path';
+import webpack from 'webpack';
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
@@ -95,7 +96,43 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer, dev, dir }) => {
+  webpack: (config, { isServer, dev, dir, webpack: wp }) => {
+    // Fix for Edge Runtime: exclude ioredis and Node.js modules
+    // Check if this is an Edge Runtime build by checking config.name
+    const isEdgeBuild = config.name === 'edge-server' || config.name?.includes('edge');
+    
+    if (isEdgeBuild) {
+      // Ignore ioredis and its dependencies for Edge Runtime using IgnorePlugin
+      config.plugins = config.plugins || [];
+      config.plugins.push(
+        new wp.IgnorePlugin({
+          resourceRegExp: /^ioredis$/,
+        })
+      );
+      
+      // Also use alias to prevent resolution
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        ioredis: false,
+      };
+      
+      // Add fallback for Node.js modules in Edge Runtime
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        dns: false,
+        stream: false,
+        child_process: false,
+        cluster: false,
+        os: false,
+        'import-in-the-middle': false,
+        'require-in-the-middle': false,
+      };
+    }
+    
     // Fix for Next.js 15.5.2 compatibility issues
     if (!isServer) {
       config.resolve.fallback = {
@@ -105,6 +142,7 @@ const nextConfig: NextConfig = {
         tls: false,
         crypto: false,
         dns: false,
+        stream: false,
         child_process: false,
         cluster: false,
         os: false,
