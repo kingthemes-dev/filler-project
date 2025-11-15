@@ -192,10 +192,6 @@ export default function NewsletterForm() {
                     />
                   </svg>
                 )}
-                {/* Glow effect when checked */}
-                {consent && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-400 rounded-md blur-md opacity-50 animate-pulse" />
-                )}
               </div>
 
               {/* Text content */}
