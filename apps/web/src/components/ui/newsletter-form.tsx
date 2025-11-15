@@ -167,7 +167,7 @@ export default function NewsletterForm() {
         </div>
 
         {/* Premium Consent Checkbox - Enhanced Design */}
-        <div className="flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-start space-y-4">
           <label className="cursor-pointer group/checkbox">
             <input
               type="checkbox"
@@ -181,10 +181,10 @@ export default function NewsletterForm() {
               className="sr-only"
               disabled={isLoading}
             />
-            <div className="flex items-center space-x-3">
+            <div className="flex items-start space-x-3">
               {/* Enhanced Checkbox */}
               <div
-                className={`relative w-6 h-6 rounded-md border-2 transition-all duration-300 flex items-center justify-center ${
+                className={`relative w-6 h-6 rounded-md border-2 transition-all duration-300 flex items-center justify-center flex-shrink-0 mt-0.5 ${
                   consent
                     ? 'bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/50'
                     : 'border-white/50 bg-white/5 group-hover/checkbox:border-white/80 group-hover/checkbox:bg-white/10'
@@ -210,12 +210,12 @@ export default function NewsletterForm() {
               </div>
 
               {/* Text content */}
-              <div className="text-white/95 text-center">
-                <div className="flex items-center justify-center space-x-2 mb-1">
-                  <span className="font-bold text-base sm:text-lg">
+              <div className="text-white/95 text-left flex-1">
+                <div className="flex items-center flex-wrap gap-2 mb-1">
+                  <span className="font-bold text-sm sm:text-base">
                     Zapisz się i zyskaj 10% rabatu na następne zamówienie
                   </span>
-                  <span className="px-2.5 py-1 bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white text-xs font-bold rounded-full border border-white/20 backdrop-blur-sm">
+                  <span className="px-2.5 py-1 bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-white text-xs font-bold rounded-full border border-white/20 backdrop-blur-sm flex-shrink-0">
                     -10%
                   </span>
                 </div>
