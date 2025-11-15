@@ -175,7 +175,7 @@ export default function NewsletterForm() {
               <div
                 className={`relative w-6 h-6 rounded-md border-2 transition-all duration-300 flex items-center justify-center flex-shrink-0 mt-0.5 ${
                   consent
-                    ? 'bg-gradient-to-br from-purple-500 to-pink-500 border-transparent shadow-lg shadow-purple-500/50'
+                    ? 'bg-gray-600 border-transparent shadow-lg shadow-gray-500/30'
                     : 'border-white/50 bg-white/5 group-hover/checkbox:border-white/80 group-hover/checkbox:bg-white/10'
                 }`}
               >
