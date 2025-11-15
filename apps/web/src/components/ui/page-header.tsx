@@ -22,7 +22,7 @@ export default function PageHeader({
   className = '',
 }: PageHeaderProps) {
   return (
-    <div className={`mb-8 ${className}`}>
+    <div className={`mb-8 pt-14 sm:pt-16 ${className}`}>
       {/* Header with Title and Breadcrumbs */}
       <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-white border border-gray-200 rounded-3xl px-4 lg:px-8 pt-5 pb-6 sm:pt-6 sm:pb-8">
         <div className="flex flex-col items-center justify-center gap-2 lg:gap-3 text-center">
