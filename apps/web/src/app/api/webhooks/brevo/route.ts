@@ -5,10 +5,20 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
-import { BrevoWebhookSchema } from '@king/shared-types/src/schemas/newsletter';
 import { logger } from '@/utils/logger';
 import { addSecurityHeaders } from '@/utils/api-security';
 import { z } from 'zod';
+
+// Define BrevoWebhookSchema locally to avoid build issues with shared-types package
+const BrevoWebhookSchema = z.object({
+  event: z.enum(['subscribe', 'unsubscribe', 'update', 'complaint', 'bounce']),
+  email: z.string().email(),
+  listId: z.string(),
+  date: z.string().datetime(),
+  attributes: z.record(z.any()).optional(),
+  ip: z.string().optional(),
+  userAgent: z.string().optional(),
+});
 
 // Brevo webhook payload can be an array of events or a single event
 const brevoWebhookPayloadSchema = z.union([

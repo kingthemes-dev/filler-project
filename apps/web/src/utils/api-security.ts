@@ -14,8 +14,22 @@ import { logger } from '@/utils/logger';
 import { getCorsHeaders } from '@/utils/cors';
 
 // Dynamic imports for Edge/Node runtime compatibility
-let checkEndpointRateLimit: typeof import('@/utils/rate-limiter').checkEndpointRateLimit;
-let checkEndpointRateLimitEdge: typeof import('@/utils/rate-limiter-edge').checkEndpointRateLimitEdge;
+// Define types locally to avoid importing modules during build time
+type RateLimitResult = {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
+  retryAfter?: number;
+};
+
+type CheckRateLimitFunction = (
+  path: string,
+  identifier: string,
+  searchParams?: URLSearchParams
+) => Promise<RateLimitResult>;
+
+let checkEndpointRateLimit: CheckRateLimitFunction | undefined;
+let checkEndpointRateLimitEdge: CheckRateLimitFunction | undefined;
 
 // Lazy load rate limiters based on runtime
 async function getRateLimiter() {
@@ -28,16 +42,16 @@ async function getRateLimiter() {
     // Use Edge-compatible rate limiter (no Redis, no Node.js modules)
     if (!checkEndpointRateLimitEdge) {
       const edgeModule = await import('@/utils/rate-limiter-edge');
-      checkEndpointRateLimitEdge = edgeModule.checkEndpointRateLimitEdge;
+      checkEndpointRateLimitEdge = edgeModule.checkEndpointRateLimitEdge as CheckRateLimitFunction;
     }
-    return { checkLimit: checkEndpointRateLimitEdge, isEdge: true };
+    return { checkLimit: checkEndpointRateLimitEdge!, isEdge: true };
   } else {
     // Use Node.js rate limiter (with Redis support)
     if (!checkEndpointRateLimit) {
       const nodeModule = await import('@/utils/rate-limiter');
-      checkEndpointRateLimit = nodeModule.checkEndpointRateLimit;
+      checkEndpointRateLimit = nodeModule.checkEndpointRateLimit as CheckRateLimitFunction;
     }
-    return { checkLimit: checkEndpointRateLimit, isEdge: false };
+    return { checkLimit: checkEndpointRateLimit!, isEdge: false };
   }
 }
 

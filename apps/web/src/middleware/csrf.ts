@@ -16,55 +16,33 @@ export function shouldEnforceCsrf(): boolean {
 }
 
 export async function generateCSRFToken(): Promise<string> {
-  // Check if we're in Edge Runtime (use Web Crypto API)
-  // Edge Runtime detection: check environment variable or EdgeRuntime global
-  const isEdgeRuntime = process.env.NEXT_RUNTIME === 'edge' || 
-                        typeof EdgeRuntime !== 'undefined';
-  
+  // Use Web Crypto API for both Edge and Node Runtime (Node.js 15+ supports Web Crypto API)
+  // This avoids build errors when Webpack tries to load Node.js crypto module for Edge routes
   const timestamp = Date.now().toString();
   
-  // Generate random bytes (Edge-compatible)
-  let random: string;
-  if (isEdgeRuntime) {
-    // Use Web Crypto API for Edge Runtime
-    const array = new Uint8Array(16);
-    crypto.getRandomValues(array);
-    random = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  } else {
-    // Use Node.js crypto for Node Runtime
-    const crypto = require('crypto');
-    random = crypto.randomBytes(16).toString('hex');
-  }
+  // Generate random bytes using Web Crypto API
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  const random = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   
   const data = `${timestamp}-${random}`;
 
-  // Generate HMAC (Edge-compatible)
-  let hash: string;
-  if (isEdgeRuntime) {
-    // Use Web Crypto API for Edge Runtime
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(CSRF_SECRET);
-    const messageData = encoder.encode(data);
-    
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    const hashArray = Array.from(new Uint8Array(signature));
-    hash = btoa(String.fromCharCode(...hashArray));
-  } else {
-    // Use Node.js crypto for Node Runtime
-    const crypto = require('crypto');
-    hash = crypto
-      .createHmac('sha256', CSRF_SECRET)
-      .update(data)
-      .digest('base64');
-  }
+  // Generate HMAC using Web Crypto API
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(CSRF_SECRET);
+  const messageData = encoder.encode(data);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+  const hashArray = Array.from(new Uint8Array(signature));
+  const hash = btoa(String.fromCharCode(...hashArray));
   
   return `${data}-${hash}`;
 }
@@ -74,57 +52,34 @@ export async function validateCSRFToken(token: string): Promise<boolean> {
 
   const parts = token.split('-');
   if (parts.length !== 3) return false;
-
-  // Check if we're in Edge Runtime (use Web Crypto API)
-  // Edge Runtime detection: check environment variable or EdgeRuntime global
-  const isEdgeRuntime = process.env.NEXT_RUNTIME === 'edge' || 
-                        typeof EdgeRuntime !== 'undefined';
   
   const [timestamp, random, hash] = parts;
   const data = `${timestamp}-${random}`;
 
-  // Generate expected hash (Edge-compatible)
-  let expectedHash: string;
-  if (isEdgeRuntime) {
-    // Use Web Crypto API for Edge Runtime
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(CSRF_SECRET);
-    const messageData = encoder.encode(data);
-    
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    const hashArray = Array.from(new Uint8Array(signature));
-    expectedHash = btoa(String.fromCharCode(...hashArray));
-  } else {
-    // Use Node.js crypto for Node Runtime
-    const crypto = require('crypto');
-    expectedHash = crypto
-      .createHmac('sha256', CSRF_SECRET)
-      .update(data)
-      .digest('base64');
-  }
+  // Generate expected hash using Web Crypto API (works in both Edge and Node Runtime)
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(CSRF_SECRET);
+  const messageData = encoder.encode(data);
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+  const hashArray = Array.from(new Uint8Array(signature));
+  const expectedHash = btoa(String.fromCharCode(...hashArray));
 
   // Use timing-safe comparison to prevent timing attacks
-  if (isEdgeRuntime) {
-    // Edge-compatible timing-safe comparison
-    if (hash.length !== expectedHash.length) return false;
-    let result = 0;
-    for (let i = 0; i < hash.length; i++) {
-      result |= hash.charCodeAt(i) ^ expectedHash.charCodeAt(i);
-    }
-    return result === 0;
-  } else {
-    // Node.js timing-safe comparison
-    const crypto = require('crypto');
-    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(expectedHash));
+  if (hash.length !== expectedHash.length) return false;
+  let result = 0;
+  for (let i = 0; i < hash.length; i++) {
+    result |= hash.charCodeAt(i) ^ expectedHash.charCodeAt(i);
   }
+  return result === 0;
 }
 
 export async function csrfMiddleware(request: NextRequest) {
