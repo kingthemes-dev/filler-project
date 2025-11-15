@@ -39,7 +39,7 @@ async function logGDPRRequest(
     };
 
     // Log to console (in production, this should be stored in a database)
-    logger.info('GDPR request logged', auditLog as Record<string, unknown>);
+    logger.info('GDPR request logged', auditLog as unknown as Record<string, unknown>);
 
     // TODO: Store in database for audit trail
     // await db.gdprAuditLogs.insert(auditLog);
