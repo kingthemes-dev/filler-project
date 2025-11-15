@@ -36,7 +36,7 @@ async function getRateLimiter() {
   // Check if we're in Edge Runtime
   // Edge Runtime detection: check environment variable or try to import rate-limiter (will fail if Edge)
   const isEdgeRuntime = process.env.NEXT_RUNTIME === 'edge' || 
-                        typeof EdgeRuntime !== 'undefined';
+                        typeof (globalThis as any).EdgeRuntime !== 'undefined';
   
   if (isEdgeRuntime) {
     // Use Edge-compatible rate limiter (no Redis, no Node.js modules)
