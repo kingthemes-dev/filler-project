@@ -8,11 +8,38 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { checkEndpointRateLimit } from '@/utils/rate-limiter';
 import { getClientIP } from '@/utils/client-ip';
 import { validateCSRFToken, shouldEnforceCsrf } from '@/middleware/csrf';
 import { logger } from '@/utils/logger';
 import { getCorsHeaders } from '@/utils/cors';
+
+// Dynamic imports for Edge/Node runtime compatibility
+let checkEndpointRateLimit: typeof import('@/utils/rate-limiter').checkEndpointRateLimit;
+let checkEndpointRateLimitEdge: typeof import('@/utils/rate-limiter-edge').checkEndpointRateLimitEdge;
+
+// Lazy load rate limiters based on runtime
+async function getRateLimiter() {
+  // Check if we're in Edge Runtime
+  // Edge Runtime detection: check environment variable or try to import rate-limiter (will fail if Edge)
+  const isEdgeRuntime = process.env.NEXT_RUNTIME === 'edge' || 
+                        typeof EdgeRuntime !== 'undefined';
+  
+  if (isEdgeRuntime) {
+    // Use Edge-compatible rate limiter (no Redis, no Node.js modules)
+    if (!checkEndpointRateLimitEdge) {
+      const edgeModule = await import('@/utils/rate-limiter-edge');
+      checkEndpointRateLimitEdge = edgeModule.checkEndpointRateLimitEdge;
+    }
+    return { checkLimit: checkEndpointRateLimitEdge, isEdge: true };
+  } else {
+    // Use Node.js rate limiter (with Redis support)
+    if (!checkEndpointRateLimit) {
+      const nodeModule = await import('@/utils/rate-limiter');
+      checkEndpointRateLimit = nodeModule.checkEndpointRateLimit;
+    }
+    return { checkLimit: checkEndpointRateLimit, isEdge: false };
+  }
+}
 
 /**
  * Security check result
@@ -25,7 +52,7 @@ export interface SecurityCheckResult {
 }
 
 /**
- * Check rate limiting for API route
+ * Check rate limiting for API route (Edge/Node compatible)
  */
 export async function checkApiRateLimit(
   request: NextRequest,
@@ -35,11 +62,8 @@ export async function checkApiRateLimit(
   const clientIp = getClientIP(request);
   
   try {
-    const rateLimitResult = await checkEndpointRateLimit(
-      path,
-      clientIp,
-      request.nextUrl.searchParams
-    );
+    const { checkLimit } = await getRateLimiter();
+    const rateLimitResult = await checkLimit(path, clientIp, request.nextUrl.searchParams);
     
     if (!rateLimitResult.allowed) {
       logger.warn('API rate limit exceeded', {
@@ -85,9 +109,9 @@ export async function checkApiRateLimit(
 }
 
 /**
- * Check CSRF token for mutating requests
+ * Check CSRF token for mutating requests (async for Edge compatibility)
  */
-export function checkApiCSRF(request: NextRequest): SecurityCheckResult {
+export async function checkApiCSRF(request: NextRequest): Promise<SecurityCheckResult> {
   // Skip if CSRF is not enforced
   if (!shouldEnforceCsrf()) {
     return { allowed: true };
@@ -134,8 +158,9 @@ export function checkApiCSRF(request: NextRequest): SecurityCheckResult {
     };
   }
   
-  // Validate CSRF token
-  if (!validateCSRFToken(csrfToken)) {
+  // Validate CSRF token (async for Edge compatibility)
+  const isValid = await validateCSRFToken(csrfToken);
+  if (!isValid) {
     logger.warn('CSRF token invalid', {
       path: pathname,
       method,
@@ -189,7 +214,7 @@ export async function checkApiSecurity(
   
   // Check CSRF protection
   if (enforceCSRF) {
-    const csrfResult = checkApiCSRF(request);
+    const csrfResult = await checkApiCSRF(request);
     if (!csrfResult.allowed) {
       return csrfResult;
     }

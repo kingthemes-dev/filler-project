@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
-import { BrevoWebhookSchema } from '@king/shared-types/schemas/newsletter';
+import { BrevoWebhookSchema } from '@king/shared-types/src/schemas/newsletter';
 import { logger } from '@/utils/logger';
 import { addSecurityHeaders } from '@/utils/api-security';
 import { z } from 'zod';
