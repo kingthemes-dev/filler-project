@@ -149,7 +149,7 @@ const nextConfig: NextConfig = {
           os: false,
           path: false,
           util: false,
-        url: false,
+          url: false,
         querystring: false,
         buffer: false,
         events: false,
