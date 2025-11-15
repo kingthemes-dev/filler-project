@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { CookieSettingsButton } from './cookie-settings-button';
 
 export const metadata: Metadata = {
   title: 'Polityka Prywatności - King Beauty Store',
@@ -632,16 +633,7 @@ export default function PolitykaPrywatnosciPage() {
                   </a>
                   .
                 </p>
-                <button
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('openCookieConsent'));
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                >
-                  Zmień ustawienia cookies
-                </button>
+                <CookieSettingsButton />
               </div>
 
               {/* Szczegółowa lista cookies */}
